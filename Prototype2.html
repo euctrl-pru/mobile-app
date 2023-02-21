@@ -766,18 +766,23 @@
 	</div>
 
 	<script>
-	var request = new XMLHttpRequest();
-	request.open("GET", "nw_json_app.json", false);
-	request.send(null)
-	console.log("hello")
-	// console.log(request.responseText);
-	var data = JSON.parse(request.responseText)
 	
-	UpdateTraffic();
+	var oscartest = $.getJSON( "nw_json_app.json")
+	.done( function () {
+		var data = JSON.parse(oscartest.responseText)
+	
+	// var request = new XMLHttpRequest();
+	// request.open("GET", "nw_json_app.json", false);
+	// request.send(null)
+
+	// console.log(request.responseText);
+	// var data = JSON.parse(request.responseText)
+	
+	// UpdateTraffic();
 	// var my_JSON_object = JSON.parse(request.responseText);
-	// console.log(data.nw_traffic.DAY_TFC);
-	// alert (data.nw_traffic.DAY_TFC);
-	function UpdateTraffic() { 
+
+	
+	// function UpdateTraffic() { 
     
 		// Calculate datestrings
    	var last_day = new Date(data.nw_traffic.LAST_DATA_DAY);
@@ -1081,7 +1086,7 @@
   document.getElementById("arr_y2d_arr_punct_2019").className = (dif_y2d_arr_punct_2019 >=0) ? 'badge green-bg' : 'badge red-bg';
 
 }  
-
+)
 
 //#region - start of - number counter animation
 // const counterAnim = (qSelector, start = 0, end, duration = 1000) => {
