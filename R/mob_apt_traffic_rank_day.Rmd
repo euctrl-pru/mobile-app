@@ -1,0 +1,178 @@
+---
+output: html_document
+knit: (function(input, ...) {
+    rmarkdown::render(
+      input,
+      output_dir = "C:/Users/oaolive/repos/mobile-app/iframes"
+    )
+  })
+---
+
+```{r, echo=FALSE, include=FALSE}
+## libraries
+library(fs)
+library(tibble)
+library(dplyr)
+library(stringr)
+library(readxl)
+library(lubridate)
+library(zoo)
+library(here)
+
+library(reactable)
+library(htmltools)
+```
+
+```{css, echo=FALSE}
+
+.main-container {
+  padding: 0px;
+}
+
+.rt-table {
+  border-bottom: 1px solid #edf2f9; 
+} 
+
+.rt-th {
+  background-color: #f9fbfd;
+  border-top: 1px solid #edf2f9;
+  border-bottom: 1px solid #edf2f9; 
+} 
+
+.rt-compact .rt-td-inner {
+    padding: 1px 3px;
+}
+
+.html-widget {
+    margin-bottom: 0px;
+}
+
+}
+```
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, out.width='100%'}
+today <- (lubridate::now() +  days(-1)) %>% format("%Y%m%d")
+# ao ranking data
+base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/'
+
+apt_rank_data_raw <-  read_xlsx(
+  path  = fs::path_abs(
+    str_glue("5_Airport_infographic_{today}.xlsx"),
+    start = base_dir),
+  sheet = "Pivot_TrafficLP",
+  range = cell_limits(c(19, 2), c(NA, 25))) %>%
+  as_tibble()
+
+current_year <- as.numeric(format(max(apt_rank_data_raw$ENTRY_DATE), "%Y"))
+
+apt_color = '#517d33ad'
+
+#https://glin.github.io/reactable/articles/cookbook/cookbook.html
+# Render a bar chart in the background of the cell
+bar_style <- function(width = 1, fill = "#e6e6e6", height = "75%",
+                      align = c("left", "right"), color = NULL) {
+  align <- match.arg(align)
+  if (align == "left") {
+    position <- paste0(width * 100, "%")
+    image <- sprintf("linear-gradient(90deg, %1$s %2$s, #edf2f9 %2$s)", fill, position)
+  } else {
+    position <- paste0(100 - width * 100, "%")
+    image <- sprintf("linear-gradient(90deg, transparent %1$s, %2$s %1$s)", position, fill)
+  }
+  list(
+    backgroundImage = image,
+    backgroundSize = paste("100%", height),
+    backgroundRepeat = "no-repeat",
+    backgroundPosition = "center",
+    color = color,
+    borderRadius = "10px",
+    "padding-left" = "5px",
+    fontSize = "1.1rem"
+  )
+}
+
+# day data and plot
+apt_rank_data_day <- apt_rank_data_raw %>%
+  filter(R_RANK_BY_DAY < 11) %>% 
+  mutate(RANKDIF = R_RANK_BY_DAY- R_RANK_BY_DAY_7DAY) %>%
+  select(RANKDIF,
+         AIRPORT_NAME,
+         DEP_ARR,
+          DEP_ARR_7DAY_DIFF_PERC,
+          DEP_ARR_PREV_YEAR_DIFF_PERC) %>%
+  as.data.frame()
+
+ao_rank_day_tbl <- reactable(
+  apt_rank_data_day,
+  bordered = FALSE,
+  # defaultPageSize = 43,
+  pagination = FALSE,
+  # defaultSorted = list(STATE_NAME = "asc"),
+  striped = FALSE,
+  compact = TRUE,
+  highlight = FALSE,
+  style = list(fontFamily = "Roboto, sans-serif", fontSize = "1.2rem",
+               "padding" = "0"),
+  defaultColDef = colDef(
+    vAlign = "center",
+    style=list( "white-space"= "wrap"),
+    headerStyle = list(color= "#95aac9", fontWeight = 600, fontFamily = "Roboto, sans-serif", fontSize = "0.9rem",
+                       "letter-spacing" = "0.08rem")
+  ),
+  columns = list(
+    RANKDIF = colDef(name = "RANK vs PREV WEEK", minWidth = 14, align = "center",
+                               cell = function(value) {
+                                label <- case_when(
+                                  value == 0 ~ '=',
+                                  # value > 0 ~ paste0("\U1F81D", "",value),
+                                  # TRUE ~ paste0("\U1F81F", "", abs(value))
+                                  value > 0 ~ paste0("\U2191", " ",value),
+                                  TRUE ~ paste0("\U2193", " ", abs(value))
+                                )
+                                  
+                              }),
+    AIRPORT_NAME = colDef(name = "AIRPORT", minWidth = 32),
+    DEP_ARR = colDef(name = "FLIGHTS", minWidth = 30,
+      style = function(value) {
+        bar_style(width = value / max(apt_rank_data_day$DEP_ARR), fill = apt_color, color = "white")
+      },
+      align = "left",
+      format = colFormat(digits = 0, separators = TRUE)
+    ),
+    DEP_ARR_7DAY_DIFF_PERC = colDef(name = "% vs PREV WEEK",
+                                   minWidth = 12,
+                                   cell = function(value) {
+                                     label <-paste0(if_else(value>=0,'+','-'),format(round(abs(value)*100,0),nsmall=0),'%')
+                                   }
+                                   ),
+    DEP_ARR_PREV_YEAR_DIFF_PERC = colDef(name = paste0("% vs ", current_year-1),
+                              minWidth = 12,
+                              cell = function(value) {
+                                label <-paste0(if_else(value>=0,'+','-'),format(round(abs(value)*100,0),nsmall=0),'%')
+                              }
+                              )
+  )
+)
+
+ao_rank_day_tbl
+
+#different tries of saving the r script without creating an .rmd. Did not work
+#https://stackoverflow.com/questions/62672985/how-to-export-a-reactable-table-to-an-image-pdf-jpg-png-or-html-page-in-r
+# library(htmlwidgets)
+# library("webshot2")
+# library(reactablefmtr)
+
+# save_dir <- "//ihx-vdm05/LIVE_var_www_Economics$/DailyBriefing/Prototype2/"
+# html_file <- paste0(save_dir, "ao_traffic_rank_day.html")
+# img_file <- paste0(save_dir,"ao_traffic_rank_day.png")
+
+# save_reactable(ao_rank_day_tbl, img_file)
+# save_reactable(ao_rank_day_tbl, "table.png")
+
+# saveWidget(widget = ao_rank_day_tbl, file = html_file, selfcontained = TRUE,
+           # )
+# webshot(url = "https://www.eurocontrol.int/Economics/DailyBriefing/Prototype2/ao_traffic_rank_day.html", 
+#         file = img_file, delay = 0.1, vwidth = 1245)
+
+```

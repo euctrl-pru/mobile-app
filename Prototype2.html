@@ -706,7 +706,7 @@
 							<div style="position: absolute; background-color: transparent; width: 100%; min-height: 250px;"></div>
 							
 							<!-- https://stackoverflow.com/questions/819416/adjust-width-and-height-of-iframe-to-fit-with-content-in-it -->
-							<iframe src="mob_ao_traffic_rank_day.html" onload='javascript:(function(o){o.style.height=o.contentWindow.document.body.scrollHeight+"px";}(this));' style="height:250px;width:100%;border:none;overflow:hidden;"></iframe>
+							<iframe src="/iframes/mob_ao_traffic_rank_day.html" onload='javascript:(function(o){o.style.height=o.contentWindow.document.body.scrollHeight+"px";}(this));' style="height:250px;width:100%;border:none;overflow:hidden;"></iframe>
 							<!-- <iframe id="traffic-plot" src="mob_ao_traffic_rank_day.html" frameborder="0" style="width: 100%; border:0; min-height: 250px" >
 							</iframe> -->
 						</div>
@@ -717,10 +717,6 @@
 						<p class="boxsubtitle">Traffic - day</p>
 						<p class="period" id="last_day_ao">test</p>
 
-						<div class="carousel-caption">
-							<h3></h3>
-							<p></p>
-					  	</div>
 					</div>
 
 				</div>
@@ -732,44 +728,62 @@
 					<button type="button" data-bs-target="#item3" data-bs-slide-to="3"></button> -->
 				</div>
 				
-				<div class="mybutton" style="top:90%">
+				<div class="mybutton" >
 					<a href="https://www.eurocontrol.int/Economics/DailyPunctuality-Airlines.html" class="btn btn-primary btn-sm pt-0 pb-0 " role="button" target="_blank">More...</a>
 				</div>
 		
 			</div>
 		</div>
+		
+		<!----------------------------------------------------- 5th card -->
 		<div class="grid-item grid-item-5">
 			<div id="item5" class="carousel carousel-dark slide" data-bs-touch="true" data-bs-ride="carousel">
 				<div class="carousel-inner" >
+					<!-- <div id="counter5" class="counter"></div> -->
+		
 					<div class="carousel-item active" data-bs-interval="10000000">
-						<div id="everviz-uYZKA6McW" class="everviz-uYZKA6McW"><script src=https://app.everviz.com/inject/uYZKA6McW/?v=16 defer="defer"></script></div>
-	
-					</div>
-				<div>
+						<div style="border-bottom: 1px solid #edf2f9; ">
+							<p class="boxtitle mb-3">Airports</p>
+						</div>
 
-				<div class="carousel-item" data-bs-interval="10000000">
-					<p>test</p>
-					</div>	
+						<div class="period text-uppercase otext-muted mb-2 pt-2" id="last_day_apt">
+						</div>
+
+						<div style="position: relative;">
+							<!-- so the swipe action works -->
+							<div style="position: absolute; background-color: transparent; width: 100%; min-height: 250px;"></div>
+							
+							<!-- https://stackoverflow.com/questions/819416/adjust-width-and-height-of-iframe-to-fit-with-content-in-it -->
+							<iframe src="/iframes/mob_apt_traffic_rank_day.html" onload='javascript:(function(o){o.style.height=o.contentWindow.document.body.scrollHeight+"px";}(this));' style="height:250px;width:100%;border:none;overflow:hidden;"></iframe>
+							<!-- <iframe id="traffic-plot" src="mob_ao_traffic_rank_day.html" frameborder="0" style="width: 100%; border:0; min-height: 250px" >
+							</iframe> -->
+						</div>
+					</div>
+				</div>
 				<br><br>
 				<div class="carousel-indicators">
 					<button type="button" data-bs-target="#item5" data-bs-slide-to="0" class="active"></button>
-					<button type="button" data-bs-target="#item5" data-bs-slide-to="1"></button>
+					<!-- <button type="button" data-bs-target="#item4" data-bs-slide-to="1"></button> -->
 					<!-- <button type="button" data-bs-target="#item3" data-bs-slide-to="2"></button>
-						<button type="button" data-bs-target="#item3" data-bs-slide-to="3"></button> -->
-				</div>		
+					<button type="button" data-bs-target="#item3" data-bs-slide-to="3"></button> -->
+				</div>
+				
+				<div class="mybutton" >
+					<a href="https://www.eurocontrol.int/Economics/DailyPunctuality-Airports.html" class="btn btn-primary btn-sm pt-0 pb-0 " role="button" target="_blank">More...</a>
+				</div>
+		
 			</div>
 		</div>
-	
 
-		<!-- <div class="grid-item grid-item-6">Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptatem doloremque animi provident in veniam earum maxime voluptatibus quaerat minima quas!</div> -->
 
 	</div>
 
 	<script>
-	
-	var oscartest = $.getJSON( "nw_json_app.json")
-	.done( function () {
-		var data = JSON.parse(oscartest.responseText)
+		var data;
+
+		var oscartest = $.getJSON( "nw_json_app.json", function(data) {
+			UpdateTraffic(data)
+		})
 	
 	// var request = new XMLHttpRequest();
 	// request.open("GET", "nw_json_app.json", false);
@@ -782,7 +796,7 @@
 	// var my_JSON_object = JSON.parse(request.responseText);
 
 	
-	// function UpdateTraffic() { 
+	function UpdateTraffic(data) { 
     
 		// Calculate datestrings
    	var last_day = new Date(data.nw_traffic.LAST_DATA_DAY);
@@ -1086,7 +1100,7 @@
   document.getElementById("arr_y2d_arr_punct_2019").className = (dif_y2d_arr_punct_2019 >=0) ? 'badge green-bg' : 'badge red-bg';
 
 }  
-)
+
 
 //#region - start of - number counter animation
 // const counterAnim = (qSelector, start = 0, end, duration = 1000) => {
