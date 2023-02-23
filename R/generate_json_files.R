@@ -4,6 +4,8 @@ library(tibble)
 library(dplyr)
 library(stringr)
 library(readxl)
+library(DBI)
+library(ROracle)
 library(lubridate)
 library(zoo)
 library(jsonlite)
@@ -117,9 +119,88 @@ library(here)
     substr(., 1, nchar(.)-1) %>%
     substr(., 2, nchar(.))
 
+  ####CO2 json
+  
+  export_query <- function(schema, query) {
+    USR <- Sys.getenv(paste0(schema, "_USR"))
+    PWD <- Sys.getenv(paste0(schema, "_PWD"))
+    DBN <- Sys.getenv(paste0(schema, "_DBNAME"))
+    withr::local_envvar(c("TZ" = "UTC", "ORA_SDTZ" = "UTC"))
+    withr::local_namespace("ROracle")
+    con <- withr::local_db_connection(
+      DBI::dbConnect(DBI::dbDriver("Oracle"),
+                     USR, PWD, dbname = DBN,
+                     timezone = "UTC"))
+    con %>%
+      dbSendQuery(query) %>%
+      fetch(n = -1)
+  }
+  
+  query <- str_glue("
+    SELECT *
+      FROM TABLE (emma_pub.api_aiu_stats.MM_AIU_STATE_DEP ())
+      where year >= 2019 and STATE_NAME not in ('LIECHTENSTEIN')
+    ORDER BY 2, 3, 4
+   ")
+  
+  
+  co2_data_raw <- export_query("PRU_DEV", query = query) %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+  co2_data_evo_nw <- co2_data_raw %>%
+    select(FLIGHT_MONTH, CO2_QTY_TONNES, TF, YEAR, MONTH) %>%
+    group_by(FLIGHT_MONTH) %>%
+    summarise(TTF = sum(TF), TCO2 = sum(CO2_QTY_TONNES)) %>%
+    mutate(YEAR = as.numeric(format(FLIGHT_MONTH,'%Y')), MONTH = as.numeric(format(FLIGHT_MONTH,'%m'))) %>%
+    arrange(FLIGHT_MONTH) %>% 
+    mutate(FLIGHT_MONTH = ceiling_date(as_date(FLIGHT_MONTH), unit='month')-1)
+
+  co2_last_date <- max(co2_data_evo_nw$FLIGHT_MONTH, na.rm=TRUE)
+  co2_last_month <- format(co2_last_date,'%B')
+  CO2_last_month_num <- as.numeric(format(co2_last_date,'%m'))
+  co2_last_year <- max(co2_data_evo_nw$YEAR)
+    
+  co2_for_json <- co2_data_evo_nw %>%
+    mutate(MONTH_TEXT = format(FLIGHT_MONTH,'%B'),
+           TCO2_PREV_YEAR = lag(TCO2, 12),
+           TTF_PREV_YEAR = lag(TTF, 12),
+           TCO2_2019 = lag(TCO2, (as.numeric(co2_last_year)-2019)*12),
+           TTF_2019 = lag(TTF, (as.numeric(co2_last_year)-2019)*12)) %>%
+    mutate(DIF_CO2_MONTH_PREV_YEAR = TCO2 / TCO2_PREV_YEAR -1,
+           DIF_TTF_MONTH_PREV_YEAR = TTF / TTF_PREV_YEAR -1,
+           DIF_CO2_MONTH_2019 = TCO2 / TCO2_2019 -1,
+           DIF_TTF_MONTH_2019 = TTF / TTF_2019 -1,
+    ) %>% 
+    group_by(YEAR) %>%
+    mutate(YTD_TCO2 = cumsum(TCO2),
+           YTD_TTF = cumsum(TTF))%>%
+    ungroup() %>% 
+    mutate(YTD_TCO2_PREV_YEAR = lag(YTD_TCO2, 12),
+           YTD_TTF_PREV_YEAR = lag(YTD_TTF, 12),
+           YTD_TCO2_2019 = lag(YTD_TCO2, (as.numeric(co2_last_year)-2019)*12),
+           YTD_TTF_2019 = lag(YTD_TTF, (as.numeric(co2_last_year)-2019)*12)) %>%
+    mutate(YTD_DIF_CO2_MONTH_PREV_YEAR = YTD_TCO2 / YTD_TCO2_PREV_YEAR -1,
+           YTD_DIF_TTF_MONTH_PREV_YEAR = YTD_TTF / YTD_TTF_PREV_YEAR -1,
+           YTD_DIF_CO2_MONTH_2019 = YTD_TCO2 / YTD_TCO2_2019 -1,
+           YTD_DIF_TTF_MONTH_2019 = YTD_TTF / YTD_TTF_2019 -1,
+    ) %>% 
+    filter(FLIGHT_MONTH == co2_last_date)
+  
+  nw_co2_json <- co2_for_json %>% 
+    toJSON() %>%
+    substr(., 1, nchar(.)-1) %>%
+    substr(., 2, nchar(.))
+  
+  
   # join data strings and save
-  nw_json_app <- paste0("{", '"nw_traffic":', nw_traffic_json,  ', "nw_delay":', nw_delay_json,  ', "nw_punct":', nw_punct_json, "}")
+  nw_json_app <- paste0("{",
+                        '"nw_traffic":', nw_traffic_json,
+                        ', "nw_delay":', nw_delay_json, 
+                        ', "nw_punct":', nw_punct_json,
+                        ', "nw_co2":', nw_co2_json,
+                        "}")
   write(nw_json_app, here(data_folder,"nw_json_app.json"))
+  
 
 # -----------------------------------------------------------------------------------------------------------------------------------------
   ####CSVs for mobile app graphs
