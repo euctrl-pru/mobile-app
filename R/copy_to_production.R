@@ -3,8 +3,8 @@ library("R.utils")
 
 ##generate all files
 source(here::here("R", "generate_json_files.R"))
-rmarkdown::render(here::here("R", "mob_ao_traffic_rank_day.Rmd"))
-rmarkdown::render(here::here("R", "mob_apt_traffic_rank_day.Rmd"))
+rmarkdown::render(here::here("R", "mob_ao_traffic_rank_day.Rmd"), output_dir = here::here("iframes"))
+rmarkdown::render(here::here("R", "mob_apt_traffic_rank_day.Rmd"), output_dir = here::here("iframes"))
 
 ### copy files to performance folder
 base_dir <- here::here()
