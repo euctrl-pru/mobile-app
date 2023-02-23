@@ -11,6 +11,7 @@ library(here)
 
 
 # json files for mobile web
+  data_folder <- here::here("data")
   base_dir <- '//ihx-vdm05/LIVE_var_www_Economics$/Download'
   today <- (lubridate::now() +  days(-1)) %>% format("%Y%m%d")
   nw_json_app <-""
@@ -118,14 +119,13 @@ library(here)
 
   # join data strings and save
   nw_json_app <- paste0("{", '"nw_traffic":', nw_traffic_json,  ', "nw_delay":', nw_delay_json,  ', "nw_punct":', nw_punct_json, "}")
-  write(nw_json_app, "//ihx-vdm05/LIVE_var_www_Economics$/DailyBriefing/Prototype2/nw_json_app.json")
+  write(nw_json_app, here(data_folder,"nw_json_app.json"))
 
 # -----------------------------------------------------------------------------------------------------------------------------------------
   ####CSVs for mobile app graphs
   ### traffic
-  data_folder <- "//ihx-vdm05/LIVE_var_www_performance$/data/mobile-app/"
 
-  nw_traffic_evo_app <- nw_traffic_data %>%
+    nw_traffic_evo_app <- nw_traffic_data %>%
     select(FLIGHT_DATE, AVG_ROLLING_WEEK, AVG_ROLLING_WEEK_PREV_YEAR,
            AVG_ROLLING_WEEK_2020, AVG_ROLLING_WEEK_2019)
 
@@ -133,7 +133,7 @@ library(here)
   colnames(nw_traffic_evo_app) <- column_names
 
   write.csv(nw_traffic_evo_app,
-            file = paste0(data_folder, "nw_traffic_evo_app.csv"),
+            file = here(data_folder,"nw_traffic_evo_app.csv"),
             row.names = FALSE)
 
     # json
@@ -181,7 +181,7 @@ library(here)
   colnames(nw_delay_evo_app) <- column_names
 
   write.csv(nw_delay_evo_app,
-            file = paste0(data_folder, "nw_delay_evo_app.csv"),
+            file = here(data_folder,"nw_delay_evo_app.csv"),
             row.names = FALSE)
 
   #punctuality
@@ -203,7 +203,7 @@ library(here)
   colnames(nw_punct_evo_app) <- column_names
 
   write.csv(nw_punct_evo_app,
-            file = paste0(data_folder, "nw_punct_evo_app.csv"),
+            file = here(data_folder,"nw_punct_evo_app.csv"),
             row.names = FALSE)
 
 # -----------------------------------------------------------------------------------------------------------------------------------------
