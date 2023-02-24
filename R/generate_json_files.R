@@ -2,6 +2,7 @@
 library(fs)
 library(tibble)
 library(dplyr)
+library(tidyr)
 library(stringr)
 library(readxl)
 library(DBI)
@@ -287,6 +288,40 @@ library(here)
             file = here(data_folder,"nw_punct_evo_app.csv"),
             row.names = FALSE)
 
+  
+  # billing
+  dir_billing <- "//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Crco - Billing/output/Oscar_playground"
+  
+  nw_billing_data <-  read_xlsx(
+    path  = fs::path_abs(
+      str_glue("AIU monthly reports_automatised_for AIU Portal.xlsx"),
+      start = dir_billing),
+    sheet = "AIU_PORTAL",
+    range = cell_limits(c(7, 2), c(NA, 4))) %>%
+    as_tibble() 
+  
+  nw_billing_evo_app <- nw_billing_data %>% 
+    arrange(Year, Month) %>% 
+    mutate(Total = Total/10^6,
+          "PREV_YEAR" = lag(Total,12 )) %>% 
+    filter(Year >= current_year-1) %>% 
+    select(Month, Year, Total) %>% 
+    spread(Year, Total) %>% 
+    mutate(Month = as.Date(paste0("01",Month,current_year), "%d%m%Y"))  
+    
+
+    # (as.numeric(co2_last_year)-2019)*12)
+    
+  # column_names <- c('FLIGHT_DATE',
+  #                   "Departure punct.",
+  #                   "Arrival punct.",
+  #                   "Operated schedules")
+  # colnames(nw_punct_evo_app) <- column_names
+  
+  write.csv(nw_billing_evo_app,
+            file = here(data_folder,"nw_bill_evo_app.csv"),
+            row.names = FALSE)  
+    
 # -----------------------------------------------------------------------------------------------------------------------------------------
 # #json files for denis dailytrafficvariation
 #   ########## APT
