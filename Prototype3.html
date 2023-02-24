@@ -734,21 +734,26 @@
 							<div class="col-12 " >
 								<div style="margin-left: 9px;">
 									<p >
-										<span class="badge" id=""></span>
-										<span class	="otext-muted otext-small" id=""></span>
+										<span class="badge" id="arr_month_ttf_py"></span>
+										<span class	="otext-muted otext-small" id="dif_month_ttf_py"></span>
 										<span>&nbsp </span>
-										<span class="badge" id=""></span>
+										<span class="badge" id="arr_month_ttf_2019"></span>
 										<span class	="otext-muted otext-small" > vs 2019</span>
 									</p>
 								</div>
 							</div>
 						</div>
 					</div>
+
+					<!----------------------------------------------------- 2nd card item -->
+					<div class="carousel-item" data-bs-interval="10000000">
+
+					</div>
 				</div>	
 				<br><br>
 				<div class="carousel-indicators">
 					<button type="button" data-bs-target="#item6" data-bs-slide-to="0" class="active"></button>
-					<!-- <button type="button" data-bs-target="#item3" data-bs-slide-to="1"></button> -->
+					<button type="button" data-bs-target="#item6" data-bs-slide-to="1"></button>
 					<!-- <button type="button" data-bs-target="#item3" data-bs-slide-to="2"></button> -->
 					<!-- <button type="button" data-bs-target="#item3" data-bs-slide-to="3"></button> -->
 				</div>
@@ -765,7 +770,7 @@
 	<!-- 2nd row -->
 	<div class="grid-container2" data-aos="fade-up">
 
-		<!----------------------------------------------------- 4th card -->
+		<!----------------------------------------------------- 5th card -->
 		<div class="grid-item grid-item-4">
 			<div id="item4" class="carousel carousel-dark slide" data-bs-touch="true" data-bs-ride="carousel">
 				<div class="carousel-inner" >
@@ -813,7 +818,7 @@
 			</div>
 		</div>
 		
-		<!----------------------------------------------------- 5th card -->
+		<!----------------------------------------------------- 6th card -->
 		<div class="grid-item grid-item-5">
 			<div id="item5" class="carousel carousel-dark slide" data-bs-touch="true" data-bs-ride="carousel">
 				<div class="carousel-inner" >
@@ -1033,22 +1038,11 @@
 	var dif_month_co2_2019 = Math.round(data.nw_co2.DIF_CO2_MONTH_2019*100);
 	var dif_month_co2_2019_t = (dif_month_co2_2019 >= 0) ? "+" + dif_month_co2_2019 : "" + dif_month_co2_2019 ;
 
-	
-	//co2
-		//month  
-	document.getElementById("last_month_co2").innerHTML = last_month_co2 + " " + data.nw_co2.YEAR;
-	// document.getElementById("last_month_co2").innerHTML = dif_month_co2_2019_t;
-	document.getElementById("month_co2").innerHTML = month_co2 + (((month_co2.toString()).search(/\./) == -1) ? '.0' : '') + " Mt";
+	var dif_month_ttf_py = Math.round(data.nw_co2.DIF_TTF_MONTH_PREV_YEAR*100);
+	var dif_month_ttf_py_t = (dif_month_ttf_py >= 0) ? "+" + dif_month_ttf_py : "" + dif_month_ttf_py ;
 
-	document.getElementById("arr_month_co2_py").innerHTML = ((dif_month_co2_py >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + dif_month_co2_py_t + '%';
-  	document.getElementById("arr_month_co2_py").className = (dif_month_co2_py >=0) ? 'badge red-bg' : 'badge green-bg';
-  	document.getElementById("dif_month_co2_py").innerHTML =  ' vs ' + prev_year;
-
-	document.getElementById("arr_month_co2_2019").innerHTML = ((dif_month_co2_2019 >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + dif_month_co2_2019_t + '%';
-	document.getElementById("arr_month_co2_2019").className = (dif_month_co2_2019 >=0) ? 'badge red-bg' : 'badge green-bg';
- 
-	document.getElementById("month_ttf").innerHTML = month_ttf + (((month_ttf.toString()).search(/\./) == -1) ? '.0' : ''); 
-	
+	var dif_month_ttf_2019 = Math.round(data.nw_co2.DIF_TTF_MONTH_2019*100);
+	var dif_month_ttf_2019_t = (dif_month_ttf_2019 >= 0) ? "+" + dif_month_ttf_2019 : "" + dif_month_ttf_2019 ;
 
 	// Update page values
   document.getElementById("last_day").innerHTML = "Day: " + last_day_text ;
@@ -1207,6 +1201,28 @@
 
   document.getElementById("arr_y2d_arr_punct_2019").innerHTML = ((dif_y2d_arr_punct_2019 >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + Math.round(dif_y2d_arr_punct_2019) +' pp';
   document.getElementById("arr_y2d_arr_punct_2019").className = (dif_y2d_arr_punct_2019 >=0) ? 'badge green-bg' : 'badge red-bg';
+
+	//co2
+		//month  
+		document.getElementById("last_month_co2").innerHTML = last_month_co2 + " " + data.nw_co2.YEAR;
+	// document.getElementById("last_month_co2").innerHTML = dif_month_co2_2019_t;
+	document.getElementById("month_co2").innerHTML = month_co2 + (((month_co2.toString()).search(/\./) == -1) ? '.0' : '') + " Mt";
+
+	document.getElementById("arr_month_co2_py").innerHTML = ((dif_month_co2_py >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + dif_month_co2_py_t + '%';
+  	document.getElementById("arr_month_co2_py").className = (dif_month_co2_py >=0) ? 'badge red-bg' : 'badge green-bg';
+  	document.getElementById("dif_month_co2_py").innerHTML =  ' vs ' + prev_year;
+
+	document.getElementById("arr_month_co2_2019").innerHTML = ((dif_month_co2_2019 >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + dif_month_co2_2019_t + '%';
+	document.getElementById("arr_month_co2_2019").className = (dif_month_co2_2019 >=0) ? 'badge red-bg' : 'badge green-bg';
+ 
+	document.getElementById("month_ttf").innerHTML = month_ttf + (((month_ttf.toString()).search(/\./) == -1) ? '.0' : '') + " M"; 
+	
+	document.getElementById("arr_month_ttf_py").innerHTML = ((dif_month_ttf_py >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + dif_month_ttf_py_t + '%';
+  	document.getElementById("arr_month_ttf_py").className = (dif_month_ttf_py >=0) ? 'badge green-bg' : 'badge red-bg';
+  	document.getElementById("dif_month_ttf_py").innerHTML =  ' vs ' + prev_year;
+
+	document.getElementById("arr_month_ttf_2019").innerHTML = ((dif_month_ttf_2019 >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + dif_month_ttf_2019_t + '%';
+	document.getElementById("arr_month_ttf_2019").className = (dif_month_ttf_2019 >=0) ? 'badge green-bg' : 'badge red-bg';
 
 }  
 

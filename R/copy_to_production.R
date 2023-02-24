@@ -8,7 +8,7 @@ rmarkdown::render(here::here("R", "mob_apt_traffic_rank_day.Rmd"), output_dir = 
 
 ### copy files to performance folder
 base_dir <- here::here()
-destination_dir <- '//ihx-vdm05/LIVE_var_www_Economics$/DailyBriefing/Prototype2/'
+destination_dir <- '//ihx-vdm05/LIVE_var_www_performance$/daily-data/'
 
 
 file.copy(file.path(base_dir,list.files(base_dir)), destination_dir, overwrite = TRUE)
