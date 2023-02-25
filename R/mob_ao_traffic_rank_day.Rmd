@@ -94,7 +94,7 @@ bar_style <- function(width = 1, fill = "#e6e6e6", height = "75%",
 
 # day data and plot
 ao_rank_data_day <- ao_rank_data_raw %>%
-  mutate(RANKDIF = R_RANK_BY_DAY- R_RANK_BY_DAY_7DAY) %>%
+  mutate(RANKDIF = R_RANK_BY_DAY_7DAY-R_RANK_BY_DAY) %>%
   select(RANKDIF,
          AO_GRP_NAME,
          FLIGHT,

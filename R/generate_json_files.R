@@ -304,10 +304,10 @@ library(here)
     arrange(Year, Month) %>% 
     mutate(Total = Total/10^6,
           "PREV_YEAR" = lag(Total,12 )) %>% 
-    filter(Year >= current_year-1) %>% 
+    filter(Year >= last_year-1) %>% 
     select(Month, Year, Total) %>% 
     spread(Year, Total) %>% 
-    mutate(Month = as.Date(paste0("01",Month,current_year), "%d%m%Y"))  
+    mutate(Month = as.Date(paste0("01",Month,last_year), "%d%m%Y"))  
     
 
     # (as.numeric(co2_last_year)-2019)*12)

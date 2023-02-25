@@ -95,7 +95,7 @@ bar_style <- function(width = 1, fill = "#e6e6e6", height = "75%",
 # day data and plot
 apt_rank_data_day <- apt_rank_data_raw %>%
   filter(R_RANK_BY_DAY < 11) %>% 
-  mutate(RANKDIF = R_RANK_BY_DAY- R_RANK_BY_DAY_7DAY) %>%
+  mutate(RANKDIF = R_RANK_BY_DAY_7DAY-R_RANK_BY_DAY) %>%
   select(RANKDIF,
          AIRPORT_NAME,
          DEP_ARR,
