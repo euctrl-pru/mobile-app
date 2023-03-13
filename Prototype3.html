@@ -127,9 +127,10 @@
 			min-height: 336px;
 		}
 		.bg-ellipses-dark {
-			background-image: radial-gradient(#181c32,#181c32 70%,transparent 70.1%);
-			background-color: transparent!important;
-    		background-repeat: no-repeat;
+			/* background-image: radial-gradient(#181C32,#181c32 100%,transparent 0%); */
+			/* background-color: transparent!important; */
+    		background-color: #181C32;
+			background-repeat: no-repeat;
 		    background-size: 200% 150%;
     		background-position: bottom;
 		}
@@ -172,7 +173,7 @@
 
 <!-- Oscar, j'qi juste changé l'entête et ai mis ton entête en commentaire en dessous. Ce n'est aps aprfait mais contient l'icône et la description. A améliorer -->
 
-<div class="pt-3 pb-4 bg-dark">
+<div class="pt-3 pb-4 bg-ellipses-dark">
 	<div class="container">
 	  <div class="justify-content-centerrow">
 		<div class="row">
@@ -202,11 +203,10 @@
 							<p class="boxtitle mb-3">Network status</p>
 						</div>
 
-						<div class="period text-uppercase otext-muted mt-4 pt-2" id="yesterday">2 March:</div><br>
+						<div class="period text-uppercase otext-muted mt-4 pt-2" id="yesterday">12 March:</div><br>
 						<div class="metrictitle">
-							<p>No significant events affecting the network.</p>
-							<p><b style="font-size: 1.2rem;">24,426</b> flights with en-route ATFM delay of <b style="font-size: 1.2rem;">0.29</b> minutes per flight, mostly due to capacity/staffing.</p>
-							<p>Arrival punctuality was at <b style="font-size: 1.2rem;">77%</b> with <b style="font-size: 1.2rem;">95%</b> of scheduled flights operated.</p>
+							<p>En-route ATFM delays slightly better yesterday than last Saturday but still at <b style="font-size: 1.2rem;">3.83</b> minutes per flight. Over the last 7 days, France represented 81% of the total en-route ATFM delays.</p>
+							<p>Arrival punctuality was at <b style="font-size: 1.2rem;">67%</b> with <b style="font-size: 1.2rem;">94%</b> of scheduled flights operated.</p>
 						</div>
 					</div>
 
@@ -215,17 +215,17 @@
 							<p class="boxtitle mb-3">Network status</p>
 						</div>
 
-						<div class="period text-uppercase otext-muted mt-4 pt-2" id="yesterday">24 February:</div><br>
+						<div class="period text-uppercase otext-muted mt-4 pt-2" id="yesterday">12 March:</div><br>
 						<div class="metrictitle">
 							<span>Top <span class="otext-muted">control centers</span> in en-route ATFM delay per flight:</span>
 							<ol>
-								<li><b>Lisbon ACC</b>:&nbsp&nbsp 1.16 min/flight</li>
-								<li><b>Paris ACC</b>: &nbsp&nbsp 1.10 min/flight</li>
+								<li><b>Marseille ACC</b>:&nbsp&nbsp 19.24 min/flight</li>
+								<li><b>Paris ACC</b>: &nbsp&nbsp 6.01 min/flight</li>
 							</ol>
 							<span>Top <span class="otext-muted">airports</span> in airport ATFM delay per flight:</span>
 							<ol>
-								<li><b>Lisbon</b>: &nbsp&nbsp 3.07 min/flight</li>
-								<li><b>Tel-Aviv</b>: &nbsp&nbsp 1.15 min/flight</li>
+								<li><b>Marseille</b>: &nbsp&nbsp 7.67 min/flight</li>
+								<li><b>Bordeaux</b>: &nbsp&nbsp 6.97 min/flight</li>
 							</ol>
 						</div>
 					</div>
@@ -235,17 +235,17 @@
 							<p class="boxtitle mb-3">Network status</p>
 						</div>
 
-						<div class="period text-uppercase otext-muted mt-4 pt-2" id="yesterday">24 February:</div><br>
+						<div class="period text-uppercase otext-muted mt-4 pt-2" id="yesterday">12 March:</div><br>
 						<div class="metrictitle">
 							<span>Top <span class="otext-muted">airlines</span> in number of flights:</span>
 							<ol>
-								<li><b>Ryanair Group</b>:&nbsp&nbsp 2,653 flights</li>
-								<li><b>easyJet Group</b>: &nbsp&nbsp 1,416 flights</li>
+								<li><b>Ryanair Group</b>:&nbsp&nbsp 2,447 flights</li>
+								<li><b>Turkish Airlines</b>: &nbsp&nbsp 1,310 flights</li>
 							</ol>
 							<span>Top <span class="otext-muted">airports</span> in number of flights:</span>
 							<ol>
-								<li><b>iGA Istanbul</b>: &nbsp&nbsp 1,321 arr/dep</li>
-								<li><b>London Heathrow</b>: &nbsp&nbsp 1,225 arr/dep</li>
+								<li><b>iGA Istanbul</b>: &nbsp&nbsp 1,263 arr/dep</li>
+								<li><b>London Heathrow</b>: &nbsp&nbsp 1,134 arr/dep</li>
 							</ol>
 						</div>
 					</div>
@@ -1362,7 +1362,16 @@
 </script>
 
 <script>
-	var car1items = $('#item1 .carousel-item').length;
+
+var car0items = $('#item0 .carousel-item').length;
+	var car0index = $('#item0 div.active').index();
+	$('#counter0').html('' + car0index + '/' + car0items + '');
+	$('#item0').on('slid.bs.carousel', function () {
+		car0index = $('#item0 div.active').index();
+		$('#counter0').html('' + car0index + '/' + car0items + '');
+})
+
+var car1items = $('#item1 .carousel-item').length;
 	var car1index = $('#item1 div.active').index();
 	$('#counter1').html('' + car1index + '/' + car1items + '');
 	$('#item1').on('slid.bs.carousel', function () {
