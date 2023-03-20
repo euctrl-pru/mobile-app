@@ -1,0 +1,70 @@
+project:
+  type: website
+  resources:
+    -  project/wood/appfiles/
+
+execute:
+  freeze: auto
+
+website:
+  title: "Aviation Intelligence +"
+  favicon: images/favicon.ico
+  site-url: https://www.eurocontrol.int
+  description: "A data science and machine learning blog with the tidyverse at its {{< fa regular heart >}}"
+  twitter-card: true
+  open-graph: true
+  navbar:
+    logo: images/logo-light.svg
+    logo-alt: "A box and whisker plot icon"
+    title: "Aviation Intelligence +"
+    right:
+      - text: Daily briefing
+        href: index.qmd
+      - text: Our data
+        href: https://www.eurocontrol.int/our-data
+      - text: Newsroom
+        href: https://www.eurocontrol.int/newsroom
+      - text: Updates
+        href: https://cgoo4.github.io/usedthese/index.html
+      - text: About
+        href: about/index.qmd
+      - icon: rss
+        href: project/index-R.xml
+      - icon: github
+        menu:
+          - text: Source Code
+            url:  https://github.com/euctrl-pru/mobile-app
+          - text: Report a Bug
+            url:  https://github.com/euctrl-pru/mobile-app/issues
+  page-footer:
+    border: false
+    left: "Aviation Intelligence +"
+    right: "© [EUROCONTROL](https://www.eurocontrol.int/) | [Privacy and website terms of use](https://www.eurocontrol.int/info/privacy-and-website-terms-use)"
+
+format:
+  html:
+    theme:
+      light: [flatly, scss/light.scss]
+      dark: [darkly, scss/dark.scss]
+    css: scss/styles.css
+    code-link: true
+    link-external-icon: true
+    link-external-newwindow: true
+    smooth-scroll: true
+    highlight-style: gruvbox
+    df-print: kable
+    comments:
+      giscus:
+        repo: euctrl-pru/mobile-app
+        category: "Comments"
+        mapping: "pathname"
+        reactions-enabled: true
+        loading: lazy
+        input-position: "bottom"
+        theme: "transparent_dark"
+
+editor: visual
+
+filters:
+  - quarto-version.lua
+

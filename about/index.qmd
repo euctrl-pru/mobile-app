@@ -1,0 +1,30 @@
+---
+title: <span class="text-secondary gradient-text-blue">Aviation Intelligence +</span> 
+comments: false
+about:
+  template: jolla
+  image: ../images/logo-light.svg
+  links:
+    - icon: twitter
+      text: Twitter
+      href: https://twitter.com/eurocontrol
+    - icon: facebook
+      text: Facebook
+      href: https://www.facebook.com/eurocontrol
+    - icon: youtube
+      text: YouTube
+      href: https://www.youtube.com/user/EUROCONTROLTV
+    - icon: flicker
+      text: Flicker
+      href: https://www.flickr.com/photos/eurocontrol/
+    - icon: linkedin
+      text: LinkedIn
+      href: https://www.linkedin.com/company/eurocontrol/
+    - icon: intagram
+      text: Instagram
+      href: https://www.instagram.com/eurocontrol/
+---
+
+Aviation intelligence at EUROCONTROL is positioned as one of the core services. Provision of data, and analysis of this data, is key for optimum delivery of many of our services and also supports the SES performance requirements. Our service offering are continuously developed further, with new products and new tools. 
+
+
