@@ -37,7 +37,8 @@
             display: grid;
             gap: 0.5rem;
             grid-template-columns: repeat(auto-fit, minmax(105px, 620px));
-			grid-auto-rows: minmax(155px, auto);
+			grid-auto-rows: minmax(1rem, auto);
+            margin: auto;
         }
 
         .grid-item {
@@ -50,6 +51,10 @@
 			/* height: 100px; */
 		}
 
+        .grid-item0 {
+			grid-column: 1 / -1;
+            text-align: center;
+		}
         .period {
             text-transform: uppercase;
             letter-spacing: 0.05em;
@@ -71,6 +76,11 @@
             font-family: "Roboto", sans-serif;
             font-size: 1rem;
         }
+
+        .navbar{
+            margin-left:5px;
+            margin-right: 5px;
+        }
     </style>
 
 </head>
@@ -82,7 +92,7 @@
             
             <div>
                 <a href="https://www.eurocontrol.int/" >
-                    <img src="images/ec-logo-modified.svg" alt="EUROCONTROL Home" class="shadow-sm" height="40px">
+                    <img src="images/ec-logo-modified.svg" alt="EUROCONTROL Home" class="shadow-sm" height="45px">
                 </a>
             </div>
 
@@ -106,8 +116,15 @@
     <div class="pagecontainer">
 
         <div id="dashboard-container">
+            
+            <div class="grid-item0">
+                <div class="period" >
+                    21 March
+                </div>
+            </div>
+
             <div class="grid-item">
-                <div class="period">21 March</div>
+                <!-- <div class="period">21 March</div> -->
                 <div class="row">
                     <div class="col-6">
                         <i class="fa-solid fa-plane-departure fa-2x mt-4" ></i>
