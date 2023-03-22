@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Aviation Intelligence app prototype</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css">
+	<link href="https://cdn.rawgit.com/michalsnik/aos/2.1.1/dist/aos.css" rel="stylesheet">
+	
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+	<script src="https://cdn.rawgit.com/michalsnik/aos/2.1.1/dist/aos.js"></script>
+	
+	<style>
+		
+		.body{
+			display: flex;
+			font-family: "Roboto", sans-serif;
+		}
+
+        .pagecontainer {
+            margin: auto;
+            max-width: 1250px;
+        }
+
+        #dashboard-container {
+            border-radius: 1rem;
+            background-image: linear-gradient(0deg, #181C32, rgba(24, 28, 50, 0.5)) , url("images/bg-data.jpg");
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            background-size: cover;
+            /* height: 800px; */
+            color: white;
+
+            display: grid;
+            gap: 0.5rem;
+            grid-template-columns: repeat(auto-fit, minmax(105px, 620px));
+			grid-auto-rows: minmax(155px, auto);
+        }
+
+        .grid-item {
+			/* border: 1px solid white; */
+			/* border-radius: 10px; */
+			/* background-color: aqua; */
+			text-align: center;
+			/* margin: 5px; */
+			position: relative;
+			/* height: 100px; */
+		}
+
+        .period {
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: white;
+            text-decoration: underline solid white;
+            margin-top: 1rem;
+        }
+        .metric-value{
+            color: white;
+            font-family: "Roboto", sans-serif;
+            font-size: 2.1rem;
+            font-weight: bold;
+            margin-bottom: 0;
+            margin-top: 0.5rem;
+        }
+
+        .metric-unit{
+            color: white;
+            font-family: "Roboto", sans-serif;
+            font-size: 1rem;
+        }
+    </style>
+
+</head>
+
+<body style="background-color: #F9FBFD;">
+
+    <header id="header site-header" role="banner">
+        <nav class="navbar navbar-expand-md navbar-light">
+            
+            <div>
+                <a href="https://www.eurocontrol.int/" >
+                    <img src="images/ec-logo-modified.svg" alt="EUROCONTROL Home" class="shadow-sm" height="40px">
+                </a>
+            </div>
+
+            <div class="float-right justify-content-end">
+                <button class="navbar-toggler float-right" type="button" data-toggle="collapse" data-target="#collapsibleNavbar">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+            </div>
+
+            <div class="collapse navbar-collapse float-right justify-content-end" id="collapsibleNavbar">
+                <ul class="navbar-nav ">
+                    <li class="nav-item dropdown ">
+                        <a class="nav-link dropdown-toggle navbar-brand" href="#" id="navbardrop" data-toggle="dropdown">Aviation Intelligence</a>
+                    </li>
+                </ul>
+            </div>
+
+        </nav>
+    </header>
+
+    <div class="pagecontainer">
+
+        <div id="dashboard-container">
+            <div class="grid-item">
+                <div class="period">21 March</div>
+                <div class="row">
+                    <div class="col-6">
+                        <i class="fa-solid fa-plane-departure fa-2x mt-4" ></i>
+                        <p class="metric-value">
+                            23,253
+                        </p>
+                        <p class="metric-unit">
+                            flights
+                        </p>
+                    </div>
+ 
+                    <div class="col-6">
+                        <i class="fa-sharp fa-solid fa-clock fa-2x mt-4"></i>
+                        <p class="metric-value">
+                            2.53
+                        </p>
+                        <p class="metric-unit">
+                            minutes/flight
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid-item">
+            <div class="row">
+                    <div class="col-6">
+                        <i class="fa-sharp fa-solid fa-business-time fa-2x mt-4"></i>
+                        <p class="metric-value">
+                            68%
+                        </p>
+                        <p class="metric-unit">
+                            arrival punctuality
+                        </p>
+                    </div>
+
+                    <div class="col-6">
+                        <i class="fa-sharp fa-solid fa-business-time fa-2x mt-4"></i>
+                        <p class="metric-value">
+                            82%
+                        </p>
+                        <p class="metric-unit">
+                            departure punctuality
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid-item">
+                <div class="period">February 2023</div>
+                <div class="row">
+                        <div class="col-6">
+                            <i class="fa-solid fa-leaf fa-2x mt-4"></i>
+                            <p class="metric-value">
+                                +27%
+                            </p>
+                            <p class="metric-unit">
+                                CO <sub>2</sub> than in 2022
+                            </p>
+                        </div>
+    
+                        <div class="col-6">
+                            <i class="fa-solid fa-coins fa-2x mt-4"></i>
+                            <p class="metric-value">
+                                553 M€
+                            </p>
+                            <p class="metric-unit">
+                                billed
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+        </div>
+
+ 
+
+        </div>        
+
+    </div>
+</body>
+</html>
