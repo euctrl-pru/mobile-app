@@ -1,7 +1,9 @@
 project:
   type: website
   resources:
-    -  project/wood/appfiles/
+    - project/wood/appfiles/
+    - https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css
+    - https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap
 
 execute:
   freeze: auto
@@ -15,8 +17,7 @@ website:
   open-graph: true
   navbar:
     logo: images/logo-light.svg
-    logo-alt: "A box and whisker plot icon"
-    title: "Aviation Intelligence +"
+    text: "Aviation Intelligence +"
     right:
       - text: Daily briefing
         href: index.qmd
@@ -28,14 +29,12 @@ website:
         href: https://cgoo4.github.io/usedthese/index.html
       - text: About
         href: about/index.qmd
-      - icon: rss
-        href: project/index-R.xml
       - icon: github
         menu:
           - text: Source Code
-            url:  https://github.com/euctrl-pru/mobile-app
+            url: https://github.com/euctrl-pru/mobile-app
           - text: Report a Bug
-            url:  https://github.com/euctrl-pru/mobile-app/issues
+            url: https://github.com/euctrl-pru/mobile-app/issues
   page-footer:
     border: false
     left: "Aviation Intelligence +"
@@ -43,10 +42,17 @@ website:
 
 format:
   html:
+    css:
+      - https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css
+      - https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap
+      - scss/styles.scss
+    js:
+      - https://code.jquery.com/jquery-3.6.0.min.js
+      - https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js
+      - https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.min.js
     theme:
       light: [flatly, scss/light.scss]
       dark: [darkly, scss/dark.scss]
-    css: scss/styles.css
     code-link: true
     link-external-icon: true
     link-external-newwindow: true
@@ -67,4 +73,6 @@ editor: visual
 
 filters:
   - quarto-version.lua
-
+includes:
+  in_header:
+    - _quarto/carousel.lua

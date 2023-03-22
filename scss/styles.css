@@ -1,3 +1,51 @@
 .card-file-modified:before {
     content: "Updated: ";
 }
+
+.carousel-inner {
+  position: relative;
+}
+
+.carousel-item {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  display: none;
+}
+
+.carousel-item.active {
+  position: absolute;
+  opacity: 1;
+  display: block;
+}
+
+.carousel-fade .carousel-item {
+  opacity: 0;
+  transition-property: opacity;
+  transition-duration: 0.6s;
+  transition-timing-function: ease;
+}
+
+.carousel-fade .carousel-item.active {
+  opacity: 1;
+}
+
+.carousel-indicators li {
+  background-color: #808080 !important; /* Change this value to your desired grey color */
+}
+
+.carousel-indicators .active {
+  background-color: #606060 !important; /* Change this value to your desired active grey color */
+}
+
+#carouselExampleIndicators .carousel-indicators li {
+    background-color: #808080 !important; /* Change this value to your desired grey color */
+  }
+
+#carouselExampleIndicators .carousel-indicators .active {
+    background-color: #606060 !important; /* Change this value to your desired active grey color */
+  }
+

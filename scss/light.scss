@@ -7849,7 +7849,7 @@ a.close.disabled {
     margin-left: 3px;
     text-indent: -999px;
     cursor: pointer;
-    background-color: #fff;
+    background-color: #808080 !important;
     background-clip: padding-box;
     border-top: 10px solid transparent;
     border-bottom: 10px solid transparent;
@@ -7864,6 +7864,7 @@ a.close.disabled {
 }
 
 .carousel-indicators .active {
+    background-color: #606060 !important;
     opacity: 1
 }
 
@@ -25662,3 +25663,4 @@ body.logged-in .card .card-img .layout--reset {
         max-width:8rem
     }
 }
+
