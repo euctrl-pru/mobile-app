@@ -54,6 +54,7 @@ library(here)
     substr(., 2, nchar(.))
 
   # punctuality data
+  ### select * from LDW_VDM.VIEW_FAC_PUNCTUALITY_NW_DAY
 
   nw_punct_data_raw <-  read_xlsx(
     path  = fs::path_abs(
@@ -121,7 +122,7 @@ library(here)
     substr(., 2, nchar(.))
 
   ####CO2 json
-  
+
   export_query <- function(schema, query) {
     USR <- Sys.getenv(paste0(schema, "_USR"))
     PWD <- Sys.getenv(paste0(schema, "_PWD"))
@@ -136,15 +137,15 @@ library(here)
       dbSendQuery(query) %>%
       fetch(n = -1)
   }
-  
+
   query <- str_glue("
     SELECT *
       FROM TABLE (emma_pub.api_aiu_stats.MM_AIU_STATE_DEP ())
       where year >= 2019 and STATE_NAME not in ('LIECHTENSTEIN')
     ORDER BY 2, 3, 4
    ")
-  
-  
+
+
   co2_data_raw <- export_query("PRU_DEV", query = query) %>%
     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
@@ -153,14 +154,14 @@ library(here)
     group_by(FLIGHT_MONTH) %>%
     summarise(TTF = sum(TF), TCO2 = sum(CO2_QTY_TONNES)) %>%
     mutate(YEAR = as.numeric(format(FLIGHT_MONTH,'%Y')), MONTH = as.numeric(format(FLIGHT_MONTH,'%m'))) %>%
-    arrange(FLIGHT_MONTH) %>% 
+    arrange(FLIGHT_MONTH) %>%
     mutate(FLIGHT_MONTH = ceiling_date(as_date(FLIGHT_MONTH), unit='month')-1)
 
   co2_last_date <- max(co2_data_evo_nw$FLIGHT_MONTH, na.rm=TRUE)
   co2_last_month <- format(co2_last_date,'%B')
   CO2_last_month_num <- as.numeric(format(co2_last_date,'%m'))
   co2_last_year <- max(co2_data_evo_nw$YEAR)
-    
+
   co2_for_json <- co2_data_evo_nw %>%
     mutate(MONTH_TEXT = format(FLIGHT_MONTH,'%B'),
            TCO2_PREV_YEAR = lag(TCO2, 12),
@@ -171,11 +172,11 @@ library(here)
            DIF_TTF_MONTH_PREV_YEAR = TTF / TTF_PREV_YEAR -1,
            DIF_CO2_MONTH_2019 = TCO2 / TCO2_2019 -1,
            DIF_TTF_MONTH_2019 = TTF / TTF_2019 -1,
-    ) %>% 
+    ) %>%
     group_by(YEAR) %>%
     mutate(YTD_TCO2 = cumsum(TCO2),
            YTD_TTF = cumsum(TTF))%>%
-    ungroup() %>% 
+    ungroup() %>%
     mutate(YTD_TCO2_PREV_YEAR = lag(YTD_TCO2, 12),
            YTD_TTF_PREV_YEAR = lag(YTD_TTF, 12),
            YTD_TCO2_2019 = lag(YTD_TCO2, (as.numeric(co2_last_year)-2019)*12),
@@ -184,24 +185,24 @@ library(here)
            YTD_DIF_TTF_MONTH_PREV_YEAR = YTD_TTF / YTD_TTF_PREV_YEAR -1,
            YTD_DIF_CO2_MONTH_2019 = YTD_TCO2 / YTD_TCO2_2019 -1,
            YTD_DIF_TTF_MONTH_2019 = YTD_TTF / YTD_TTF_2019 -1,
-    ) %>% 
+    ) %>%
     filter(FLIGHT_MONTH == co2_last_date)
-  
-  nw_co2_json <- co2_for_json %>% 
+
+  nw_co2_json <- co2_for_json %>%
     toJSON() %>%
     substr(., 1, nchar(.)-1) %>%
     substr(., 2, nchar(.))
-  
-  
+
+
   # join data strings and save
   nw_json_app <- paste0("{",
                         '"nw_traffic":', nw_traffic_json,
-                        ', "nw_delay":', nw_delay_json, 
+                        ', "nw_delay":', nw_delay_json,
                         ', "nw_punct":', nw_punct_json,
                         ', "nw_co2":', nw_co2_json,
                         "}")
   write(nw_json_app, here(data_folder,"nw_json_app.json"))
-  
+
 
 # -----------------------------------------------------------------------------------------------------------------------------------------
   ####CSVs for mobile app graphs
@@ -288,47 +289,47 @@ library(here)
             file = here(data_folder,"nw_punct_evo_app.csv"),
             row.names = FALSE)
 
-  
+
   # billing
   dir_billing <- "//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Crco - Billing/output/Oscar_playground"
-  
+
   nw_billing_data <-  read_xlsx(
     path  = fs::path_abs(
       str_glue("AIU monthly reports_automatised_for AIU Portal.xlsx"),
       start = dir_billing),
     sheet = "AIU_PORTAL",
     range = cell_limits(c(7, 2), c(NA, 4))) %>%
-    as_tibble() 
-  
-  nw_billing_evo_app <- nw_billing_data %>% 
-    arrange(Year, Month) %>% 
+    as_tibble()
+
+  nw_billing_evo_app <- nw_billing_data %>%
+    arrange(Year, Month) %>%
     mutate(Total = Total/10^6,
-          "PREV_YEAR" = lag(Total,12 )) %>% 
-    filter(Year >= last_year-1) %>% 
-    select(Month, Year, Total) %>% 
-    spread(Year, Total) %>% 
-    mutate(Month = as.Date(paste0("01",Month,last_year), "%d%m%Y"))  
-    
+          "PREV_YEAR" = lag(Total,12 )) %>%
+    filter(Year >= last_year-1) %>%
+    select(Month, Year, Total) %>%
+    spread(Year, Total) %>%
+    mutate(Month = as.Date(paste0("01",Month,last_year), "%d%m%Y"))
+
 
     # (as.numeric(co2_last_year)-2019)*12)
-    
+
   # column_names <- c('FLIGHT_DATE',
   #                   "Departure punct.",
   #                   "Arrival punct.",
   #                   "Operated schedules")
   # colnames(nw_punct_evo_app) <- column_names
-  
+
   write.csv(nw_billing_evo_app,
             file = here(data_folder,"nw_bill_evo_app.csv"),
-            row.names = FALSE)  
-    
+            row.names = FALSE)
+
 # -----------------------------------------------------------------------------------------------------------------------------------------
 # #json files for denis dailytrafficvariation
 #   ########## APT
 #     base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive'
 #   # base_dir <- 'Z:/Data/DataProcessing/Covid19/Oscar/Develop'
-# 
-# 
+#
+#
 #   apt_data <- read_xlsx(
 #     path  = fs::path_abs(
 #       str_glue("0_Top_Airport_dep+arr_traffic (Synthesis)_{today}.xlsx"),
@@ -337,21 +338,21 @@ library(here)
 #     sheet = "DATA",
 #     range = cell_limits(c(11, 15), c(NA, 26))) %>%
 #     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-# 
+#
 #   apt_data_type <- sapply(apt_data, class) %>%
 #     str_replace(., 'Date', 'date') %>%
 #     str_replace(., 'numeric', 'number') %>%
 #     str_replace(., 'integer', 'number') %>%
 #     str_replace(., 'character', 'string') %>%
 #     toJSON()
-# 
-# 
+#
+#
 #   apt_data_headers <- names(apt_data) %>% toJSON()
-# 
+#
 #   apt_data_matrix <- as.matrix(apt_data)
 #   apt_data_json <-   jsonlite::toJSON(apt_data_matrix)%>%
 #     str_sub(.,2,-2)
-# 
+#
 #   apt_data_json <- paste0("[", apt_data_headers, ",",apt_data_type, ",", apt_data_json,"]")
-# 
+#
 #   write(apt_data_json, "//ihx-vdm05/LIVE_var_www_Economics$/Oscar/Old/apt_data.json")
