@@ -1,0 +1,898 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Aviation Intelligence app prototype</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css">
+	<link href="https://cdn.rawgit.com/michalsnik/aos/2.1.1/dist/aos.css" rel="stylesheet">
+	
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+	<script src="https://cdn.rawgit.com/michalsnik/aos/2.1.1/dist/aos.js"></script>
+	
+	<style>
+		.body{
+            /* background-color: #F9FBFD!important; */
+			display: flex;
+			font-family: "Roboto", sans-serif;
+		}
+
+		.grid-container1 {
+			margin: auto;
+			display: grid;
+			max-width: 1250px;
+			grid-gap: 0.5rem;
+			/* grid-template-columns: 200px 250px; */
+			grid-template-columns: repeat(auto-fit, minmax(310px, 400px));
+			grid-auto-rows: minmax(300px, auto);
+			/* margin-top: 2.25rem!important; */
+		}
+
+		.grid-container2 {
+			margin: auto;
+			display: grid;
+			max-width: 1250px;
+			grid-gap: 0.5rem;
+			/* grid-template-columns: 200px 250px; */
+			grid-template-columns: repeat(auto-fit, minmax(310px, 605px));
+			grid-auto-rows: minmax(300px, auto);
+		}
+
+		.grid-item {
+			/* border: 1px solid black; */
+			/* border-radius: 10px; */
+			background-color:white;
+			text-align: left;
+			margin: 5px;
+			position: relative;
+			/* height: 100px; */
+		}
+
+		.otext-muted {
+			font-family: "Roboto", sans-serif;
+			color: #95aac9;
+		}
+
+		.otext-small {
+			font-size: 0.9rem;
+		}
+
+		.boxtitle{
+			font-size: 1.5rem;
+			margin: 5px 0px 0px 8px;
+	    	letter-spacing: -.02em;
+		}
+
+		.boxsubtitle{
+			font-size: 1.05rem;
+			margin: 0px 0px 0px 8px;
+			padding: 0px;
+		}
+
+		.period {
+			font-size: 0.9rem;
+			letter-spacing: 0.05em;
+			margin: 0px 0px 0px 8px;
+			padding: 0px;
+		}
+
+		.metric{
+			font-family: "Roboto", sans-serif;
+			font-size: 1.8rem;
+			letter-spacing: -.02em;
+			font-weight: bold;
+			margin: 0px 0px 0px 8px;
+			padding: 0px;
+		}
+
+		.metrictitle{
+			font-family: "Roboto", sans-serif;
+			font-size: 1rem;
+			letter-spacing: -.02em;
+			margin: 0px 0px 0px 8px;
+			padding: 0px;
+		}
+
+		.counter{
+			font-family: "Roboto", sans-serif;
+			position: absolute;
+			top: 5%;
+			right: 3%;
+			background-color: rgba(0, 0, 0, 0.6);
+			color: white;
+			font-size: 0.7rem;
+			border-radius: 10px;
+			padding: 2px 5px;
+			/* padding-left: 5px;
+			padding-right: 5px; */
+		}
+
+		.mybutton{
+			position: absolute;
+			top: 88%;
+			right: 3%;
+		}
+
+		.carousel .carousel-item{
+			transition-duration: 0.3s;
+		}
+
+		.carousel-inner {
+			border: 1px solid #edf2f9; 
+			border-radius: 10px; 
+			background-image: url('images/white-bckground.png');
+			padding: 0.5rem;
+			min-height: 336px;
+		}
+
+		.green-bg {
+			font-family: "Roboto", sans-serif;
+			background-color: RGB(0,217,126);
+		}
+
+		.red-bg {
+			font-family: "Roboto", sans-serif;
+			background-color: RGB(230,55,87);
+		}		
+
+    </style>
+
+</head>
+
+<body style="background-color: #F9FBFD;">
+
+    <header id="header site-header" role="banner">
+        <nav class="navbar navbar-expand-md navbar-light">
+            
+            <div>
+                <a href="https://www.eurocontrol.int/" >
+                    <img src="/images/ec-logo-modified.svg" alt="EUROCONTROL Home" class="shadow-sm" height="45px">
+                </a>
+            </div>
+
+            <div class="float-right justify-content-end">
+                <button class="navbar-toggler float-right" type="button" data-toggle="collapse" data-target="#collapsibleNavbar">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+            </div>
+
+            <div class="collapse navbar-collapse float-right justify-content-end" id="collapsibleNavbar">
+                <ul class="navbar-nav ">
+                    <li class="nav-item dropdown ">
+                        <a class="nav-link dropdown-toggle navbar-brand" href="#" id="navbardrop" data-toggle="dropdown">Aviation Intelligence</a>
+                    </li>
+                </ul>
+            </div>
+
+        </nav>
+    </header>
+
+	<!--------------------------------- 1st row -->
+	<div class="grid-container1" data-aos="fade-up">
+		<!----------------------------------------------------- 0th card -->
+		<div class="grid-item grid-item-0" >
+			<div id="item0" class="carousel carousel-dark slide mb-2" data-bs-touch="true" data-bs-ride="carousel">
+				<div class="carousel-inner">	
+					<div id="counter0" class="counter"></div>
+					<div class="carousel-item active" data-bs-interval="10000000" >
+						<div style="border-bottom: 1px solid #edf2f9; ">
+							<p class="boxtitle mb-3">Network traffic status</p>
+						</div>
+
+						<div class="period text-uppercase otext-muted mt-4 pt-2" id="yesterday">27 March:</div><br>
+						<div class="metrictitle">
+							<p><b style="font-size: 1.2rem;">23,724</b> flights yesterday in the network, slightly lower (<b style="font-size: 1.2rem;">-2%</b>) than last year. </p>
+							<p>The total number of flights up to yesterday stands at <b style="font-size: 1.2rem;">1.96 million</b>, <b style="font-size: 1.2rem;">86%</b> of 2019 levels.</p>
+						</div>
+					</div>
+
+					<div class="carousel-item " data-bs-interval="10000000" >
+						<div style="border-bottom: 1px solid #edf2f9; ">
+							<p class="boxtitle mb-3">Network traffic status</p>
+						</div>
+
+						<div class="period text-uppercase otext-muted mt-4 pt-2" id="yesterday">27 March:</div><br>
+						<div class="metrictitle">
+							<span>Top <span class="otext-muted">airlines</span> in number of flights:</span>
+							<ol>
+								<li><b>Ryanair Group</b>:&nbsp&nbsp 2,447 flights</li>
+								<li><b>Turkish Airlines</b>: &nbsp&nbsp 1,310 flights</li>
+							</ol>
+							<span>Top <span class="otext-muted">airports</span> in number of flights:</span>
+							<ol>
+								<li><b>iGA Istanbul</b>: &nbsp&nbsp 1,263 arr/dep</li>
+								<li><b>London Heathrow</b>: &nbsp&nbsp 1,134 arr/dep</li>
+							</ol>
+						</div>
+					</div>
+
+				</div>
+				<br><br>
+				<div class="carousel-indicators">
+					<button type="button" data-bs-target="#item0" data-bs-slide-to="0" class="active"></button>
+					<button type="button" data-bs-target="#item0" data-bs-slide-to="1"></button>
+					<!-- <button type="button" data-bs-target="#item0" data-bs-slide-to="2"></button> -->
+				</div>
+
+			</div>
+		</div>
+
+		<!----------------------------------------------------- 1st card -->
+		<div class="grid-item grid-item-1" >
+			<div id="item1" class="carousel carousel-dark slide mb-2" data-bs-touch="true" data-bs-ride="carousel">
+				<div class="carousel-inner">	
+					<div id="counter1" class="counter"></div>
+					<div class="carousel-item active" data-bs-interval="10000000" >
+						<div style="border-bottom: 1px solid #edf2f9; ">
+							<p class="boxtitle mb-3">Network traffic</p>
+						</div>
+						<!-- <div class="d-flex justify-content-center mt-3">
+							<img src="flight_icon.png" class="img-fluid" alt="Responsive image" width="23%">
+						</div> -->
+						<div class="period text-uppercase otext-muted mt-4 pt-2" id="last_day"></div>
+						<div class="row">
+							<div class="col-12" >
+								<span class="metric mt-0"   id="day_traffic"></span>
+								<span class="metrictitle ">flights</span>
+							</div>
+						</div>
+						
+						<div class="row">
+							<div class="col-12 " >
+								<div style="margin-left: 9px;">
+									<p >
+										<span class="badge" id="arr_day_prev_year"></span>
+										<span class	="otext-muted otext-small" id="dif_day_prev_year"></span>
+										<span>&nbsp </span>
+										<span class="badge" id="arr_day_2019"></span>
+										<span class	="otext-muted otext-small" > vs 2019</span>
+									</p>
+								</div>
+							</div>
+						</div>
+						<div class="period text-uppercase otext-muted mt-3" id="last_week"></div>
+						<div class="row">
+							<div class="col-12" >
+								<span class="metric mt-0"   id="avg_week_traffic"></span>
+								<span class="metrictitle ">avg. daily flights</span>
+							</div>
+						</div>				
+
+						<div class="row">
+							<div class="col-12 " >
+								<div style="margin-left: 9px;">
+									<p >
+										<span class="badge" id="arr_week_prev_year"></span>
+										<span class	="otext-muted otext-small" id="dif_week_prev_year"></span>
+										<span>&nbsp </span>
+										<span class="badge" id="arr_week_2019"></span>
+										<span class	="otext-muted otext-small" > vs 2019</span>
+									</p>
+								</div>
+							</div>
+						</div>
+
+					</div>
+
+					<div class="carousel-item" data-bs-interval="10000000">
+						<div style="border-bottom: 1px solid #edf2f9; ">
+							<p class="boxtitle mb-3">Network traffic</p>
+						</div>
+						<!-- <div class="d-flex justify-content-center mt-3">
+							<img src="flight_icon.png" class="img-fluid" alt="Responsive image" width="23%">
+						</div> -->
+						<div class="period text-uppercase otext-muted mt-4 pt-2" id="y2d_day_text"></div>
+
+						<div class="row">
+							<div class="col-12" >
+								<p class="mt-3">
+									<span class="metric"   id="y2d_traffic"></span>
+									<span class="metrictitle ">total flights</span>
+								</p>
+								<p >
+									<span class="metric mt-0"   id="avg_y2d_traffic"></span>
+									<span class="metrictitle ">avg. daily flights</span>
+								</p>
+							</div>
+						</div>
+						
+						<div class="row mb-3">
+							<div class="col-12 " >
+								<div style="margin-left: 9px;">
+									<p >
+										<span class="badge" id="arr_y2d_prev_year"></span>
+										<span class	="otext-muted otext-small" id="dif_y2d_prev_year"></span>
+										<span>&nbsp </span>
+										<span class="badge" id="arr_y2d_2019"></span>
+										<span class	="otext-muted otext-small" > vs 2019</span>
+									</p>
+								</div>
+							</div>
+						</div>
+						
+
+					</div>
+
+					<div class="carousel-item" data-bs-interval="10000000">
+						<div style="border-bottom: 1px solid #edf2f9; ">
+							<p class="boxtitle mb-3">Network traffic</p>
+						</div>
+						<div class="period text-uppercase otext-muted mt-2 text-center" >Evolution (7-day avg.)
+						</div>
+
+						<div style="height: 225px;">
+                            <div id="everviz-g7a5FsvtM" class="everviz-g7a5FsvtM"><script src="https://app.everviz.com/inject/g7a5FsvtM/?v=63" defer="defer"></script></div>
+
+						</div>
+					</div>
+				</div>
+				<br><br>
+				<div class="carousel-indicators">
+					<button type="button" data-bs-target="#item1" data-bs-slide-to="0" class="active"></button>
+					<button type="button" data-bs-target="#item1" data-bs-slide-to="1"></button>
+					<button type="button" data-bs-target="#item1" data-bs-slide-to="2"></button>
+				</div>
+
+				<div class="mybutton" >
+					<a href="https://www.eurocontrol.int/Economics/DailyTrafficVariation-States.html" class="mybutton btn btn-primary btn-sm pt-0 pb-0 " role="button" target="_blank">More...</a>
+				</div>
+
+	  		</div>		
+		</div>        
+
+		<!----------------------------------------------------- 2nd card -->
+		<div class="grid-item grid-item-2" data-aos="fade-up">
+			<div id="item2" class="carousel carousel-dark slide" data-bs-touch="true" data-bs-ride="carousel">
+
+				<div class="carousel-inner" >
+					<div id="counter2" class="counter"></div>
+					<div class="carousel-item active" data-bs-interval="10000000">
+						<div style="border-bottom: 1px solid #edf2f9; ">
+							<p class="boxtitle mb-3">test</p>
+						</div>
+
+
+
+
+
+
+
+
+
+				</div>
+				<br><br>
+				<div class="carousel-indicators">
+					<button type="button" data-bs-target="#item2" data-bs-slide-to="0" class="active"></button>
+					<!-- <button type="button" data-bs-target="#item2" data-bs-slide-to="1"></button> -->
+					<!-- <button type="button" data-bs-target="#item2" data-bs-slide-to="2"></button> -->
+					<!-- <button type="button" data-bs-target="#item2" data-bs-slide-to="3"></button> -->
+				</div>
+
+				<!-- <div class="mybutton">
+					<a href="" class="btn btn-primary btn-sm pt-0 pb-0 " role="button" target="_blank">More...</a>
+				</div> -->
+
+	  		</div>		
+		</div>		
+        </div>
+    </div>
+
+    <!-- 2nd row -->
+    <div class="grid-container2" data-aos="fade-up">
+
+        <!----------------------------------------------------- 5th card -->
+        <div class="grid-item grid-item-4">
+            <div id="item4" class="carousel carousel-dark slide" data-bs-touch="true" data-bs-ride="carousel">
+                <div class="carousel-inner" >
+                    <div id="counter4" class="counter"></div>
+        
+                    <div class="carousel-item active" data-bs-interval="10000000">
+                        <div style="border-bottom: 1px solid #edf2f9; ">
+                            <p class="boxtitle mb-3">Aircraft operators</p>
+                        </div>
+
+                        <div class="period text-uppercase otext-muted mb-2 pt-2" id="last_day_ao">
+                        </div>
+
+                        <div style="position: relative;">
+                            <!-- so the swipe action works -->
+                            <div style="position: absolute; background-color: transparent; width: 100%; min-height: 250px;"></div>
+                            
+                            <!-- https://stackoverflow.com/questions/819416/adjust-width-and-height-of-iframe-to-fit-with-content-in-it -->
+                            <iframe src="/iframes/mob_ao_traffic_rank_day.html" onload='javascript:(function(o){o.style.height=o.contentWindow.document.body.scrollHeight+"px";}(this));' style="height:250px;width:100%;border:none;overflow:hidden;"></iframe>
+                            <!-- <iframe id="traffic-plot" src="mob_ao_traffic_rank_day.html" frameborder="0" style="width: 100%; border:0; min-height: 250px" >
+                            </iframe> -->
+                        </div>
+                    </div>
+
+                    <div class="carousel-item" data-bs-interval="10000000">
+                        <p class="boxtitle">Aircraft operators</p>
+                        <p class="boxsubtitle">Traffic - day</p>
+                        <p class="period" id="last_day_ao">test</p>
+
+                    </div>
+
+                </div>
+                <br><br>
+                <div class="carousel-indicators">
+                    <button type="button" data-bs-target="#item4" data-bs-slide-to="0" class="active"></button>
+                    <button type="button" data-bs-target="#item4" data-bs-slide-to="1"></button>
+                    <!-- <button type="button" data-bs-target="#item3" data-bs-slide-to="2"></button>
+                    <button type="button" data-bs-target="#item3" data-bs-slide-to="3"></button> -->
+                </div>
+                
+                <div class="mybutton" >
+                    <a href="https://www.eurocontrol.int/Economics/DailyPunctuality-Airlines.html" class="btn btn-primary btn-sm pt-0 pb-0 " role="button" target="_blank">More...</a>
+                </div>
+        
+            </div>
+        </div>
+        
+        <!----------------------------------------------------- 6th card -->
+        <div class="grid-item grid-item-5">
+            <div id="item5" class="carousel carousel-dark slide" data-bs-touch="true" data-bs-ride="carousel">
+                <div class="carousel-inner" >
+                    <!-- <div id="counter5" class="counter"></div> -->
+        
+                    <div class="carousel-item active" data-bs-interval="10000000">
+                        <div style="border-bottom: 1px solid #edf2f9; ">
+                            <p class="boxtitle mb-3">Airports</p>
+                        </div>
+
+                        <div class="period text-uppercase otext-muted mb-2 pt-2" id="last_day_apt">
+                        </div>
+
+                        <div style="position: relative;">
+                            <!-- so the swipe action works -->
+                            <div style="position: absolute; background-color: transparent; width: 100%; min-height: 250px;"></div>
+                            
+                            <!-- https://stackoverflow.com/questions/819416/adjust-width-and-height-of-iframe-to-fit-with-content-in-it -->
+                            <iframe src="/iframes/mob_apt_traffic_rank_day.html" onload='javascript:(function(o){o.style.height=o.contentWindow.document.body.scrollHeight+"px";}(this));' style="height:250px;width:100%;border:none;overflow:hidden;"></iframe>
+                            <!-- <iframe id="traffic-plot" src="mob_ao_traffic_rank_day.html" frameborder="0" style="width: 100%; border:0; min-height: 250px" >
+                            </iframe> -->
+                        </div>
+                    </div>
+                </div>
+                <br><br>
+                <div class="carousel-indicators">
+                    <button type="button" data-bs-target="#item5" data-bs-slide-to="0" class="active"></button>
+                    <!-- <button type="button" data-bs-target="#item4" data-bs-slide-to="1"></button> -->
+                    <!-- <button type="button" data-bs-target="#item3" data-bs-slide-to="2"></button>
+                    <button type="button" data-bs-target="#item3" data-bs-slide-to="3"></button> -->
+                </div>
+                
+                <div class="mybutton" >
+                    <a href="https://www.eurocontrol.int/Economics/DailyPunctuality-Airports.html" class="btn btn-primary btn-sm pt-0 pb-0 " role="button" target="_blank">More...</a>
+                </div>
+        
+            </div>
+        </div>
+
+
+    </div>
+
+
+	<script>
+		var data;
+
+		var oscartest = $.getJSON( "/data/nw_json_app.json", function(data) {
+			UpdateTraffic(data)
+		})
+	
+	// var request = new XMLHttpRequest();
+	// request.open("GET", "nw_json_app.json", false);
+	// request.send(null)
+
+	// console.log(request.responseText);
+	// var data = JSON.parse(request.responseText)
+	
+	// UpdateTraffic();
+	// var my_JSON_object = JSON.parse(request.responseText);
+
+	
+	function UpdateTraffic(data) { 
+    
+		// Calculate datestrings
+   	var last_day = new Date(data.nw_traffic.LAST_DATA_DAY);
+   	var last_day_string = last_day.toString();
+	   checkzero = (last_day_string.substring(8, 9) == '0') ? 9 : 8;
+       last_day_text = last_day_string.substring(checkzero, 11) + last_day_string.substring(4, 8);
+   
+	var prev_year=parseInt(data.nw_traffic.YEAR)-1
+
+	//calculate 1st day of rolling week and string
+  	var first_week_day = new Date();
+      first_week_day = first_week_day.setDate(last_day.getDate()-6);
+      first_week_day = new Date(first_week_day);
+      first_week_day = first_week_day.toString();
+	  checkzero = (first_week_day.substring(8, 9) == '0') ? 9 : 8;
+  	var last_week_text = first_week_day.substring(checkzero, 11) + (last_day_string.substring(4, 8) == first_week_day.substring(4, 8) ? "" :  first_week_day.substring(4, 8)) + "- " + last_day_text;
+
+  	var month_text = "1 - " + last_day_text;
+  	var y2d_day_text = last_day_string.substring(4, 8) == "Jan " ? "1 - " + last_day_text : "1 Jan - " + last_day_text;
+ 
+ // Calculate traffic  values
+  	day_traffic = data.nw_traffic.DAY_TFC;
+    var day_traffic_prev_year = data.nw_traffic.DAY_TFC_PREV_YEAR;
+	var day_traffic_2019 = data.nw_traffic.DAY_TFC_2019;
+//   var dif_day_prev_week = Math.round(data.nw_traffic.DAY_TFC_PREV_WEEK_PERC*100);
+//       dif_day_prev_week = (dif_day_prev_week >= 0) ? "+" + dif_day_prev_week : "" + dif_day_prev_week ;
+  
+  	var dif_day_prev_year = Math.round(data.nw_traffic.DAY_DIFF_PREV_YEAR_PERC*100);
+    var dif_day_prev_year_t = (dif_day_prev_year >= 0) ? "+" + dif_day_prev_year : "" + dif_day_prev_year ;
+
+  	var dif_day_2019 = Math.round(data.nw_traffic.DAY_TFC_DIFF_2019_PERC*100);
+    var dif_day_2019_t = (dif_day_2019 >= 0) ? "+" + dif_day_2019 : "" + dif_day_2019;
+  
+  	var week_traffic = data.nw_traffic.TOTAL_ROLLING_WEEK;
+  	var avg_week_traffic = data.nw_traffic.AVG_ROLLING_WEEK;
+	var avg_week_traffic_prev_year = data.nw_traffic.AVG_ROLLING_WEEK_PREV_YEAR;
+	var avg_week_traffic_2019 = data.nw_traffic.AVG_ROLLING_WEEK_2019;
+
+//   var dif_week_prev_week = Math.round(data.nw_traffic.DIF_PREV_WEEK_PERC*100);
+//       dif_week_prev_week = (dif_week_prev_week >= 0) ? "+" + dif_week_prev_week : "" + dif_week_prev_week;
+  
+  	var dif_week_2019 = Math.round(data.nw_traffic.DIF_ROLLING_WEEK_2019_PERC*100);
+    var dif_week_2019_t = (dif_week_2019 >= 0) ? "+" + dif_week_2019 : "" + dif_week_2019;
+  
+  	var dif_week_prev_year = Math.round(data.nw_traffic.DIF_WEEK_PREV_YEAR_PERC*100);
+    var dif_week_prev_year_t = (dif_week_prev_year >= 0) ? "+" + dif_week_prev_year : "" + dif_week_prev_year;
+   
+  	var y2d_traffic = data.nw_traffic.Y2D_TFC_YEAR;
+  	var avg_y2d_traffic = data.nw_traffic.Y2D_AVG_TFC_YEAR;
+  	var avg_y2d_traffic_prev_year = data.nw_traffic.Y2D_AVG_TFC_PREV_YEAR;
+  	var avg_y2d_traffic_2019 = data.nw_traffic.Y2D_AVG_TFC_2019;
+	
+	var dif_y2d_2019 = Math.round(data.nw_traffic.Y2D_DIFF_2019_PERC*100);
+    var dif_y2d_2019_t = (dif_y2d_2019 >= 0) ? "+" + dif_y2d_2019 : "" + dif_y2d_2019;
+  	var dif_y2d_prev_year = Math.round(data.nw_traffic.Y2D_DIFF_PREV_YEAR_PERC*100);
+    var dif_y2d_prev_year_t = (dif_y2d_prev_year >= 0) ? "+" + dif_y2d_prev_year : "" + dif_y2d_prev_year;
+
+
+ // Calculate delay  values
+		//day
+	var day_delay = data.nw_delay.DAY_DLY;
+ 	var day_delay_prev_year = data.nw_delay.DAY_DLY_PREV_YEAR;
+	var day_delay_2019 = data.nw_delay.DAY_DLY_2019;
+
+	var day_delay_flight = Math.round(day_delay/day_traffic*100)/100
+
+	var dif_delay_day_prev_year = Math.round(data.nw_delay.DAY_DIFF_PREV_YEAR_PERC*100);
+    var dif_delay_day_prev_year_t = (dif_delay_day_prev_year >= 0) ? "+" + dif_delay_day_prev_year : "" + dif_delay_day_prev_year ;
+
+  	var dif_delay_day_2019 = Math.round(data.nw_delay.DAY_DLY_DIFF_2019_PERC*100);
+    var dif_delay_day_2019_t = (dif_delay_day_2019 >= 0) ? "+" + dif_delay_day_2019 : "" + dif_delay_day_2019;
+ 
+	var dif_delay_flight_day_prev_year = Math.round(((day_delay/day_traffic)/(day_delay_prev_year/day_traffic_prev_year)-1)*100);
+	var dif_delay_flight_day_prev_year_t = (dif_delay_flight_day_prev_year >= 0) ? "+" + dif_delay_flight_day_prev_year : "" + dif_delay_flight_day_prev_year ;
+
+	var dif_delay_flight_day_2019 = Math.round(((day_delay/day_traffic)/(day_delay_2019/day_traffic_2019)-1)*100);
+	var dif_delay_flight_day_2019_t = (dif_delay_flight_day_2019 >= 0) ? "+" + dif_delay_flight_day_2019 : "" + dif_delay_flight_day_2019 ;
+
+		//week
+    var avg_week_delay = data.nw_delay.AVG_ROLLING_WEEK;
+ 	var avg_week_delay_prev_year = data.nw_delay.AVG_ROLLING_WEEK_PREV_YEAR;
+	var avg_week_delay_2019 = data.nw_delay.AVG_ROLLING_WEEK_2019;
+
+	var week_delay_flight = Math.round(avg_week_delay/avg_week_traffic*100)/100
+
+	var dif_delay_w_prev_year = Math.round(data.nw_delay.DIF_WEEK_PREV_YEAR_PERC*100);
+    var dif_delay_w_prev_year_t = (dif_delay_w_prev_year >= 0) ? "+" + dif_delay_w_prev_year : "" + dif_delay_w_prev_year ;
+
+	var dif_delay_w_2019 = Math.round(data.nw_delay.DIF_ROLLING_WEEK_2019_PERC*100);
+	var dif_delay_w_2019_t = (dif_delay_w_2019 >= 0) ? "+" + dif_delay_w_2019 : "" + dif_delay_w_2019 ;
+
+	var dif_delay_flight_w_prev_year = Math.round(((avg_week_delay/avg_week_traffic)/(avg_week_delay_prev_year/avg_week_traffic_prev_year)-1)*100);
+	var dif_delay_flight_w_prev_year_t = (dif_delay_flight_w_prev_year >= 0) ? "+" + dif_delay_flight_w_prev_year : "" + dif_delay_flight_w_prev_year ;
+
+	var dif_delay_flight_w_2019 = Math.round(((avg_week_delay/avg_week_traffic)/(avg_week_delay_2019/avg_week_traffic_2019)-1)*100);
+	var	dif_delay_flight_w_2019_t = (dif_delay_flight_w_2019 >= 0) ? "+" + dif_delay_flight_w_2019 : "" + dif_delay_flight_w_2019 ;
+
+		//year to date
+	var avg_y2d_delay = data.nw_delay.Y2D_AVG_DLY_YEAR;
+	var avg_y2d_delay_prev_year = data.nw_delay.Y2D_AVG_DLY_PREV_YEAR;
+	var avg_y2d_delay_2019 = data.nw_delay.Y2D_AVG_DLY_2019;
+	var y2d_delay_flight = Math.round(avg_y2d_delay/avg_y2d_traffic*100)/100
+
+	var dif_delay_y2d_prev_year = Math.round(data.nw_delay.Y2D_DIFF_PREV_YEAR_PERC*100);
+    var dif_delay_y2d_prev_year_t = (dif_delay_y2d_prev_year >= 0) ? "+" + dif_delay_y2d_prev_year : "" + dif_delay_y2d_prev_year ;
+
+	var dif_delay_y2d_2019 = Math.round(data.nw_delay.Y2D_DIFF_2019_PERC*100);
+	var dif_delay_y2d_2019_t = (dif_delay_y2d_2019 >= 0) ? "+" + dif_delay_y2d_2019 : "" + dif_delay_y2d_2019 ;
+
+	var dif_delay_flight_y2d_prev_year = Math.round(((avg_y2d_delay/avg_y2d_traffic)/(avg_y2d_delay_prev_year/avg_y2d_traffic_prev_year)-1)*100);
+	var dif_delay_flight_y2d_prev_year_t = (dif_delay_flight_y2d_prev_year >= 0) ? "+" + dif_delay_flight_y2d_prev_year : "" + dif_delay_flight_y2d_prev_year ;
+
+	var dif_delay_flight_y2d_2019 = Math.round(((avg_y2d_delay/avg_y2d_traffic)/(avg_y2d_delay_2019/avg_y2d_traffic_2019)-1)*100);
+	var dif_delay_flight_y2d_2019_t = (dif_delay_flight_y2d_2019 >= 0) ? "+" + dif_delay_flight_y2d_2019 : "" + dif_delay_flight_y2d_2019 ;
+
+ // Calculate punctuality values
+	//  var gauge_height = document.getElementById("first-gauge").clientHeight;
+	
+	 //day
+	var day_dep_punct = data.nw_punct.DEP_PUNCTUALITY_PERCENTAGE;
+	var day_arr_punct = data.nw_punct.ARR_PUNCTUALITY_PERCENTAGE;
+
+	var dif_day_dep_punct_py = day_dep_punct-data.nw_punct.DEP_PUN_PREV_YEAR;
+	var dif_day_dep_punct_2019 = day_dep_punct-data.nw_punct.DEP_PUN_2019;
+	var dif_day_arr_punct_py = day_arr_punct-data.nw_punct.ARR_PUN_PREV_YEAR;
+	var dif_day_arr_punct_2019 = day_arr_punct-data.nw_punct.ARR_PUN_2019;
+
+	 //week
+	var week_dep_punct = data.nw_punct.DEP_PUN_WK;
+	var week_arr_punct = data.nw_punct.ARR_PUN_WK;
+
+	var dif_week_dep_punct_py = week_dep_punct-data.nw_punct.DEP_PUN_WK_PREV_YEAR;
+	var dif_week_dep_punct_2019 = week_dep_punct-data.nw_punct.DEP_PUN_WK_2019;
+	var dif_week_arr_punct_py = week_arr_punct-data.nw_punct.ARR_PUN_WK_PREV_YEAR;
+	var dif_week_arr_punct_2019 = week_arr_punct-data.nw_punct.ARR_PUN_WK_2019;
+
+		 //year to date
+	var y2d_dep_punct = data.nw_punct.DEP_PUN_Y2D;
+	var y2d_arr_punct = data.nw_punct.ARR_PUN_Y2D;
+
+	var dif_y2d_dep_punct_py = y2d_dep_punct-data.nw_punct.Y2D_DEP_PUN_PREV_YEAR;
+	var dif_y2d_dep_punct_2019 = y2d_dep_punct-data.nw_punct.Y2D_DEP_PUN_2019;
+	var dif_y2d_arr_punct_py = y2d_arr_punct-data.nw_punct.Y2D_ARR_PUN_PREV_YEAR;
+	var dif_y2d_arr_punct_2019 = y2d_arr_punct-data.nw_punct.Y2D_ARR_PUN_2019;
+
+// Calculate co2 values
+	 //dates
+	var last_month_co2 = data.nw_co2.MONTH_TEXT;
+	
+	var month_co2 = Math.round(data.nw_co2.TCO2/100000)/10;
+	var month_ttf = Math.round(data.nw_co2.TTF/100000)/10;
+
+	var dif_month_co2_py = Math.round(data.nw_co2.DIF_CO2_MONTH_PREV_YEAR*100);
+	var dif_month_co2_py_t = (dif_month_co2_py >= 0) ? "+" + dif_month_co2_py : "" + dif_month_co2_py ;
+
+	var dif_month_co2_2019 = Math.round(data.nw_co2.DIF_CO2_MONTH_2019*100);
+	var dif_month_co2_2019_t = (dif_month_co2_2019 >= 0) ? "+" + dif_month_co2_2019 : "" + dif_month_co2_2019 ;
+
+	var dif_month_ttf_py = Math.round(data.nw_co2.DIF_TTF_MONTH_PREV_YEAR*100);
+	var dif_month_ttf_py_t = (dif_month_ttf_py >= 0) ? "+" + dif_month_ttf_py : "" + dif_month_ttf_py ;
+
+	var dif_month_ttf_2019 = Math.round(data.nw_co2.DIF_TTF_MONTH_2019*100);
+	var dif_month_ttf_2019_t = (dif_month_ttf_2019 >= 0) ? "+" + dif_month_ttf_2019 : "" + dif_month_ttf_2019 ;
+
+	// Update page values
+  document.getElementById("last_day").innerHTML = "Day: " + last_day_text ;
+//   document.getElementById("last_day_delay").innerHTML = "Day: " + last_day_text ;
+//   document.getElementById("last_day_punct").innerHTML = "Day: " + last_day_text ;
+//   document.getElementById("last_day_ao").innerHTML = "Day: " + last_day_text ;
+//   document.getElementById("last_day_apt").innerHTML = "Day: " + last_day_text ;
+  document.getElementById("last_week").innerHTML = "Rolling week: " + last_week_text ;
+//   document.getElementById("last_week_delay").innerHTML = "Rolling week: " + last_week_text ;
+//   document.getElementById("last_week_punct").innerHTML = "Rolling week: " + last_week_text ;
+// //   document.getElementById("month_text").innerHTML = "Month: " + month_text ;
+  document.getElementById("y2d_day_text").innerHTML = "Year to date: " + y2d_day_text ;
+//   document.getElementById("y2d_day_delay_text").innerHTML = "Year to date: " + y2d_day_text ;
+//   document.getElementById("y2d_day_punct_text").innerHTML = "Year to date: " + y2d_day_text ;
+   
+  document.getElementById("day_traffic").innerHTML = String(day_traffic).replace(/(.)(?=(\d{3})+$)/g, '$1,');
+ 
+  document.getElementById("arr_day_prev_year").innerHTML = ((dif_day_prev_year >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + dif_day_prev_year_t + '%';
+  document.getElementById("arr_day_prev_year").className = (dif_day_prev_year >=0) ? 'badge green-bg' : 'badge red-bg';
+  document.getElementById("dif_day_prev_year").innerHTML =  ' vs ' + prev_year;
+ 
+  document.getElementById("arr_day_2019").innerHTML = ((dif_day_2019 >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + dif_day_2019_t +'%';
+  document.getElementById("arr_day_2019").className = (dif_day_2019 >=0) ? 'badge green-bg' : 'badge red-bg';
+
+//   document.getElementById("week_traffic").innerHTML = String(week_traffic).replace(/(.)(?=(\d{3})+$)/g, '$1,');
+  document.getElementById("avg_week_traffic").innerHTML = String(Math.round(avg_week_traffic)).replace(/(.)(?=(\d{3})+$)/g, '$1,');
+//   document.getElementById("dif_week_prev_week").innerHTML = dif_week_prev_week + '%';
+
+  document.getElementById("arr_week_prev_year").innerHTML = ((dif_week_prev_year >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + dif_week_prev_year_t + '%';
+  document.getElementById("arr_week_prev_year").className = (dif_week_prev_year >=0) ? 'badge green-bg' : 'badge red-bg';
+  document.getElementById("dif_week_prev_year").innerHTML =  ' vs ' + prev_year;
+ 
+  document.getElementById("arr_week_2019").innerHTML = ((dif_week_2019 >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + dif_week_2019_t +'%';
+  document.getElementById("arr_week_2019").className = (dif_week_2019 >=0) ? 'badge green-bg' : 'badge red-bg';
+
+  document.getElementById("y2d_traffic").innerHTML = String(y2d_traffic).replace(/(.)(?=(\d{3})+$)/g, '$1,');
+  document.getElementById("avg_y2d_traffic").innerHTML = String(Math.round(avg_y2d_traffic)).replace(/(.)(?=(\d{3})+$)/g, '$1,');
+
+  document.getElementById("arr_y2d_prev_year").innerHTML = ((dif_y2d_prev_year >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + dif_y2d_prev_year_t + '%';
+  document.getElementById("arr_y2d_prev_year").className = (dif_y2d_prev_year >=0) ? 'badge green-bg' : 'badge red-bg';
+  document.getElementById("dif_y2d_prev_year").innerHTML =  ' vs ' + prev_year;
+ 
+  document.getElementById("arr_y2d_2019").innerHTML = ((dif_y2d_2019_t >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + dif_y2d_2019_t +'%';
+  document.getElementById("arr_y2d_2019").className = (dif_y2d_2019_t >=0) ? 'badge green-bg' : 'badge red-bg';
+
+//   	//delay
+// 		//day
+//   document.getElementById("day_delay").innerHTML = String(day_delay).replace(/(.)(?=(\d{3})+$)/g, '$1,');
+//   document.getElementById("day_delay_flight").innerHTML = day_delay_flight;
+
+//   document.getElementById("arr_delay_day_prev_year").innerHTML = ((dif_delay_day_prev_year >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + dif_delay_day_prev_year_t + '%';
+//   document.getElementById("arr_delay_day_prev_year").className = (dif_delay_day_prev_year >=0) ? 'badge red-bg' : 'badge green-bg';
+//   document.getElementById("dif_delay_day_prev_year").innerHTML =  ' vs ' + prev_year;
+ 
+//   document.getElementById("arr_delay_day_2019").innerHTML = ((dif_delay_day_2019 >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + dif_delay_day_2019_t +'%';
+//   document.getElementById("arr_delay_day_2019").className = (dif_delay_day_2019 >=0) ? 'badge red-bg' : 'badge green-bg';  
+
+//   document.getElementById("arr_delay_flight_day_prev_year").innerHTML = ((dif_delay_flight_day_prev_year >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + dif_delay_flight_day_prev_year_t + '%';
+//   document.getElementById("arr_delay_flight_day_prev_year").className = (dif_delay_flight_day_prev_year >=0) ? 'badge red-bg' : 'badge green-bg';
+//   document.getElementById("dif_delay_flight_day_prev_year").innerHTML =  ' vs ' + prev_year;
+ 
+//   document.getElementById("arr_delay_flight_day_2019").innerHTML = ((dif_delay_flight_day_2019 >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + dif_delay_flight_day_2019_t +'%';
+//   document.getElementById("arr_delay_flight_day_2019").className = (dif_delay_flight_day_2019 >=0) ? 'badge red-bg' : 'badge green-bg';  
+
+// 		//week
+//   document.getElementById("avg_week_delay").innerHTML = String(Math.round(avg_week_delay)).replace(/(.)(?=(\d{3})+$)/g, '$1,');
+//   document.getElementById("week_delay_flight").innerHTML = week_delay_flight;
+
+//   document.getElementById("arr_delay_w_prev_year").innerHTML = ((dif_delay_w_prev_year >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + dif_delay_w_prev_year_t + '%';
+//   document.getElementById("arr_delay_w_prev_year").className = (dif_delay_w_prev_year >=0) ? 'badge red-bg' : 'badge green-bg';
+//   document.getElementById("dif_delay_w_prev_year").innerHTML =  ' vs ' + prev_year;
+ 
+//   document.getElementById("arr_delay_w_2019").innerHTML = ((dif_delay_w_2019 >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + dif_delay_w_2019_t +'%';
+//   document.getElementById("arr_delay_w_2019").className = (dif_delay_w_2019 >=0) ? 'badge red-bg' : 'badge green-bg';  
+
+//   document.getElementById("arr_delay_flight_w_prev_year").innerHTML = ((dif_delay_flight_w_prev_year >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + dif_delay_flight_w_prev_year_t + '%';
+//   document.getElementById("arr_delay_flight_w_prev_year").className = (dif_delay_flight_w_prev_year >=0) ? 'badge red-bg' : 'badge green-bg';
+//   document.getElementById("dif_delay_flight_w_prev_year").innerHTML =  ' vs ' + prev_year;
+ 
+//   document.getElementById("arr_delay_flight_w_2019").innerHTML = ((dif_delay_flight_w_2019 >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + dif_delay_flight_w_2019_t +'%';
+//   document.getElementById("arr_delay_flight_w_2019").className = (dif_delay_flight_w_2019 >=0) ? 'badge red-bg' : 'badge green-bg';  
+
+// 		//y2d
+//   document.getElementById("avg_y2d_delay").innerHTML = String(Math.round(avg_y2d_delay)).replace(/(.)(?=(\d{3})+$)/g, '$1,');
+//   document.getElementById("y2d_delay_flight").innerHTML = y2d_delay_flight;
+
+//   document.getElementById("arr_delay_y2d_prev_year").innerHTML = ((dif_delay_y2d_prev_year >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + dif_delay_y2d_prev_year_t + '%';
+//   document.getElementById("arr_delay_y2d_prev_year").className = (dif_delay_y2d_prev_year >=0) ? 'badge red-bg' : 'badge green-bg';
+//   document.getElementById("dif_delay_y2d_prev_year").innerHTML =  ' vs ' + prev_year;
+ 
+//   document.getElementById("arr_delay_y2d_2019").innerHTML = ((dif_delay_y2d_2019 >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + dif_delay_y2d_2019_t +'%';
+//   document.getElementById("arr_delay_y2d_2019").className = (dif_delay_y2d_2019 >=0) ? 'badge red-bg' : 'badge green-bg'; 
+
+//   document.getElementById("arr_delay_flight_y2d_prev_year").innerHTML = ((dif_delay_flight_y2d_prev_year >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + dif_delay_flight_y2d_prev_year_t + '%';
+//   document.getElementById("arr_delay_flight_y2d_prev_year").className = (dif_delay_flight_y2d_prev_year >=0) ? 'badge red-bg' : 'badge green-bg';
+//   document.getElementById("dif_delay_flight_y2d_prev_year").innerHTML =  ' vs ' + prev_year;
+ 
+//   document.getElementById("arr_delay_flight_y2d_2019").innerHTML = ((dif_delay_flight_y2d_2019 >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + dif_delay_flight_y2d_2019_t +'%';
+//   document.getElementById("arr_delay_flight_y2d_2019").className = (dif_delay_flight_y2d_2019 >=0) ? 'badge red-bg' : 'badge green-bg'; 
+
+  
+//   	//punctuality
+// 		//day
+//    document.getElementById("day_dep_punct").innerHTML = Math.round(day_dep_punct) + '%';
+//    document.getElementById("day_arr_punct").innerHTML = Math.round(day_arr_punct) + '%';
+
+//    document.getElementById("arr_day_dep_punct_py").innerHTML = ((dif_day_dep_punct_py >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + Math.round(dif_day_dep_punct_py) + ' pp';
+//   document.getElementById("arr_day_dep_punct_py").className = (dif_day_dep_punct_py >=0) ? 'badge green-bg' : 'badge red-bg';
+//   document.getElementById("dif_day_dep_punct_py").innerHTML =  ' vs ' + prev_year;
+
+//   document.getElementById("arr_day_dep_punct_2019").innerHTML = ((dif_day_dep_punct_2019 >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + Math.round(dif_day_dep_punct_2019) +' pp';
+//   document.getElementById("arr_day_dep_punct_2019").className = (dif_day_dep_punct_2019 >=0) ? 'badge green-bg' : 'badge red-bg'; 
+
+ 
+//   document.getElementById("arr_day_arr_punct_py").innerHTML = ((dif_day_arr_punct_py >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + Math.round(dif_day_arr_punct_py) + ' pp';
+//   document.getElementById("arr_day_arr_punct_py").className = (dif_day_arr_punct_py >=0) ? 'badge green-bg' : 'badge red-bg';
+//   document.getElementById("dif_day_arr_punct_py").innerHTML =  ' vs ' + prev_year;
+
+//   document.getElementById("arr_day_arr_punct_2019").innerHTML = ((dif_day_arr_punct_2019 >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + Math.round(dif_day_arr_punct_2019) +' pp';
+//   document.getElementById("arr_day_arr_punct_2019").className = (dif_day_arr_punct_2019 >=0) ? 'badge green-bg' : 'badge red-bg'; 
+
+//   		//week
+//   document.getElementById("week_dep_punct").innerHTML = Math.round(week_dep_punct) + '%';
+//   document.getElementById("week_arr_punct").innerHTML = Math.round(week_arr_punct) + '%';
+
+//   document.getElementById("arr_week_dep_punct_py").innerHTML = ((dif_week_dep_punct_py >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + Math.round(dif_week_dep_punct_py) + ' pp';
+//   document.getElementById("arr_week_dep_punct_py").className = (dif_week_dep_punct_py >=0) ? 'badge green-bg' : 'badge red-bg';
+//   document.getElementById("dif_week_dep_punct_py").innerHTML =  ' vs ' + prev_year;
+
+//   document.getElementById("arr_week_dep_punct_2019").innerHTML = ((dif_week_dep_punct_2019 >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + Math.round(dif_week_dep_punct_2019) +' pp';
+//   document.getElementById("arr_week_dep_punct_2019").className = (dif_week_dep_punct_2019 >=0) ? 'badge green-bg' : 'badge red-bg';
+
+
+//   document.getElementById("arr_week_arr_punct_py").innerHTML = ((dif_week_arr_punct_py >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + Math.round(dif_week_arr_punct_py) + ' pp';
+//   document.getElementById("arr_week_arr_punct_py").className = (dif_week_arr_punct_py >=0) ? 'badge green-bg' : 'badge red-bg';
+//   document.getElementById("dif_week_arr_punct_py").innerHTML =  ' vs ' + prev_year;
+
+//   document.getElementById("arr_week_arr_punct_2019").innerHTML = ((dif_week_arr_punct_2019 >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + Math.round(dif_week_arr_punct_2019) +' pp';
+//   document.getElementById("arr_week_arr_punct_2019").className = (dif_week_arr_punct_2019 >=0) ? 'badge green-bg' : 'badge red-bg';
+
+//    		//year to date
+//   document.getElementById("y2d_dep_punct").innerHTML = Math.round(y2d_dep_punct) + '%';
+//   document.getElementById("y2d_arr_punct").innerHTML = Math.round(y2d_arr_punct) + '%';
+
+//   document.getElementById("arr_y2d_dep_punct_py").innerHTML = ((dif_y2d_dep_punct_py >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + Math.round(dif_y2d_dep_punct_py) + ' pp';
+//   document.getElementById("arr_y2d_dep_punct_py").className = (dif_y2d_dep_punct_py >=0) ? 'badge green-bg' : 'badge red-bg';
+//   document.getElementById("dif_y2d_dep_punct_py").innerHTML =  ' vs ' + prev_year;
+
+//   document.getElementById("arr_y2d_dep_punct_2019").innerHTML = ((dif_y2d_dep_punct_2019 >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + Math.round(dif_y2d_dep_punct_2019) +' pp';
+//   document.getElementById("arr_y2d_dep_punct_2019").className = (dif_y2d_dep_punct_2019 >=0) ? 'badge green-bg' : 'badge red-bg';
+
+
+//   document.getElementById("arr_y2d_arr_punct_py").innerHTML = ((dif_y2d_arr_punct_py >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + Math.round(dif_y2d_arr_punct_py) + ' pp';
+//   document.getElementById("arr_y2d_arr_punct_py").className = (dif_y2d_arr_punct_py >=0) ? 'badge green-bg' : 'badge red-bg';
+//   document.getElementById("dif_y2d_arr_punct_py").innerHTML =  ' vs ' + prev_year;
+
+//   document.getElementById("arr_y2d_arr_punct_2019").innerHTML = ((dif_y2d_arr_punct_2019 >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + Math.round(dif_y2d_arr_punct_2019) +' pp';
+//   document.getElementById("arr_y2d_arr_punct_2019").className = (dif_y2d_arr_punct_2019 >=0) ? 'badge green-bg' : 'badge red-bg';
+
+// 	//co2
+// 		//month  
+// 		document.getElementById("last_month_co2").innerHTML = last_month_co2 + " " + data.nw_co2.YEAR;
+// 	// document.getElementById("last_month_co2").innerHTML = dif_month_co2_2019_t;
+// 	document.getElementById("month_co2").innerHTML = month_co2 + (((month_co2.toString()).search(/\./) == -1) ? '.0' : '') + " Mt";
+
+// 	document.getElementById("arr_month_co2_py").innerHTML = ((dif_month_co2_py >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + dif_month_co2_py_t + '%';
+//   	document.getElementById("arr_month_co2_py").className = (dif_month_co2_py >=0) ? 'badge red-bg' : 'badge green-bg';
+//   	document.getElementById("dif_month_co2_py").innerHTML =  ' vs ' + prev_year;
+
+// 	document.getElementById("arr_month_co2_2019").innerHTML = ((dif_month_co2_2019 >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + dif_month_co2_2019_t + '%';
+// 	document.getElementById("arr_month_co2_2019").className = (dif_month_co2_2019 >=0) ? 'badge red-bg' : 'badge green-bg';
+ 
+// 	document.getElementById("month_ttf").innerHTML = month_ttf + (((month_ttf.toString()).search(/\./) == -1) ? '.0' : '') + " M"; 
+	
+// 	document.getElementById("arr_month_ttf_py").innerHTML = ((dif_month_ttf_py >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + dif_month_ttf_py_t + '%';
+//   	document.getElementById("arr_month_ttf_py").className = (dif_month_ttf_py >=0) ? 'badge green-bg' : 'badge red-bg';
+//   	document.getElementById("dif_month_ttf_py").innerHTML =  ' vs ' + prev_year;
+
+// 	document.getElementById("arr_month_ttf_2019").innerHTML = ((dif_month_ttf_2019 >=0) ? '<i class="fas fa-arrow-up me-1"></i>' : '<i class="fas fa-arrow-down me-1"></i>') + dif_month_ttf_2019_t + '%';
+// 	document.getElementById("arr_month_ttf_2019").className = (dif_month_ttf_2019 >=0) ? 'badge green-bg' : 'badge red-bg';
+
+}  
+
+
+//#region - start of - number counter animation
+// const counterAnim = (qSelector, start = 0, end, duration = 1000) => {
+//  const target = document.querySelector(qSelector);
+//  let startTimestamp = null;
+//  const step = (timestamp) => {
+//   if (!startTimestamp) startTimestamp = timestamp;
+//   const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+//   target.innerText = String(Math.floor(progress * (end - start) + start)).replace(/(.)(?=(\d{3})+$)/g, '$1,');
+//   if (progress < 1) {
+//    window.requestAnimationFrame(step);
+//   }
+//  };
+//  window.requestAnimationFrame(step);
+// };
+
+// document.addEventListener("DOMContentLoaded", () => {
+//  counterAnim("#day_traffic", 10, day_traffic, 1000);
+// });
+
+</script>
+
+<script>
+        var car0items = $('#item0 .carousel-item').length;
+            var car0index = $('#item0 div.active').index();
+            $('#counter0').html('' + car0index + '/' + car0items + '');
+            $('#item0').on('slid.bs.carousel', function () {
+                car0index = $('#item0 div.active').index();
+                $('#counter0').html('' + car0index + '/' + car0items + '');
+        })
+
+        var car1items = $('#item1 .carousel-item').length;
+            var car1index = $('#item1 div.active').index();
+            $('#counter1').html('' + car1index + '/' + car1items + '');
+            $('#item1').on('slid.bs.carousel', function () {
+                car1index = $('#item1 div.active').index();
+                $('#counter1').html('' + car1index + '/' + car1items + '');
+        })
+
+        var car4items = $('#item4 .carousel-item').length;
+            var car4index = $('#item4 div.active').index();
+            $('#counter4').html('' + car4index + '/' + car4items + '');
+            $('#item4').on('slid.bs.carousel', function () {
+                car4index = $('#item4 div.active').index();
+                $('#counter4').html('' + car4index + '/' + car4items + '');
+        })
+    </script> 
+
+    <script>
+        AOS.init({
+            duration: 1000
+            }
+        )
+    </script>   
+</body>
+</html>
+
