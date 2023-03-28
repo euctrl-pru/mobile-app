@@ -148,7 +148,7 @@
             
             <div>
                 <a href="https://www.eurocontrol.int/" >
-                    <img src="/images/ec-logo-modified.svg" alt="EUROCONTROL Home" class="shadow-sm" height="45px">
+                    <img src="../images/ec-logo-modified.svg" alt="EUROCONTROL Home" class="shadow-sm" height="45px">
                 </a>
             </div>
 
@@ -401,7 +401,7 @@
                             <div style="position: absolute; background-color: transparent; width: 100%; min-height: 250px;"></div>
                             
                             <!-- https://stackoverflow.com/questions/819416/adjust-width-and-height-of-iframe-to-fit-with-content-in-it -->
-                            <iframe src="/iframes/mob_ao_traffic_rank_day.html" onload='javascript:(function(o){o.style.height=o.contentWindow.document.body.scrollHeight+"px";}(this));' style="height:250px;width:100%;border:none;overflow:hidden;"></iframe>
+                            <iframe src="../iframes/mob_ao_traffic_rank_day.html" onload='javascript:(function(o){o.style.height=o.contentWindow.document.body.scrollHeight+"px";}(this));' style="height:250px;width:100%;border:none;overflow:hidden;"></iframe>
                             <!-- <iframe id="traffic-plot" src="mob_ao_traffic_rank_day.html" frameborder="0" style="width: 100%; border:0; min-height: 250px" >
                             </iframe> -->
                         </div>
@@ -449,7 +449,7 @@
                             <div style="position: absolute; background-color: transparent; width: 100%; min-height: 250px;"></div>
                             
                             <!-- https://stackoverflow.com/questions/819416/adjust-width-and-height-of-iframe-to-fit-with-content-in-it -->
-                            <iframe src="/iframes/mob_apt_traffic_rank_day.html" onload='javascript:(function(o){o.style.height=o.contentWindow.document.body.scrollHeight+"px";}(this));' style="height:250px;width:100%;border:none;overflow:hidden;"></iframe>
+                            <iframe src="../iframes/mob_apt_traffic_rank_day.html" onload='javascript:(function(o){o.style.height=o.contentWindow.document.body.scrollHeight+"px";}(this));' style="height:250px;width:100%;border:none;overflow:hidden;"></iframe>
                             <!-- <iframe id="traffic-plot" src="mob_ao_traffic_rank_day.html" frameborder="0" style="width: 100%; border:0; min-height: 250px" >
                             </iframe> -->
                         </div>
@@ -477,7 +477,7 @@
 	<script>
 		var data;
 
-		var oscartest = $.getJSON( "/data/nw_json_app.json", function(data) {
+		var oscartest = $.getJSON( "../data/nw_json_app.json", function(data) {
 			UpdateTraffic(data)
 		})
 	
