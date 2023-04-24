@@ -28,8 +28,24 @@ library(here)
     range = cell_limits(c(1, 1), c(NA, 39))) %>%
     as_tibble()
 
-  nw_traffic_json <- nw_traffic_data %>%
-    filter(FLIGHT_DATE == max(LAST_DATA_DAY))%>%
+  nw_traffic_last_day <- nw_traffic_data %>%
+    filter(FLIGHT_DATE == max(LAST_DATA_DAY))
+
+  nw_traffic_json <- nw_traffic_last_day %>%
+    filter(FLIGHT_DATE == max(LAST_DATA_DAY)) %>%
+    select(
+      FLIGHT_DATE,
+      DAY_TFC,
+      DAY_DIFF_PREV_YEAR_PERC,
+      DAY_TFC_DIFF_2019_PERC,
+      AVG_ROLLING_WEEK,
+      DIF_WEEK_PREV_YEAR_PERC,
+      DIF_ROLLING_WEEK_2019_PERC,
+      Y2D_TFC_YEAR,
+      Y2D_AVG_TFC_YEAR,
+      Y2D_DIFF_PREV_YEAR_PERC,
+      Y2D_DIFF_2019_PERC
+    )  %>%
     toJSON() %>%
     substr(., 1, nchar(.)-1) %>%
     substr(., 2, nchar(.))
@@ -46,9 +62,66 @@ library(here)
     range = cell_limits(c(2, 1), c(NA, 39))) %>%
     as_tibble()
 
-  nw_delay_json  <- nw_delay_data %>%
+  nw_delay_for_json  <- nw_delay_data %>%
     mutate(FLIGHT_DATE = as.Date(FLIGHT_DATE)) %>%
     filter(FLIGHT_DATE == max(LAST_DATA_DAY)) %>%
+    mutate(
+      DAY_DLY_FLT = DAY_DLY / nw_traffic_last_day$DAY_TFC,
+      DAY_DLY_FLT_PY = DAY_DLY_PREV_YEAR / nw_traffic_last_day$DAY_TFC_PREV_YEAR,
+      DAY_DLY_FLT_2019 = DAY_DLY_2019 / nw_traffic_last_day$DAY_TFC_2019,
+      DAY_DLY_FLT_DIF_PY_PERC = if_else(
+        DAY_DLY_FLT_PY == 0, NA , DAY_DLY_FLT / DAY_DLY_FLT_PY -1
+      ),
+      DAY_DLY_FLT_DIF_2019_PERC = if_else(
+        DAY_DLY_FLT_2019 == 0, NA , DAY_DLY_FLT / DAY_DLY_FLT_2019 -1
+      ),
+
+      RWEEK_DLY_FLT = TOTAL_ROLLING_WEEK / nw_traffic_last_day$TOTAL_ROLLING_WEEK,
+      RWEEK_DLY_FLT_PY = AVG_ROLLING_WEEK_PREV_YEAR / nw_traffic_last_day$AVG_ROLLING_WEEK_PREV_YEAR,
+      RWEEK_DLY_FLT_2019 = AVG_ROLLING_WEEK_2019 / nw_traffic_last_day$AVG_ROLLING_WEEK_2019,
+      RWEEK_DLY_FLT_DIF_PY_PERC = if_else(
+        RWEEK_DLY_FLT_PY == 0, NA , RWEEK_DLY_FLT / RWEEK_DLY_FLT_PY -1
+      ),
+      RWEEK_DLY_FLT_DIF_2019_PERC = if_else(
+        RWEEK_DLY_FLT_2019 == 0, NA , RWEEK_DLY_FLT / RWEEK_DLY_FLT_2019 -1
+      ),
+
+      Y2D_DLY_FLT = Y2D_DLY_YEAR / nw_traffic_last_day$Y2D_TFC_YEAR,
+      Y2D_DLY_FLT_PY = Y2D_AVG_DLY_PREV_YEAR / nw_traffic_last_day$Y2D_AVG_TFC_PREV_YEAR,
+      Y2D_DLY_FLT_2019 = Y2D_AVG_DLY_2019 / nw_traffic_last_day$Y2D_AVG_TFC_2019,
+      Y2D_DLY_FLT_DIF_PY_PERC = if_else(
+        Y2D_DLY_FLT_PY == 0, NA , Y2D_DLY_FLT / Y2D_DLY_FLT_PY -1
+      ),
+      Y2D_DLY_FLT_DIF_2019_PERC = if_else(
+        Y2D_DLY_FLT_2019 == 0, NA , Y2D_DLY_FLT / Y2D_DLY_FLT_2019 -1
+      )
+
+    ) %>%
+    select(
+      FLIGHT_DATE,
+      DAY_DLY,
+      DAY_DIFF_PREV_YEAR_PERC,
+      DAY_DLY_DIFF_2019_PERC,
+      DAY_DLY_FLT,
+      DAY_DLY_FLT_DIF_PY_PERC,
+      DAY_DLY_FLT_DIF_2019_PERC,
+
+      AVG_ROLLING_WEEK,
+      DIF_WEEK_PREV_YEAR_PERC,
+      DIF_ROLLING_WEEK_2019_PERC,
+      RWEEK_DLY_FLT,
+      RWEEK_DLY_FLT_DIF_PY_PERC,
+      RWEEK_DLY_FLT_DIF_2019_PERC,
+
+      Y2D_AVG_DLY_YEAR,
+      Y2D_DIFF_PREV_YEAR_PERC,
+      Y2D_DIFF_2019_PERC,
+      Y2D_DLY_FLT,
+      Y2D_DLY_FLT_DIF_PY_PERC,
+      Y2D_DLY_FLT_DIF_2019_PERC
+    )
+
+  nw_delay_json <- nw_delay_for_json %>%
     toJSON() %>%
     substr(., 1, nchar(.)-1) %>%
     substr(., 2, nchar(.))
@@ -95,6 +168,10 @@ library(here)
                                     1)
     ) %>%
     filter (DATE==last_day) %>%
+    select(ARR_PUNCTUALITY_PERCENTAGE, DEP_PUNCTUALITY_PERCENTAGE,
+           ARR_PUN_PREV_YEAR, DEP_PUN_PREV_YEAR,
+           ARR_PUN_2019, DEP_PUN_2019,
+           ARR_PUN_WK, DEP_PUN_WK, ARR_PUN_WK_PREV_YEAR, DEP_PUN_WK_PREV_YEAR, ARR_PUN_WK_2019, DEP_PUN_WK_2019) %>%
     mutate(INDEX = 1)
 
   nw_punct_data_y2d <- nw_punct_data_raw%>%
