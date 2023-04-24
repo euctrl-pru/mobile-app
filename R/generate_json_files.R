@@ -162,6 +162,16 @@ library(here)
   CO2_last_month_num <- as.numeric(format(co2_last_date,'%m'))
   co2_last_year <- max(co2_data_evo_nw$YEAR)
 
+  #check last month number of flights
+  check_flights <- co2_data_evo_nw %>%
+    filter (YEAR == max(YEAR)) %>% filter(MONTH == max(MONTH)) %>%  select(TTF) %>% pull()
+
+  if (check_flights < 1000) {
+    co2_data_raw <-  co2_data_raw %>% filter (FLIGHT_MONTH < max(FLIGHT_MONTH))
+    co2_data_evo_nw <- co2_data_evo_nw %>% filter (FLIGHT_MONTH < max(FLIGHT_MONTH))
+    co2_last_date <- max(co2_data_evo_nw$FLIGHT_MONTH, na.rm=TRUE)
+  }
+
   co2_for_json <- co2_data_evo_nw %>%
     mutate(MONTH_TEXT = format(FLIGHT_MONTH,'%B'),
            TCO2_PREV_YEAR = lag(TCO2, 12),
@@ -187,6 +197,9 @@ library(here)
            YTD_DIF_TTF_MONTH_2019 = YTD_TTF / YTD_TTF_2019 -1,
     ) %>%
     filter(FLIGHT_MONTH == co2_last_date)
+
+
+
 
   nw_co2_json <- co2_for_json %>%
     toJSON() %>%
