@@ -13,20 +13,24 @@ library(jsonlite)
 library(here)
 
 
+
 # json files for mobile web
   data_folder <- here::here("data")
-  base_dir <- '//ihx-vdm05/LIVE_var_www_Economics$/Download'
+  base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/'
+  base_file <- '99_Traffic_Landing_Page_dataset_{today}.xlsx'
+  base_dir_old <- '//ihx-vdm05/LIVE_var_www_Economics$/Download'
   today <- (lubridate::now() +  days(-1)) %>% format("%Y%m%d")
   nw_json_app <-""
 
   # traffic data
   nw_traffic_data <-  read_xlsx(
     path  = fs::path_abs(
-      str_glue("Network_Traffic.xlsx"),
+      str_glue(base_file),
       start = base_dir),
-    sheet = "Data",
-    range = cell_limits(c(1, 1), c(NA, 39))) %>%
+    sheet = "NM_Daily_Traffic_All",
+    range = cell_limits(c(2, 1), c(NA, 39))) %>%
     as_tibble()
+
 
   nw_traffic_last_day <- nw_traffic_data %>%
     filter(FLIGHT_DATE == max(LAST_DATA_DAY))
@@ -52,11 +56,10 @@ library(here)
 
 
   # delay data
-  base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/'
 
   nw_delay_data <-  read_xlsx(
     path  = fs::path_abs(
-      str_glue("99_Traffic_Landing_Page_dataset_{today}.xlsx"),
+      str_glue(base_file),
       start = base_dir),
     sheet = "NM_Daily_Delay_All",
     range = cell_limits(c(2, 1), c(NA, 39))) %>%
@@ -275,10 +278,36 @@ library(here)
     ) %>%
     filter(FLIGHT_MONTH == co2_last_date)
 
-
-
-
   nw_co2_json <- co2_for_json %>%
+    toJSON() %>%
+    substr(., 1, nchar(.)-1) %>%
+    substr(., 2, nchar(.))
+
+
+  ####billing json
+  dir_billing <- "G:/HQ/dgof-pru/Data/DataProcessing/Covid19/Oscar/Billing"
+
+  nw_billed_data_raw <-  read_xlsx(
+    path  = fs::path_abs(
+      str_glue("Billing_tables.xlsx"),
+      start = dir_billing),
+    sheet = "network",
+    range = cell_limits(c(5, 2), c(NA, NA))) %>%
+    as_tibble()%>%
+    mutate(DATE = as.Date(Billing_period_start_date, format = "%d-%m-%Y"))
+
+  last_billing_date <- max(nw_billed_data_raw$DATE)
+
+  nw_billed_json <- nw_billed_data_raw %>%
+    arrange(Year, DATE) %>%
+    mutate(
+      MONTH_F = format(DATE,'%B'),
+      BILL_MONTH_PY = lag(Total, 12),
+      DIF_BILL_MONTH_PY = Total/BILL_MONTH_PY -1,
+      BILLED = round(Total/1000000,0)
+    ) %>%
+    filter(DATE == last_billing_date) %>%
+    select(MONTH_F, BILLED, DIF_BILL_MONTH_PY) %>%
     toJSON() %>%
     substr(., 1, nchar(.)-1) %>%
     substr(., 2, nchar(.))
@@ -290,6 +319,7 @@ library(here)
                         ', "nw_delay":', nw_delay_json,
                         ', "nw_punct":', nw_punct_json,
                         ', "nw_co2":', nw_co2_json,
+                        ', "nw_billed":', nw_billed_json,
                         "}")
   write(nw_json_app, here(data_folder,"nw_json_app.json"))
 
@@ -413,36 +443,3 @@ library(here)
             file = here(data_folder,"nw_bill_evo_app.csv"),
             row.names = FALSE)
 
-# -----------------------------------------------------------------------------------------------------------------------------------------
-# #json files for denis dailytrafficvariation
-#   ########## APT
-#     base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive'
-#   # base_dir <- 'Z:/Data/DataProcessing/Covid19/Oscar/Develop'
-#
-#
-#   apt_data <- read_xlsx(
-#     path  = fs::path_abs(
-#       str_glue("0_Top_Airport_dep+arr_traffic (Synthesis)_{today}.xlsx"),
-#       # '0_Top_100_Airport_dep+arr_traffic(Synthesis)_test.xlsx',
-#           start = base_dir),
-#     sheet = "DATA",
-#     range = cell_limits(c(11, 15), c(NA, 26))) %>%
-#     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-#
-#   apt_data_type <- sapply(apt_data, class) %>%
-#     str_replace(., 'Date', 'date') %>%
-#     str_replace(., 'numeric', 'number') %>%
-#     str_replace(., 'integer', 'number') %>%
-#     str_replace(., 'character', 'string') %>%
-#     toJSON()
-#
-#
-#   apt_data_headers <- names(apt_data) %>% toJSON()
-#
-#   apt_data_matrix <- as.matrix(apt_data)
-#   apt_data_json <-   jsonlite::toJSON(apt_data_matrix)%>%
-#     str_sub(.,2,-2)
-#
-#   apt_data_json <- paste0("[", apt_data_headers, ",",apt_data_type, ",", apt_data_json,"]")
-#
-#   write(apt_data_json, "//ihx-vdm05/LIVE_var_www_Economics$/Oscar/Old/apt_data.json")
