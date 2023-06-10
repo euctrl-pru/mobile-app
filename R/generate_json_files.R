@@ -18,7 +18,6 @@ library(here)
   data_folder <- here::here("data")
   base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/'
   base_file <- '99_Traffic_Landing_Page_dataset_{today}.xlsx'
-  base_dir_old <- '//ihx-vdm05/LIVE_var_www_Economics$/Download'
   today <- (lubridate::now() +  days(-1)) %>% format("%Y%m%d")
   nw_json_app <-""
 
@@ -325,8 +324,10 @@ library(here)
 
 
 # -----------------------------------------------------------------------------------------------------------------------------------------
-  ####CSVs for mobile app graphs
+  ####json for mobile app graphs
   ### traffic
+
+   # 7-day average daily
 
     nw_traffic_evo_app <- nw_traffic_data %>%
     select(FLIGHT_DATE, AVG_ROLLING_WEEK, AVG_ROLLING_WEEK_PREV_YEAR,
@@ -335,13 +336,29 @@ library(here)
   column_names <- c('FLIGHT_DATE', last_year, last_year-1, 2020, 2019)
   colnames(nw_traffic_evo_app) <- column_names
 
-  write.csv(nw_traffic_evo_app,
-            file = here(data_folder,"nw_traffic_evo_app.csv"),
-            row.names = FALSE)
+  # write.csv(nw_traffic_evo_app,
+  #           file = here(data_folder,"nw_traffic_evo_app.csv"),
+  #           row.names = FALSE)
 
-    # json
-  # nw_traffic_evo_app_j <- nw_traffic_evo_app %>% toJSON()
-  # write(nw_traffic_evo_app_j, paste0(data_folder, "nw_traffic_evo_app.json"))
+  nw_traffic_evo_app_j <- nw_traffic_evo_app %>% toJSON()
+  write(nw_traffic_evo_app_j, here(data_folder,"nw_traffic_evo_chart_daily.json"))
+
+    # monthly
+
+  base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/'
+  base_file <- '99_Traffic_Landing_Page_dataset_{today}.xlsx'
+
+  nw_traffic_month_data <-  read_xlsx(
+    path  = fs::path_abs(
+      str_glue(base_file),
+      start = base_dir),
+    sheet = "NM_Monthly_traffic",
+    range = cell_limits(c(5, 10), c(NA, NA))) %>%
+    as_tibble()
+
+  nw_traffic_month_data_j <- nw_traffic_month_data %>% toJSON()
+  write(nw_traffic_month_data_j, here(data_folder,"nw_traffic_evo_chart_monthly.json"))
+
 
   ### delay
   nw_delay_raw <-  read_xlsx(
@@ -442,4 +459,190 @@ library(here)
   write.csv(nw_billing_evo_app,
             file = here(data_folder,"nw_bill_evo_app.csv"),
             row.names = FALSE)
+
+
+
+  # -----------------------------------------------------------------------------------------------------------------------------------------
+  ####json for mobile app ranking tables
+  ######### Aircraft operators traffic
+
+  ao_data_dy <- read_xlsx(
+    path  = fs::path_abs(
+      str_glue("5_AOs_infographic_{today}.xlsx"),
+      start = base_dir),
+    sheet = "Table_For_Traffic_LP_Portal",
+    range = cell_limits(c(3, 2), c(NA, 10))) %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
+    filter(WK_R_RANK_BY_DAY <= 10) %>%
+    select (-DY_FLIGHT_DIFF_2019_PERC, -DY_R_RANK_BY_DAY)
+
+
+  ao_data_wk <- read_xlsx(
+    path  = fs::path_abs(
+      str_glue("5_AOs_infographic_Week_{today}.xlsx"),
+      start = base_dir),
+    sheet = "Table_For_Traffic_LP_Portal",
+    range = cell_limits(c(3, 2), c(NA, 9))) %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
+    filter(WK_R_RANK_BY_DAY <= 10) %>%
+    select (-WK_FLIGHT_DIFF_2019_PERC)
+
+
+  ao_data_y2d <- read_xlsx(
+    path  = fs::path_abs(
+      str_glue(base_file),
+      start = base_dir),
+    sheet = "TOP40_AO_ALL",
+    range = cell_limits(c(5, 2), c(NA, 8))) %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
+    filter(WK_R_RANK_BY_DAY <= 10)
+
+  ao_data = merge(x = ao_data_wk, y = ao_data_dy, by= "WK_R_RANK_BY_DAY")
+  ao_data = merge(x = ao_data, y = ao_data_y2d, by = "WK_R_RANK_BY_DAY")
+
+  ao_data <- ao_data %>%
+    mutate(WK_MIN_ENTRY_DATE = WK_MAX_ENTRY_DATE-6)
+
+  ao_data <- ao_data %>%
+    relocate(c(RANK = WK_R_RANK_BY_DAY,
+               DY_RANK_DIF_PREV_WEEK = DY_RANK_DIFF_7DAY,
+               DY_AO_GRP_NAME,
+               DY_TO_DATE = DY_ENTRY_DATE,
+               DY_FLIGHT,
+               DY_DIF_PREV_WEEK_PERC = DY_FLIGHT_DIFF_7DAY_PERC,
+               DY_DIF_PREV_YEAR_PERC = DY_FLIGHT_DIFF_PERC,
+               WK_RANK_DIF_PREV_WEEK = WK_RANK_DIFF_7DAY,
+               WK_AO_GRP_NAME,
+               WK_FROM_DATE = WK_MIN_ENTRY_DATE,
+               WK_TO_DATE = WK_MAX_ENTRY_DATE,
+               WK_DAILY_FLIGHT,
+               WK_DIF_PREV_WEEK_PERC = WK_FLIGHT_DIFF_7DAY_PERC,
+               WK_DIF_PREV_YEAR_PERC = WK_FLIGHT_DIFF_PERC,
+               Y2D_RANK_DIF_PREV_YEAR,
+               Y2D_AO_GRP_NAME,
+               Y2D_TO_DATE = last_data_day,
+               Y2D_DAILY_FLIGHT = "1_Y2D_CURRENT_YEAR",
+               Y2D_DIF_PREV_YEAR_PERC = Dif_prev_year,
+               Y2D_DIF_2019_PERC = Dif_2019))
+
+  ao_data_j <- ao_data %>% toJSON()
+  write(ao_data_j, here(data_folder,"ao_ranking_traffic.json"))
+
+  ######### Airport traffic
+
+  apt_data_dy <- read_xlsx(
+    path  = fs::path_abs(
+      str_glue("5_Airport_infographic_{today}.xlsx"),
+      start = base_dir),
+    sheet = "Table_For_Traffic_LP_Portal",
+    range = cell_limits(c(3, 2), c(NA, 10))) %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
+    filter(DY_R_RANK_BY_DAY <= 10) %>%
+    select(-DY_AIRPORT_CODE, -DY_DEP_ARR_2019_PERC)
+
+    apt_data_wk <- read_xlsx(
+    path  = fs::path_abs(
+      str_glue("5_Airport_infographic_week_{today}.xlsx"),
+      start = base_dir),
+    sheet = "Table_For_Traffic_LP_Portal",
+    range = cell_limits(c(3, 2), c(NA, 10))) %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
+      filter(DY_R_RANK_BY_DAY <= 10) %>%
+      select(-WK_AIRPORT_CODE, -WK_2019_DIFF_PERC)
+
+  apt_data_y2d <- read_xlsx(
+    path  = fs::path_abs(
+      str_glue(base_file),
+      start = base_dir),
+    sheet = "TOP40_APT_ALL",
+    range = cell_limits(c(5, 2), c(NA, 11))) %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
+    filter(DY_R_RANK_BY_DAY <= 10) %>%
+    select(-Y2D_ARP_CODE, -Y2D_DEP_ARR_2019, -Y2D_DEP_ARR_PREV_YEAR)
+
+  apt_data = merge(x = apt_data_dy, y = apt_data_wk, by = "DY_R_RANK_BY_DAY")
+  apt_data = merge(x = apt_data, y = apt_data_y2d, by = "DY_R_RANK_BY_DAY")
+
+  apt_data <- apt_data %>%
+    mutate(WK_TO_DATE = CURRENT_WEEK_FIRST_DAY + 6) %>%
+    relocate(c(RANK = DY_R_RANK_BY_DAY,
+               DY_RANK_DIF_PREV_WEEK,
+               DY_AIRPORT_NAME,
+               DY_TO_DATE = DY_ENTRY_DATE,
+               DY_DEP_ARR,
+               DY_DIF_PREV_WEEK_PERC = DY_DEP_ARR_7DAY_PERC,
+               DY_DIF_PREV_YEAR_PERC = DY_DEP_ARR_PREV_YEAR_PERC,
+               WK_RANK_DIF_PREV_WEEK,
+               WK_AIRPORT_NAME,
+               WK_FROM_DATE = CURRENT_WEEK_FIRST_DAY,
+               WK_TO_DATE,
+               WK_DAILY_DEP_ARR,
+               WK_DIF_PREV_WEEK_PERC = WK_PREV_WEEK_DIFF_PERC,
+               WK_DIF_PREV_YEAR_PERC = WK_PREV_YEAR_DIFF_PERC,
+               Y2D_RANK_DIF_PREV_YEAR,
+               Y2D_ARP_NAME,
+               Y2D_TO_DATE,
+               Y2D_DEP_ARR = Y2D_DEP_ARR_CURRENT_YEAR,
+               Y2D_DIF_PREV_YEAR_PERC,
+               Y2D_DIF_2019_PERC))
+
+  apt_data_j <- apt_data %>% toJSON()
+  write(apt_data_j, here(data_folder,"apt_ranking_traffic.json"))
+
+  ######### Country traffic DAI
+
+  ct_dai_data_dy <- read_xlsx(
+    path  = fs::path_abs(
+      str_glue(base_file),
+      start = base_dir),
+    sheet = "CTRY_DAI_DAY",
+    range = cell_limits(c(3, 2), c(NA, 8))) %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
+    filter(DY_R_RANK_BY_DAY <= 10)
+
+  ct_dai_data_wk <- read_xlsx(
+    path  = fs::path_abs(
+      str_glue(base_file),
+      start = base_dir),
+    sheet = "CTRY_DAI_WK",
+    range = cell_limits(c(3, 2), c(NA, 9))) %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
+    filter(DY_R_RANK_BY_DAY <= 10)
+
+  ct_dai_data_y2d <- read_xlsx(
+    path  = fs::path_abs(
+      str_glue(base_file),
+      start = base_dir),
+    sheet = "CTRY_DAI_Y2D",
+    range = cell_limits(c(3, 2), c(NA, 8))) %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
+    filter(DY_R_RANK_BY_DAY <= 10)
+
+  ct_dai_data = merge(x = ct_dai_data_dy, y = ct_dai_data_wk, by = "DY_R_RANK_BY_DAY")
+  ct_dai_data = merge(x = ct_dai_data, y = ct_dai_data_y2d, by = "DY_R_RANK_BY_DAY")
+
+  ct_dai_data <- ct_dai_data %>%
+    relocate(c(RANK = DY_R_RANK_BY_DAY,
+               DY_RANK_DIF_PREV_WEEK,
+               DY_COUNTRY_NAME,
+               DY_TO_DATE=DY_ENTRY_DATE,
+               DY_CTRY_DAI,
+               DY_DIF_PREV_WEEK_PERC = DY_CTRY_DAI_7DAY_PERC,
+               DY_DIF_PREV_YEAR_PERC = DY_CTRY_DAI_PREV_YEAR_PERC,
+               WK_RANK_DIF_PREV_WEEK,
+               WK_COUNTRY_NAME,
+               WK_FROM_DATE,
+               WK_TO_DATE,
+               WK_CTRY_DAI,
+               WK_DIF_PREV_WEEK_PERC = WK_CTRY_DAI_7DAY_PERC,
+               WK_DIF_PREV_YEAR_PERC = WK_CTRY_DAI_PREV_YEAR_PERC,
+               Y2D_RANK_DIF_PREV_YEAR,
+               Y2D_COUNTRY_NAME,
+               Y2D_TO_DATE,
+               Y2D_CTRY_DAI,
+               Y2D_CTRY_DAI_PREV_YEAR_PERC,
+               Y2D_RANK_DIF_PREV_YEAR))
+
+  ct_dai_data_j <- ct_dai_data %>% toJSON()
+  write(ct_dai_data_j, here(data_folder,"ctry_ranking_traffic_DAI.json"))
 
