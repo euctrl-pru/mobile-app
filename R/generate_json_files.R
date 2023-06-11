@@ -343,6 +343,7 @@ library(here)
 
   nw_traffic_evo_app_j <- nw_traffic_evo_app %>% toJSON()
   write(nw_traffic_evo_app_j, here(data_folder,"nw_traffic_evo_chart_daily.json"))
+  write(nw_traffic_evo_app_j, paste0(archive_dir, today, "_nw_traffic_evo_chart_daily.json"))
 
     # monthly
 
@@ -359,6 +360,7 @@ library(here)
 
   nw_traffic_month_data_j <- nw_traffic_month_data %>% toJSON()
   write(nw_traffic_month_data_j, here(data_folder,"nw_traffic_evo_chart_monthly.json"))
+  write(nw_traffic_month_data_j, paste0(archive_dir, today, "_nw_traffic_evo_chart_monthly.json"))
 
 
   ### delay
@@ -371,7 +373,10 @@ library(here)
     as_tibble()
 
   nw_delay_evo_app <- nw_delay_raw %>%
-    filter(FLIGHT_DATE>=paste0(last_year-1,'-06-01'))%>%
+    mutate(
+      ROLL_WK_AVG_DLY_PREV_YEAR = lag(ROLL_WK_AVG_DLY, 364)
+    )  %>%
+    filter(FLIGHT_DATE >= paste0(last_year,'-01-01'))%>%
     # mutate(FLIGHT_YEAR = as.character(format(FLIGHT_DATE,'%Y')))%>%
     mutate(FLIGHT_DATE = as.Date(FLIGHT_DATE))%>%
     mutate(
@@ -391,19 +396,25 @@ library(here)
                                   round(ROLL_WK_AVG_DLY_OTH/ROLL_WK_AVG_DLY,2))
     ) %>%
     select(FLIGHT_DATE,
-           ROLL_WK_AVG_DLY_CAP_STAF, ROLL_WK_AVG_DLY_DISR,
-           ROLL_WK_AVG_DLY_WTH, ROLL_WK_AVG_DLY_OTH)
+           ROLL_WK_AVG_DLY_CAP_STAF,
+           ROLL_WK_AVG_DLY_DISR,
+           ROLL_WK_AVG_DLY_WTH,
+           ROLL_WK_AVG_DLY_OTH,
+           ROLL_WK_AVG_DLY_PREV_YEAR)
 
   column_names <- c('FLIGHT_DATE',
                     "Capacity/Staffing",
                     "Disruptions (ATC)",
                     "Weather",
-                    "Other")
+                    "Other",
+                    paste0 ("Total delay ", last_year-1)
+  )
   colnames(nw_delay_evo_app) <- column_names
 
-  write.csv(nw_delay_evo_app,
-            file = here(data_folder,"nw_delay_evo_app.csv"),
-            row.names = FALSE)
+  nw_delay_evo_app_j <- nw_delay_evo_app %>% toJSON()
+  write(nw_delay_evo_app_j, here(data_folder,"nw_delay_category_evo_chart.json"))
+  write(nw_delay_evo_app_j, paste0(archive_dir, today, "_nw_delay_category_evo_chart.json"))
+
 
   #punctuality
   nw_punct_evo_app <- nw_punct_data_raw %>%
