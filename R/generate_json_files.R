@@ -1269,8 +1269,8 @@ library(here)
     arrange(DATE) %>%
     mutate(
       DY_RANK_DIF_PREV_WEEK = lag(RANK, 7) - RANK,
-      DY_PUNCT_DIF_PREV_WEEK_PP = ARR_PUNCTUALITY_PERCENTAGE - lag(ARR_PUNCTUALITY_PERCENTAGE, 7),
-      DY_PUNCT_DIF_PREV_YEAR_PP = ARR_PUNCTUALITY_PERCENTAGE - lag(ARR_PUNCTUALITY_PERCENTAGE, 364),
+      DY_PUNCT_DIF_PREV_WEEK_PERC = (ARR_PUNCTUALITY_PERCENTAGE - lag(ARR_PUNCTUALITY_PERCENTAGE, 7)) / 100,
+      DY_PUNCT_DIF_PREV_YEAR_PERC = (ARR_PUNCTUALITY_PERCENTAGE - lag(ARR_PUNCTUALITY_PERCENTAGE, 364)) / 100,
       WK_APT_ARR_PUNCT = rollsum(ARR_PUNCTUAL_FLIGHTS, 7, fill = NA, align = "right") / rollsum(ARR_SCHEDULE_FLIGHT,7, fill = NA, align = "right")
     )  %>%
     ungroup()
@@ -1285,8 +1285,8 @@ library(here)
       DY_RANK_DIF_PREV_WEEK,
       DY_APT_NAME,
       DY_APT_ARR_PUNCT,
-      DY_PUNCT_DIF_PREV_WEEK_PP,
-      DY_PUNCT_DIF_PREV_YEAR_PP
+      DY_PUNCT_DIF_PREV_WEEK_PERC,
+      DY_PUNCT_DIF_PREV_YEAR_PERC
     )
 
   # week
@@ -1300,8 +1300,8 @@ library(here)
     arrange(DATE) %>%
     mutate(
       WK_RANK_DIF_PREV_WEEK = lag(RANK, 7) - RANK,
-      WK_PUNCT_DIF_PREV_WEEK_PP = (WK_APT_ARR_PUNCT - lag(WK_APT_ARR_PUNCT, 7)) * 100,
-      WK_PUNCT_DIF_PREV_YEAR_PP = (WK_APT_ARR_PUNCT - lag(WK_APT_ARR_PUNCT, 364)) * 100
+      WK_PUNCT_DIF_PREV_WEEK_PERC = (WK_APT_ARR_PUNCT - lag(WK_APT_ARR_PUNCT, 7)),
+      WK_PUNCT_DIF_PREV_YEAR_PERC = (WK_APT_ARR_PUNCT - lag(WK_APT_ARR_PUNCT, 364))
     )  %>%
     ungroup() %>%
     filter(DATE == last_punctuality_day, RANK < 11) %>%
@@ -1311,8 +1311,8 @@ library(here)
       WK_RANK_DIF_PREV_WEEK,
       WK_APT_NAME,
       WK_APT_ARR_PUNCT,
-      WK_PUNCT_DIF_PREV_WEEK_PP,
-      WK_PUNCT_DIF_PREV_YEAR_PP
+      WK_PUNCT_DIF_PREV_WEEK_PERC,
+      WK_PUNCT_DIF_PREV_YEAR_PERC
     )
 
   # y2d
@@ -1333,8 +1333,8 @@ library(here)
     arrange(YEAR) %>%
     mutate(
       Y2D_RANK_DIF_PREV_YEAR = lag(RANK, 1) - RANK,
-      Y2D_PUNCT_DIF_PREV_YEAR_PP = (Y2D_APT_ARR_PUNCT - lag(Y2D_APT_ARR_PUNCT, 1)) * 100,
-      Y2D_PUNCT_DIF_2019_PP = (Y2D_APT_ARR_PUNCT - lag(Y2D_APT_ARR_PUNCT, max(YEAR) - 2019)) * 100
+      Y2D_PUNCT_DIF_PREV_YEAR_PERC = (Y2D_APT_ARR_PUNCT - lag(Y2D_APT_ARR_PUNCT, 1)),
+      Y2D_PUNCT_DIF_2019_PERC = (Y2D_APT_ARR_PUNCT - lag(Y2D_APT_ARR_PUNCT, max(YEAR) - 2019))
     )  %>%
     ungroup() %>%
     filter(YEAR == max(YEAR), RANK < 11) %>%
@@ -1344,8 +1344,8 @@ library(here)
       Y2D_RANK_DIF_PREV_YEAR,
       Y2D_APT_NAME,
       Y2D_APT_ARR_PUNCT,
-      Y2D_RANK_DIF_PREV_YEAR,
-      Y2D_PUNCT_DIF_2019_PP
+      Y2D_PUNCT_DIF_PREV_YEAR_PERC,
+      Y2D_PUNCT_DIF_2019_PERC
     )
 
   # main card
@@ -1403,21 +1403,212 @@ library(here)
       DY_RANK_DIF_PREV_WEEK,
       DY_APT_NAME,
       DY_APT_ARR_PUNCT,
-      DY_PUNCT_DIF_PREV_WEEK_PP,
-      DY_PUNCT_DIF_PREV_YEAR_PP,
+      DY_PUNCT_DIF_PREV_WEEK_PERC,
+      DY_PUNCT_DIF_PREV_YEAR_PERC,
       WK_RANK_DIF_PREV_WEEK,
       WK_APT_NAME,
       WK_APT_ARR_PUNCT,
-      WK_PUNCT_DIF_PREV_WEEK_PP,
-      WK_PUNCT_DIF_PREV_YEAR_PP,
+      WK_PUNCT_DIF_PREV_WEEK_PERC,
+      WK_PUNCT_DIF_PREV_YEAR_PERC,
       Y2D_RANK_DIF_PREV_YEAR,
       Y2D_APT_NAME,
       Y2D_APT_ARR_PUNCT,
-      Y2D_RANK_DIF_PREV_YEAR,
-      Y2D_PUNCT_DIF_2019_PP
+      Y2D_PUNCT_DIF_PREV_YEAR_PERC,
+      Y2D_PUNCT_DIF_2019_PERC
 ))
 
   # covert to json and save in app data folder and archive
   apt_punct_data_j <- apt_punct_data %>% toJSON()
   write(apt_punct_data_j, here(data_folder,"apt_ranking_punctuality.json"))
   write(apt_punct_data_j, paste0(archive_dir, today, "_apt_ranking_punctuality.json"))
+
+  ######### Country punctuality
+  ##### NOte: the time series for each country is not full. At some point it needs to be fixed either here or in the initial query so the lag functions yield the right result
+
+  ### we need data from 2019 so I'm using the source view instead of the excel file
+
+  query <- "
+WITH
+  LIST_STATE as (
+    SELECT
+      EC_ISO_CT_NAME, EC_ISO_CT_CODE
+    FROM SWH_FCT.DIM_ISO_COUNTRY
+    WHERE VALID_TO > TRUNC(SYSDATE)-1
+  )
+
+  SELECT
+    a.*,
+    b.EC_ISO_CT_NAME
+  FROM LDW_VDM.VIEW_FAC_PUNCTUALITY_CT_DAY a
+  LEFT JOIN LIST_STATE b on a.ISO_CT_CODE = b.EC_ISO_CT_CODE
+  ORDER BY b.EC_ISO_CT_NAME
+   "
+
+  ct_punct_raw <- export_query(query) %>%
+    filter(ISO_CT_CODE != 'GI',  ISO_CT_CODE != 'FO', ISO_CT_CODE != 'SJ', ISO_CT_CODE != 'MC', ISO_CT_CODE != 'PM', ISO_CT_CODE != 'UA')
+
+  last_punctuality_day <-  max(ct_punct_raw$DATE)
+
+  # calc
+  ct_punct_calc <- ct_punct_raw %>%
+    group_by(DATE) %>%
+    arrange(desc(ARR_PUNCTUALITY_PERCENTAGE), EC_ISO_CT_NAME) %>%
+    mutate(RANK = row_number()) %>%
+    ungroup() %>%
+    group_by(EC_ISO_CT_NAME) %>%
+    arrange(DATE) %>%
+    mutate(
+      DY_RANK_DIF_PREV_WEEK = lag(RANK, 7) - RANK,
+      DY_PUNCT_DIF_PREV_WEEK_PERC = (ARR_PUNCTUALITY_PERCENTAGE - lag(ARR_PUNCTUALITY_PERCENTAGE, 7)) / 100,
+      DY_PUNCT_DIF_PREV_YEAR_PERC = (ARR_PUNCTUALITY_PERCENTAGE - lag(ARR_PUNCTUALITY_PERCENTAGE, 364)) / 100,
+      WK_CTRY_ARR_PUNCT = rollsum(ARR_PUNCTUAL_FLIGHTS, 7, fill = NA, align = "right") / rollsum(ARR_SCHEDULE_FLIGHT,7, fill = NA, align = "right")
+    )  %>%
+    ungroup()
+
+  # day
+  ct_punct_dy <- ct_punct_calc %>%
+    filter(DATE == last_punctuality_day, RANK < 11) %>%
+    mutate(DY_CTRY_NAME = EC_ISO_CT_NAME,
+           DY_CTRY_ARR_PUNCT = ARR_PUNCTUALITY_PERCENTAGE / 100) %>%
+    select(
+      RANK,
+      DY_RANK_DIF_PREV_WEEK,
+      DY_CTRY_NAME,
+      DY_CTRY_ARR_PUNCT,
+      DY_PUNCT_DIF_PREV_WEEK_PERC,
+      DY_PUNCT_DIF_PREV_YEAR_PERC
+    )
+
+  # week
+  ct_punct_wk <- ct_punct_calc %>%
+    group_by(DATE) %>%
+    arrange(desc(WK_CTRY_ARR_PUNCT), EC_ISO_CT_NAME) %>%
+    mutate(RANK = row_number(),
+           WK_RANK = RANK) %>%
+    ungroup() %>%
+    group_by(EC_ISO_CT_NAME) %>%
+    arrange(DATE) %>%
+    mutate(
+      WK_RANK_DIF_PREV_WEEK = lag(RANK, 7) - RANK,
+      WK_PUNCT_DIF_PREV_WEEK_PERC = (WK_CTRY_ARR_PUNCT - lag(WK_CTRY_ARR_PUNCT, 7)),
+      WK_PUNCT_DIF_PREV_YEAR_PERC = (WK_CTRY_ARR_PUNCT - lag(WK_CTRY_ARR_PUNCT, 364))
+    )  %>%
+    ungroup() %>%
+    filter(DATE == last_punctuality_day, RANK < 11) %>%
+    mutate(WK_CTRY_NAME = EC_ISO_CT_NAME) %>%
+    select(
+      RANK,
+      WK_RANK_DIF_PREV_WEEK,
+      WK_CTRY_NAME,
+      WK_CTRY_ARR_PUNCT,
+      WK_PUNCT_DIF_PREV_WEEK_PERC,
+      WK_PUNCT_DIF_PREV_YEAR_PERC
+    )
+
+  # y2d
+  ct_punct_y2d <- ct_punct_calc %>%
+    mutate(MONTH_DAY = as.numeric(format(DATE, format = "%m%d"))) %>%
+    filter(MONTH_DAY <= as.numeric(format(last_punctuality_day, format = "%m%d"))) %>%
+    mutate(YEAR = as.numeric(format(DATE, format="%Y"))) %>%
+    group_by(EC_ISO_CT_NAME, YEAR) %>%
+    summarise (Y2D_CTRY_ARR_PUNCT = sum(ARR_PUNCTUAL_FLIGHTS, na.rm=TRUE) / sum(ARR_SCHEDULE_FLIGHT, na.rm=TRUE)
+    ) %>%
+    ungroup() %>%
+    group_by(YEAR) %>%
+    arrange(desc(Y2D_CTRY_ARR_PUNCT), EC_ISO_CT_NAME) %>%
+    mutate(RANK = row_number(),
+           Y2D_RANK = RANK) %>%
+    ungroup() %>%
+    group_by(EC_ISO_CT_NAME) %>%
+    arrange(YEAR) %>%
+    mutate(
+      Y2D_RANK_DIF_PREV_YEAR = lag(RANK, 1) - RANK,
+      Y2D_PUNCT_DIF_PREV_YEAR_PERC = (Y2D_CTRY_ARR_PUNCT - lag(Y2D_CTRY_ARR_PUNCT, 1)),
+      Y2D_PUNCT_DIF_2019_PERC = (Y2D_CTRY_ARR_PUNCT - lag(Y2D_CTRY_ARR_PUNCT, max(YEAR) - 2019))
+    )  %>%
+    ungroup() %>%
+    filter(YEAR == max(YEAR), RANK < 11) %>%
+    mutate(Y2D_CTRY_NAME = EC_ISO_CT_NAME) %>%
+    select(
+      RANK,
+      Y2D_RANK_DIF_PREV_YEAR,
+      Y2D_CTRY_NAME,
+      Y2D_CTRY_ARR_PUNCT,
+      Y2D_PUNCT_DIF_PREV_YEAR_PERC,
+      Y2D_PUNCT_DIF_2019_PERC
+    )
+
+  # main card
+  ct_main_punct_top <- ct_punct_dy %>%
+    mutate(
+      MAIN_PUNCT_CTRY_NAME = if_else(
+        RANK <= 3,
+        DY_CTRY_NAME,
+        NA
+      ),
+      MAIN_PUNCT_CTRY_ARR_PUNCT = if_else(
+        RANK <= 3,
+        DY_CTRY_ARR_PUNCT,
+        NA
+      )
+    ) %>%
+    select(RANK, MAIN_PUNCT_CTRY_NAME, MAIN_PUNCT_CTRY_ARR_PUNCT)
+
+  ct_main_punct_bottom <-  ct_punct_calc %>%
+    filter(DATE == last_punctuality_day) %>%
+    mutate(RANK = max(RANK) +1 - RANK,
+           DY_CTRY_NAME = EC_ISO_CT_NAME,
+           DY_CTRY_ARR_PUNCT = ARR_PUNCTUALITY_PERCENTAGE / 100) %>%
+    mutate(
+      MAIN_PUNCT_CTRY_NAME_BOTTOM = if_else(
+        RANK <= 3,
+        DY_CTRY_NAME,
+        NA
+      ),
+      MAIN_PUNCT_CTRY_ARR_PUNCT_BOTTOM = if_else(
+        RANK <= 3,
+        DY_CTRY_ARR_PUNCT,
+        NA
+      )
+    ) %>%
+    filter(RANK < 11) %>%
+    arrange(RANK) %>%
+    select(RANK, MAIN_PUNCT_CTRY_NAME_BOTTOM, MAIN_PUNCT_CTRY_ARR_PUNCT_BOTTOM)
+
+
+  #merge and reorder tables
+  ct_punct_data = merge(x = ct_punct_dy, y = ct_punct_wk, by = "RANK")
+  ct_punct_data = merge(x = ct_punct_data, y = ct_punct_y2d, by = "RANK")
+  ct_punct_data = merge(x = ct_punct_data, y = ct_main_punct_top, by = "RANK")
+  ct_punct_data = merge(x = ct_punct_data, y = ct_main_punct_bottom, by = "RANK")
+
+  ct_punct_data <- ct_punct_data %>%
+    # mutate(WK_TO_DATE = CURRENT_WEEK_FIRST_DAY + 6) %>%
+    relocate(c(
+      RANK,
+      MAIN_PUNCT_CTRY_NAME,
+      MAIN_PUNCT_CTRY_ARR_PUNCT,
+      MAIN_PUNCT_CTRY_NAME_BOTTOM,
+      MAIN_PUNCT_CTRY_ARR_PUNCT_BOTTOM,
+      DY_RANK_DIF_PREV_WEEK,
+      DY_CTRY_NAME,
+      DY_CTRY_ARR_PUNCT,
+      DY_PUNCT_DIF_PREV_WEEK_PERC,
+      DY_PUNCT_DIF_PREV_YEAR_PERC,
+      WK_RANK_DIF_PREV_WEEK,
+      WK_CTRY_NAME,
+      WK_CTRY_ARR_PUNCT,
+      WK_PUNCT_DIF_PREV_WEEK_PERC,
+      WK_PUNCT_DIF_PREV_YEAR_PERC,
+      Y2D_RANK_DIF_PREV_YEAR,
+      Y2D_CTRY_NAME,
+      Y2D_CTRY_ARR_PUNCT,
+      Y2D_PUNCT_DIF_PREV_YEAR_PERC,
+      Y2D_PUNCT_DIF_2019_PERC
+    ))
+
+  # covert to json and save in app data folder and archive
+  ct_punct_data_j <- ct_punct_data %>% toJSON()
+  write(ct_punct_data_j, here(data_folder,"ct_ranking_punctuality.json"))
+  write(ct_punct_data_j, paste0(archive_dir, today, "_ct_ranking_punctuality.json"))
+
