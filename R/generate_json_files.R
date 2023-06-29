@@ -23,13 +23,14 @@ library(here)
   last_day <-  (lubridate::now() +  days(-1))
   last_year <- as.numeric(format(last_day,'%Y'))
   nw_json_app <-""
+  # DB params
+  usr <- Sys.getenv("PRU_DEV_USR")
+  pwd <- Sys.getenv("PRU_DEV_PWD")
+  dbn <- Sys.getenv("PRU_DEV_DBNAME")
+
 
 # functions
   export_query <- function(query) {
-    # DB params
-    usr <- Sys.getenv("PRU_DEV_USR")
-    pwd <- Sys.getenv("PRU_DEV_PWD")
-    dbn <- Sys.getenv("PRU_DEV_DBNAME")
 
     # NOTE: to be set before you create your ROracle connection!
     # See http://www.oralytics.com/2015/05/r-roracle-and-oracle-date-formats_27.html
