@@ -199,7 +199,7 @@ library(here)
                                     lag(DEP_PUN_WK, 364*(last_year_punct-2019)+floor((last_year_punct-2019)/4)*7),
                                     1)
     ) %>%
-    filter (DATE==last_day_punct) %>%
+    filter (DATE == last_day_punct) %>%
     select(ARR_PUNCTUALITY_PERCENTAGE, DEP_PUNCTUALITY_PERCENTAGE,
            ARR_PUN_PREV_YEAR, DEP_PUN_PREV_YEAR,
            ARR_PUN_2019, DEP_PUN_2019,
@@ -1609,6 +1609,6 @@ WITH
 
   # covert to json and save in app data folder and archive
   ct_punct_data_j <- ct_punct_data %>% toJSON()
-  write(ct_punct_data_j, here(data_folder,"ct_ranking_punctuality.json"))
-  write(ct_punct_data_j, paste0(archive_dir, today, "_ct_ranking_punctuality.json"))
+  write(ct_punct_data_j, here(data_folder,"ctry_ranking_punctuality.json"))
+  write(ct_punct_data_j, paste0(archive_dir, today, "_ctry_ranking_punctuality.json"))
 
