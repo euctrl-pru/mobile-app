@@ -368,7 +368,9 @@ library(RODBC)
     mutate(Year = year,
       MONTH_F = format(billing_period_start_date + days(1),'%B'),
       BILL_MONTH_PY = lag(total_billing, 12),
+      BILL_MONTH_2019 = lag(total_billing, (last_year - 2019) * 12),
       DIF_BILL_MONTH_PY = total_billing / BILL_MONTH_PY - 1,
+      DIF_BILL_MONTH_2019 = total_billing / BILL_MONTH_2019 - 1,
       BILLED = round(total_billing / 1000000,0)
     ) %>%
     group_by(Year) %>%
@@ -377,12 +379,21 @@ library(RODBC)
     ) %>%
     ungroup() %>%
     mutate(
-      total_billing_y2d_py = lag(total_billing_y2d, 12),
-      DIF_BILL_Y2D_PY = total_billing_y2d / total_billing_y2d_py -1,
-      BILLED_Y2D = round(total_billing_y2d / 1000000,0)
+      BILL_Y2D_PY = lag(total_billing_y2d, 12),
+      BILL_Y2D_2019 = lag(total_billing_y2d, (last_year - 2019) * 12),
+      DIF_BILL_Y2D_PY = total_billing_y2d / BILL_Y2D_PY -1,
+      DIF_BILL_Y2D_2019 = total_billing_y2d / BILL_Y2D_2019 -1,
+      BILLED_Y2D = round(total_billing_y2d / 1000000, 0)
     ) %>%
     filter(billing_period_start_date == last_billing_date) %>%
-    select(MONTH_F, BILLED, DIF_BILL_MONTH_PY, BILLED_Y2D, DIF_BILL_Y2D_PY) %>%
+    select(MONTH_F,
+           BILLED,
+           DIF_BILL_MONTH_PY,
+           DIF_BILL_MONTH_2019,
+           BILLED_Y2D,
+           DIF_BILL_Y2D_PY,
+           DIF_BILL_Y2D_2019
+           ) %>%
     toJSON() %>%
     substr(., 1, nchar(.)-1) %>%
     substr(., 2, nchar(.))
@@ -396,6 +407,7 @@ library(RODBC)
                         ', "nw_billed":', nw_billed_json,
                         "}")
   write(nw_json_app, here(data_folder,"nw_json_app.json"))
+  write(nw_json_app, paste0(archive_dir, today, "_nw_json_app.json"))
 
 
 # -----------------------------------------------------------------------------------------------------------------------------------------
