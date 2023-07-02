@@ -11,7 +11,7 @@ library(lubridate)
 library(zoo)
 library(jsonlite)
 library(here)
-
+library(RODBC)
 
 
 # parameters
@@ -174,80 +174,82 @@ library(here)
   last_day_punct <-  max(nw_punct_data_raw$DATE)
   last_year_punct <- as.numeric(format(last_day_punct,'%Y'))
 
-  nw_punct_data_d_w <- nw_punct_data_raw%>%
-    arrange(DATE)%>%
-    mutate(YEAR_FLIGHT = as.numeric(format(DATE,'%Y')))%>%
+  nw_punct_data_d_w <- nw_punct_data_raw %>%
+    arrange(DATE) %>%
+    mutate(YEAR_FLIGHT = as.numeric(format(DATE,'%Y'))) %>%
     mutate(ARR_PUN_PREV_YEAR = lag(ARR_PUNCTUALITY_PERCENTAGE, 364),
            DEP_PUN_PREV_YEAR = lag(DEP_PUNCTUALITY_PERCENTAGE, 364),
            ARR_PUN_2019 =if_else(YEAR_FLIGHT == last_year_punct,
-                                 lag(ARR_PUNCTUALITY_PERCENTAGE, 364*(last_year_punct-2019)+floor((last_year_punct-2019)/4)*7),
+                                 lag(ARR_PUNCTUALITY_PERCENTAGE,
+                                     364 * (last_year_punct - 2019) + floor((last_year_punct - 2019) / 4) * 7),
                                  1),
            DEP_PUN_2019 =if_else(YEAR_FLIGHT == last_year_punct,
-                                 lag(DEP_PUNCTUALITY_PERCENTAGE, 364*(last_year_punct-2019)+floor((last_year_punct-2019)/4)*7),
+                                 lag(DEP_PUNCTUALITY_PERCENTAGE,
+                                     364 * (last_year_punct - 2019) + floor((last_year_punct - 2019) / 4) * 7),
                                  1),
            DAY_2019 = if_else(YEAR_FLIGHT == last_year_punct,
-                              lag(DATE, 364*(last_year_punct-2019)+floor((last_year_punct-2019)/4)*7)
-                              ,last_day_punct)
+                              lag(DATE,
+                                  364 * (last_year_punct - 2019) + floor((last_year_punct - 2019) / 4) * 7)
+                              , last_day_punct)
     ) %>%
-    mutate(DEP_PUN_WK = rollsum((DEP_PUNCTUAL_FLIGHTS), 7, fill = NA, align = "right")/rollsum(DEP_SCHEDULE_FLIGHT,7, fill = NA, align = "right")*100,
-           ARR_PUN_WK = rollsum((ARR_PUNCTUAL_FLIGHTS), 7, fill = NA, align = "right")/rollsum(ARR_SCHEDULE_FLIGHT,7, fill = NA, align = "right")*100)%>%
+    mutate(DEP_PUN_WK = rollsum((DEP_PUNCTUAL_FLIGHTS), 7, fill = NA, align = "right") / rollsum(DEP_SCHEDULE_FLIGHT, 7, fill = NA, align = "right") * 100,
+           ARR_PUN_WK = rollsum((ARR_PUNCTUAL_FLIGHTS), 7, fill = NA, align = "right") / rollsum(ARR_SCHEDULE_FLIGHT, 7, fill = NA, align = "right") * 100) %>%
     mutate(ARR_PUN_WK_PREV_YEAR = lag(ARR_PUN_WK, 364),
            DEP_PUN_WK_PREV_YEAR = lag(DEP_PUN_WK, 364),
            ARR_PUN_WK_2019 =if_else(YEAR_FLIGHT == last_year_punct,
-                                    lag(ARR_PUN_WK, 364*(last_year_punct-2019)+floor((last_year_punct-2019)/4)*7),
+                                    lag(ARR_PUN_WK, 364 * (last_year_punct - 2019) + floor((last_year_punct - 2019) / 4) * 7),
                                     1),
            DEP_PUN_WK_2019 =if_else(YEAR_FLIGHT == last_year_punct,
-                                    lag(DEP_PUN_WK, 364*(last_year_punct-2019)+floor((last_year_punct-2019)/4)*7),
+                                    lag(DEP_PUN_WK, 364 * (last_year_punct - 2019) + floor((last_year_punct - 2019) / 4) * 7),
                                     1)
     ) %>%
     filter (DATE == last_day_punct) %>%
-    select(ARR_PUNCTUALITY_PERCENTAGE, DEP_PUNCTUALITY_PERCENTAGE,
-           ARR_PUN_PREV_YEAR, DEP_PUN_PREV_YEAR,
-           ARR_PUN_2019, DEP_PUN_2019,
-           ARR_PUN_WK, DEP_PUN_WK, ARR_PUN_WK_PREV_YEAR, DEP_PUN_WK_PREV_YEAR, ARR_PUN_WK_2019, DEP_PUN_WK_2019) %>%
+    select(
+      ARR_PUNCTUALITY_PERCENTAGE,
+      DEP_PUNCTUALITY_PERCENTAGE,
+      ARR_PUN_PREV_YEAR,
+      DEP_PUN_PREV_YEAR,
+      ARR_PUN_2019,
+      DEP_PUN_2019,
+      ARR_PUN_WK,
+      DEP_PUN_WK,
+      ARR_PUN_WK_PREV_YEAR,
+      DEP_PUN_WK_PREV_YEAR,
+      ARR_PUN_WK_2019,
+      DEP_PUN_WK_2019) %>%
     mutate(INDEX = 1)
 
-  nw_punct_data_y2d <- nw_punct_data_raw%>%
-    arrange(DATE)%>%
-    mutate(YEAR_FLIGHT = as.numeric(format(DATE,'%Y')))%>%
-    mutate(MONTH_DAY = as.numeric(format(DATE, format="%m%d")))%>%
-    filter(MONTH_DAY<=as.numeric(format(last_day_punct, format="%m%d")))%>%
-    mutate(YEAR = as.numeric(format(DATE, format="%Y")))%>%
-    group_by(YEAR)%>%
-    summarise (ARR_PUN_Y2D = sum(ARR_PUNCTUAL_FLIGHTS, na.rm=TRUE)/sum(ARR_SCHEDULE_FLIGHT, na.rm=TRUE)*100,
-               DEP_PUN_Y2D = sum(DEP_PUNCTUAL_FLIGHTS, na.rm=TRUE)/sum(DEP_SCHEDULE_FLIGHT, na.rm=TRUE)*100)%>%
+  nw_punct_data_y2d <- nw_punct_data_raw %>%
+    arrange(DATE) %>%
+    mutate(YEAR_FLIGHT = as.numeric(format(DATE,'%Y'))) %>%
+    mutate(MONTH_DAY = as.numeric(format(DATE, format="%m%d"))) %>%
+    filter(MONTH_DAY <= as.numeric(format(last_day_punct, format="%m%d"))) %>%
+    mutate(YEAR = as.numeric(format(DATE, format="%Y"))) %>%
+    group_by(YEAR) %>%
+    summarise (ARR_PUN_Y2D = sum(ARR_PUNCTUAL_FLIGHTS, na.rm=TRUE) / sum(ARR_SCHEDULE_FLIGHT, na.rm=TRUE) * 100,
+               DEP_PUN_Y2D = sum(DEP_PUNCTUAL_FLIGHTS, na.rm=TRUE) / sum(DEP_SCHEDULE_FLIGHT, na.rm=TRUE) * 100) %>%
     mutate(Y2D_ARR_PUN_PREV_YEAR = lag(ARR_PUN_Y2D, 1),
            Y2D_DEP_PUN_PREV_YEAR = lag(DEP_PUN_Y2D, 1),
-           Y2D_ARR_PUN_2019 = lag(ARR_PUN_Y2D, last_year_punct-2019),
-           Y2D_DEP_PUN_2019 = lag(DEP_PUN_Y2D, last_year_punct-2019)
+           Y2D_ARR_PUN_2019 = lag(ARR_PUN_Y2D, last_year_punct - 2019),
+           Y2D_DEP_PUN_2019 = lag(DEP_PUN_Y2D, last_year_punct - 2019)
     ) %>%
     filter(YEAR == as.numeric(format(last_day_punct, format="%Y"))) %>%
-    select(ARR_PUN_Y2D, DEP_PUN_Y2D, Y2D_ARR_PUN_PREV_YEAR, Y2D_DEP_PUN_PREV_YEAR, Y2D_ARR_PUN_2019, Y2D_DEP_PUN_2019) %>%
+    select(ARR_PUN_Y2D,
+           DEP_PUN_Y2D,
+           Y2D_ARR_PUN_PREV_YEAR,
+           Y2D_DEP_PUN_PREV_YEAR,
+           Y2D_ARR_PUN_2019,
+           Y2D_DEP_PUN_2019) %>%
     mutate(INDEX = 1)
 
 
-  nw_punct_json <- merge(nw_punct_data_d_w, nw_punct_data_y2d, by="INDEX") %>% select(-INDEX) %>%
+  nw_punct_json <- merge(nw_punct_data_d_w, nw_punct_data_y2d, by="INDEX") %>%
+    select(-INDEX) %>%
     toJSON() %>%
     substr(., 1, nchar(.)-1) %>%
     substr(., 2, nchar(.))
 
   ####CO2 json
-
-  export_query <- function(schema, query) {
-    USR <- Sys.getenv(paste0(schema, "_USR"))
-    PWD <- Sys.getenv(paste0(schema, "_PWD"))
-    DBN <- Sys.getenv(paste0(schema, "_DBNAME"))
-    withr::local_envvar(c("TZ" = "UTC", "ORA_SDTZ" = "UTC"))
-    withr::local_namespace("ROracle")
-    con <- withr::local_db_connection(
-      DBI::dbConnect(DBI::dbDriver("Oracle"),
-                     USR, PWD, dbname = DBN,
-                     timezone = "UTC"))
-    con %>%
-      dbSendQuery(query) %>%
-      fetch(n = -1)
-  }
-
   query <- str_glue("
     SELECT *
       FROM TABLE (emma_pub.api_aiu_stats.MM_AIU_STATE_DEP ())
@@ -255,17 +257,21 @@ library(here)
     ORDER BY 2, 3, 4
    ")
 
-
-  co2_data_raw <- export_query("PRU_DEV", query = query) %>%
+  co2_data_raw <- export_query(query) %>%
     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
   co2_data_evo_nw <- co2_data_raw %>%
-    select(FLIGHT_MONTH, CO2_QTY_TONNES, TF, YEAR, MONTH) %>%
+    select(FLIGHT_MONTH,
+           CO2_QTY_TONNES,
+           TF,
+           YEAR,
+           MONTH) %>%
     group_by(FLIGHT_MONTH) %>%
     summarise(TTF = sum(TF), TCO2 = sum(CO2_QTY_TONNES)) %>%
-    mutate(YEAR = as.numeric(format(FLIGHT_MONTH,'%Y')), MONTH = as.numeric(format(FLIGHT_MONTH,'%m'))) %>%
+    mutate(YEAR = as.numeric(format(FLIGHT_MONTH,'%Y')),
+           MONTH = as.numeric(format(FLIGHT_MONTH,'%m'))) %>%
     arrange(FLIGHT_MONTH) %>%
-    mutate(FLIGHT_MONTH = ceiling_date(as_date(FLIGHT_MONTH), unit='month')-1)
+    mutate(FLIGHT_MONTH = ceiling_date(as_date(FLIGHT_MONTH), unit = 'month')-1)
 
   co2_last_date <- max(co2_data_evo_nw$FLIGHT_MONTH, na.rm=TRUE)
   co2_last_month <- format(co2_last_date,'%B')
@@ -286,8 +292,8 @@ library(here)
     mutate(MONTH_TEXT = format(FLIGHT_MONTH,'%B'),
            TCO2_PREV_YEAR = lag(TCO2, 12),
            TTF_PREV_YEAR = lag(TTF, 12),
-           TCO2_2019 = lag(TCO2, (as.numeric(co2_last_year)-2019)*12),
-           TTF_2019 = lag(TTF, (as.numeric(co2_last_year)-2019)*12)) %>%
+           TCO2_2019 = lag(TCO2, (as.numeric(co2_last_year) - 2019) * 12),
+           TTF_2019 = lag(TTF, (as.numeric(co2_last_year) - 2019) * 12)) %>%
     mutate(DIF_CO2_MONTH_PREV_YEAR = TCO2 / TCO2_PREV_YEAR -1,
            DIF_TTF_MONTH_PREV_YEAR = TTF / TTF_PREV_YEAR -1,
            DIF_CO2_MONTH_2019 = TCO2 / TCO2_2019 -1,
@@ -295,16 +301,16 @@ library(here)
     ) %>%
     group_by(YEAR) %>%
     mutate(YTD_TCO2 = cumsum(TCO2),
-           YTD_TTF = cumsum(TTF))%>%
+           YTD_TTF = cumsum(TTF)) %>%
     ungroup() %>%
     mutate(YTD_TCO2_PREV_YEAR = lag(YTD_TCO2, 12),
            YTD_TTF_PREV_YEAR = lag(YTD_TTF, 12),
-           YTD_TCO2_2019 = lag(YTD_TCO2, (as.numeric(co2_last_year)-2019)*12),
-           YTD_TTF_2019 = lag(YTD_TTF, (as.numeric(co2_last_year)-2019)*12)) %>%
-    mutate(YTD_DIF_CO2_MONTH_PREV_YEAR = YTD_TCO2 / YTD_TCO2_PREV_YEAR -1,
-           YTD_DIF_TTF_MONTH_PREV_YEAR = YTD_TTF / YTD_TTF_PREV_YEAR -1,
-           YTD_DIF_CO2_MONTH_2019 = YTD_TCO2 / YTD_TCO2_2019 -1,
-           YTD_DIF_TTF_MONTH_2019 = YTD_TTF / YTD_TTF_2019 -1,
+           YTD_TCO2_2019 = lag(YTD_TCO2, (as.numeric(co2_last_year) - 2019) * 12),
+           YTD_TTF_2019 = lag(YTD_TTF, (as.numeric(co2_last_year) - 2019) * 12)) %>%
+    mutate(YTD_DIF_CO2_MONTH_PREV_YEAR = YTD_TCO2 / YTD_TCO2_PREV_YEAR - 1,
+           YTD_DIF_TTF_MONTH_PREV_YEAR = YTD_TTF / YTD_TTF_PREV_YEAR - 1,
+           YTD_DIF_CO2_MONTH_2019 = YTD_TCO2 / YTD_TCO2_2019 - 1,
+           YTD_DIF_TTF_MONTH_2019 = YTD_TTF / YTD_TTF_2019 - 1,
     ) %>%
     filter(FLIGHT_MONTH == co2_last_date)
 
@@ -315,33 +321,61 @@ library(here)
 
 
   ####billing json
-  dir_billing <- "G:/HQ/dgof-pru/Data/DataProcessing/Covid19/Oscar/Billing"
+  # dir_billing <- "G:/HQ/dgof-pru/Data/DataProcessing/Covid19/Oscar/Billing"
+  #
+  # nw_billed_data_raw <-  read_xlsx(
+  #   path  = fs::path_abs(
+  #     str_glue("Billing_tables.xlsx"),
+  #     start = dir_billing),
+  #   sheet = "network",
+  #   range = cell_limits(c(5, 2), c(NA, NA))) %>%
+  #   as_tibble()%>%
+  #   mutate(DATE = as.Date(Billing_period_start_date, format = "%d-%m-%Y"))
 
-  nw_billed_data_raw <-  read_xlsx(
-    path  = fs::path_abs(
-      str_glue("Billing_tables.xlsx"),
-      start = dir_billing),
-    sheet = "network",
-    range = cell_limits(c(5, 2), c(NA, NA))) %>%
-    as_tibble()%>%
-    mutate(DATE = as.Date(Billing_period_start_date, format = "%d-%m-%Y"))
+    ## https://leowong.ca/blog/connect-to-microsoft-access-database-via-r/
+  ## Set up driver info and database path
+  DRIVERINFO <- "Driver={Microsoft Access Driver (*.mdb, *.accdb)};"
+  MDBPATH <- "G:/HQ/dgof-pru/Data/DataProcessing/Crco - Billing/CRCO_BILL.accdb"
+  PATH <- paste0(DRIVERINFO, "DBQ=", MDBPATH)
 
-  last_billing_date <- max(nw_billed_data_raw$DATE)
+  channel <- odbcDriverConnect(PATH)
 
-  nw_billed_json <- nw_billed_data_raw %>%
-    arrange(Year, DATE) %>%
-    mutate(
-      MONTH_F = format(DATE,'%B'),
-      BILL_MONTH_PY = lag(Total, 12),
-      DIF_BILL_MONTH_PY = Total/BILL_MONTH_PY -1,
-      BILLED = round(Total/1000000,0)
+  ## Load data into R dataframe
+  nw_billed_raw <- sqlQuery(channel,
+                 "SELECT *
+  FROM V_CRCO_BILL_PER_AO_CZ_GRP_ACTUAL
+                 ", # keep this line below previous, otherwise fatal error
+                 stringsAsFactors = FALSE)
+
+  ## Close and remove channel
+  close(channel)
+  rm(channel)
+
+  nw_billed_raw <- nw_billed_raw %>%
+    janitor::clean_names() %>%
+    mutate(billing_period_start_date = as.Date(billing_period_start_date, format = "%d-%m-%Y"))
+
+   last_billing_date <- max(nw_billed_raw$billing_period_start_date)
+
+  nw_billing <- nw_billed_raw %>%
+    group_by(year, month, billing_period_start_date) %>%
+    summarise(total_billing = sum(route_charges)) %>%
+      ungroup
+
+
+  nw_billed_json <- nw_billing %>%
+    arrange(year, billing_period_start_date) %>%
+    mutate(Year = year,
+      MONTH_F = format(billing_period_start_date + days(1),'%B'),
+      BILL_MONTH_PY = lag(total_billing, 12),
+      DIF_BILL_MONTH_PY = total_billing / BILL_MONTH_PY - 1,
+      BILLED = round(total_billing / 1000000,0)
     ) %>%
-    filter(DATE == last_billing_date) %>%
+    filter(billing_period_start_date == last_billing_date) %>%
     select(MONTH_F, BILLED, DIF_BILL_MONTH_PY) %>%
     toJSON() %>%
     substr(., 1, nchar(.)-1) %>%
     substr(., 2, nchar(.))
-
 
   # join data strings and save
   nw_json_app <- paste0("{",
@@ -498,37 +532,51 @@ library(here)
 
 
   # billing
-  dir_billing <- "//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Crco - Billing/output/Oscar_playground"
+  nw_billing_evo <- nw_billing %>%
+    arrange(year, month) %>%
+    mutate(
+          total_billing = total_billing/10^6,
+          total_billing_py = lag(total_billing, 12),
+          total_billing_dif_mm_perc = total_billing / total_billing_py -1
+          ) %>%
+    group_by(year) %>%
+    mutate(
+      total_billing_y2d = cumsum(total_billing)
+    ) %>%
+    ungroup() %>%
+    mutate(
+      total_billing_y2d_py = lag(total_billing_y2d, 12),
+      total_billing_dif_y2d_perc = total_billing_y2d / total_billing_y2d_py -1
+    ) %>%
+    filter(year == last_year) %>%
+    select(month,
+           total_billing,
+           total_billing_py,
+           total_billing_dif_mm_perc,
+           total_billing_dif_y2d_perc) %>%
+    mutate(
+           month = month.name[month],
+           min_right_axis = -0.2,
+           max_right_axis = 1.3
+           )
 
-  nw_billing_data <-  read_xlsx(
-    path  = fs::path_abs(
-      str_glue("AIU monthly reports_automatised_for AIU Portal.xlsx"),
-      start = dir_billing),
-    sheet = "AIU_PORTAL",
-    range = cell_limits(c(7, 2), c(NA, 4))) %>%
-    as_tibble()
+  column_names <- c(
+                    "Month",
+                    last_year,
+                    last_year - 1,
+                    paste0("Monthly variation vs ", last_year - 1),
+                    paste0 ("Year-to-date variation vs ", last_year - 1),
+                    "min_right_axis",
+                    "max_right_axis"
+  )
 
-  nw_billing_evo_app <- nw_billing_data %>%
-    arrange(Year, Month) %>%
-    mutate(Total = Total/10^6,
-          "PREV_YEAR" = lag(Total,12 )) %>%
-    filter(Year >= last_year-1) %>%
-    select(Month, Year, Total) %>%
-    spread(Year, Total) %>%
-    mutate(Month = as.Date(paste0("01",Month,last_year), "%d%m%Y"))
+  colnames(nw_billing_evo) <- column_names
 
+  nw_billing_evo_j <- nw_billing_evo %>% toJSON()
+  write(nw_billing_evo_j, here(data_folder,"nw_billing_evo_chart.json"))
+  write(nw_billing_evo_j, paste0(archive_dir, today, "_nw_billing_evo_chart.json"))
 
-    # (as.numeric(co2_last_year)-2019)*12)
-
-  # column_names <- c('FLIGHT_DATE',
-  #                   "Departure punct.",
-  #                   "Arrival punct.",
-  #                   "Operated schedules")
-  # colnames(nw_punct_evo_app) <- column_names
-
-  write.csv(nw_billing_evo_app,
-            file = here(data_folder,"nw_bill_evo_app.csv"),
-            row.names = FALSE)
+ ##### finishe the json... you need to include the max min for the right axis
 
 
 
