@@ -371,8 +371,18 @@ library(RODBC)
       DIF_BILL_MONTH_PY = total_billing / BILL_MONTH_PY - 1,
       BILLED = round(total_billing / 1000000,0)
     ) %>%
+    group_by(Year) %>%
+    mutate(
+      total_billing_y2d = cumsum(total_billing)
+    ) %>%
+    ungroup() %>%
+    mutate(
+      total_billing_y2d_py = lag(total_billing_y2d, 12),
+      DIF_BILL_Y2D_PY = total_billing_y2d / total_billing_y2d_py -1,
+      BILLED_Y2D = round(total_billing_y2d / 1000000,0)
+    ) %>%
     filter(billing_period_start_date == last_billing_date) %>%
-    select(MONTH_F, BILLED, DIF_BILL_MONTH_PY) %>%
+    select(MONTH_F, BILLED, DIF_BILL_MONTH_PY, BILLED_Y2D, DIF_BILL_Y2D_PY) %>%
     toJSON() %>%
     substr(., 1, nchar(.)-1) %>%
     substr(., 2, nchar(.))
@@ -575,8 +585,6 @@ library(RODBC)
   nw_billing_evo_j <- nw_billing_evo %>% toJSON()
   write(nw_billing_evo_j, here(data_folder,"nw_billing_evo_chart.json"))
   write(nw_billing_evo_j, paste0(archive_dir, today, "_nw_billing_evo_chart.json"))
-
- ##### finishe the json... you need to include the max min for the right axis
 
 
 
