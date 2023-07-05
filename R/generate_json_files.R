@@ -1441,11 +1441,14 @@ library(RODBC)
   apt_punct_dy <- apt_punct_calc %>%
     filter(DATE == last_punctuality_day, RANK < 11) %>%
     mutate(DY_APT_NAME = DASHBOARD_NAME,
-           DY_APT_ARR_PUNCT = ARR_PUNCTUALITY_PERCENTAGE / 100) %>%
+           DY_APT_ARR_PUNCT = ARR_PUNCTUALITY_PERCENTAGE / 100,
+           DY_TO_DATE = round_date(DATE, "day")
+           ) %>%
     select(
       RANK,
       DY_RANK_DIF_PREV_WEEK,
       DY_APT_NAME,
+      DY_TO_DATE,
       DY_APT_ARR_PUNCT,
       DY_PUNCT_DIF_PREV_WEEK_PERC,
       DY_PUNCT_DIF_PREV_YEAR_PERC
@@ -1467,11 +1470,16 @@ library(RODBC)
     )  %>%
     ungroup() %>%
     filter(DATE == last_punctuality_day, RANK < 11) %>%
-    mutate(WK_APT_NAME = DASHBOARD_NAME) %>%
+    mutate(WK_APT_NAME = DASHBOARD_NAME,
+           WK_FROM_DATE = round_date(DATE, "day") + lubridate::days(-6),
+           WK_TO_DATE = round_date(DATE, "day")
+           ) %>%
     select(
       RANK,
       WK_RANK_DIF_PREV_WEEK,
       WK_APT_NAME,
+      WK_FROM_DATE,
+      WK_TO_DATE,
       WK_APT_ARR_PUNCT,
       WK_PUNCT_DIF_PREV_WEEK_PERC,
       WK_PUNCT_DIF_PREV_YEAR_PERC
@@ -1555,7 +1563,7 @@ library(RODBC)
   apt_punct_data = merge(x = apt_punct_data, y = apt_main_punct_bottom, by = "RANK")
 
   apt_punct_data <- apt_punct_data %>%
-    # mutate(WK_TO_DATE = CURRENT_WEEK_FIRST_DAY + 6) %>%
+    mutate(Y2D_TO_DATE = DY_TO_DATE) %>%
     relocate(c(
       RANK,
       MAIN_PUNCT_APT_NAME,
@@ -1564,16 +1572,20 @@ library(RODBC)
       MAIN_PUNCT_APT_ARR_PUNCT_BOTTOM,
       DY_RANK_DIF_PREV_WEEK,
       DY_APT_NAME,
+      DY_TO_DATE,
       DY_APT_ARR_PUNCT,
       DY_PUNCT_DIF_PREV_WEEK_PERC,
       DY_PUNCT_DIF_PREV_YEAR_PERC,
       WK_RANK_DIF_PREV_WEEK,
       WK_APT_NAME,
+      WK_FROM_DATE,
+      WK_TO_DATE,
       WK_APT_ARR_PUNCT,
       WK_PUNCT_DIF_PREV_WEEK_PERC,
       WK_PUNCT_DIF_PREV_YEAR_PERC,
       Y2D_RANK_DIF_PREV_YEAR,
       Y2D_APT_NAME,
+      Y2D_TO_DATE,
       Y2D_APT_ARR_PUNCT,
       Y2D_PUNCT_DIF_PREV_YEAR_PERC,
       Y2D_PUNCT_DIF_2019_PERC
@@ -1631,9 +1643,11 @@ WITH
   ct_punct_dy <- ct_punct_calc %>%
     filter(DATE == last_punctuality_day, RANK < 11) %>%
     mutate(DY_CTRY_NAME = EC_ISO_CT_NAME,
-           DY_CTRY_ARR_PUNCT = ARR_PUNCTUALITY_PERCENTAGE / 100) %>%
+           DY_CTRY_ARR_PUNCT = ARR_PUNCTUALITY_PERCENTAGE / 100,
+           DY_TO_DATE = round_date(DATE, "day")) %>%
     select(
       RANK,
+      DY_TO_DATE,
       DY_RANK_DIF_PREV_WEEK,
       DY_CTRY_NAME,
       DY_CTRY_ARR_PUNCT,
@@ -1657,9 +1671,15 @@ WITH
     )  %>%
     ungroup() %>%
     filter(DATE == last_punctuality_day, RANK < 11) %>%
-    mutate(WK_CTRY_NAME = EC_ISO_CT_NAME) %>%
+    mutate(
+      WK_CTRY_NAME = EC_ISO_CT_NAME,
+      WK_FROM_DATE = round_date(DATE, "day") + lubridate::days(-6),
+      WK_TO_DATE = round_date(DATE, "day")
+      ) %>%
     select(
       RANK,
+      WK_FROM_DATE,
+      WK_TO_DATE,
       WK_RANK_DIF_PREV_WEEK,
       WK_CTRY_NAME,
       WK_CTRY_ARR_PUNCT,
@@ -1745,7 +1765,7 @@ WITH
   ct_punct_data = merge(x = ct_punct_data, y = ct_main_punct_bottom, by = "RANK")
 
   ct_punct_data <- ct_punct_data %>%
-    # mutate(WK_TO_DATE = CURRENT_WEEK_FIRST_DAY + 6) %>%
+    mutate(Y2D_TO_DATE = DY_TO_DATE) %>%
     relocate(c(
       RANK,
       MAIN_PUNCT_CTRY_NAME,
@@ -1754,16 +1774,20 @@ WITH
       MAIN_PUNCT_CTRY_ARR_PUNCT_BOTTOM,
       DY_RANK_DIF_PREV_WEEK,
       DY_CTRY_NAME,
+      DY_TO_DATE,
       DY_CTRY_ARR_PUNCT,
       DY_PUNCT_DIF_PREV_WEEK_PERC,
       DY_PUNCT_DIF_PREV_YEAR_PERC,
       WK_RANK_DIF_PREV_WEEK,
       WK_CTRY_NAME,
+      WK_FROM_DATE,
+      WK_TO_DATE,
       WK_CTRY_ARR_PUNCT,
       WK_PUNCT_DIF_PREV_WEEK_PERC,
       WK_PUNCT_DIF_PREV_YEAR_PERC,
       Y2D_RANK_DIF_PREV_YEAR,
       Y2D_CTRY_NAME,
+      Y2D_TO_DATE,
       Y2D_CTRY_ARR_PUNCT,
       Y2D_PUNCT_DIF_PREV_YEAR_PERC,
       Y2D_PUNCT_DIF_2019_PERC
