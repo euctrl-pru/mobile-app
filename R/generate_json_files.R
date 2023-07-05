@@ -190,10 +190,16 @@ library(RODBC)
            DAY_2019 = if_else(YEAR_FLIGHT == last_year_punct,
                               lag(DATE,
                                   364 * (last_year_punct - 2019) + floor((last_year_punct - 2019) / 4) * 7)
-                              , last_day_punct)
+                              , last_day_punct),
+           DAY_ARR_PUN_DIF_PY_PERC = ARR_PUNCTUALITY_PERCENTAGE - ARR_PUN_PREV_YEAR,
+           DAY_DEP_PUN_DIF_PY_PERC = DEP_PUNCTUALITY_PERCENTAGE - DEP_PUN_PREV_YEAR,
+           DAY_ARR_PUN_DIF_2019_PERC = ARR_PUNCTUALITY_PERCENTAGE - ARR_PUN_2019,
+           DAY_DEP_PUN_DIF_2019_PERC = DEP_PUNCTUALITY_PERCENTAGE - DEP_PUN_2019
     ) %>%
-    mutate(DEP_PUN_WK = rollsum((DEP_PUNCTUAL_FLIGHTS), 7, fill = NA, align = "right") / rollsum(DEP_SCHEDULE_FLIGHT, 7, fill = NA, align = "right") * 100,
-           ARR_PUN_WK = rollsum((ARR_PUNCTUAL_FLIGHTS), 7, fill = NA, align = "right") / rollsum(ARR_SCHEDULE_FLIGHT, 7, fill = NA, align = "right") * 100) %>%
+    mutate(
+          ARR_PUN_WK = rollsum((ARR_PUNCTUAL_FLIGHTS), 7, fill = NA, align = "right") / rollsum(ARR_SCHEDULE_FLIGHT, 7, fill = NA, align = "right") * 100,
+          DEP_PUN_WK = rollsum((DEP_PUNCTUAL_FLIGHTS), 7, fill = NA, align = "right") / rollsum(DEP_SCHEDULE_FLIGHT, 7, fill = NA, align = "right") * 100
+           ) %>%
     mutate(ARR_PUN_WK_PREV_YEAR = lag(ARR_PUN_WK, 364),
            DEP_PUN_WK_PREV_YEAR = lag(DEP_PUN_WK, 364),
            ARR_PUN_WK_2019 =if_else(YEAR_FLIGHT == last_year_punct,
@@ -201,22 +207,27 @@ library(RODBC)
                                     1),
            DEP_PUN_WK_2019 =if_else(YEAR_FLIGHT == last_year_punct,
                                     lag(DEP_PUN_WK, 364 * (last_year_punct - 2019) + floor((last_year_punct - 2019) / 4) * 7),
-                                    1)
+                                    1),
+           WK_ARR_PUN_DIF_PY_PERC = ARR_PUN_WK - ARR_PUN_WK_PREV_YEAR,
+           WK_DEP_PUN_DIF_PY_PERC = DEP_PUN_WK - DEP_PUN_WK_PREV_YEAR,
+           WK_ARR_PUN_DIF_2019_PERC = ARR_PUN_WK - ARR_PUN_WK_2019,
+           WK_DEP_PUN_DIF_2019_PERC = DEP_PUN_WK - DEP_PUN_WK_2019
     ) %>%
     filter (DATE == last_day_punct) %>%
     select(
       ARR_PUNCTUALITY_PERCENTAGE,
       DEP_PUNCTUALITY_PERCENTAGE,
-      ARR_PUN_PREV_YEAR,
-      DEP_PUN_PREV_YEAR,
-      ARR_PUN_2019,
-      DEP_PUN_2019,
+      DAY_ARR_PUN_DIF_PY_PERC,
+      DAY_DEP_PUN_DIF_2019_PERC,
+      DAY_ARR_PUN_DIF_2019_PERC,
+      DAY_DEP_PUN_DIF_2019_PERC,
       ARR_PUN_WK,
       DEP_PUN_WK,
-      ARR_PUN_WK_PREV_YEAR,
-      DEP_PUN_WK_PREV_YEAR,
-      ARR_PUN_WK_2019,
-      DEP_PUN_WK_2019) %>%
+      WK_ARR_PUN_DIF_PY_PERC,
+      WK_DEP_PUN_DIF_PY_PERC,
+      WK_ARR_PUN_DIF_2019_PERC,
+      WK_DEP_PUN_DIF_2019_PERC
+      ) %>%
     mutate(INDEX = 1)
 
   nw_punct_data_y2d <- nw_punct_data_raw %>%
@@ -231,15 +242,20 @@ library(RODBC)
     mutate(Y2D_ARR_PUN_PREV_YEAR = lag(ARR_PUN_Y2D, 1),
            Y2D_DEP_PUN_PREV_YEAR = lag(DEP_PUN_Y2D, 1),
            Y2D_ARR_PUN_2019 = lag(ARR_PUN_Y2D, last_year_punct - 2019),
-           Y2D_DEP_PUN_2019 = lag(DEP_PUN_Y2D, last_year_punct - 2019)
-    ) %>%
+           Y2D_DEP_PUN_2019 = lag(DEP_PUN_Y2D, last_year_punct - 2019),
+           Y2D_ARR_PUN_DIF_PY_PERC = ARR_PUN_Y2D - Y2D_ARR_PUN_PREV_YEAR,
+           Y2D_DEP_PUN_DIF_PY_PERC = DEP_PUN_Y2D - Y2D_DEP_PUN_PREV_YEAR,
+           Y2D_ARR_PUN_DIF_2019_PERC = ARR_PUN_Y2D - Y2D_ARR_PUN_2019,
+           Y2D_DEP_PUN_DIF_2019_PERC = DEP_PUN_Y2D - Y2D_DEP_PUN_2019
+           ) %>%
     filter(YEAR == as.numeric(format(last_day_punct, format="%Y"))) %>%
     select(ARR_PUN_Y2D,
            DEP_PUN_Y2D,
-           Y2D_ARR_PUN_PREV_YEAR,
-           Y2D_DEP_PUN_PREV_YEAR,
-           Y2D_ARR_PUN_2019,
-           Y2D_DEP_PUN_2019) %>%
+           Y2D_ARR_PUN_DIF_PY_PERC,
+           Y2D_DEP_PUN_DIF_PY_PERC,
+           Y2D_ARR_PUN_DIF_2019_PERC,
+           Y2D_DEP_PUN_DIF_2019_PERC
+           ) %>%
     mutate(INDEX = 1)
 
 
@@ -356,6 +372,7 @@ library(RODBC)
     mutate(billing_period_start_date = as.Date(billing_period_start_date, format = "%d-%m-%Y"))
 
    last_billing_date <- max(nw_billed_raw$billing_period_start_date)
+   last_billing_year <- max(nw_billed_raw$year)
 
   nw_billing <- nw_billed_raw %>%
     group_by(year, month, billing_period_start_date) %>%
@@ -368,7 +385,7 @@ library(RODBC)
     mutate(Year = year,
       MONTH_F = format(billing_period_start_date + days(1),'%B'),
       BILL_MONTH_PY = lag(total_billing, 12),
-      BILL_MONTH_2019 = lag(total_billing, (last_year - 2019) * 12),
+      BILL_MONTH_2019 = lag(total_billing, (last_billing_year - 2019) * 12),
       DIF_BILL_MONTH_PY = total_billing / BILL_MONTH_PY - 1,
       DIF_BILL_MONTH_2019 = total_billing / BILL_MONTH_2019 - 1,
       BILLED = round(total_billing / 1000000,0)
@@ -380,7 +397,7 @@ library(RODBC)
     ungroup() %>%
     mutate(
       BILL_Y2D_PY = lag(total_billing_y2d, 12),
-      BILL_Y2D_2019 = lag(total_billing_y2d, (last_year - 2019) * 12),
+      BILL_Y2D_2019 = lag(total_billing_y2d, (last_billing_year - 2019) * 12),
       DIF_BILL_Y2D_PY = total_billing_y2d / BILL_Y2D_PY -1,
       DIF_BILL_Y2D_2019 = total_billing_y2d / BILL_Y2D_2019 -1,
       BILLED_Y2D = round(total_billing_y2d / 1000000, 0)
@@ -570,7 +587,7 @@ library(RODBC)
       total_billing_y2d_py = lag(total_billing_y2d, 12),
       total_billing_dif_y2d_perc = total_billing_y2d / total_billing_y2d_py -1
     ) %>%
-    filter(year == last_year) %>%
+    filter(year == last_billing_year) %>%
     select(month,
            total_billing,
            total_billing_py,
@@ -584,10 +601,10 @@ library(RODBC)
 
   column_names <- c(
                     "Month",
-                    last_year,
-                    last_year - 1,
-                    paste0("Monthly variation vs ", last_year - 1),
-                    paste0 ("Year-to-date variation vs ", last_year - 1),
+                    last_billing_year,
+                    last_billing_year - 1,
+                    paste0("Monthly variation vs ", last_billing_year - 1),
+                    paste0 ("Year-to-date variation vs ", last_billing_year - 1),
                     "min_right_axis",
                     "max_right_axis"
   )
