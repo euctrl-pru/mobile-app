@@ -283,20 +283,23 @@ library(RODBC)
            YEAR,
            MONTH) %>%
     group_by(FLIGHT_MONTH) %>%
-    summarise(TTF = sum(TF), TCO2 = sum(CO2_QTY_TONNES)) %>%
-    mutate(YEAR = as.numeric(format(FLIGHT_MONTH,'%Y')),
-           MONTH = as.numeric(format(FLIGHT_MONTH,'%m'))) %>%
+    summarise(MM_TTF = sum(TF) / 1000000, MM_CO2 = sum(CO2_QTY_TONNES) / 1000000) %>%
+    mutate(
+           YEAR = as.numeric(format(FLIGHT_MONTH,'%Y')),
+           MONTH = as.numeric(format(FLIGHT_MONTH,'%m')),
+           MM_CO2_DEP = MM_CO2 / MM_TTF
+      ) %>%
     arrange(FLIGHT_MONTH) %>%
     mutate(FLIGHT_MONTH = ceiling_date(as_date(FLIGHT_MONTH), unit = 'month')-1)
 
   co2_last_date <- max(co2_data_evo_nw$FLIGHT_MONTH, na.rm=TRUE)
   co2_last_month <- format(co2_last_date,'%B')
-  CO2_last_month_num <- as.numeric(format(co2_last_date,'%m'))
+  co2_last_month_num <- as.numeric(format(co2_last_date,'%m'))
   co2_last_year <- max(co2_data_evo_nw$YEAR)
 
   #check last month number of flights
   check_flights <- co2_data_evo_nw %>%
-    filter (YEAR == max(YEAR)) %>% filter(MONTH == max(MONTH)) %>%  select(TTF) %>% pull()
+    filter (YEAR == max(YEAR)) %>% filter(MONTH == max(MONTH)) %>%  select(MM_TTF) %>% pull() * 1000000
 
   if (check_flights < 1000) {
     co2_data_raw <-  co2_data_raw %>% filter (FLIGHT_MONTH < max(FLIGHT_MONTH))
@@ -305,28 +308,62 @@ library(RODBC)
   }
 
   co2_for_json <- co2_data_evo_nw %>%
-    mutate(MONTH_TEXT = format(FLIGHT_MONTH,'%B'),
-           TCO2_PREV_YEAR = lag(TCO2, 12),
-           TTF_PREV_YEAR = lag(TTF, 12),
-           TCO2_2019 = lag(TCO2, (as.numeric(co2_last_year) - 2019) * 12),
-           TTF_2019 = lag(TTF, (as.numeric(co2_last_year) - 2019) * 12)) %>%
-    mutate(DIF_CO2_MONTH_PREV_YEAR = TCO2 / TCO2_PREV_YEAR -1,
-           DIF_TTF_MONTH_PREV_YEAR = TTF / TTF_PREV_YEAR -1,
-           DIF_CO2_MONTH_2019 = TCO2 / TCO2_2019 -1,
-           DIF_TTF_MONTH_2019 = TTF / TTF_2019 -1,
+    mutate(
+           MONTH_TEXT = format(FLIGHT_MONTH,'%B'),
+           MM_CO2_PREV_YEAR = lag(MM_CO2, 12),
+           MM_TTF_PREV_YEAR = lag(MM_TTF, 12),
+           MM_TTF_PREV_YEAR = lag(MM_TTF, 12),
+           MM_CO2_2019 = lag(MM_CO2, (as.numeric(co2_last_year) - 2019) * 12),
+           MM_TTF_2019 = lag(MM_TTF, (as.numeric(co2_last_year) - 2019) * 12),
+           MM_CO2_DEP_PREV_YEAR = lag(MM_CO2_DEP, 12),
+           MM_CO2_DEP_2019 = lag(MM_CO2_DEP, (as.numeric(co2_last_year) - 2019) * 12)
+           ) %>%
+    mutate(
+           DIF_TCO2_MONTH_PREV_YEAR = MM_CO2 / MM_CO2_PREV_YEAR - 1,
+           DIF_TTF_MONTH_PREV_YEAR = MM_TTF / MM_TTF_PREV_YEAR - 1,
+           DIF_CO2_DEP_MONTH_PREV_YEAR = MM_CO2_DEP / MM_CO2_DEP_PREV_YEAR - 1,
+           DIF_TCO2_MONTH_2019 = MM_CO2 / MM_CO2_2019 - 1,
+           DIF_TTF_MONTH_2019 = MM_TTF / MM_TTF_2019 - 1,
+           DIF_CO2_DEP_MONTH_2019 = MM_CO2_DEP / MM_CO2_DEP_2019 - 1
     ) %>%
     group_by(YEAR) %>%
-    mutate(YTD_TCO2 = cumsum(TCO2),
-           YTD_TTF = cumsum(TTF)) %>%
+    mutate(
+           YTD_CO2 = cumsum(MM_CO2),
+           YTD_TTF = cumsum(MM_TTF),
+           YTD_CO2_DEP = cumsum(MM_CO2) / cumsum(MM_TTF)
+    ) %>%
     ungroup() %>%
-    mutate(YTD_TCO2_PREV_YEAR = lag(YTD_TCO2, 12),
+    mutate(
+           YTD_CO2_PREV_YEAR = lag(YTD_CO2, 12),
            YTD_TTF_PREV_YEAR = lag(YTD_TTF, 12),
-           YTD_TCO2_2019 = lag(YTD_TCO2, (as.numeric(co2_last_year) - 2019) * 12),
-           YTD_TTF_2019 = lag(YTD_TTF, (as.numeric(co2_last_year) - 2019) * 12)) %>%
-    mutate(YTD_DIF_CO2_MONTH_PREV_YEAR = YTD_TCO2 / YTD_TCO2_PREV_YEAR - 1,
-           YTD_DIF_TTF_MONTH_PREV_YEAR = YTD_TTF / YTD_TTF_PREV_YEAR - 1,
-           YTD_DIF_CO2_MONTH_2019 = YTD_TCO2 / YTD_TCO2_2019 - 1,
-           YTD_DIF_TTF_MONTH_2019 = YTD_TTF / YTD_TTF_2019 - 1,
+           YTD_CO2_DEP_PREV_YEAR = lag(YTD_CO2_DEP, 12),
+           YTD_CO2_2019 = lag(YTD_CO2, (as.numeric(co2_last_year) - 2019) * 12),
+           YTD_CO2_DEP_2019 = lag(YTD_CO2_DEP, (as.numeric(co2_last_year) - 2019) * 12),
+           YTD_TTF_2019 = lag(YTD_TTF, (as.numeric(co2_last_year) - 2019) * 12)
+           ) %>%
+    mutate(
+           YTD_DIF_CO2_PREV_YEAR = YTD_CO2 / YTD_CO2_PREV_YEAR - 1,
+           YTD_DIF_TTF_PREV_YEAR = YTD_TTF / YTD_TTF_PREV_YEAR - 1,
+           YTD_DIF_CO2_DEP_PREV_YEAR = YTD_CO2_DEP / YTD_CO2_DEP_PREV_YEAR - 1,
+           YTD_DIF_CO2_2019 = YTD_CO2 / YTD_CO2_2019 - 1,
+           YTD_DIF_CO2_DEP_2019 = YTD_CO2_DEP / YTD_CO2_DEP_2019 - 1,
+           YTD_DIF_TTF_2019 = YTD_TTF / YTD_TTF_2019 - 1
+    ) %>%
+    select(
+            FLIGHT_MONTH,
+            MONTH_TEXT,
+            MM_CO2,
+            DIF_TCO2_MONTH_PREV_YEAR,
+            DIF_TCO2_MONTH_2019,
+            MM_CO2_DEP,
+            DIF_CO2_DEP_MONTH_PREV_YEAR,
+            DIF_CO2_DEP_MONTH_2019,
+            YTD_CO2,
+            YTD_DIF_CO2_PREV_YEAR,
+            YTD_DIF_CO2_2019,
+            YTD_CO2_DEP,
+            YTD_DIF_CO2_DEP_PREV_YEAR,
+            YTD_DIF_CO2_DEP_2019
     ) %>%
     filter(FLIGHT_MONTH == co2_last_date)
 
@@ -337,7 +374,8 @@ library(RODBC)
 
 
   ####billing json
-  # dir_billing <- "G:/HQ/dgof-pru/Data/DataProcessing/Covid19/Oscar/Billing"
+
+    # dir_billing <- "G:/HQ/dgof-pru/Data/DataProcessing/Covid19/Oscar/Billing"
   #
   # nw_billed_data_raw <-  read_xlsx(
   #   path  = fs::path_abs(
@@ -615,6 +653,44 @@ library(RODBC)
   write(nw_billing_evo_j, here(data_folder,"nw_billing_evo_chart.json"))
   write(nw_billing_evo_j, paste0(archive_dir, today, "_nw_billing_evo_chart.json"))
 
+  ### co2 emissions
+
+  nw_co2_evo <- co2_data_raw %>%
+    select(
+          FLIGHT_MONTH,
+          CO2_QTY_TONNES,
+          TF,
+          YEAR,
+          MONTH) %>%
+    group_by(FLIGHT_MONTH)%>%
+    summarise(TTF = sum(TF), TCO2 = sum(CO2_QTY_TONNES)) %>%
+    mutate(
+           YEAR = as.numeric(format(FLIGHT_MONTH,'%Y')),
+           MONTH = as.numeric(format(FLIGHT_MONTH,'%m'))
+           )%>%
+    arrange(FLIGHT_MONTH) %>%
+    mutate(
+      DEP_IDX = TTF / first(TTF) * 100,
+      CO2_IDX = TCO2 / first(TCO2) * 100,
+      FLIGHT_MONTH = ceiling_date(as_date(FLIGHT_MONTH), unit = 'month') - 1
+      ) %>%
+    select(
+      FLIGHT_MONTH,
+      CO2_IDX,
+      DEP_IDX
+    )
+
+  column_names <- c(
+    "Month",
+    "CO2 index",
+    "Departures index"
+  )
+
+  colnames(nw_co2_evo) <- column_names
+
+  nw_co2_evo_j <- nw_co2_evo %>% toJSON()
+  write(nw_co2_evo_j, here(data_folder,"nw_co2_evo_chart.json"))
+  write(nw_co2_evo_j, paste0(archive_dir, today, "_nw_co2_evo_chart.json"))
 
 
   # -----------------------------------------------------------------------------------------------------------------------------------------
