@@ -20,11 +20,12 @@ copyDirectory(here::here("data"), paste0(destination_dir,"data"), overwrite = TR
 
 
 ### send email
-sbj = "App data set copied successfully to folder"
+sbj = "App dataset copied successfully to folder"
 msg = "All good, relax!"
 
 from    <- "oscar.alfaro@eurocontrol.int"
-to      <- c("oscar.alfaro@eurocontrol.int",
+to      <- c("oscar.alfaro@eurocontrol.int"
+             ,
              "quinten.goens@eurocontrol.int",
              "enrico.spinielli@eurocontrol.int",
              "denis.huet@eurocontrol.int"
@@ -33,6 +34,6 @@ to      <- c("oscar.alfaro@eurocontrol.int",
 control <- list(smtpServer="mailservices.eurocontrol.int")
 
 sendmail(from = from, to = to,
-         cc = cc,
+         # cc = cc,
          subject = sbj, msg = msg,
          control = control)
