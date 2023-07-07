@@ -1,5 +1,6 @@
 library(here)
 library("R.utils")
+library(sendmailR)
 
 ##generate all files
 source(here::here("R", "generate_json_files.R"))
@@ -16,3 +17,22 @@ file.copy(file.path(base_dir,list.files(base_dir)), destination_dir, overwrite =
 copyDirectory(here::here("data"), paste0(destination_dir,"data"), overwrite = TRUE)
 # copyDirectory(here::here("images"), paste0(destination_dir,"images"), overwrite = TRUE)
 # copyDirectory(here::here("traffic"), paste0(destination_dir,"traffic"), overwrite = TRUE)
+
+
+### send email
+sbj = "App data set copied successfully to folder"
+msg = "All good, relax!"
+
+from    <- "oscar.alfaro@eurocontrol.int"
+to      <- c("oscar.alfaro@eurocontrol.int",
+             "quinten.goens@eurocontrol.int",
+             "enrico.spinielli@eurocontrol.int",
+             "denis.huet@eurocontrol.int"
+)
+# cc      <- c("enrico.spinielli@eurocontrol.int")
+control <- list(smtpServer="mailservices.eurocontrol.int")
+
+sendmail(from = from, to = to,
+         cc = cc,
+         subject = sbj, msg = msg,
+         control = control)

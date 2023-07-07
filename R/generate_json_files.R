@@ -51,6 +51,86 @@ library(RODBC)
       tibble::as_tibble()
   }
 
+  ####billing json - we do this first to avoid 'R fatal error'
+
+  # dir_billing <- "G:/HQ/dgof-pru/Data/DataProcessing/Covid19/Oscar/Billing"
+  #
+  # nw_billed_data_raw <-  read_xlsx(
+  #   path  = fs::path_abs(
+  #     str_glue("Billing_tables.xlsx"),
+  #     start = dir_billing),
+  #   sheet = "network",
+  #   range = cell_limits(c(5, 2), c(NA, NA))) %>%
+  #   as_tibble()%>%
+  #   mutate(DATE = as.Date(Billing_period_start_date, format = "%d-%m-%Y"))
+
+  ## https://leowong.ca/blog/connect-to-microsoft-access-database-via-r/
+  ## Set up driver info and database path
+  DRIVERINFO <- "Driver={Microsoft Access Driver (*.mdb, *.accdb)};"
+  MDBPATH <- "G:/HQ/dgof-pru/Data/DataProcessing/Crco - Billing/CRCO_BILL.accdb"
+  PATH <- paste0(DRIVERINFO, "DBQ=", MDBPATH)
+
+  channel <- odbcDriverConnect(PATH)
+  query_bill <- "SELECT * FROM V_CRCO_BILL_PER_AO_CZ_GRP_ACTUAL"
+
+  ## Load data into R dataframe
+  nw_billed_raw <- sqlQuery(channel,
+                            query_bill,
+                            stringsAsFactors = FALSE)
+
+  ## Close and remove channel
+  close(channel)
+  rm(channel)
+
+  nw_billed_raw <- nw_billed_raw %>%
+    janitor::clean_names() %>%
+    mutate(billing_period_start_date = as.Date(billing_period_start_date, format = "%d-%m-%Y"))
+
+  last_billing_date <- max(nw_billed_raw$billing_period_start_date)
+  last_billing_year <- max(nw_billed_raw$year)
+
+  nw_billing <- nw_billed_raw %>%
+    group_by(year, month, billing_period_start_date) %>%
+    summarise(total_billing = sum(route_charges)) %>%
+    ungroup
+
+
+  nw_billed_json <- nw_billing %>%
+    arrange(year, billing_period_start_date) %>%
+    mutate(Year = year,
+           MONTH_F = format(billing_period_start_date + days(1),'%B'),
+           BILL_MONTH_PY = lag(total_billing, 12),
+           BILL_MONTH_2019 = lag(total_billing, (last_billing_year - 2019) * 12),
+           DIF_BILL_MONTH_PY = total_billing / BILL_MONTH_PY - 1,
+           DIF_BILL_MONTH_2019 = total_billing / BILL_MONTH_2019 - 1,
+           BILLED = round(total_billing / 1000000,0)
+    ) %>%
+    group_by(Year) %>%
+    mutate(
+      total_billing_y2d = cumsum(total_billing)
+    ) %>%
+    ungroup() %>%
+    mutate(
+      BILL_Y2D_PY = lag(total_billing_y2d, 12),
+      BILL_Y2D_2019 = lag(total_billing_y2d, (last_billing_year - 2019) * 12),
+      DIF_BILL_Y2D_PY = total_billing_y2d / BILL_Y2D_PY -1,
+      DIF_BILL_Y2D_2019 = total_billing_y2d / BILL_Y2D_2019 -1,
+      BILLED_Y2D = round(total_billing_y2d / 1000000, 0)
+    ) %>%
+    filter(billing_period_start_date == last_billing_date) %>%
+    select(MONTH_F,
+           BILLED,
+           DIF_BILL_MONTH_PY,
+           DIF_BILL_MONTH_2019,
+           BILLED_Y2D,
+           DIF_BILL_Y2D_PY,
+           DIF_BILL_Y2D_2019
+    ) %>%
+    toJSON() %>%
+    substr(., 1, nchar(.)-1) %>%
+    substr(., 2, nchar(.))
+
+
 
     # traffic data
   nw_traffic_data <-  read_xlsx(
@@ -373,85 +453,6 @@ library(RODBC)
     substr(., 2, nchar(.))
 
 
-  ####billing json
-
-    # dir_billing <- "G:/HQ/dgof-pru/Data/DataProcessing/Covid19/Oscar/Billing"
-  #
-  # nw_billed_data_raw <-  read_xlsx(
-  #   path  = fs::path_abs(
-  #     str_glue("Billing_tables.xlsx"),
-  #     start = dir_billing),
-  #   sheet = "network",
-  #   range = cell_limits(c(5, 2), c(NA, NA))) %>%
-  #   as_tibble()%>%
-  #   mutate(DATE = as.Date(Billing_period_start_date, format = "%d-%m-%Y"))
-
-    ## https://leowong.ca/blog/connect-to-microsoft-access-database-via-r/
-  ## Set up driver info and database path
-  DRIVERINFO <- "Driver={Microsoft Access Driver (*.mdb, *.accdb)};"
-  MDBPATH <- "G:/HQ/dgof-pru/Data/DataProcessing/Crco - Billing/CRCO_BILL.accdb"
-  PATH <- paste0(DRIVERINFO, "DBQ=", MDBPATH)
-
-  channel <- odbcDriverConnect(PATH)
-
-  ## Load data into R dataframe
-  nw_billed_raw <- sqlQuery(channel,
-                 "SELECT *
-  FROM V_CRCO_BILL_PER_AO_CZ_GRP_ACTUAL
-                 ", # keep this line below previous, otherwise fatal error
-                 stringsAsFactors = FALSE)
-
-  ## Close and remove channel
-  close(channel)
-  rm(channel)
-
-  nw_billed_raw <- nw_billed_raw %>%
-    janitor::clean_names() %>%
-    mutate(billing_period_start_date = as.Date(billing_period_start_date, format = "%d-%m-%Y"))
-
-   last_billing_date <- max(nw_billed_raw$billing_period_start_date)
-   last_billing_year <- max(nw_billed_raw$year)
-
-  nw_billing <- nw_billed_raw %>%
-    group_by(year, month, billing_period_start_date) %>%
-    summarise(total_billing = sum(route_charges)) %>%
-      ungroup
-
-
-  nw_billed_json <- nw_billing %>%
-    arrange(year, billing_period_start_date) %>%
-    mutate(Year = year,
-      MONTH_F = format(billing_period_start_date + days(1),'%B'),
-      BILL_MONTH_PY = lag(total_billing, 12),
-      BILL_MONTH_2019 = lag(total_billing, (last_billing_year - 2019) * 12),
-      DIF_BILL_MONTH_PY = total_billing / BILL_MONTH_PY - 1,
-      DIF_BILL_MONTH_2019 = total_billing / BILL_MONTH_2019 - 1,
-      BILLED = round(total_billing / 1000000,0)
-    ) %>%
-    group_by(Year) %>%
-    mutate(
-      total_billing_y2d = cumsum(total_billing)
-    ) %>%
-    ungroup() %>%
-    mutate(
-      BILL_Y2D_PY = lag(total_billing_y2d, 12),
-      BILL_Y2D_2019 = lag(total_billing_y2d, (last_billing_year - 2019) * 12),
-      DIF_BILL_Y2D_PY = total_billing_y2d / BILL_Y2D_PY -1,
-      DIF_BILL_Y2D_2019 = total_billing_y2d / BILL_Y2D_2019 -1,
-      BILLED_Y2D = round(total_billing_y2d / 1000000, 0)
-    ) %>%
-    filter(billing_period_start_date == last_billing_date) %>%
-    select(MONTH_F,
-           BILLED,
-           DIF_BILL_MONTH_PY,
-           DIF_BILL_MONTH_2019,
-           BILLED_Y2D,
-           DIF_BILL_Y2D_PY,
-           DIF_BILL_Y2D_2019
-           ) %>%
-    toJSON() %>%
-    substr(., 1, nchar(.)-1) %>%
-    substr(., 2, nchar(.))
 
   # join data strings and save
   nw_json_app <- paste0("{",
