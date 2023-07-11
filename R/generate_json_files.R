@@ -399,10 +399,10 @@ library(RODBC)
            MM_CO2_DEP_2019 = lag(MM_CO2_DEP, (as.numeric(co2_last_year) - 2019) * 12)
            ) %>%
     mutate(
-           DIF_TCO2_MONTH_PREV_YEAR = MM_CO2 / MM_CO2_PREV_YEAR - 1,
+           DIF_CO2_MONTH_PREV_YEAR = MM_CO2 / MM_CO2_PREV_YEAR - 1,
            DIF_TTF_MONTH_PREV_YEAR = MM_TTF / MM_TTF_PREV_YEAR - 1,
            DIF_CO2_DEP_MONTH_PREV_YEAR = MM_CO2_DEP / MM_CO2_DEP_PREV_YEAR - 1,
-           DIF_TCO2_MONTH_2019 = MM_CO2 / MM_CO2_2019 - 1,
+           DIF_CO2_MONTH_2019 = MM_CO2 / MM_CO2_2019 - 1,
            DIF_TTF_MONTH_2019 = MM_TTF / MM_TTF_2019 - 1,
            DIF_CO2_DEP_MONTH_2019 = MM_CO2_DEP / MM_CO2_DEP_2019 - 1
     ) %>%
@@ -433,8 +433,8 @@ library(RODBC)
             FLIGHT_MONTH,
             MONTH_TEXT,
             MM_CO2,
-            DIF_TCO2_MONTH_PREV_YEAR,
-            DIF_TCO2_MONTH_2019,
+            DIF_CO2_MONTH_PREV_YEAR,
+            DIF_CO2_MONTH_2019,
             MM_CO2_DEP,
             DIF_CO2_DEP_MONTH_PREV_YEAR,
             DIF_CO2_DEP_MONTH_2019,
