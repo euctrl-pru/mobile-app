@@ -71,7 +71,7 @@ library(RODBC)
   PATH <- paste0(DRIVERINFO, "DBQ=", MDBPATH)
 
   channel <- odbcDriverConnect(PATH)
-  query_bill <- "SELECT * FROM CRCO_BILL_AO_CZ"
+  query_bill <- "SELECT * FROM V_CRCO_BILL_PER_CZ"
 
   ## Load data into R dataframe
   nw_billed_raw <- sqlQuery(channel,
