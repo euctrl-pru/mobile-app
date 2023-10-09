@@ -452,7 +452,15 @@ library(RODBC)
     substr(., 1, nchar(.)-1) %>%
     substr(., 2, nchar(.))
 
+  # add date to json
 
+  update_day <-  floor_date(lubridate::now(),  unit = "days") %>% as_tibble() %>%
+    rename(APP_UPDATE = 1)
+
+  update_day_json <- update_day %>%
+    toJSON() %>%
+    substr(., 1, nchar(.)-1) %>%
+    substr(., 2, nchar(.))
 
   # join data strings and save
   nw_json_app <- paste0("{",
@@ -461,6 +469,7 @@ library(RODBC)
                         ', "nw_punct":', nw_punct_json,
                         ', "nw_co2":', nw_co2_json,
                         ', "nw_billed":', nw_billed_json,
+                        ', "app_update":', update_day_json,
                         "}")
   write(nw_json_app, here(data_folder,"nw_json_app.json"))
   write(nw_json_app, paste0(archive_dir, today, "_nw_json_app.json"))
