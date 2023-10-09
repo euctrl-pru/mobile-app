@@ -3,12 +3,12 @@ library("R.utils")
 library(sendmailR)
 
 ##generate all files
-source(here::here("R", "generate_json_files.R"))
+source(here("..", "mobile-app","R", "generate_json_files.R"))
 # rmarkdown::render(here::here("R", "mob_ao_traffic_rank_day.Rmd"), output_dir = here::here("iframes"))
 # rmarkdown::render(here::here("R", "mob_apt_traffic_rank_day.Rmd"), output_dir = here::here("iframes"))
 
 ### copy files to performance folder
-base_dir <- here::here()
+base_dir <- here("..", "mobile-app")
 destination_dir <- '//ihx-vdm05/LIVE_var_www_performance$/briefing/'
 
 
