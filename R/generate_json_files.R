@@ -743,12 +743,12 @@ library(RODBC)
   ao_main_traffic <- ao_data_dy %>%
     mutate(
       MAIN_TFC_AO_GRP_NAME = if_else(
-        WK_R_RANK_BY_DAY <= 3,
+        WK_R_RANK_BY_DAY <= 4,
         DY_AO_GRP_NAME,
         NA
       ),
       MAIN_TFC_AO_GRP_FLIGHT = if_else(
-        WK_R_RANK_BY_DAY <= 3,
+        WK_R_RANK_BY_DAY <= 4,
         DY_FLIGHT,
         NA
       )
@@ -842,12 +842,12 @@ library(RODBC)
   apt_main_traffic <- apt_data_dy %>%
     mutate(
       MAIN_TFC_AIRPORT_NAME = if_else(
-        DY_R_RANK_BY_DAY <= 3,
+        DY_R_RANK_BY_DAY <= 4,
         DY_AIRPORT_NAME,
         NA
       ),
       MAIN_TFC_AIRPORT_DEP_ARR = if_else(
-        DY_R_RANK_BY_DAY <= 3,
+        DY_R_RANK_BY_DAY <= 4,
         DY_DEP_ARR,
         NA
       )
@@ -936,12 +936,12 @@ library(RODBC)
   ct_main_traffic <- ct_dai_data_dy %>%
     mutate(
       MAIN_TFC_CTRY_NAME = if_else(
-        DY_R_RANK_BY_DAY <= 3,
+        DY_R_RANK_BY_DAY <= 4,
         DY_COUNTRY_NAME,
         NA
       ),
       MAIN_TFC_CTRY_DAI = if_else(
-        DY_R_RANK_BY_DAY <= 3,
+        DY_R_RANK_BY_DAY <= 4,
         DY_CTRY_DAI,
         NA
       )
@@ -1049,12 +1049,12 @@ library(RODBC)
   apt_main_delay <- apt_rank_data_day %>%
     mutate(
       MAIN_DLY_APT_NAME = if_else(
-        R_RANK_DLY_DAY <= 3,
+        R_RANK_DLY_DAY <= 4,
         ARP_NAME_DAY,
         NA
       ),
       MAIN_DLY_APT_DLY = if_else(
-        R_RANK_DLY_DAY <= 3,
+        R_RANK_DLY_DAY <= 4,
         DLY_DEP_ARR,
         NA
       )
@@ -1065,12 +1065,12 @@ library(RODBC)
     arrange(desc(DLY_PER_FLT), ARP_NAME_DAY) %>%
     mutate(R_RANK_DLY_DAY = row_number(),
       MAIN_DLY_FLT_APT_NAME = if_else(
-        R_RANK_DLY_DAY <= 3,
+        R_RANK_DLY_DAY <= 4,
         ARP_NAME_DAY,
         NA
       ),
       MAIN_DLY_FLT_APT_DLY_FLT = if_else(
-        R_RANK_DLY_DAY <= 3,
+        R_RANK_DLY_DAY <= 4,
         DLY_PER_FLT,
         NA
       )
@@ -1188,12 +1188,12 @@ library(RODBC)
   acc_main_delay <- acc_rank_data_day %>%
     mutate(
       MAIN_DLY_ACC_NAME = if_else(
-        DY_RANK <= 3,
+        DY_RANK <= 4,
         DY_ACC_NAME,
         NA
       ),
       MAIN_DLY_ACC_DLY = if_else(
-        DY_RANK <= 3,
+        DY_RANK <= 4,
         DY_ACC_DLY,
         NA
       )
@@ -1204,12 +1204,12 @@ library(RODBC)
     arrange(desc(DY_ACC_DLY_PER_FLT), NAME) %>%
     mutate(DY_RANK = row_number(),
            MAIN_DLY_FLT_ACC_NAME = if_else(
-             DY_RANK <= 3,
+             DY_RANK <= 4,
              NAME,
              NA
            ),
            MAIN_DLY_FLT_ACC_DLY_FLT = if_else(
-             DY_RANK <= 3,
+             DY_RANK <= 4,
              DY_ACC_DLY_PER_FLT,
              NA
            )
@@ -1313,12 +1313,12 @@ library(RODBC)
   ct_main_delay <- ct_rank_data_day %>%
     mutate(
       MAIN_DLY_CTRY_NAME = if_else(
-        DY_RANK <= 3,
+        DY_RANK <= 4,
         DY_CTRY_DLY_NAME,
         NA
       ),
       MAIN_DLY_CTRY_DLY = if_else(
-        DY_RANK <= 3,
+        DY_RANK <= 4,
         DY_CTRY_DLY,
         NA
       )
@@ -1330,12 +1330,12 @@ library(RODBC)
     arrange(desc(DY_CTRY_DLY_PER_FLT), DY_CTRY_DLY_NAME) %>%
     mutate(DY_RANK = row_number(),
            MAIN_DLY_FLT_CTRY_NAME = if_else(
-             DY_RANK <= 3,
+             DY_RANK <= 4,
              DY_CTRY_DLY_NAME,
              NA
            ),
            MAIN_DLY_FLT_CTRY_DLY_FLT = if_else(
-             DY_RANK <= 3,
+             DY_RANK <= 4,
              DY_CTRY_DLY_PER_FLT,
              NA
            )
@@ -1532,12 +1532,12 @@ library(RODBC)
   apt_main_punct_top <- apt_punct_dy %>%
     mutate(
       MAIN_PUNCT_APT_NAME = if_else(
-        RANK <= 3,
+        RANK <= 4,
         DY_APT_NAME,
         NA
       ),
       MAIN_PUNCT_APT_ARR_PUNCT = if_else(
-        RANK <= 3,
+        RANK <= 4,
         DY_APT_ARR_PUNCT,
         NA
       )
@@ -1551,12 +1551,12 @@ library(RODBC)
            DY_APT_ARR_PUNCT = ARR_PUNCTUALITY_PERCENTAGE / 100) %>%
     mutate(
       MAIN_PUNCT_APT_NAME_BOTTOM = if_else(
-        RANK <= 3,
+        RANK <= 4,
         DY_APT_NAME,
         NA
       ),
       MAIN_PUNCT_APT_ARR_PUNCT_BOTTOM = if_else(
-        RANK <= 3,
+        RANK <= 4,
         DY_APT_ARR_PUNCT,
         NA
       )
@@ -1734,12 +1734,12 @@ WITH
   ct_main_punct_top <- ct_punct_dy %>%
     mutate(
       MAIN_PUNCT_CTRY_NAME = if_else(
-        RANK <= 3,
+        RANK <= 4,
         DY_CTRY_NAME,
         NA
       ),
       MAIN_PUNCT_CTRY_ARR_PUNCT = if_else(
-        RANK <= 3,
+        RANK <= 4,
         DY_CTRY_ARR_PUNCT,
         NA
       )
@@ -1753,12 +1753,12 @@ WITH
            DY_CTRY_ARR_PUNCT = ARR_PUNCTUALITY_PERCENTAGE / 100) %>%
     mutate(
       MAIN_PUNCT_CTRY_NAME_BOTTOM = if_else(
-        RANK <= 3,
+        RANK <= 4,
         DY_CTRY_NAME,
         NA
       ),
       MAIN_PUNCT_CTRY_ARR_PUNCT_BOTTOM = if_else(
-        RANK <= 3,
+        RANK <= 4,
         DY_CTRY_ARR_PUNCT,
         NA
       )
