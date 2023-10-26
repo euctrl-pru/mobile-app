@@ -1001,48 +1001,48 @@ library(RODBC)
       str_glue(base_file),
       start = base_dir),
     sheet = "APT_DELAY",
-    range = cell_limits(c(5, 2), c(NA, 22))) %>%
+    range = cell_limits(c(5, 2), c(NA, 50))) %>%
     as_tibble()
 
   # day data
   apt_rank_data_day <- apt_rank_data_raw %>%
-    arrange(desc(DLY_DEP_ARR),ARP_NAME) %>%
+    arrange(desc(DLY_ARR),ARP_NAME) %>%
     mutate(R_RANK_DLY_DAY = row_number(),
            ARP_NAME_DAY = ARP_NAME,
-           DLY_PER_FLT = ifelse(FLT_DEP_ARR==0,0,round(DLY_DEP_ARR/FLT_DEP_ARR,2))
+           DLY_PER_FLT = ifelse(FLT_ARR==0,0,round(DLY_ARR/FLT_ARR,2))
            )%>%
-    select(R_RANK_DLY_DAY, ARP_NAME_DAY, FLIGHT_DATE, DLY_DEP_ARR, DLY_PER_FLT)%>%
+    select(R_RANK_DLY_DAY, ARP_NAME_DAY, FLIGHT_DATE, DLY_ARR, DLY_PER_FLT)%>%
     as.data.frame() %>%
     filter(R_RANK_DLY_DAY <= 10)
 
   # week
   apt_rank_data_week <- apt_rank_data_raw %>%
-    arrange(desc(ROLL_WEEK_DLY),ARP_NAME) %>%
+    arrange(desc(ROLL_WEEK_DLY_ARR),ARP_NAME) %>%
     mutate(R_RANK_DLY_DAY = row_number(),
            WK_RANK = R_RANK_DLY_DAY,
            ARP_NAME_WK = ARP_NAME,
-           DLY_PER_FLT_WEEK = ifelse(ROLL_WEEK_FLT==0,0,round(ROLL_WEEK_DLY/ROLL_WEEK_FLT,2)),
+           DLY_PER_FLT_WEEK = ifelse(ROLL_WEEK_FLT==0,0,round(ROLL_WEEK_DLY_ARR/ROLL_WEEK_ARR,2)),
            WK_FROM_DATE =  FLIGHT_DATE +  days(-6),
            WK_TO_DATE = FLIGHT_DATE
            ) %>%
     select(R_RANK_DLY_DAY, WK_RANK, ARP_NAME_WK, WK_FROM_DATE, WK_TO_DATE,
-           ROLL_WEEK_DLY, DLY_PER_FLT_WEEK) %>%
+           ROLL_WEEK_DLY_ARR, DLY_PER_FLT_WEEK) %>%
     as.data.frame() %>%
     filter(R_RANK_DLY_DAY <= 10)
 
   # y2d
   apt_rank_data_y2d <- apt_rank_data_raw %>%
-    arrange(desc(Y2D_AVG_DLY),ARP_NAME)%>%
+    arrange(desc(Y2D_AVG_DLY_ARR),ARP_NAME)%>%
     mutate(R_RANK_DLY_DAY = row_number(),
            Y2D_RANK = R_RANK_DLY_DAY,
            ARP_NAME_Y2D = ARP_NAME,
            DLY_PER_FLT_Y2D = ifelse(Y2D_AVG_FLT == 0,
                                     0,
-                                    round(Y2D_AVG_DLY/Y2D_AVG_FLT,2)
+                                    round(Y2D_AVG_DLY/Y2D_AVG_ARR,2)
                                     ),
            Y2D_TO_DATE = FLIGHT_DATE
            ) %>%
-    select(R_RANK_DLY_DAY, Y2D_RANK, ARP_NAME_Y2D, Y2D_TO_DATE, Y2D_AVG_DLY, DLY_PER_FLT_Y2D)%>%
+    select(R_RANK_DLY_DAY, Y2D_RANK, ARP_NAME_Y2D, Y2D_TO_DATE, Y2D_AVG_DLY_ARR, DLY_PER_FLT_Y2D)%>%
     as.data.frame()
 
   # main card
@@ -1055,7 +1055,7 @@ library(RODBC)
       ),
       MAIN_DLY_APT_DLY = if_else(
         R_RANK_DLY_DAY <= 4,
-        DLY_DEP_ARR,
+        DLY_ARR,
         NA
       )
     ) %>%
@@ -1093,18 +1093,18 @@ library(RODBC)
       DY_RANK = R_RANK_DLY_DAY,
       DY_AIRPORT_NAME = ARP_NAME_DAY,
       DY_TO_DATE = FLIGHT_DATE,
-      DY_AIRPORT_DLY = DLY_DEP_ARR,
+      DY_AIRPORT_DLY = DLY_ARR,
       DY_AIRPORT_DLY_PER_FLT = DLY_PER_FLT,
       WK_RANK,
       WK_AIRPORT_NAME = ARP_NAME_WK,
       WK_FROM_DATE,
       WK_TO_DATE,
-      WK_AIRPORT_DLY = ROLL_WEEK_DLY,
+      WK_AIRPORT_DLY = ROLL_WEEK_DLY_ARR,
       WK_AIRPORT_DLY_PER_FLT = DLY_PER_FLT_WEEK,
       Y2D_RANK,
       Y2D_AIRPORT_NAME = ARP_NAME_Y2D,
       Y2D_TO_DATE,
-      Y2D_AIRPORT_DLY = Y2D_AVG_DLY,
+      Y2D_AIRPORT_DLY = Y2D_AVG_DLY_ARR,
       Y2D_AIRPORT_DLY_PER_FLT = DLY_PER_FLT_Y2D))
 
   # covert to json and save in app data folder and archive
@@ -1121,15 +1121,15 @@ library(RODBC)
       str_glue(base_file),
       start = base_dir),
     sheet = "ACC_DAY_DELAY",
-    range = cell_limits(c(5, 1), c(NA, 16))) %>%
+    range = cell_limits(c(5, 1), c(NA, 20))) %>%
     as_tibble() %>%
     mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
-    arrange(desc(DLY), NAME)%>%
+    arrange(desc(DLY_ER), NAME)%>%
     mutate(
-      DY_RANK = R_RANK_DLY_DAY,
+      DY_RANK = row_number(),
       DY_ACC_NAME = NAME,
-      DY_ACC_DLY = DLY,
-      DY_ACC_DLY_PER_FLT = DLY/FLIGHT,
+      DY_ACC_DLY = DLY_ER,
+      DY_ACC_DLY_PER_FLT = DLY_ER/FLIGHT,
       DY_TO_DATE = ENTRY_DATE)
 
   acc_rank_data_day <- acc_rank_data_day_raw %>%
@@ -1143,18 +1143,18 @@ library(RODBC)
       str_glue(base_file),
       start = base_dir),
     sheet = "ACC_WEEK_DELAY",
-    range = cell_limits(c(5, 1), c(NA, 12))) %>%
+    range = cell_limits(c(5, 1), c(NA, 16))) %>%
     as_tibble() %>%
     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
   acc_rank_data_week <- acc_rank_data_week_raw %>%
-    arrange(desc(DAILY_DLY), NAME)%>%
+    arrange(desc(DAILY_DLY_ER), NAME)%>%
     mutate(
-      DY_RANK = R_RANK_DLY_WK,
+      DY_RANK = row_number(),
       WK_RANK = R_RANK_DLY_WK,
       WK_ACC_NAME = NAME,
-      WK_ACC_DLY = DAILY_DLY,
-      WK_ACC_DLY_PER_FLT = DAILY_DLY/DAILY_FLIGHT,
+      WK_ACC_DLY = DAILY_DLY_ER,
+      WK_ACC_DLY_PER_FLT = DAILY_DLY_ER/DAILY_FLIGHT,
       WK_FROM_DATE = MIN_ENTRY_DATE,
       WK_TO_DATE = MAX_ENTRY_DATE
       ) %>%
@@ -1168,18 +1168,18 @@ library(RODBC)
       str_glue(base_file),
       start = base_dir),
     sheet = "ACC_Y2D_DELAY",
-    range = cell_limits(c(7, 1), c(NA, 10))) %>%
+    range = cell_limits(c(7, 1), c(NA, 12))) %>%
     as_tibble() %>%
     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
   acc_rank_data_y2d <- acc_rank_data_y2d_raw %>%
-    arrange(desc(Y2D_AVG_DLY), NAME)%>%
+    arrange(desc(Y2D_AVG_DLY_ER), NAME)%>%
     mutate(
       DY_RANK = row_number(),
       Y2D_RANK = row_number(),
       Y2D_ACC_NAME = NAME,
-      Y2D_ACC_DLY =  Y2D_AVG_DLY,
-      Y2D_ACC_DLY_PER_FLT = Y2D_AVG_DLY/ Y2D_AVG_FLIGHT,
+      Y2D_ACC_DLY =  Y2D_AVG_DLY_ER,
+      Y2D_ACC_DLY_PER_FLT = Y2D_AVG_DLY_ER/ Y2D_AVG_FLIGHT,
       Y2D_TO_DATE = ENTRY_DATE) %>%
     select(DY_RANK, Y2D_RANK, Y2D_ACC_NAME, Y2D_TO_DATE, Y2D_ACC_DLY, Y2D_ACC_DLY_PER_FLT) %>%
     filter(DY_RANK <= 10)
