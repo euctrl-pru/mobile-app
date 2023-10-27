@@ -17,7 +17,7 @@ library(RODBC)
 # parameters
   data_folder <- here::here("data")
   base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/'
-  base_file <- '99_Traffic_Landing_Page_dataset_{today}.xlsx'
+  base_file <- '99_Traffic_Landing_Page_dataset_new_{today}.xlsx'
   archive_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/web_daily_json_files/app/'
   today <- (lubridate::now() +  days(-1)) %>% format("%Y%m%d")
   last_day <-  (lubridate::now() +  days(-1))
@@ -499,7 +499,7 @@ library(RODBC)
     # monthly
 
   base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/'
-  base_file <- '99_Traffic_Landing_Page_dataset_{today}.xlsx'
+  base_file <- '99_Traffic_Landing_Page_dataset_new_{today}.xlsx'
 
   nw_traffic_month_data <-  read_xlsx(
     path  = fs::path_abs(
@@ -517,7 +517,7 @@ library(RODBC)
   ### delay
   nw_delay_raw <-  read_xlsx(
     path  = fs::path_abs(
-      str_glue("99_Traffic_Landing_Page_dataset_{today}.xlsx"),
+      str_glue("99_Traffic_Landing_Page_dataset_new_{today}.xlsx"),
       start = base_dir),
     sheet = "NM_Delay_for_graph",
     range = cell_limits(c(2, 1), c(NA, 29))) %>%
