@@ -1629,7 +1629,13 @@ WITH
    "
 
   ct_punct_raw <- export_query(query) %>%
-    filter(ISO_CT_CODE != 'GI',  ISO_CT_CODE != 'FO', ISO_CT_CODE != 'SJ', ISO_CT_CODE != 'MC', ISO_CT_CODE != 'PM', ISO_CT_CODE != 'UA')
+    filter(ISO_CT_CODE != 'GI',
+           ISO_CT_CODE != 'FO',
+           ISO_CT_CODE != 'SJ',
+           ISO_CT_CODE != 'MC',
+           ISO_CT_CODE != 'PM',
+           ISO_CT_CODE != 'UA') %>%
+    mutate_at('EC_ISO_CT_NAME', ~if_else(. == 'Turkiye', 'Türkiye', .))
 
   last_punctuality_day <-  max(ct_punct_raw$DATE)
 
