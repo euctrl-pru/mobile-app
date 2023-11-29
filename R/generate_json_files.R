@@ -710,9 +710,9 @@ library(RODBC)
   # day
   ao_data_dy <- read_xlsx(
     path  = fs::path_abs(
-      str_glue("5_AOs_infographic_{today}.xlsx"),
+      str_glue(base_file),
       start = base_dir),
-    sheet = "Table_For_Traffic_LP_Portal",
+    sheet = "AO_DAY",
     range = cell_limits(c(3, 2), c(NA, 10))) %>%
     mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
     filter(WK_R_RANK_BY_DAY <= 10) %>%
@@ -721,9 +721,9 @@ library(RODBC)
   # week
   ao_data_wk <- read_xlsx(
     path  = fs::path_abs(
-      str_glue("5_AOs_infographic_Week_{today}.xlsx"),
+      str_glue(base_file),
       start = base_dir),
-    sheet = "Table_For_Traffic_LP_Portal",
+    sheet = "AO_WEEK",
     range = cell_limits(c(3, 2), c(NA, 9))) %>%
     mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
     filter(WK_R_RANK_BY_DAY <= 10) %>%
@@ -757,9 +757,9 @@ library(RODBC)
 
   ao_main_traffic_dif <- read_xlsx(
     path  = fs::path_abs(
-      str_glue("5_AOs_infographic_{today}.xlsx"),
+      str_glue(base_file),
       start = base_dir),
-    sheet = "table_for_app",
+    sheet = "AO_DAY_MAIN",
     range = cell_limits(c(3, 2), c(NA, 4)))
 
   #merge and reorder tables
