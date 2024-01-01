@@ -160,7 +160,7 @@ library(RODBC)
       Y2D_DIFF_PREV_YEAR_PERC,
       Y2D_DIFF_2019_PERC
     )  %>%
-    toJSON() %>%
+    toJSON(., digits = 10) %>%
     substr(., 1, nchar(.)-1) %>%
     substr(., 2, nchar(.))
 
