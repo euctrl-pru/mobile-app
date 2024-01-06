@@ -51,7 +51,7 @@ library(RODBC)
       tibble::as_tibble()
   }
 
-  ####billing json - we do this first to avoid 'R fatal error'
+####billing json - we do this first to avoid 'R fatal error'
 
   # dir_billing <- "G:/HQ/dgof-pru/Data/DataProcessing/Covid19/Oscar/Billing"
   #
@@ -1151,7 +1151,7 @@ library(RODBC)
     arrange(desc(DAILY_DLY_ER), NAME)%>%
     mutate(
       DY_RANK = row_number(),
-      WK_RANK = R_RANK_DLY_WK,
+      WK_RANK = row_number(),
       WK_ACC_NAME = NAME,
       WK_ACC_DLY = DAILY_DLY_ER,
       WK_ACC_DLY_PER_FLT = DAILY_DLY_ER/DAILY_FLIGHT,
@@ -1230,7 +1230,7 @@ library(RODBC)
       MAIN_DLY_ACC_DLY,
       MAIN_DLY_FLT_ACC_NAME,
       MAIN_DLY_FLT_ACC_DLY_FLT,
-      DY_RANK = R_RANK_DLY_DAY,
+      DY_RANK = DY_RANK,
       DY_ACC_NAME,
       DY_TO_DATE,
       DY_ACC_DLY,
