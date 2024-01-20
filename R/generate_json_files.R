@@ -517,7 +517,7 @@ library(RODBC)
   ### delay
   nw_delay_raw <-  read_xlsx(
     path  = fs::path_abs(
-      str_glue("99_Traffic_Landing_Page_dataset_new_{today}.xlsx"),
+      str_glue(base_file),
       start = base_dir),
     sheet = "NM_Delay_for_graph",
     range = cell_limits(c(2, 1), c(NA, 29))) %>%
@@ -808,9 +808,9 @@ library(RODBC)
   # day
   apt_data_dy <- read_xlsx(
     path  = fs::path_abs(
-      str_glue("5_Airport_infographic_{today}.xlsx"),
+      str_glue(base_file),
       start = base_dir),
-    sheet = "Table_For_Traffic_LP_Portal",
+    sheet = "APT_DAY",
     range = cell_limits(c(3, 2), c(NA, 10))) %>%
     mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
     filter(DY_R_RANK_BY_DAY <= 10) %>%
@@ -819,9 +819,9 @@ library(RODBC)
   # week
   apt_data_wk <- read_xlsx(
     path  = fs::path_abs(
-      str_glue("5_Airport_infographic_week_{today}.xlsx"),
+      str_glue(base_file),
       start = base_dir),
-    sheet = "Table_For_Traffic_LP_Portal",
+    sheet = "APT_WEEK",
     range = cell_limits(c(3, 2), c(NA, 10))) %>%
     mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
       filter(DY_R_RANK_BY_DAY <= 10) %>%
@@ -856,9 +856,9 @@ library(RODBC)
 
   apt_main_traffic_dif <- read_xlsx(
     path  = fs::path_abs(
-      str_glue("5_Airport_infographic_{today}.xlsx"),
+      str_glue(base_file),
       start = base_dir),
-    sheet = "table_for_app",
+    sheet = "APT_DAY_MAIN",
     range = cell_limits(c(3, 2), c(NA, 4)))
 
   #merge and reorder tables
