@@ -76,7 +76,11 @@ library(RODBC)
       tibble::as_tibble()
   }
 
-# json files for landing page
+###############################################################################################
+#                                                                                             #
+#    json files for state landing page                                                        #
+#                                                                                             #
+###############################################################################################
 
   ####billing json - we do this first to avoid 'R fatal error'
 
@@ -162,8 +166,9 @@ library(RODBC)
     substr(., 2, nchar(.))
 
   ###############################################
-  # traffic data
-    st_traffic_data <-  read_xlsx(
+
+  # traffic daio data
+    st_daio_data <-  read_xlsx(
       path  = fs::path_abs(
         str_glue(base_file),
         start = base_dir),
@@ -173,21 +178,21 @@ library(RODBC)
       mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
 
-    st_traffic_last_day <- st_traffic_data %>%
-      filter(ENTRY_DATE == last_day) %>%
+    st_daio_last_day <- st_daio_data %>%
+      filter(FLIGHT_DATE == last_day) %>%
       mutate(daio_zone = COUNTRY_NAME) %>%
       right_join(state_daio, by = "daio_zone", relationship = "many-to-many")
 
-    st_traffic_json <- st_traffic_last_day %>%
-      filter(ENTRY_DATE == last_day) %>%
+    st_daio_json <- st_daio_last_day %>%
+      filter(FLIGHT_DATE == last_day) %>%
       select(
         iso_2letter,
-        ENTRY_DATE,
-        TOT_TFC,
-        DAY_TFC_DIFF_PREV_YEAR_PERC,
+        FLIGHT_DATE,
+        DAY_TFC,
+        DAY_DIFF_PREV_YEAR_PERC,
         DAY_TFC_DIFF_2019_PERC,
         AVG_ROLLING_WEEK,
-        DIF_ROLLING_WEEK_PY_PERC,
+        DIF_WEEK_PREV_YEAR_PERC,
         DIF_ROLLING_WEEK_2019_PERC,
         Y2D_TFC_YEAR,
         Y2D_AVG_TFC_YEAR,
@@ -195,8 +200,119 @@ library(RODBC)
         Y2D_DIFF_2019_PERC
       )
 
-    st_traffic_json <- st_traffic_json %>%
+    st_daio_json <- st_daio_json %>%
       toJSON(., digits = 10) %>%
       substr(., 1, nchar(.)-1) %>%
       substr(., 2, nchar(.))
+
+###############################################################################################
+#                                                                                             #
+#    json files for state ranking tables                                                      #
+#                                                                                             #
+###############################################################################################
+
+  # Aircraft operators traffic
+
+    # week
+    st_ao_data_wk_raw <- read_xlsx(
+      path  = fs::path_abs(
+        str_glue(base_file),
+        start = base_dir),
+      sheet = "state_ao_week",
+      range = cell_limits(c(1, 1), c(NA, NA))) %>%
+      mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+    st_ao_data_wk <- st_ao_data_wk_raw %>%
+      spread(., key = FLAG_ROLLING_WEEK, value = FLIGHT_WITHOUT_OVERFLIGHT) %>%
+      arrange(COUNTRY_NAME, RANK) %>%
+      mutate(
+        WK_RANK_DIF_PREV_WEEK = case_when(
+          is.na(RANK_PREV_WEEK) ~ RANK,
+          .default = RANK_PREV_WEEK - RANK
+        ),
+        WK_DIF_PREV_WEEK_PERC =   case_when(
+          PREV_ROLLING_WEEK == 0 | is.na(PREV_ROLLING_WEEK) ~ NA,
+          .default = CURRENT_ROLLING_WEEK / PREV_ROLLING_WEEK - 1
+        ),
+        WK_DIF_PREV_YEAR_PERC = case_when(
+          ROLLING_WEEK_PREV_YEAR == 0 | is.na(ROLLING_WEEK_PREV_YEAR) ~ NA,
+          .default = CURRENT_ROLLING_WEEK / ROLLING_WEEK_PREV_YEAR - 1
+        )
+      ) %>%
+      relocate(
+        COUNTRY_NAME,
+        WK_RANK_DIF_PREV_WEEK,
+        WK_AO_GRP_NAME = AO_GRP_NAME,
+        WK_FROM_DATE = FROM_DATE,
+        WK_TO_DATE = TO_DATE,
+        WK_DAILY_FLIGHT = CURRENT_ROLLING_WEEK,
+        WK_DIF_PREV_WEEK_PERC,
+        WK_DIF_PREV_YEAR_PERC
+      ) %>%
+      select(
+        COUNTRY_NAME,
+        WK_RANK_DIF_PREV_WEEK,
+        WK_AO_GRP_NAME,
+        WK_FROM_DATE,
+        WK_TO_DATE,
+        WK_DAILY_FLIGHT,
+        WK_DIF_PREV_WEEK_PERC,
+        WK_DIF_PREV_YEAR_PERC
+      )
+
+    # y2d
+    st_ao_data_y2d_raw <- read_xlsx(
+      path  = fs::path_abs(
+        str_glue(base_file),
+        start = base_dir),
+      sheet = "state_ao_y2d",
+      range = cell_limits(c(1, 1), c(NA, NA))) %>%
+      mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+    st_ao_data_y2d <- st_ao_data_y2d_raw %>%
+      mutate(
+             FROM_DATE = max(FROM_DATE),
+             TO_DATE = max(TO_DATE),
+             PERIOD =   case_when(
+               YEAR == max(YEAR) ~ 'CURRENT_YEAR',
+               YEAR == max(YEAR) - 1 ~ 'PREV_YEAR',
+               .default = paste0('PERIOD_', YEAR)
+               )
+             ) %>%
+      select(-FLIGHT_WITHOUT_OVERFLIGHT, -YEAR) %>%
+      spread(., key = PERIOD, value = AVG_FLT) %>%
+      arrange(COUNTRY_NAME, RANK_CURRENT) %>%
+      mutate(
+        Y2D_RANK_DIF_PREV_YEAR = case_when(
+          is.na(RANK_PREV_YEAR) ~ RANK_CURRENT,
+          .default = RANK_PREV_YEAR - RANK_CURRENT
+        ),
+        Y2D_DIF_PREV_YEAR_PERC =   case_when(
+          PREV_YEAR == 0 | is.na(PREV_YEAR) ~ NA,
+          .default = CURRENT_YEAR / PREV_YEAR - 1
+        ),
+        Y2D_DIF_2019_PERC  = case_when(
+          PERIOD_2019 == 0 | is.na(PERIOD_2019) ~ NA,
+          .default = CURRENT_YEAR / PERIOD_2019 - 1
+        )
+      ) %>%
+      relocate(
+        COUNTRY_NAME,
+        Y2D_RANK_DIF_PREV_YEAR,
+        Y2D_AO_GRP_NAME = AO_GRP_NAME,
+        Y2D_TO_DATE = TO_DATE,
+        Y2D_DAILY_FLIGHT = CURRENT_YEAR,
+        Y2D_DIF_PREV_YEAR_PERC,
+        Y2D_DIF_2019_PERC
+      ) %>%
+      select(
+        COUNTRY_NAME,
+        Y2D_RANK_DIF_PREV_YEAR,
+        Y2D_AO_GRP_NAME,
+        Y2D_TO_DATE,
+        Y2D_DAILY_FLIGHT,
+        Y2D_DIF_PREV_YEAR_PERC,
+        Y2D_DIF_2019_PERC
+      )
+
 
