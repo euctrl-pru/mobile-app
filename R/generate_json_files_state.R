@@ -213,6 +213,52 @@ library(RODBC)
 
   # Aircraft operators traffic
 
+    # day
+    st_ao_data_day_raw <- read_xlsx(
+      path  = fs::path_abs(
+        str_glue(base_file),
+        start = base_dir),
+      sheet = "state_ao_day",
+      range = cell_limits(c(1, 1), c(NA, NA))) %>%
+      mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+    st_ao_data_day_int <- st_ao_data_day_raw %>%
+      mutate(TO_DATE = max(TO_DATE)) %>%
+      spread(., key = FLAG_DAY, value = FLIGHT_WITHOUT_OVERFLIGHT) %>%
+      arrange(COUNTRY_NAME, RANK) %>%
+      mutate(
+        DY_RANK_DIF_PREV_WEEK = case_when(
+          is.na(RANK_PREV_WEEK) ~ RANK,
+          .default = RANK_PREV_WEEK - RANK
+        ),
+        DY_DIF_PREV_WEEK_PERC =   case_when(
+          DAY_PREV_WEEK == 0 | is.na(DAY_PREV_WEEK) ~ NA,
+          .default = CURRENT_DAY / DAY_PREV_WEEK - 1
+        ),
+        DY_DIF_PREV_YEAR_PERC = case_when(
+          DAY_PREV_YEAR == 0 | is.na(DAY_PREV_YEAR) ~ NA,
+          .default = CURRENT_DAY / DAY_PREV_YEAR - 1
+        ),
+        ST_RANK = paste0(tolower(COUNTRY_NAME), RANK),
+        ST_TFC_AO_GRP_DIF = CURRENT_DAY - DAY_PREV_WEEK
+      )
+
+    st_ao_data_day <- st_ao_data_day_int %>%
+      rename(
+        DY_AO_GRP_NAME = AO_GRP_NAME,
+        DY_TO_DATE = TO_DATE,
+        DY_FLIGHT = CURRENT_DAY
+      ) %>%
+      select(
+        ST_RANK,
+        DY_RANK_DIF_PREV_WEEK,
+        DY_AO_GRP_NAME,
+        DY_TO_DATE,
+        DY_FLIGHT,
+        DY_DIF_PREV_WEEK_PERC,
+        DY_DIF_PREV_YEAR_PERC
+      )
+
     # week
     st_ao_data_wk_raw <- read_xlsx(
       path  = fs::path_abs(
@@ -237,20 +283,17 @@ library(RODBC)
         WK_DIF_PREV_YEAR_PERC = case_when(
           ROLLING_WEEK_PREV_YEAR == 0 | is.na(ROLLING_WEEK_PREV_YEAR) ~ NA,
           .default = CURRENT_ROLLING_WEEK / ROLLING_WEEK_PREV_YEAR - 1
-        )
+        ),
+        ST_RANK = paste0(tolower(COUNTRY_NAME), RANK)
       ) %>%
-      relocate(
-        COUNTRY_NAME,
-        WK_RANK_DIF_PREV_WEEK,
+      rename(
         WK_AO_GRP_NAME = AO_GRP_NAME,
         WK_FROM_DATE = FROM_DATE,
         WK_TO_DATE = TO_DATE,
-        WK_DAILY_FLIGHT = CURRENT_ROLLING_WEEK,
-        WK_DIF_PREV_WEEK_PERC,
-        WK_DIF_PREV_YEAR_PERC
+        WK_DAILY_FLIGHT = CURRENT_ROLLING_WEEK
       ) %>%
       select(
-        COUNTRY_NAME,
+        ST_RANK,
         WK_RANK_DIF_PREV_WEEK,
         WK_AO_GRP_NAME,
         WK_FROM_DATE,
@@ -294,19 +337,16 @@ library(RODBC)
         Y2D_DIF_2019_PERC  = case_when(
           PERIOD_2019 == 0 | is.na(PERIOD_2019) ~ NA,
           .default = CURRENT_YEAR / PERIOD_2019 - 1
-        )
+        ),
+        ST_RANK = paste0(tolower(COUNTRY_NAME), RANK_CURRENT)
       ) %>%
-      relocate(
-        COUNTRY_NAME,
-        Y2D_RANK_DIF_PREV_YEAR,
+      rename(
         Y2D_AO_GRP_NAME = AO_GRP_NAME,
         Y2D_TO_DATE = TO_DATE,
-        Y2D_DAILY_FLIGHT = CURRENT_YEAR,
-        Y2D_DIF_PREV_YEAR_PERC,
-        Y2D_DIF_2019_PERC
+        Y2D_DAILY_FLIGHT = CURRENT_YEAR
       ) %>%
       select(
-        COUNTRY_NAME,
+        ST_RANK,
         Y2D_RANK_DIF_PREV_YEAR,
         Y2D_AO_GRP_NAME,
         Y2D_TO_DATE,
@@ -314,5 +354,77 @@ library(RODBC)
         Y2D_DIF_PREV_YEAR_PERC,
         Y2D_DIF_2019_PERC
       )
+
+    # main card
+    st_ao_main_traffic <- st_ao_data_day %>%
+      mutate(
+        MAIN_TFC_AO_GRP_NAME = if_else(
+          RANK <= 4,
+          DY_AO_GRP_NAME,
+          NA
+        ),
+        MAIN_TFC_AO_GRP_FLIGHT = if_else(
+          RANK <= 4,
+          DY_FLIGHT,
+          NA
+        ),
+        ST_RANK = paste0(tolower(COUNTRY_NAME), RANK)
+        ) %>%
+      select(ST_RANK, MAIN_TFC_AO_GRP_NAME, MAIN_TFC_AO_GRP_FLIGHT)
+
+    st_ao_main_traffic_dif <- st_ao_data_day_int %>%
+      arrange(COUNTRY_NAME, desc(abs(ST_TFC_AO_GRP_DIF)), RANK) %>%
+      group_by(COUNTRY_NAME) %>%
+      mutate(RANK_DIF_AO_TFC = row_number()) %>%
+      ungroup() %>%
+      arrange(COUNTRY_NAME, RANK) %>%
+      mutate(
+        MAIN_TFC_DIF_AO_GRP_NAME = if_else(
+          RANK_DIF_AO_TFC <= 4,
+          AO_GRP_NAME,
+          NA
+        ),
+        MAIN_TFC_AO_GRP_DIF = if_else(
+          RANK_DIF_AO_TFC <= 4,
+          ST_TFC_AO_GRP_DIF,
+          NA
+        )
+      ) %>%
+      arrange(COUNTRY_NAME, desc(MAIN_TFC_AO_GRP_DIF)) %>%
+      group_by(COUNTRY_NAME) %>%
+      mutate(
+        RANK_MAIN_DIF = row_number(),
+        ST_RANK = paste0(tolower(COUNTRY_NAME), RANK_MAIN_DIF)
+             ) %>%
+      ungroup() %>%
+      select(ST_RANK, MAIN_TFC_DIF_AO_GRP_NAME, MAIN_TFC_AO_GRP_DIF)
+
+    # create list of state/rankings for left join
+    state_iso_ranking <- list()
+    i = 0
+    for (i in 1:10) {
+      i = i + 1
+      state_iso_ranking <- state_iso_ranking %>%
+        bind_rows(state_iso, .)
+    }
+
+    state_iso_ranking <- state_iso_ranking %>%
+      arrange(state) %>%
+      group_by(state) %>%
+      mutate(
+        RANK = row_number(),
+        ST_RANK = paste0(tolower(state), RANK)
+             )
+
+    # join and reorder tables
+    st_ao_data <- state_iso_ranking %>%
+      left_join(st_ao_main_traffic, by = "ST_RANK") %>%
+      left_join(st_ao_main_traffic_dif, by = "ST_RANK") %>%
+      left_join(st_ao_data_day, by = "ST_RANK") %>%
+      left_join(st_ao_data_wk, by = "ST_RANK") %>%
+      left_join(st_ao_data_y2d, by = "ST_RANK") %>%
+      select(-ST_RANK)
+
+
 
 
