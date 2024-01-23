@@ -392,7 +392,6 @@ library(RODBC)
            MONTH_TEXT = format(FLIGHT_MONTH,'%B'),
            MM_CO2_PREV_YEAR = lag(MM_CO2, 12),
            MM_TTF_PREV_YEAR = lag(MM_TTF, 12),
-           MM_TTF_PREV_YEAR = lag(MM_TTF, 12),
            MM_CO2_2019 = lag(MM_CO2, (as.numeric(co2_last_year) - 2019) * 12),
            MM_TTF_2019 = lag(MM_TTF, (as.numeric(co2_last_year) - 2019) * 12),
            MM_CO2_DEP_PREV_YEAR = lag(MM_CO2_DEP, 12),
