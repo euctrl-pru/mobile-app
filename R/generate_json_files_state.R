@@ -254,6 +254,81 @@ library(RODBC)
       substr(., 1, nchar(.)-1) %>%
       substr(., 2, nchar(.))
 
+    ###############################################
+    # delay data
+
+    st_delay_data <-  read_xlsx(
+      path  = fs::path_abs(
+        str_glue(base_file),
+        start = base_dir),
+      sheet = "state_delay",
+      range = cell_limits(c(1, 1), c(NA, NA))) %>%
+      as_tibble() %>%
+      mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+    st_delay_for_json  <- st_delay_data %>%
+      filter(FLIGHT_DATE == max(LAST_DATA_DAY)) %>%
+      mutate(
+        DAY_DLY_FLT = DAY_DLY / DAY_TFC,
+        DAY_DLY_FLT_PY = DAY_DLY_PREV_YEAR / DAY_TFC_PREV_YEAR,
+        DAY_DLY_FLT_2019 = DAY_DLY_2019 / DAY_TFC_2019,
+        DAY_DLY_FLT_DIF_PY_PERC = if_else(
+          DAY_DLY_FLT_PY == 0, NA , DAY_DLY_FLT / DAY_DLY_FLT_PY -1
+        ),
+        DAY_DLY_FLT_DIF_2019_PERC = if_else(
+          DAY_DLY_FLT_2019 == 0, NA , DAY_DLY_FLT / DAY_DLY_FLT_2019 -1
+        ),
+
+        RWEEK_DLY_FLT = AVG_DLY_ROLLING_WEEK / AVG_TFC_ROLLING_WEEK,
+        RWEEK_DLY_FLT_PY = AVG_DLY_ROLLING_WEEK_PREV_YEAR / AVG_TFC_ROLLING_WEEK_PREV_YEAR,
+        RWEEK_DLY_FLT_2019 = AVG_DLY_ROLLING_WEEK_2019 / AVG_TFC_ROLLING_WEEK_2019,
+        RWEEK_DLY_FLT_DIF_PY_PERC = if_else(
+          RWEEK_DLY_FLT_PY == 0, NA , RWEEK_DLY_FLT / RWEEK_DLY_FLT_PY -1
+        ),
+        RWEEK_DLY_FLT_DIF_2019_PERC = if_else(
+          RWEEK_DLY_FLT_2019 == 0, NA , RWEEK_DLY_FLT / RWEEK_DLY_FLT_2019 -1
+        ),
+
+        Y2D_DLY_FLT = Y2D_DLY_YEAR / Y2D_TFC_YEAR,
+        Y2D_DLY_FLT_PY = Y2D_AVG_DLY_PREV_YEAR / Y2D_AVG_TFC_PREV_YEAR,
+        Y2D_DLY_FLT_2019 = Y2D_AVG_DLY_2019 / Y2D_AVG_TFC_2019,
+        Y2D_DLY_FLT_DIF_PY_PERC = if_else(
+          Y2D_DLY_FLT_PY == 0, NA , Y2D_DLY_FLT / Y2D_DLY_FLT_PY -1
+        ),
+        Y2D_DLY_FLT_DIF_2019_PERC = if_else(
+          Y2D_DLY_FLT_2019 == 0, NA , Y2D_DLY_FLT / Y2D_DLY_FLT_2019 -1
+        )
+
+      ) %>%
+      select(
+        COUNTRY_NAME,
+        FLIGHT_DATE,
+        DAY_DLY,
+        DAY_DLY_DIF_PREV_YEAR_PERC,
+        DAY_DLY_DIF_2019_PERC,
+        DAY_DLY_FLT,
+        DAY_DLY_FLT_DIF_PY_PERC,
+        DAY_DLY_FLT_DIF_2019_PERC,
+
+        AVG_DLY_ROLLING_WEEK,
+        DIF_DLY_ROLLING_WEEK_PREV_YEAR_PERC,
+        DIF_DLY_ROLLING_WEEK_2019_PERC,
+        RWEEK_DLY_FLT,
+        RWEEK_DLY_FLT_DIF_PY_PERC,
+        RWEEK_DLY_FLT_DIF_2019_PERC,
+
+        Y2D_AVG_DLY_YEAR,
+        Y2D_DLY_DIF_PREV_YEAR_PERC,
+        Y2D_DLY_DIF_2019_PERC,
+        Y2D_DLY_FLT,
+        Y2D_DLY_FLT_DIF_PY_PERC,
+        Y2D_DLY_FLT_DIF_2019_PERC
+      )
+
+    st_delay_json <- st_delay_for_json %>%
+      toJSON() %>%
+      substr(., 1, nchar(.)-1) %>%
+      substr(., 2, nchar(.))
 
     ###############################################
     # punctuality data
