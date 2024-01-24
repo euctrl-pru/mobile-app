@@ -19,6 +19,8 @@ library(RODBC)
   # base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/'
   base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Oscar/Develop/'
   base_file <- '99a_app_state_dataset.xlsx'
+  nw_base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/LastVersion/'
+  nw_base_file <- '99_Traffic_Landing_Page_dataset_new.xlsx'
   # archive_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/web_daily_json_files/app/'
   archive_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Oscar/old/'
   today <- (lubridate::now() +  days(-1)) %>% format("%Y%m%d")
@@ -30,7 +32,7 @@ library(RODBC)
   pwd <- Sys.getenv("PRU_DEV_PWD")
   dbn <- Sys.getenv("PRU_DEV_DBNAME")
 
-# equivalence tables
+# dimension tables
   state_iso <-  read_xlsx(
     path  = fs::path_abs(
       str_glue(base_file),
@@ -61,6 +63,14 @@ library(RODBC)
       start = base_dir),
     sheet = "lists",
     range = cell_limits(c(2, 15), c(NA, 16))) %>%
+    as_tibble()
+
+  acc <-  read_xlsx(
+    path  = fs::path_abs(
+      str_glue(nw_base_file),
+      start = nw_base_dir),
+    sheet = "ACC_names",
+    range = cell_limits(c(2, 3), c(NA, NA))) %>%
     as_tibble()
 
 # functions
@@ -614,7 +624,7 @@ library(RODBC)
 #                                                                                             #
 ###############################################################################################
 
-  ###############################################
+  ###############################################    TRAFFIC
   # Aircraft operators traffic
 
     # day
@@ -1276,3 +1286,154 @@ library(RODBC)
     st_st_data_j <- st_st_data %>% toJSON()
     #xxx write(st_ao_data_j, here(data_folder,"ao_ranking_traffic.json"))
     write(st_st_data_j, paste0(archive_dir, today, "_st_st_ranking_traffic.json"))
+
+  ###############################################    DELAY
+  # ACC delay
+
+    # day data
+    acc_delay_day_raw <-  read_xlsx(
+      path  = fs::path_abs(
+        str_glue(nw_base_file),
+        start = nw_base_dir),
+      sheet = "ACC_DAY_DELAY",
+      range = cell_limits(c(5, 1), c(NA, 20))) %>%
+      as_tibble() %>%
+      mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+    acc_delay_day <- acc_delay_day_raw %>%
+      arrange(desc(DLY_ER), NAME) %>%
+      mutate(
+        ICAO_code = UNIT_CODE,
+        DY_ACC_NAME = NAME,
+        DY_ACC_DLY = DLY_ER,
+        DY_ACC_DLY_PER_FLT = DLY_ER/FLIGHT,
+        DY_TO_DATE = ENTRY_DATE) %>%
+      right_join(acc, by = "ICAO_code") %>%
+      left_join(state_iso, by = "iso_2letter") %>%
+      group_by(iso_2letter) %>%
+      arrange(iso_2letter, desc(DY_ACC_DLY), DY_ACC_NAME) %>%
+      mutate (
+        DY_RANK = row_number(),
+        ST_RANK = paste0(tolower(state), DY_RANK),
+      ) %>%
+      ungroup() %>%
+      select(
+        ST_RANK,
+        DY_RANK,
+        DY_ACC_NAME,
+        DY_TO_DATE,
+        DY_ACC_DLY,
+        DY_ACC_DLY_PER_FLT
+        )
+
+    # week
+    acc_delay_week_raw <-  read_xlsx(
+      path  = fs::path_abs(
+        str_glue(nw_base_file),
+        start = nw_base_dir),
+      sheet = "ACC_WEEK_DELAY",
+      range = cell_limits(c(5, 1), c(NA, 16))) %>%
+      as_tibble() %>%
+      mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+    acc_delay_week <- acc_delay_week_raw %>%
+      arrange(desc(DAILY_DLY_ER), NAME) %>%
+      mutate(
+        ICAO_code = UNIT_CODE,
+        WK_ACC_NAME = NAME,
+        WK_ACC_DLY = DAILY_DLY_ER,
+        WK_ACC_DLY_PER_FLT = DAILY_DLY_ER / DAILY_FLIGHT,
+        WK_FROM_DATE = MIN_ENTRY_DATE,
+        WK_TO_DATE = MAX_ENTRY_DATE
+        ) %>%
+      right_join(acc, by = "ICAO_code") %>%
+      left_join(state_iso, by = "iso_2letter") %>%
+      group_by(iso_2letter) %>%
+      arrange(iso_2letter, desc(WK_ACC_DLY), WK_ACC_NAME) %>%
+      mutate (
+        WK_RANK = row_number(),
+        ST_RANK = paste0(tolower(state), WK_RANK),
+      ) %>%
+      ungroup() %>%
+      select(
+        ST_RANK,
+        WK_RANK,
+        WK_ACC_NAME,
+        WK_FROM_DATE,
+        WK_TO_DATE,
+        WK_ACC_DLY,
+        WK_ACC_DLY_PER_FLT
+      )
+
+    # y2d
+    acc_delay_y2d_raw <-  read_xlsx(
+      path  = fs::path_abs(
+        str_glue(nw_base_file),
+        start = nw_base_dir),
+      sheet = "ACC_Y2D_DELAY",
+      range = cell_limits(c(7, 1), c(NA, 13))) %>%
+      as_tibble() %>%
+      mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
+      rename(Y2D_FROM_DATE = 13)
+
+    acc_delay_y2d <- acc_delay_y2d_raw %>%
+      arrange(desc(Y2D_AVG_DLY), NAME) %>%
+      mutate(
+        ICAO_code = UNIT_CODE,
+        Y2D_ACC_NAME = NAME,
+        Y2D_ACC_DLY = Y2D_AVG_DLY,
+        Y2D_ACC_DLY_PER_FLT = Y2D_AVG_DLY / Y2D_AVG_FLIGHT,
+        Y2D_TO_DATE = ENTRY_DATE
+      ) %>%
+      right_join(acc, by = "ICAO_code") %>%
+      left_join(state_iso, by = "iso_2letter") %>%
+      group_by(iso_2letter) %>%
+      arrange(iso_2letter, desc(Y2D_ACC_DLY), Y2D_ACC_NAME) %>%
+      mutate (
+        Y2D_RANK = row_number(),
+        ST_RANK = paste0(tolower(state), Y2D_RANK),
+      ) %>%
+      ungroup() %>%
+      select(
+        ST_RANK,
+        Y2D_RANK,
+        Y2D_ACC_NAME,
+        Y2D_FROM_DATE,
+        Y2D_TO_DATE,
+        Y2D_ACC_DLY,
+        Y2D_ACC_DLY_PER_FLT
+      )
+
+    # no main card
+
+    # create list of state/rankings for left join
+    state_iso_ranking <- list()
+    i = 0
+    for (i in 1:10) {
+      i = i + 1
+      state_iso_ranking <- state_iso_ranking %>%
+        bind_rows(state_iso, .)
+    }
+
+    state_iso_ranking <- state_iso_ranking %>%
+      arrange(state) %>%
+      group_by(state) %>%
+      mutate(
+        RANK = row_number(),
+        ST_RANK = paste0(tolower(state), RANK)
+      )
+
+    # join and reorder tables
+    st_acc_delay <- state_iso_ranking %>%
+      left_join(acc_delay_day, by = "ST_RANK") %>%
+      left_join(acc_delay_week, by = "ST_RANK") %>%
+      left_join(acc_delay_y2d, by = "ST_RANK") %>%
+      select(-ST_RANK)
+
+    # covert to json and save in app data folder and archive
+    st_acc_delay_j <- st_acc_delay %>% toJSON()
+    #xxx write(st_acc_delay_j, here(data_folder,"st_acc_ranking_delay.json"))
+    write(st_acc_delay_j, paste0(archive_dir, today, "_st_acc_ranking_delay.json"))
+
+
+
