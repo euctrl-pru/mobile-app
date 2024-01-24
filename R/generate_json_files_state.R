@@ -91,16 +91,16 @@ library(RODBC)
 #                                                                                             #
 ###############################################################################################
 
-  ####billing json - we do this first to avoid 'R fatal error'
+  ####billing data - we do this first to avoid 'R fatal error'
 
-  ## https://leowong.ca/blog/connect-to-microsoft-access-database-via-r/
-  ## Set up driver info and database path
-  DRIVERINFO <- "Driver={Microsoft Access Driver (*.mdb, *.accdb)};"
-  MDBPATH <- "G:/HQ/dgof-pru/Data/DataProcessing/Crco - Billing/CRCO_BILL.accdb"
-  PATH <- paste0(DRIVERINFO, "DBQ=", MDBPATH)
+    ## https://leowong.ca/blog/connect-to-microsoft-access-database-via-r/
+    ## Set up driver info and database path
+    DRIVERINFO <- "Driver={Microsoft Access Driver (*.mdb, *.accdb)};"
+    MDBPATH <- "G:/HQ/dgof-pru/Data/DataProcessing/Crco - Billing/CRCO_BILL.accdb"
+    PATH <- paste0(DRIVERINFO, "DBQ=", MDBPATH)
 
-  channel <- odbcDriverConnect(PATH)
-  query_bill <- "SELECT *,
+    channel <- odbcDriverConnect(PATH)
+    query_bill <- "SELECT *,
                   iif(
 	            [Billing Zone Number] = '33', 'Bosnia and Herzegovina',
 	            iif ([Billing Zone Number] = '10' OR [Billing Zone Number] = '11', 'Spain' ,
@@ -111,65 +111,65 @@ library(RODBC)
     FROM V_CRCO_BILL_PER_CZ
   "
 
-  ## Load data into R dataframe
-  st_billed_raw <- sqlQuery(channel,
+    ## Load data into R dataframe
+    st_billed_raw <- sqlQuery(channel,
                             query_bill,
                             stringsAsFactors = FALSE)
 
-  ## Close and remove channel
-  close(channel)
-  rm(channel)
+    ## Close and remove channel
+    close(channel)
+    rm(channel)
 
-  ## process billing data
-  st_billed_raw <- st_billed_raw %>%
-    janitor::clean_names() %>%
-    mutate(billing_period_start_date = as.Date(billing_period_start_date, format = "%d-%m-%Y"))
+    ## process billing data
+    st_billed_raw <- st_billed_raw %>%
+      janitor::clean_names() %>%
+      mutate(billing_period_start_date = as.Date(billing_period_start_date, format = "%d-%m-%Y"))
 
-  last_billing_date <- max(st_billed_raw$billing_period_start_date)
-  last_billing_year <- max(st_billed_raw$year)
+    last_billing_date <- max(st_billed_raw$billing_period_start_date)
+    last_billing_year <- max(st_billed_raw$year)
 
-  st_billing <- st_billed_raw %>%
-    group_by(corrected_cz, year, month, billing_period_start_date) %>%
-    summarise(total_billing = sum(route_charges)) %>%
-    ungroup
+    st_billing <- st_billed_raw %>%
+      group_by(corrected_cz, year, month, billing_period_start_date) %>%
+      summarise(total_billing = sum(route_charges)) %>%
+      ungroup
 
-  st_billing <- state_crco %>%
-    left_join(st_billing, by = "corrected_cz", relationship = "many-to-many")
+    st_billing <- state_crco %>%
+      left_join(st_billing, by = "corrected_cz", relationship = "many-to-many")
 
-  st_billed_json <- st_billing %>%
-    arrange(iso_2letter, year, billing_period_start_date) %>%
-    mutate(Year = year,
-           MONTH_F = format(billing_period_start_date + days(1),'%B'),
-           BILL_MONTH_PY = lag(total_billing, 12),
-           BILL_MONTH_2019 = lag(total_billing, (last_billing_year - 2019) * 12),
-           DIF_BILL_MONTH_PY = total_billing / BILL_MONTH_PY - 1,
-           DIF_BILL_MONTH_2019 = total_billing / BILL_MONTH_2019 - 1,
-           BILLED = round(total_billing / 1000000, 1)
-    ) %>%
-    group_by(iso_2letter, Year) %>%
-    mutate(
-      total_billing_y2d = cumsum(total_billing)
-    ) %>%
-    ungroup() %>%
-    mutate(
-      BILL_Y2D_PY = lag(total_billing_y2d, 12),
-      BILL_Y2D_2019 = lag(total_billing_y2d, (last_billing_year - 2019) * 12),
-      DIF_BILL_Y2D_PY = total_billing_y2d / BILL_Y2D_PY -1,
-      DIF_BILL_Y2D_2019 = total_billing_y2d / BILL_Y2D_2019 -1,
-      BILLED_Y2D = round(total_billing_y2d / 1000000, 1)
-    ) %>%
-    filter(billing_period_start_date == last_billing_date) %>%
-    select(iso_2letter,
-           MONTH_F,
-           BILLED,
-           DIF_BILL_MONTH_PY,
-           DIF_BILL_MONTH_2019,
-           BILLED_Y2D,
-           DIF_BILL_Y2D_PY,
-           DIF_BILL_Y2D_2019
-    )
+    st_billed_for_json <- st_billing %>%
+      arrange(iso_2letter, year, billing_period_start_date) %>%
+      mutate(Year = year,
+             MONTH_F = format(billing_period_start_date + days(1),'%B'),
+             BILL_MONTH_PY = lag(total_billing, 12),
+             BILL_MONTH_2019 = lag(total_billing, (last_billing_year - 2019) * 12),
+             DIF_BILL_MONTH_PY = total_billing / BILL_MONTH_PY - 1,
+             DIF_BILL_MONTH_2019 = total_billing / BILL_MONTH_2019 - 1,
+             BILLED = round(total_billing / 1000000, 1)
+      ) %>%
+      group_by(iso_2letter, Year) %>%
+      mutate(
+        total_billing_y2d = cumsum(total_billing)
+      ) %>%
+      ungroup() %>%
+      mutate(
+        BILL_Y2D_PY = lag(total_billing_y2d, 12),
+        BILL_Y2D_2019 = lag(total_billing_y2d, (last_billing_year - 2019) * 12),
+        DIF_BILL_Y2D_PY = total_billing_y2d / BILL_Y2D_PY -1,
+        DIF_BILL_Y2D_2019 = total_billing_y2d / BILL_Y2D_2019 -1,
+        BILLED_Y2D = round(total_billing_y2d / 1000000, 1)
+      ) %>%
+      filter(billing_period_start_date == last_billing_date) %>%
+      select(iso_2letter,
+             MONTH_F,
+             BILLED,
+             DIF_BILL_MONTH_PY,
+             DIF_BILL_MONTH_2019,
+             BILLED_Y2D,
+             DIF_BILL_Y2D_PY,
+             DIF_BILL_Y2D_2019
+      )
 
-    st_billed_json <- st_billed_json %>%
+    st_billed_json <- st_billed_for_json %>%
     toJSON() %>%
     substr(., 1, nchar(.)-1) %>%
     substr(., 2, nchar(.))
@@ -215,8 +215,8 @@ library(RODBC)
       substr(., 2, nchar(.))
 
 
-    ###############################################
-    # traffic dai data
+  ###############################################
+  # traffic dai data
     st_dai_data <-  read_xlsx(
       path  = fs::path_abs(
         str_glue(base_file),
@@ -254,8 +254,8 @@ library(RODBC)
       substr(., 1, nchar(.)-1) %>%
       substr(., 2, nchar(.))
 
-    ###############################################
-    # delay data
+  ###############################################
+  # delay data
 
     st_delay_data <-  read_xlsx(
       path  = fs::path_abs(
@@ -330,8 +330,8 @@ library(RODBC)
       substr(., 1, nchar(.)-1) %>%
       substr(., 2, nchar(.))
 
-    ###############################################
-    # punctuality data
+  ###############################################
+  # punctuality data
     query <- "
       WITH
 
@@ -470,8 +470,8 @@ library(RODBC)
       substr(., 1, nchar(.)-1) %>%
       substr(., 2, nchar(.))
 
-    ###############################################
-    # CO2 data
+  ###############################################
+  # CO2 data
     query <- str_glue("
     SELECT *
       FROM TABLE (emma_pub.api_aiu_stats.MM_AIU_STATE_DEP ())
@@ -554,9 +554,9 @@ library(RODBC)
         YTD_CO2_PREV_YEAR = lag(YTD_CO2, 12),
         YTD_TTF_PREV_YEAR = lag(YTD_TTF, 12),
         YTD_CO2_DEP_PREV_YEAR = lag(YTD_CO2_DEP, 12),
-        YTD_CO2_2019 = lag(YTD_CO2, (as.numeric(co2_last_year) - 2019) * 12),
-        YTD_CO2_DEP_2019 = lag(YTD_CO2_DEP, (as.numeric(co2_last_year) - 2019) * 12),
-        YTD_TTF_2019 = lag(YTD_TTF, (as.numeric(co2_last_year) - 2019) * 12)
+        YTD_CO2_2019 = lag(YTD_CO2, (as.numeric(st_co2_last_year) - 2019) * 12),
+        YTD_CO2_DEP_2019 = lag(YTD_CO2_DEP, (as.numeric(st_co2_last_year) - 2019) * 12),
+        YTD_TTF_2019 = lag(YTD_TTF, (as.numeric(st_co2_last_year) - 2019) * 12)
       ) %>%
       mutate(
         YTD_DIF_CO2_PREV_YEAR = YTD_CO2 / YTD_CO2_PREV_YEAR - 1,
@@ -591,6 +591,22 @@ library(RODBC)
       substr(., 1, nchar(.)-1) %>%
       substr(., 2, nchar(.))
 
+  ###############################################
+  # join data strings and save
+    # xxx try to merge with the state as axis
+    st_data_app <- paste0("{",
+                          '"st_daio":', st_daio_json,
+                          ', "st_dai":', st_dai_json,
+                          ', "st_delay":', st_delay_json,
+                          ', "st_punct":', st_punct_json,
+                          ', "st_co2":', st_co2_json,
+                          ', "st_billed":', st_billed_json,
+                          "}")
+
+    #xxx write(st_data_app, here(data_folder,"st_data_app.json"))
+    write(st_data_app, paste0(archive_dir, today, "_st_data_app.json"))
+
+
 
 ###############################################################################################
 #                                                                                             #
@@ -598,6 +614,7 @@ library(RODBC)
 #                                                                                             #
 ###############################################################################################
 
+  ###############################################
   # Aircraft operators traffic
 
     # day
@@ -756,7 +773,7 @@ library(RODBC)
           CURRENT_DAY,
           NA
         ),
-        ST_RANK = paste0(tolower(COUNTRY_NAME), RANK)
+        ST_RANK = paste0(tolower(COUNTRY_NAME), R_RANK)
         ) %>%
       select(ST_RANK, MAIN_TFC_AO_GRP_NAME, MAIN_TFC_AO_GRP_FLIGHT)
 
@@ -815,7 +832,447 @@ library(RODBC)
 
     # covert to json and save in app data folder and archive
     st_ao_data_j <- st_ao_data %>% toJSON()
-    # write(st_ao_data_j, here(data_folder,"ao_ranking_traffic.json"))
+    #xxx write(st_ao_data_j, here(data_folder,"ao_ranking_traffic.json"))
     write(st_ao_data_j, paste0(archive_dir, today, "_st_ao_ranking_traffic.json"))
 
+  ###############################################
+  # airports traffic
 
+    # day
+    st_apt_data_day_raw <- read_xlsx(
+      path  = fs::path_abs(
+        str_glue(base_file),
+        start = base_dir),
+      sheet = "state_apt_day",
+      range = cell_limits(c(1, 1), c(NA, NA))) %>%
+      mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+    st_apt_data_day_int <- st_apt_data_day_raw %>%
+      mutate(TO_DATE = max(TO_DATE)) %>%
+      spread(., key = FLAG_DAY, value = DEP_ARR) %>%
+      arrange(COUNTRY_NAME, R_RANK) %>%
+      mutate(
+        DY_RANK_DIF_PREV_WEEK = case_when(
+          is.na(RANK_PREV_WEEK) ~ RANK,
+          .default = RANK_PREV_WEEK - RANK
+        ),
+        DY_DIF_PREV_WEEK_PERC =   case_when(
+          DAY_PREV_WEEK == 0 | is.na(DAY_PREV_WEEK) ~ NA,
+          .default = CURRENT_DAY / DAY_PREV_WEEK - 1
+        ),
+        DY_DIF_PREV_YEAR_PERC = case_when(
+          DAY_PREV_YEAR == 0 | is.na(DAY_PREV_YEAR) ~ NA,
+          .default = CURRENT_DAY / DAY_PREV_YEAR - 1
+        ),
+        ST_RANK = paste0(tolower(COUNTRY_NAME), R_RANK),
+        ST_TFC_APT_DIF = CURRENT_DAY - DAY_PREV_WEEK
+      )
+
+    st_apt_data_day <- st_apt_data_day_int %>%
+      rename(
+        DY_APT_NAME = AIRPORT_NAME,
+        DY_TO_DATE = TO_DATE,
+        DY_FLIGHT = CURRENT_DAY
+      ) %>%
+      select(
+        ST_RANK,
+        DY_RANK_DIF_PREV_WEEK,
+        DY_APT_NAME,
+        DY_TO_DATE,
+        DY_FLIGHT,
+        DY_DIF_PREV_WEEK_PERC,
+        DY_DIF_PREV_YEAR_PERC
+      )
+
+    # week
+    st_apt_data_wk_raw <- read_xlsx(
+      path  = fs::path_abs(
+        str_glue(base_file),
+        start = base_dir),
+      sheet = "state_apt_week",
+      range = cell_limits(c(1, 1), c(NA, NA))) %>%
+      mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+    st_apt_data_wk <- st_apt_data_wk_raw %>%
+      mutate(DEP_ARR = DEP_ARR / 7) %>%
+      spread(., key = FLAG_ROLLING_WEEK, value = DEP_ARR) %>%
+      arrange(COUNTRY_NAME, R_RANK) %>%
+      mutate(
+        WK_RANK_DIF_PREV_WEEK = case_when(
+          is.na(RANK_PREV_WEEK) ~ RANK,
+          .default = RANK_PREV_WEEK - RANK
+        ),
+        WK_DIF_PREV_WEEK_PERC =   case_when(
+          PREV_ROLLING_WEEK == 0 | is.na(PREV_ROLLING_WEEK) ~ NA,
+          .default = CURRENT_ROLLING_WEEK / PREV_ROLLING_WEEK - 1
+        ),
+        WK_DIF_PREV_YEAR_PERC = case_when(
+          ROLLING_WEEK_PREV_YEAR == 0 | is.na(ROLLING_WEEK_PREV_YEAR) ~ NA,
+          .default = CURRENT_ROLLING_WEEK / ROLLING_WEEK_PREV_YEAR - 1
+        ),
+        ST_RANK = paste0(tolower(COUNTRY_NAME), R_RANK)
+      ) %>%
+      rename(
+        WK_APT_NAME = AIRPORT_NAME,
+        WK_FROM_DATE = FROM_DATE,
+        WK_TO_DATE = TO_DATE,
+        WK_DAILY_FLIGHT = CURRENT_ROLLING_WEEK
+      ) %>%
+      select(
+        ST_RANK,
+        WK_RANK_DIF_PREV_WEEK,
+        WK_APT_NAME,
+        WK_FROM_DATE,
+        WK_TO_DATE,
+        WK_DAILY_FLIGHT,
+        WK_DIF_PREV_WEEK_PERC,
+        WK_DIF_PREV_YEAR_PERC
+      )
+
+    # y2d
+    st_apt_data_y2d_raw <- read_xlsx(
+      path  = fs::path_abs(
+        str_glue(base_file),
+        start = base_dir),
+      sheet = "state_apt_y2d",
+      range = cell_limits(c(1, 1), c(NA, NA))) %>%
+      mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+    st_apt_data_y2d <- st_apt_data_y2d_raw %>%
+      mutate(
+        FROM_DATE = max(FROM_DATE),
+        TO_DATE = max(TO_DATE),
+        PERIOD =   case_when(
+          YEAR == max(YEAR) ~ 'CURRENT_YEAR',
+          YEAR == max(YEAR) - 1 ~ 'PREV_YEAR',
+          .default = paste0('PERIOD_', YEAR)
+        )
+      ) %>%
+      select(-DEP_ARR, -YEAR) %>%
+      spread(., key = PERIOD, value = AVG_DEP_ARR) %>%
+      arrange(COUNTRY_NAME, R_RANK) %>%
+      mutate(
+        Y2D_RANK_DIF_PREV_YEAR = case_when(
+          is.na(RANK_PREV_YEAR) ~ RANK_CURRENT,
+          .default = RANK_PREV_YEAR - RANK_CURRENT
+        ),
+        Y2D_DIF_PREV_YEAR_PERC =   case_when(
+          PREV_YEAR == 0 | is.na(PREV_YEAR) ~ NA,
+          .default = CURRENT_YEAR / PREV_YEAR - 1
+        ),
+        Y2D_DIF_2019_PERC  = case_when(
+          PERIOD_2019 == 0 | is.na(PERIOD_2019) ~ NA,
+          .default = CURRENT_YEAR / PERIOD_2019 - 1
+        ),
+        ST_RANK = paste0(tolower(COUNTRY_NAME), R_RANK)
+      ) %>%
+      rename(
+        Y2D_APT_NAME = AIRPORT_NAME,
+        Y2D_TO_DATE = TO_DATE,
+        Y2D_DAILY_FLIGHT = CURRENT_YEAR
+      ) %>%
+      select(
+        ST_RANK,
+        Y2D_RANK_DIF_PREV_YEAR,
+        Y2D_APT_NAME,
+        Y2D_TO_DATE,
+        Y2D_DAILY_FLIGHT,
+        Y2D_DIF_PREV_YEAR_PERC,
+        Y2D_DIF_2019_PERC
+      )
+
+    # main card
+    st_apt_main_traffic <- st_apt_data_day_int %>%
+      mutate(
+        MAIN_TFC_APT_NAME = if_else(
+          R_RANK <= 4,
+          AIRPORT_NAME,
+          NA
+        ),
+        MAIN_TFC_APT_FLIGHT = if_else(
+          R_RANK <= 4,
+          CURRENT_DAY,
+          NA
+        ),
+        ST_RANK = paste0(tolower(COUNTRY_NAME), R_RANK)
+      ) %>%
+      select(ST_RANK, MAIN_TFC_APT_NAME, MAIN_TFC_APT_FLIGHT)
+
+    st_apt_main_traffic_dif <- st_apt_data_day_int %>%
+      arrange(COUNTRY_NAME, desc(abs(ST_TFC_APT_DIF)), R_RANK) %>%
+      group_by(COUNTRY_NAME) %>%
+      mutate(RANK_DIF_APT_TFC = row_number()) %>%
+      ungroup() %>%
+      arrange(COUNTRY_NAME, R_RANK) %>%
+      mutate(
+        MAIN_TFC_DIF_APT_NAME = if_else(
+          RANK_DIF_APT_TFC <= 4,
+          AIRPORT_NAME,
+          NA
+        ),
+        MAIN_TFC_APT_DIF = if_else(
+          RANK_DIF_APT_TFC <= 4,
+          ST_TFC_APT_DIF,
+          NA
+        )
+      ) %>%
+      arrange(COUNTRY_NAME, desc(MAIN_TFC_APT_DIF)) %>%
+      group_by(COUNTRY_NAME) %>%
+      mutate(
+        RANK_MAIN_DIF = row_number(),
+        ST_RANK = paste0(tolower(COUNTRY_NAME), RANK_MAIN_DIF)
+      ) %>%
+      ungroup() %>%
+      select(ST_RANK, MAIN_TFC_DIF_APT_NAME, MAIN_TFC_APT_DIF)
+
+    # create list of state/rankings for left join
+    state_iso_ranking <- list()
+    i = 0
+    for (i in 1:10) {
+      i = i + 1
+      state_iso_ranking <- state_iso_ranking %>%
+        bind_rows(state_iso, .)
+    }
+
+    state_iso_ranking <- state_iso_ranking %>%
+      arrange(state) %>%
+      group_by(state) %>%
+      mutate(
+        RANK = row_number(),
+        ST_RANK = paste0(tolower(state), RANK)
+      )
+
+    # join and reorder tables
+    st_apt_data <- state_iso_ranking %>%
+      left_join(st_apt_main_traffic, by = "ST_RANK") %>%
+      left_join(st_apt_main_traffic_dif, by = "ST_RANK") %>%
+      left_join(st_apt_data_day, by = "ST_RANK") %>%
+      left_join(st_apt_data_wk, by = "ST_RANK") %>%
+      left_join(st_apt_data_y2d, by = "ST_RANK") %>%
+      select(-ST_RANK)
+
+    # covert to json and save in app data folder and archive
+    st_apt_data_j <- st_apt_data %>% toJSON()
+    #xxx write(st_ao_data_j, here(data_folder,"ao_ranking_traffic.json"))
+    write(st_apt_data_j, paste0(archive_dir, today, "_st_apt_ranking_traffic.json"))
+
+  ###############################################
+  # state pair traffic
+
+    # day
+    st_st_data_day_raw <- read_xlsx(
+      path  = fs::path_abs(
+        str_glue(base_file),
+        start = base_dir),
+      sheet = "state_st_day",
+      range = cell_limits(c(1, 1), c(NA, NA))) %>%
+      mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+    st_st_data_day_int <- st_st_data_day_raw %>%
+      mutate(TO_DATE = max(TO_DATE)) %>%
+      spread(., key = FLAG_DAY, value = TOT_MVT) %>%
+      arrange(COUNTRY_NAME, R_RANK) %>%
+      mutate(
+        DY_RANK_DIF_PREV_WEEK = case_when(
+          is.na(RANK_PREV_WEEK) ~ RANK,
+          .default = RANK_PREV_WEEK - RANK
+        ),
+        DY_DIF_PREV_WEEK_PERC =   case_when(
+          DAY_PREV_WEEK == 0 | is.na(DAY_PREV_WEEK) ~ NA,
+          .default = CURRENT_DAY / DAY_PREV_WEEK - 1
+        ),
+        DY_DIF_PREV_YEAR_PERC = case_when(
+          DAY_PREV_YEAR == 0 | is.na(DAY_PREV_YEAR) ~ NA,
+          .default = CURRENT_DAY / DAY_PREV_YEAR - 1
+        ),
+        ST_RANK = paste0(tolower(COUNTRY_NAME), R_RANK),
+        ST_TFC_CTRY_DIF = CURRENT_DAY - DAY_PREV_WEEK
+      )
+
+    st_st_data_day <- st_st_data_day_int %>%
+      rename(
+        DY_COUNTRY_NAME = FROM_TO_COUNTRY_NAME,
+        DY_TO_DATE = TO_DATE,
+        DY_FLIGHT = CURRENT_DAY
+      ) %>%
+      select(
+        ST_RANK,
+        DY_RANK_DIF_PREV_WEEK,
+        DY_COUNTRY_NAME,
+        DY_TO_DATE,
+        DY_FLIGHT,
+        DY_DIF_PREV_WEEK_PERC,
+        DY_DIF_PREV_YEAR_PERC
+      )
+
+    # week
+    st_st_data_wk_raw <- read_xlsx(
+      path  = fs::path_abs(
+        str_glue(base_file),
+        start = base_dir),
+      sheet = "state_st_week",
+      range = cell_limits(c(1, 1), c(NA, NA))) %>%
+      mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+    st_st_data_wk <- st_st_data_wk_raw %>%
+      mutate(TOT_MVT = TOT_MVT / 7) %>%
+      spread(., key = FLAG_ROLLING_WEEK, value = TOT_MVT) %>%
+      arrange(COUNTRY_NAME, R_RANK) %>%
+      mutate(
+        WK_RANK_DIF_PREV_WEEK = case_when(
+          is.na(RANK_PREV_WEEK) ~ RANK,
+          .default = RANK_PREV_WEEK - RANK
+        ),
+        WK_DIF_PREV_WEEK_PERC =   case_when(
+          PREV_ROLLING_WEEK == 0 | is.na(PREV_ROLLING_WEEK) ~ NA,
+          .default = CURRENT_ROLLING_WEEK / PREV_ROLLING_WEEK - 1
+        ),
+        WK_DIF_PREV_YEAR_PERC = case_when(
+          ROLLING_WEEK_PREV_YEAR == 0 | is.na(ROLLING_WEEK_PREV_YEAR) ~ NA,
+          .default = CURRENT_ROLLING_WEEK / ROLLING_WEEK_PREV_YEAR - 1
+        ),
+        ST_RANK = paste0(tolower(COUNTRY_NAME), R_RANK)
+      ) %>%
+      rename(
+        WK_COUNTRY_NAME = FROM_TO_COUNTRY_NAME,
+        WK_FROM_DATE = FROM_DATE,
+        WK_TO_DATE = TO_DATE,
+        WK_DAILY_FLIGHT = CURRENT_ROLLING_WEEK
+      ) %>%
+      select(
+        ST_RANK,
+        WK_RANK_DIF_PREV_WEEK,
+        WK_COUNTRY_NAME,
+        WK_FROM_DATE,
+        WK_TO_DATE,
+        WK_DAILY_FLIGHT,
+        WK_DIF_PREV_WEEK_PERC,
+        WK_DIF_PREV_YEAR_PERC
+      )
+
+    # y2d
+    st_st_data_y2d_raw <- read_xlsx(
+      path  = fs::path_abs(
+        str_glue(base_file),
+        start = base_dir),
+      sheet = "state_st_y2d",
+      range = cell_limits(c(1, 1), c(NA, NA))) %>%
+      mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+    st_st_data_y2d <- st_st_data_y2d_raw %>%
+      mutate(
+        FROM_DATE = max(FROM_DATE),
+        TO_DATE = max(TO_DATE),
+        PERIOD =   case_when(
+          YEAR == max(YEAR) ~ 'CURRENT_YEAR',
+          YEAR == max(YEAR) - 1 ~ 'PREV_YEAR',
+          .default = paste0('PERIOD_', YEAR)
+        )
+      ) %>%
+      select(-TOT_MVT, -YEAR) %>%
+      spread(., key = PERIOD, value = AVG_MVT) %>%
+      arrange(COUNTRY_NAME, R_RANK) %>%
+      mutate(
+        Y2D_RANK_DIF_PREV_YEAR = case_when(
+          is.na(RANK_PREV_YEAR) ~ RANK_CURRENT,
+          .default = RANK_PREV_YEAR - RANK_CURRENT
+        ),
+        Y2D_DIF_PREV_YEAR_PERC =   case_when(
+          PREV_YEAR == 0 | is.na(PREV_YEAR) ~ NA,
+          .default = CURRENT_YEAR / PREV_YEAR - 1
+        ),
+        Y2D_DIF_2019_PERC  = case_when(
+          PERIOD_2019 == 0 | is.na(PERIOD_2019) ~ NA,
+          .default = CURRENT_YEAR / PERIOD_2019 - 1
+        ),
+        ST_RANK = paste0(tolower(COUNTRY_NAME), R_RANK)
+      ) %>%
+      rename(
+        Y2D_COUNTRY_NAME = FROM_TO_COUNTRY_NAME,
+        Y2D_TO_DATE = TO_DATE,
+        Y2D_DAILY_FLIGHT = CURRENT_YEAR
+      ) %>%
+      select(
+        ST_RANK,
+        Y2D_RANK_DIF_PREV_YEAR,
+        Y2D_COUNTRY_NAME,
+        Y2D_TO_DATE,
+        Y2D_DAILY_FLIGHT,
+        Y2D_DIF_PREV_YEAR_PERC,
+        Y2D_DIF_2019_PERC
+      )
+
+    # main card
+    st_st_main_traffic <- st_st_data_day_int %>%
+      mutate(
+        MAIN_TFC_CTRY_NAME = if_else(
+          R_RANK <= 4,
+          FROM_TO_COUNTRY_NAME,
+          NA
+        ),
+        MAIN_TFC_CTRY_FLIGHT = if_else(
+          R_RANK <= 4,
+          CURRENT_DAY,
+          NA
+        ),
+        ST_RANK = paste0(tolower(COUNTRY_NAME), R_RANK)
+      ) %>%
+      select(ST_RANK, MAIN_TFC_CTRY_NAME, MAIN_TFC_CTRY_FLIGHT)
+
+    st_st_main_traffic_dif <- st_st_data_day_int %>%
+      arrange(COUNTRY_NAME, desc(abs(ST_TFC_CTRY_DIF)), R_RANK) %>%
+      group_by(COUNTRY_NAME) %>%
+      mutate(RANK_DIF_CTRY_TFC = row_number()) %>%
+      ungroup() %>%
+      arrange(COUNTRY_NAME, R_RANK) %>%
+      mutate(
+        MAIN_TFC_DIF_CTRY_NAME = if_else(
+          RANK_DIF_CTRY_TFC <= 4,
+          FROM_TO_COUNTRY_NAME,
+          NA
+        ),
+        MAIN_TFC_CTRY_DIF = if_else(
+          RANK_DIF_CTRY_TFC <= 4,
+          ST_TFC_CTRY_DIF,
+          NA
+        )
+      ) %>%
+      arrange(COUNTRY_NAME, desc(MAIN_TFC_CTRY_DIF)) %>%
+      group_by(COUNTRY_NAME) %>%
+      mutate(
+        RANK_MAIN_DIF = row_number(),
+        ST_RANK = paste0(tolower(COUNTRY_NAME), RANK_MAIN_DIF)
+      ) %>%
+      ungroup() %>%
+      select(ST_RANK, MAIN_TFC_DIF_CTRY_NAME, MAIN_TFC_CTRY_DIF)
+
+    # create list of state/rankings for left join
+    state_iso_ranking <- list()
+    i = 0
+    for (i in 1:10) {
+      i = i + 1
+      state_iso_ranking <- state_iso_ranking %>%
+        bind_rows(state_iso, .)
+    }
+
+    state_iso_ranking <- state_iso_ranking %>%
+      arrange(state) %>%
+      group_by(state) %>%
+      mutate(
+        RANK = row_number(),
+        ST_RANK = paste0(tolower(state), RANK)
+      )
+
+    # join and reorder tables
+    st_st_data <- state_iso_ranking %>%
+      left_join(st_st_main_traffic, by = "ST_RANK") %>%
+      left_join(st_st_main_traffic_dif, by = "ST_RANK") %>%
+      left_join(st_st_data_day, by = "ST_RANK") %>%
+      left_join(st_st_data_wk, by = "ST_RANK") %>%
+      left_join(st_st_data_y2d, by = "ST_RANK") %>%
+      select(-ST_RANK)
+
+    # covert to json and save in app data folder and archive
+    st_st_data_j <- st_st_data %>% toJSON()
+    #xxx write(st_ao_data_j, here(data_folder,"ao_ranking_traffic.json"))
+    write(st_st_data_j, paste0(archive_dir, today, "_st_st_ranking_traffic.json"))
