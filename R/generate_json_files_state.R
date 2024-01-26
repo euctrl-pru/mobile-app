@@ -73,6 +73,14 @@ library(RODBC)
     range = cell_limits(c(2, 3), c(NA, NA))) %>%
     as_tibble()
 
+  query <- "select * from PRU_AIRPORT"
+
+  airport <- export_query(query) %>%
+    as_tibble() %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
+    select(ICAO_CODE, ISO_COUNTRY_CODE) %>%
+    rename(iso_2letter = ISO_COUNTRY_CODE)
+
 # functions
   export_query <- function(query) {
 
@@ -1288,7 +1296,7 @@ library(RODBC)
     write(st_st_data_j, paste0(archive_dir, today, "_st_st_ranking_traffic.json"))
 
   ###############################################    DELAY
-  # ACC delay
+  #### ACC delay
 
     # day data
     acc_delay_day_raw <-  read_xlsx(
@@ -1434,6 +1442,333 @@ library(RODBC)
     st_acc_delay_j <- st_acc_delay %>% toJSON()
     #xxx write(st_acc_delay_j, here(data_folder,"st_acc_ranking_delay.json"))
     write(st_acc_delay_j, paste0(archive_dir, today, "_st_acc_ranking_delay.json"))
+
+  #### airport delay
+    # raw data
+    st_apt_delay_raw <-  read_xlsx(
+      path  = fs::path_abs(
+        str_glue(nw_base_file),
+        start = nw_base_dir),
+      sheet = "APT_DELAY",
+      range = cell_limits(c(5, 2), c(NA, 50))) %>%
+      as_tibble() %>%
+      mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
+      rename(ICAO_CODE = ARP_CODE) %>%
+      left_join(airport, by = "ICAO_CODE") %>%
+      left_join(state_iso, by = "iso_2letter")
+
+    # day data
+    st_apt_delay_day <- st_apt_delay_raw %>%
+      arrange(desc(DLY_ARR),ARP_NAME) %>%
+      mutate(
+        DY_ARP_NAME = ARP_NAME,
+        DY_ARP_DLY = DLY_ARR,
+        DY_ARP_DLY_PER_FLT = ifelse(FLT_ARR == 0, 0, round(DLY_ARR / FLT_ARR, 2)),
+        DY_TO_DATE = FLIGHT_DATE) %>%
+      group_by(iso_2letter) %>%
+      arrange(iso_2letter, desc(DY_ARP_DLY), DY_ARP_NAME) %>%
+      mutate (
+        DY_RANK = row_number(),
+        ST_RANK = paste0(tolower(state), DY_RANK),
+      ) %>%
+      ungroup() %>%
+      select(
+        ST_RANK,
+        DY_RANK,
+        DY_ARP_NAME,
+        DY_TO_DATE,
+        DY_ARP_DLY,
+        DY_ARP_DLY_PER_FLT
+      )
+
+    # week data
+    st_apt_delay_week <- st_apt_delay_raw %>%
+      arrange(desc(ROLL_WEEK_DLY_ARR),ARP_NAME) %>%
+      mutate(
+        WK_ARP_NAME = ARP_NAME,
+        WK_ARP_DLY = ROLL_WEEK_DLY_ARR,
+        WK_ARP_DLY_PER_FLT = ifelse(ROLL_WEEK_ARR == 0, 0, round(ROLL_WEEK_DLY_ARR / ROLL_WEEK_ARR,2)),
+        WK_FROM_DATE =  FLIGHT_DATE +  days(-6),
+        WK_TO_DATE = FLIGHT_DATE
+        ) %>%
+      group_by(iso_2letter) %>%
+      arrange(iso_2letter, desc(WK_ARP_DLY), WK_ARP_NAME) %>%
+      mutate (
+        WK_RANK = row_number(),
+        ST_RANK = paste0(tolower(state), WK_RANK),
+      ) %>%
+      ungroup() %>%
+      select(
+        ST_RANK,
+        WK_RANK,
+        WK_ARP_NAME,
+        WK_FROM_DATE,
+        WK_TO_DATE,
+        WK_ARP_DLY,
+        WK_ARP_DLY_PER_FLT
+      )
+
+    # y2d
+
+    st_apt_delay_y2d <- st_apt_delay_raw %>%
+      arrange(desc(Y2D_AVG_DLY_ARR),ARP_NAME) %>%
+      mutate(
+        Y2D_ARP_NAME = ARP_NAME,
+        Y2D_ARP_DLY = Y2D_AVG_DLY_ARR,
+        Y2D_ARP_DLY_PER_FLT = ifelse(Y2D_AVG_ARR == 0, 0, round(Y2D_AVG_DLY_ARR / Y2D_AVG_ARR, 2)),
+        Y2D_TO_DATE = FLIGHT_DATE
+      ) %>%
+      group_by(iso_2letter) %>%
+      arrange(iso_2letter, desc(Y2D_ARP_DLY), Y2D_ARP_NAME) %>%
+      mutate (
+        Y2D_RANK = row_number(),
+        ST_RANK = paste0(tolower(state), Y2D_RANK),
+      ) %>%
+      ungroup() %>%
+      select(
+        ST_RANK,
+        Y2D_RANK,
+        Y2D_ARP_NAME,
+        Y2D_TO_DATE,
+        Y2D_ARP_DLY,
+        Y2D_ARP_DLY_PER_FLT
+      )
+
+    # no main card
+
+    # create list of state/rankings for left join
+    state_iso_ranking <- list()
+    i = 0
+    for (i in 1:10) {
+      i = i + 1
+      state_iso_ranking <- state_iso_ranking %>%
+        bind_rows(state_iso, .)
+    }
+
+    state_iso_ranking <- state_iso_ranking %>%
+      arrange(state) %>%
+      group_by(state) %>%
+      mutate(
+        RANK = row_number(),
+        ST_RANK = paste0(tolower(state), RANK)
+      )
+
+    # join and reorder tables
+    st_apt_delay <- state_iso_ranking %>%
+      left_join(st_apt_delay_day, by = "ST_RANK") %>%
+      left_join(st_apt_delay_week, by = "ST_RANK") %>%
+      left_join(st_apt_delay_y2d, by = "ST_RANK") %>%
+      select(-ST_RANK)
+
+    # covert to json and save in app data folder and archive
+    st_apt_delay_j <- st_apt_delay %>% toJSON()
+    #xxx write(st_apt_delay_j, here(data_folder,"st_apt_ranking_delay.json"))
+    write(st_apt_delay_j, paste0(archive_dir, today, "_st_apt_ranking_delay.json"))
+
+  ######### punctuality
+    ### airport punctuality
+
+    query <- "
+     WITH
+        DIM_AIRPORT as (
+          SELECT
+            a.code as arp_code, a.id as arp_id, a.dashboard_name as arp_name,
+            a.ISO_COUNTRY_CODE
+          FROM prudev.pru_airport a
+        )
+
+      , LIST_AIRPORT as (
+            select distinct
+                a.ICAO_CODE as arp_code,
+                b.arp_name,
+                b.iso_country_code
+            from LDW_VDM.VIEW_FAC_PUNCTUALITY_AP_DAY a
+            left join DIM_AIRPORT b on a.icao_code = b.arp_code
+            order by 1
+
+        ),
+
+        LIST_STATE as (
+          SELECT
+            AIU_ISO_COUNTRY_NAME as EC_ISO_CT_NAME,
+            AIU_ISO_COUNTRY_CODE AS EC_ISO_CT_CODE
+          FROM prudev.pru_country_iso
+          WHERE till > TRUNC(SYSDATE)-1
+        ),
+
+        APT_DAY AS (
+          SELECT
+                  a.arp_code,
+                  a.arp_name,
+                  a.ISO_COUNTRY_CODE,
+                  t.year,
+                  t.month,
+                  t.week,
+                  t.week_nb_year,
+                  t.day_type,
+                  t.day_of_week_nb AS day_of_week,
+                  t.day_date
+          FROM LIST_AIRPORT a, pru_time_references t
+          WHERE
+             t.day_date >= to_date('24-12-2018','DD-MM-YYYY')
+             AND t.day_date < trunc(sysdate)
+          )
+
+          SELECT
+            a.* , b.*, c.EC_ISO_CT_NAME
+          FROM APT_DAY a
+          left join LDW_VDM.VIEW_FAC_PUNCTUALITY_AP_DAY b on a.day_date = b.\"DATE\" and a.arp_code = b.icao_code
+          left join LIST_STATE c on a.ISO_COUNTRY_CODE = c.EC_ISO_CT_CODE
+          where a.arp_code<>'LTBA'
+          order by a.ARP_CODE, b.\"DATE\"
+   "
+
+    st_apt_punct_raw <- export_query(query)
+
+    last_punctuality_day <-  max(st_apt_punct_raw$DAY_DATE)
+
+    # calc
+    st_apt_punct_calc <- st_apt_punct_raw %>%
+      # select(DAY_DATE, ARP_NAME, ARR_PUNCTUALITY_PERCENTAGE, RANK)
+      group_by(ARP_NAME) %>%
+      arrange(DAY_DATE) %>%
+      mutate(
+        DY_PUNCT_DIF_PREV_WEEK_PERC = (ARR_PUNCTUALITY_PERCENTAGE - lag(ARR_PUNCTUALITY_PERCENTAGE, 7)) / 100,
+        DY_PUNCT_DIF_PREV_YEAR_PERC = (ARR_PUNCTUALITY_PERCENTAGE - lag(ARR_PUNCTUALITY_PERCENTAGE, 364)) / 100,
+        WK_APT_ARR_PUNCT = rollsum(ARR_PUNCTUAL_FLIGHTS, 7, fill = NA, align = "right") / rollsum(ARR_SCHEDULE_FLIGHT,7, fill = NA, align = "right"),
+        iso_2letter = ISO_COUNTRY_CODE,
+        state = EC_ISO_CT_NAME
+      )  %>%
+      ungroup()
+
+    # day
+    st_apt_punct_dy <- st_apt_punct_calc %>%
+      group_by(iso_2letter, DAY_DATE) %>%
+      arrange(iso_2letter, desc(ARR_PUNCTUALITY_PERCENTAGE), ARP_NAME) %>%
+      mutate(RANK = row_number()) %>%
+      ungroup() %>%
+      group_by(ARP_NAME) %>%
+      arrange(DAY_DATE) %>%
+      mutate(
+             DY_RANK_DIF_PREV_WEEK = lag(RANK, 7) - RANK,
+             DY_APT_NAME = ARP_NAME,
+             DY_APT_ARR_PUNCT = ARR_PUNCTUALITY_PERCENTAGE / 100,
+             DY_TO_DATE = round_date(DAY_DATE, "day"),
+             ST_RANK = paste0(tolower(state), RANK)
+      ) %>%
+      ungroup() %>%
+      filter(DAY_DATE == last_punctuality_day) %>%
+      group_by(iso_2letter) %>%
+      arrange(iso_2letter, desc(DY_APT_ARR_PUNCT), DY_APT_NAME) %>%
+      ungroup() %>%
+      select(
+        ST_RANK,
+        DY_RANK_DIF_PREV_WEEK,
+        DY_APT_NAME,
+        DY_TO_DATE,
+        DY_APT_ARR_PUNCT,
+        DY_PUNCT_DIF_PREV_WEEK_PERC,
+        DY_PUNCT_DIF_PREV_YEAR_PERC
+      )
+
+    # week
+    st_apt_punct_wk <- st_apt_punct_calc %>%
+      group_by(iso_2letter, DAY_DATE) %>%
+      arrange(iso_2letter, desc(WK_APT_ARR_PUNCT), ARP_NAME) %>%
+      mutate(RANK = row_number()) %>%
+      ungroup() %>%
+      group_by(ARP_NAME) %>%
+      arrange(DAY_DATE) %>%
+      mutate(
+        WK_RANK_DIF_PREV_WEEK = lag(RANK, 7) - RANK,
+        WK_APT_NAME = ARP_NAME,
+        WK_APT_ARR_PUNCT = WK_APT_ARR_PUNCT / 100,
+        WK_TO_DATE = round_date(DAY_DATE, "day"),
+        WK_PUNCT_DIF_PREV_WEEK_PERC = (WK_APT_ARR_PUNCT - lag(WK_APT_ARR_PUNCT, 7)),
+        WK_PUNCT_DIF_PREV_YEAR_PERC = (WK_APT_ARR_PUNCT - lag(WK_APT_ARR_PUNCT, 364)),
+        ST_RANK = paste0(tolower(state), RANK)
+      ) %>%
+      ungroup() %>%
+      filter(DAY_DATE == last_punctuality_day) %>%
+      group_by(iso_2letter) %>%
+      arrange(iso_2letter, desc(WK_APT_ARR_PUNCT), WK_APT_NAME) %>%
+      ungroup() %>%
+      select(
+        ST_RANK,
+        WK_RANK_DIF_PREV_WEEK,
+        WK_APT_NAME,
+        WK_TO_DATE,
+        WK_APT_ARR_PUNCT,
+        WK_PUNCT_DIF_PREV_WEEK_PERC,
+        WK_PUNCT_DIF_PREV_YEAR_PERC
+      )
+
+    # y2d
+    st_apt_punct_y2d <- st_punct_calc %>%
+      mutate(MONTH_DAY = as.numeric(format(DAY_DATE, format = "%m%d"))) %>%
+      filter(MONTH_DAY <= as.numeric(format(last_punctuality_day, format = "%m%d"))) %>%
+      mutate(YEAR = as.numeric(format(DAY_DATE, format="%Y"))) %>%
+      group_by(ARP_NAME, ICAO_CODE, YEAR) %>%
+      summarise (Y2D_APT_ARR_PUNCT = sum(ARR_PUNCTUAL_FLIGHTS, na.rm=TRUE) / sum(ARR_SCHEDULE_FLIGHT, na.rm=TRUE)
+      ) %>%
+      ungroup() %>%
+      group_by(YEAR) %>%
+      arrange(desc(Y2D_APT_ARR_PUNCT), ARP_NAME) %>%
+      mutate(RANK = row_number(),
+             Y2D_RANK = RANK) %>%
+      ungroup() %>%
+      group_by(ARP_NAME) %>%
+      arrange(YEAR) %>%
+      mutate(
+        Y2D_RANK_DIF_PREV_YEAR = lag(RANK, 1) - RANK,
+        Y2D_PUNCT_DIF_PREV_YEAR_PERC = (Y2D_APT_ARR_PUNCT - lag(Y2D_APT_ARR_PUNCT, 1)),
+        Y2D_PUNCT_DIF_2019_PERC = (Y2D_APT_ARR_PUNCT - lag(Y2D_APT_ARR_PUNCT, max(YEAR) - 2019)),
+        ST_RANK = paste0(tolower(state), RANK)
+      )  %>%
+      ungroup() %>%
+      filter(YEAR == max(YEAR), RANK < 11) %>%
+      mutate(Y2D_APT_NAME = ARP_NAME) %>%
+      select(
+        ST_RANK,
+        Y2D_RANK_DIF_PREV_YEAR,
+        Y2D_APT_NAME,
+        Y2D_APT_ARR_PUNCT,
+        Y2D_PUNCT_DIF_PREV_YEAR_PERC,
+        Y2D_PUNCT_DIF_2019_PERC
+      )
+
+    # no main card
+
+    # create list of state/rankings for left join
+    state_iso_ranking <- list()
+    i = 0
+    for (i in 1:10) {
+      i = i + 1
+      state_iso_ranking <- state_iso_ranking %>%
+        bind_rows(state_iso, .)
+    }
+
+    state_iso_ranking <- state_iso_ranking %>%
+      arrange(state) %>%
+      group_by(state) %>%
+      mutate(
+        RANK = row_number(),
+        ST_RANK = paste0(tolower(state), RANK)
+      )
+
+    # join and reorder tables
+    st_apt_punctuality <- state_iso_ranking %>%
+      left_join(st_apt_punct_day, by = "ST_RANK") %>%
+      left_join(st_apt_punct_wk, by = "ST_RANK") %>%
+      left_join(st_apt_punct_y2d, by = "ST_RANK") %>%
+      select(-ST_RANK)
+
+    # covert to json and save in app data folder and archive
+    st_apt_punctuality_j <- st_apt_punctuality %>% toJSON()
+    #xxx write(st_apt_punctuality_j, here(data_folder,"st_apt_ranking_punctuality.json"))
+    write(st_apt_punctuality_j, paste0(archive_dir, today, "_st_apt_ranking_punctuality.json"))
+
+
 
 
 

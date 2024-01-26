@@ -1020,7 +1020,7 @@ library(RODBC)
     mutate(R_RANK_DLY_DAY = row_number(),
            WK_RANK = R_RANK_DLY_DAY,
            ARP_NAME_WK = ARP_NAME,
-           DLY_PER_FLT_WEEK = ifelse(ROLL_WEEK_FLT==0,0,round(ROLL_WEEK_DLY_ARR/ROLL_WEEK_ARR,2)),
+           DLY_PER_FLT_WEEK = ifelse(ROLL_WEEK_ARR==0,0,round(ROLL_WEEK_DLY_ARR/ROLL_WEEK_ARR,2)),
            WK_FROM_DATE =  FLIGHT_DATE +  days(-6),
            WK_TO_DATE = FLIGHT_DATE
            ) %>%
@@ -1379,65 +1379,75 @@ library(RODBC)
 
 
   ######### Airport punctuality
-  ##### NOte: the time series for each airport is not full. At some point it needs to be fixed either here or in the initial query so the lag functions yield the right result
-
-  # raw
-  # apt_punct_raw <- read_xlsx(
-  #   path  = fs::path_abs(
-  #     str_glue("98_PUNCTUALITY_{today}.xlsx"),
-  #     start = base_dir),
-  #   sheet = "APT",
-  #   range = cell_limits(c(1, 1), c(NA, NA))) %>%
-  #   as_tibble() %>%
-  #   mutate(DATE = as.Date(DATE, format = '%d-%m-%Y'))
-
   ### we need data from 2019 so I'm using the source view instead of the excel file
 
   query <- "
-  WITH
-    LIST_AIRPORT as (
-      SELECT
-        a.code as arp_code, a.id as arp_id, a.dashboard_name, a.ISO_COUNTRY_CODE as CTRY_CODE_ISO
-      FROM prudev.pru_airport a
-    ),
+     WITH
+        DIM_AIRPORT as (
+          SELECT
+            a.code as arp_code, a.id as arp_id, a.dashboard_name as arp_name,
+            a.ISO_COUNTRY_CODE
+          FROM prudev.pru_airport a
+        )
 
-    LIST_STATE as (
-      SELECT
-        EC_ISO_CT_NAME, EC_ISO_CT_CODE
-      FROM SWH_FCT.DIM_ISO_COUNTRY
-      WHERE VALID_TO > TRUNC(SYSDATE)-1
-    ),
+      , LIST_AIRPORT as (
+            select distinct
+                a.ICAO_CODE as arp_code,
+                b.arp_name,
+                b.iso_country_code
+            from LDW_VDM.VIEW_FAC_PUNCTUALITY_AP_DAY a
+            left join DIM_AIRPORT b on a.icao_code = b.arp_code
+            order by 1
 
-    DATA_ALL as (
-      SELECT
-        a.* ,
-        b.dashboard_name, b.CTRY_CODE_ISO
-      FROM LDW_VDM.VIEW_FAC_PUNCTUALITY_AP_DAY a
-      LEFT JOIN LIST_AIRPORT b on a.ICAO_CODE = b.arp_code
-      WHERE a.ICAO_CODE<>'LTBA'
-    )
+        ),
 
-    SELECT
-      a.*,
-      b.EC_ISO_CT_NAME
-    FROM DATA_ALL a
-    LEFT JOIN LIST_STATE b on a.CTRY_CODE_ISO = b.EC_ISO_CT_CODE
-    order by ICAO_CODE
+        LIST_STATE as (
+          SELECT
+            AIU_ISO_COUNTRY_NAME as EC_ISO_CT_NAME,
+            AIU_ISO_COUNTRY_CODE AS EC_ISO_CT_CODE
+          FROM prudev.pru_country_iso
+          WHERE till > TRUNC(SYSDATE)-1
+        ),
+
+        APT_DAY AS (
+          SELECT
+                  a.arp_code,
+                  a.arp_name,
+                  a.ISO_COUNTRY_CODE,
+                  t.year,
+                  t.month,
+                  t.week,
+                  t.week_nb_year,
+                  t.day_type,
+                  t.day_of_week_nb AS day_of_week,
+                  t.day_date
+          FROM LIST_AIRPORT a, pru_time_references t
+          WHERE
+             t.day_date >= to_date('24-12-2018','DD-MM-YYYY')
+             AND t.day_date < trunc(sysdate)
+          )
+
+          SELECT
+            a.* , b.*
+          FROM APT_DAY a
+          left join LDW_VDM.VIEW_FAC_PUNCTUALITY_AP_DAY b on a.day_date = b.\"DATE\" and a.arp_code = b.icao_code
+          where a.arp_code<>'LTBA'
+          order by a.ARP_CODE, b.\"DATE\"
    "
 
   apt_punct_raw <- export_query(query)
 
-  last_punctuality_day <-  max(apt_punct_raw$DATE)
+  last_punctuality_day <-  max(apt_punct_raw$DAY_DATE)
 
   # calc
   apt_punct_calc <- apt_punct_raw %>%
-    group_by(DATE) %>%
-    arrange(desc(ARR_PUNCTUALITY_PERCENTAGE), DASHBOARD_NAME) %>%
+    group_by(DAY_DATE) %>%
+    arrange(desc(ARR_PUNCTUALITY_PERCENTAGE), ARP_NAME) %>%
     mutate(RANK = row_number()) %>%
     ungroup() %>%
-    # select(DATE, DASHBOARD_NAME, ARR_PUNCTUALITY_PERCENTAGE, RANK)
-    group_by(DASHBOARD_NAME) %>%
-    arrange(DATE) %>%
+    # select(DAY_DATE, ARP_NAME, ARR_PUNCTUALITY_PERCENTAGE, RANK)
+    group_by(ARP_NAME) %>%
+    arrange(DAY_DATE) %>%
     mutate(
       DY_RANK_DIF_PREV_WEEK = lag(RANK, 7) - RANK,
       DY_PUNCT_DIF_PREV_WEEK_PERC = (ARR_PUNCTUALITY_PERCENTAGE - lag(ARR_PUNCTUALITY_PERCENTAGE, 7)) / 100,
@@ -1448,10 +1458,10 @@ library(RODBC)
 
   # day
   apt_punct_dy <- apt_punct_calc %>%
-    filter(DATE == last_punctuality_day, RANK < 11) %>%
-    mutate(DY_APT_NAME = DASHBOARD_NAME,
+    filter(DAY_DATE == last_punctuality_day, RANK < 11) %>%
+    mutate(DY_APT_NAME = ARP_NAME,
            DY_APT_ARR_PUNCT = ARR_PUNCTUALITY_PERCENTAGE / 100,
-           DY_TO_DATE = round_date(DATE, "day")
+           DY_TO_DATE = round_date(DAY_DATE, "day")
            ) %>%
     select(
       RANK,
@@ -1465,23 +1475,23 @@ library(RODBC)
 
   # week
   apt_punct_wk <- apt_punct_calc %>%
-    group_by(DATE) %>%
-    arrange(desc(WK_APT_ARR_PUNCT), DASHBOARD_NAME) %>%
+    group_by(DAY_DATE) %>%
+    arrange(desc(WK_APT_ARR_PUNCT), ARP_NAME) %>%
     mutate(RANK = row_number(),
            WK_RANK = RANK) %>%
     ungroup() %>%
-    group_by(DASHBOARD_NAME) %>%
-    arrange(DATE) %>%
+    group_by(ARP_NAME) %>%
+    arrange(DAY_DATE) %>%
     mutate(
       WK_RANK_DIF_PREV_WEEK = lag(RANK, 7) - RANK,
       WK_PUNCT_DIF_PREV_WEEK_PERC = (WK_APT_ARR_PUNCT - lag(WK_APT_ARR_PUNCT, 7)),
       WK_PUNCT_DIF_PREV_YEAR_PERC = (WK_APT_ARR_PUNCT - lag(WK_APT_ARR_PUNCT, 364))
     )  %>%
     ungroup() %>%
-    filter(DATE == last_punctuality_day, RANK < 11) %>%
-    mutate(WK_APT_NAME = DASHBOARD_NAME,
-           WK_FROM_DATE = round_date(DATE, "day") + lubridate::days(-6),
-           WK_TO_DATE = round_date(DATE, "day")
+    filter(DAY_DATE == last_punctuality_day, RANK < 11) %>%
+    mutate(WK_APT_NAME = ARP_NAME,
+           WK_FROM_DATE = round_date(DAY_DATE, "day") + lubridate::days(-6),
+           WK_TO_DATE = round_date(DAY_DATE, "day")
            ) %>%
     select(
       RANK,
@@ -1496,19 +1506,19 @@ library(RODBC)
 
   # y2d
   apt_punct_y2d <- apt_punct_calc %>%
-    mutate(MONTH_DAY = as.numeric(format(DATE, format = "%m%d"))) %>%
+    mutate(MONTH_DAY = as.numeric(format(DAY_DATE, format = "%m%d"))) %>%
     filter(MONTH_DAY <= as.numeric(format(last_punctuality_day, format = "%m%d"))) %>%
-    mutate(YEAR = as.numeric(format(DATE, format="%Y"))) %>%
-    group_by(DASHBOARD_NAME, ICAO_CODE, YEAR) %>%
+    mutate(YEAR = as.numeric(format(DAY_DATE, format="%Y"))) %>%
+    group_by(ARP_NAME, ICAO_CODE, YEAR) %>%
     summarise (Y2D_APT_ARR_PUNCT = sum(ARR_PUNCTUAL_FLIGHTS, na.rm=TRUE) / sum(ARR_SCHEDULE_FLIGHT, na.rm=TRUE)
     ) %>%
     ungroup() %>%
     group_by(YEAR) %>%
-    arrange(desc(Y2D_APT_ARR_PUNCT), DASHBOARD_NAME) %>%
+    arrange(desc(Y2D_APT_ARR_PUNCT), ARP_NAME) %>%
     mutate(RANK = row_number(),
            Y2D_RANK = RANK) %>%
     ungroup() %>%
-    group_by(DASHBOARD_NAME) %>%
+    group_by(ARP_NAME) %>%
     arrange(YEAR) %>%
     mutate(
       Y2D_RANK_DIF_PREV_YEAR = lag(RANK, 1) - RANK,
@@ -1517,7 +1527,7 @@ library(RODBC)
     )  %>%
     ungroup() %>%
     filter(YEAR == max(YEAR), RANK < 11) %>%
-    mutate(Y2D_APT_NAME = DASHBOARD_NAME) %>%
+    mutate(Y2D_APT_NAME = ARP_NAME) %>%
     select(
       RANK,
       Y2D_RANK_DIF_PREV_YEAR,
@@ -1544,9 +1554,9 @@ library(RODBC)
     select(RANK, MAIN_PUNCT_APT_NAME, MAIN_PUNCT_APT_ARR_PUNCT)
 
   apt_main_punct_bottom <-  apt_punct_calc %>%
-    filter(DATE == last_punctuality_day) %>%
+    filter(DAY_DATE == last_punctuality_day) %>%
     mutate(RANK = max(RANK) +1 - RANK,
-           DY_APT_NAME = DASHBOARD_NAME,
+           DY_APT_NAME = ARP_NAME,
            DY_APT_ARR_PUNCT = ARR_PUNCTUALITY_PERCENTAGE / 100) %>%
     mutate(
       MAIN_PUNCT_APT_NAME_BOTTOM = if_else(
