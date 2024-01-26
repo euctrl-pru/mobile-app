@@ -1589,7 +1589,7 @@ library(RODBC)
         ),
 
         LIST_STATE as (
-          SELECT
+          SELECT DISTINCT
             AIU_ISO_COUNTRY_NAME as EC_ISO_CT_NAME,
             AIU_ISO_COUNTRY_CODE AS EC_ISO_CT_CODE
           FROM prudev.pru_country_iso
@@ -1704,15 +1704,15 @@ library(RODBC)
       )
 
     # y2d
-    st_apt_punct_y2d <- st_punct_calc %>%
+    st_apt_punct_y2d <- st_apt_punct_calc %>%
       mutate(MONTH_DAY = as.numeric(format(DAY_DATE, format = "%m%d"))) %>%
       filter(MONTH_DAY <= as.numeric(format(last_punctuality_day, format = "%m%d"))) %>%
       mutate(YEAR = as.numeric(format(DAY_DATE, format="%Y"))) %>%
-      group_by(ARP_NAME, ICAO_CODE, YEAR) %>%
+      group_by(state, ARP_NAME, ICAO_CODE, YEAR) %>%
       summarise (Y2D_APT_ARR_PUNCT = sum(ARR_PUNCTUAL_FLIGHTS, na.rm=TRUE) / sum(ARR_SCHEDULE_FLIGHT, na.rm=TRUE)
       ) %>%
       ungroup() %>%
-      group_by(YEAR) %>%
+      group_by(state, YEAR) %>%
       arrange(desc(Y2D_APT_ARR_PUNCT), ARP_NAME) %>%
       mutate(RANK = row_number(),
              Y2D_RANK = RANK) %>%
@@ -1758,7 +1758,7 @@ library(RODBC)
 
     # join and reorder tables
     st_apt_punctuality <- state_iso_ranking %>%
-      left_join(st_apt_punct_day, by = "ST_RANK") %>%
+      left_join(st_apt_punct_dy, by = "ST_RANK") %>%
       left_join(st_apt_punct_wk, by = "ST_RANK") %>%
       left_join(st_apt_punct_y2d, by = "ST_RANK") %>%
       select(-ST_RANK)

@@ -97,7 +97,8 @@ library(RODBC)
 
   nw_billed_json <- nw_billing %>%
     arrange(year, billing_period_start_date) %>%
-    mutate(Year = year,
+    mutate(BILLING_DATE = (billing_period_start_date + days(1) + months(1)) + days(-1),
+           Year = year,
            MONTH_F = format(billing_period_start_date + days(1),'%B'),
            BILL_MONTH_PY = lag(total_billing, 12),
            BILL_MONTH_2019 = lag(total_billing, (last_billing_year - 2019) * 12),
@@ -118,7 +119,8 @@ library(RODBC)
       BILLED_Y2D = round(total_billing_y2d / 1000000, 0)
     ) %>%
     filter(billing_period_start_date == last_billing_date) %>%
-    select(MONTH_F,
+    select(BILLING_DATE,
+           MONTH_F,
            BILLED,
            DIF_BILL_MONTH_PY,
            DIF_BILL_MONTH_2019,
@@ -294,7 +296,9 @@ library(RODBC)
            WK_DEP_PUN_DIF_2019_PERC = DEP_PUN_WK - DEP_PUN_WK_2019
     ) %>%
     filter (DATE == last_day_punct) %>%
+    mutate(FLIGHT_DATE = DATE) %>%
     select(
+      FLIGHT_DATE,
       ARR_PUNCTUALITY_PERCENTAGE,
       DEP_PUNCTUALITY_PERCENTAGE,
       DAY_ARR_PUN_DIF_PY_PERC,
