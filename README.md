@@ -141,7 +141,7 @@ adm_main <- ph_authenticate_admin_username_password(
   password)
 ```
 
-### Create
+### Create record(s)
 
 Let’s get some internal data
 
@@ -205,6 +205,8 @@ ph_create_record(
   body = nw_traffic_latest)
 ```
 
+Here just a sort of batch
+
 ``` r
 # data for 2024
 lol <- nw_traffic_data |> 
@@ -253,38 +255,6 @@ for (i in ids) {
     api = "/api/collections",
     collection = collection,
     token = adm_test$token,
-    id = i)
-  Sys.sleep(0.3)
-}
-
-
-#------------- MAIN ------------
-for (r in lol) {
-  # print(r)
-  ph_create_record(
-    app = app_main,
-    api = "/api/collections",
-    collection = collection,
-    token = adm_main$token,
-    body = r)
-  Sys.sleep(0.3)
-}
-
-
-# delete all records in test
-lor <- ph_list_records(
-  app = app_main,
-  api = "/api/collections/",
-  collection = collection,
-  sort = "-FLIGHT_DATE")
-
-ids <- lor |> pull(id)
-for (i in ids) {
-  ph_delete_record(
-    app = app_main,
-    api = "/api/collections",
-    collection = collection,
-    token = adm_main$token,
     id = i)
   Sys.sleep(0.3)
 }
