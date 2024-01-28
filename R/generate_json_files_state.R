@@ -32,6 +32,28 @@ library(RODBC)
   pwd <- Sys.getenv("PRU_DEV_PWD")
   dbn <- Sys.getenv("PRU_DEV_DBNAME")
 
+# functions
+  export_query <- function(query) {
+
+    # NOTE: to be set before you create your ROracle connection!
+    # See http://www.oralytics.com/2015/05/r-roracle-and-oracle-date-formats_27.html
+    withr::local_envvar(c("TZ" = "UTC",
+                          "ORA_SDTZ" = "UTC"))
+    withr::local_namespace("ROracle")
+    con <- withr::local_db_connection(
+      DBI::dbConnect(
+        DBI::dbDriver("Oracle"),
+        usr, pwd,
+        dbname = dbn,
+        timezone = "UTC")
+    )
+
+    data <- DBI::dbSendQuery(con, query)
+    # ~2.5 min for one day
+    DBI::fetch(data, n = -1) %>%
+      tibble::as_tibble()
+  }
+
 # dimension tables
   state_iso <-  read_xlsx(
     path  = fs::path_abs(
@@ -81,27 +103,7 @@ library(RODBC)
     select(ICAO_CODE, ISO_COUNTRY_CODE) %>%
     rename(iso_2letter = ISO_COUNTRY_CODE)
 
-# functions
-  export_query <- function(query) {
 
-    # NOTE: to be set before you create your ROracle connection!
-    # See http://www.oralytics.com/2015/05/r-roracle-and-oracle-date-formats_27.html
-    withr::local_envvar(c("TZ" = "UTC",
-                          "ORA_SDTZ" = "UTC"))
-    withr::local_namespace("ROracle")
-    con <- withr::local_db_connection(
-      DBI::dbConnect(
-        DBI::dbDriver("Oracle"),
-        usr, pwd,
-        dbname = dbn,
-        timezone = "UTC")
-    )
-
-    data <- DBI::dbSendQuery(con, query)
-    # ~2.5 min for one day
-    DBI::fetch(data, n = -1) %>%
-      tibble::as_tibble()
-  }
 
 ###############################################################################################
 #                                                                                             #
@@ -156,13 +158,15 @@ library(RODBC)
 
     st_billed_for_json <- st_billing %>%
       arrange(iso_2letter, year, billing_period_start_date) %>%
-      mutate(Year = year,
+      mutate(
+             BILLING_DATE = (billing_period_start_date + days(1) + months(1)) + days(-1),
+             Year = year,
              MONTH_F = format(billing_period_start_date + days(1),'%B'),
-             BILL_MONTH_PY = lag(total_billing, 12),
-             BILL_MONTH_2019 = lag(total_billing, (last_billing_year - 2019) * 12),
-             DIF_BILL_MONTH_PY = total_billing / BILL_MONTH_PY - 1,
-             DIF_BILL_MONTH_2019 = total_billing / BILL_MONTH_2019 - 1,
-             BILLED = round(total_billing / 1000000, 1)
+             MONTH_BILLED_PY = lag(total_billing, 12),
+             MONTH_BILLED_2019 = lag(total_billing, (last_billing_year - 2019) * 12),
+             MONTH_BILLED_DIF_PY_PERC = total_billing / MONTH_BILLED_PY - 1,
+             MONTH_BILLED_DIF_2019_PERC = total_billing / MONTH_BILLED_2019 - 1,
+             MONTH_BILLED = round(total_billing / 1000000, 1)
       ) %>%
       group_by(iso_2letter, Year) %>%
       mutate(
@@ -170,30 +174,28 @@ library(RODBC)
       ) %>%
       ungroup() %>%
       mutate(
-        BILL_Y2D_PY = lag(total_billing_y2d, 12),
-        BILL_Y2D_2019 = lag(total_billing_y2d, (last_billing_year - 2019) * 12),
-        DIF_BILL_Y2D_PY = total_billing_y2d / BILL_Y2D_PY -1,
-        DIF_BILL_Y2D_2019 = total_billing_y2d / BILL_Y2D_2019 -1,
-        BILLED_Y2D = round(total_billing_y2d / 1000000, 1)
+        Y2D_BILLED_PY = lag(total_billing_y2d, 12),
+        Y2D_BILLED_2019 = lag(total_billing_y2d, (last_billing_year - 2019) * 12),
+        Y2D_BILLED_DIF_PY_PERC = total_billing_y2d / Y2D_BILLED_PY -1,
+        Y2D_BILLED_DIF_2019_PERC = total_billing_y2d / Y2D_BILLED_2019 -1,
+        Y2D_BILLED = round(total_billing_y2d / 1000000, 1)
       ) %>%
       filter(billing_period_start_date == last_billing_date) %>%
       select(iso_2letter,
+             BILLING_DATE,
              MONTH_F,
-             BILLED,
-             DIF_BILL_MONTH_PY,
-             DIF_BILL_MONTH_2019,
-             BILLED_Y2D,
-             DIF_BILL_Y2D_PY,
-             DIF_BILL_Y2D_2019
-      )
-
-    st_billed_json <- st_billed_for_json %>%
-    toJSON() %>%
-    substr(., 1, nchar(.)-1) %>%
-    substr(., 2, nchar(.))
+             MONTH_BILLED,
+             MONTH_BILLED_DIF_PY_PERC,
+             MONTH_BILLED_DIF_2019_PERC,
+             Y2D_BILLED,
+             Y2D_BILLED_DIF_PY_PERC,
+             Y2D_BILLED_DIF_2019_PERC
+      ) %>%
+      right_join(state_iso, by ="iso_2letter") %>%
+      select(-state) %>%
+      arrange(iso_2letter)
 
   ###############################################
-
   # traffic daio data
     st_daio_data <-  read_xlsx(
       path  = fs::path_abs(
@@ -210,7 +212,7 @@ library(RODBC)
       mutate(daio_zone_lc = tolower(COUNTRY_NAME)) %>%
       right_join(state_daio, by = "daio_zone_lc", relationship = "many-to-many")
 
-    st_daio_json <- st_daio_last_day %>%
+    st_daio_for_json <- st_daio_last_day %>%
       filter(FLIGHT_DATE == last_day) %>%
       select(
         iso_2letter,
@@ -225,13 +227,22 @@ library(RODBC)
         Y2D_AVG_TFC_YEAR,
         Y2D_DIFF_PREV_YEAR_PERC,
         Y2D_DIFF_2019_PERC
-      )
-
-    st_daio_json <- st_daio_json %>%
-      toJSON(., digits = 10) %>%
-      substr(., 1, nchar(.)-1) %>%
-      substr(., 2, nchar(.))
-
+      ) %>%
+      rename(
+        DAY_DAIO = DAY_TFC,
+        DAY_DAIO_DIF_PY_PERC = DAY_DIFF_PREV_YEAR_PERC,
+        DAY_DAIO_DIF_2019_PERC = DAY_TFC_DIFF_2019_PERC,
+        WEEK_DAIO_AVG = AVG_ROLLING_WEEK,
+        WEEK_DAIO_DIF_PY_PERC = DIF_WEEK_PREV_YEAR_PERC,
+        WEEK_DAIO_DIF_2019_PERC = DIF_ROLLING_WEEK_2019_PERC,
+        Y2D_DAIO = Y2D_TFC_YEAR,
+        Y2D_DAIO_AVG = Y2D_AVG_TFC_YEAR,
+        Y2D_DAIO_DIF_PY_PERC = Y2D_DIFF_PREV_YEAR_PERC,
+        Y2D_DAIO_DIF_2019_PERC = Y2D_DIFF_2019_PERC
+      ) %>%
+      right_join(state_iso, by ="iso_2letter") %>%
+      select(-state) %>%
+      arrange(iso_2letter)
 
   ###############################################
   # traffic dai data
@@ -244,13 +255,12 @@ library(RODBC)
       as_tibble() %>%
       mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-
     st_dai_last_day <- st_dai_data %>%
       filter(FLIGHT_DATE == last_day) %>%
       mutate(daio_zone_lc = tolower(COUNTRY_NAME)) %>%
       right_join(state_daio, by = "daio_zone_lc", relationship = "many-to-many")
 
-    st_dai_json <- st_dai_last_day %>%
+    st_dai_for_json <- st_dai_last_day %>%
       filter(FLIGHT_DATE == last_day) %>%
       select(
         iso_2letter,
@@ -265,12 +275,22 @@ library(RODBC)
         Y2D_AVG_TFC_YEAR,
         Y2D_DIFF_PREV_YEAR_PERC,
         Y2D_DIFF_2019_PERC
-      )
-
-    st_dai_json <- st_dai_json %>%
-      toJSON(., digits = 10) %>%
-      substr(., 1, nchar(.)-1) %>%
-      substr(., 2, nchar(.))
+      ) %>%
+      rename(
+        DAY_DAI = DAY_TFC,
+        DAY_DAI_DIF_PY_PERC = DAY_DIFF_PREV_YEAR_PERC,
+        DAY_DAI_DIF_2019_PERC = DAY_TFC_DIFF_2019_PERC,
+        WEEK_DAI_AVG = AVG_ROLLING_WEEK,
+        WEEK_DAI_DIF_PY_PERC = DIF_WEEK_PREV_YEAR_PERC,
+        WEEK_DAI_DIF_2019_PERC = DIF_ROLLING_WEEK_2019_PERC,
+        Y2D_DAI = Y2D_TFC_YEAR,
+        Y2D_DAI_AVG = Y2D_AVG_TFC_YEAR,
+        Y2D_DAI_DIF_PY_PERC = Y2D_DIFF_PREV_YEAR_PERC,
+        Y2D_DAI_DIF_2019_PERC = Y2D_DIFF_2019_PERC
+      ) %>%
+      right_join(state_iso, by ="iso_2letter") %>%
+      select(-state) %>%
+      arrange(iso_2letter)
 
   ###############################################
   # delay data
@@ -284,8 +304,12 @@ library(RODBC)
       as_tibble() %>%
       mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-    st_delay_for_json  <- st_delay_data %>%
+    st_delay_last_day <- st_delay_data %>%
       filter(FLIGHT_DATE == max(LAST_DATA_DAY)) %>%
+      mutate(daio_zone_lc = tolower(COUNTRY_NAME)) %>%
+      right_join(state_daio, by = "daio_zone_lc", relationship = "many-to-many")
+
+    st_delay_for_json  <- st_delay_last_day %>%
       mutate(
         DAY_DLY_FLT = DAY_DLY / DAY_TFC,
         DAY_DLY_FLT_PY = DAY_DLY_PREV_YEAR / DAY_TFC_PREV_YEAR,
@@ -297,14 +321,14 @@ library(RODBC)
           DAY_DLY_FLT_2019 == 0, NA , DAY_DLY_FLT / DAY_DLY_FLT_2019 -1
         ),
 
-        RWEEK_DLY_FLT = AVG_DLY_ROLLING_WEEK / AVG_TFC_ROLLING_WEEK,
-        RWEEK_DLY_FLT_PY = AVG_DLY_ROLLING_WEEK_PREV_YEAR / AVG_TFC_ROLLING_WEEK_PREV_YEAR,
-        RWEEK_DLY_FLT_2019 = AVG_DLY_ROLLING_WEEK_2019 / AVG_TFC_ROLLING_WEEK_2019,
-        RWEEK_DLY_FLT_DIF_PY_PERC = if_else(
-          RWEEK_DLY_FLT_PY == 0, NA , RWEEK_DLY_FLT / RWEEK_DLY_FLT_PY -1
+        WEEK_DLY_FLT = AVG_DLY_ROLLING_WEEK / AVG_TFC_ROLLING_WEEK,
+        WEEK_DLY_FLT_PY = AVG_DLY_ROLLING_WEEK_PREV_YEAR / AVG_TFC_ROLLING_WEEK_PREV_YEAR,
+        WEEK_DLY_FLT_2019 = AVG_DLY_ROLLING_WEEK_2019 / AVG_TFC_ROLLING_WEEK_2019,
+        WEEK_DLY_FLT_DIF_PY_PERC = if_else(
+          WEEK_DLY_FLT_PY == 0, NA , WEEK_DLY_FLT / WEEK_DLY_FLT_PY -1
         ),
-        RWEEK_DLY_FLT_DIF_2019_PERC = if_else(
-          RWEEK_DLY_FLT_2019 == 0, NA , RWEEK_DLY_FLT / RWEEK_DLY_FLT_2019 -1
+        WEEK_DLY_FLT_DIF_2019_PERC = if_else(
+          WEEK_DLY_FLT_2019 == 0, NA , WEEK_DLY_FLT / WEEK_DLY_FLT_2019 -1
         ),
 
         Y2D_DLY_FLT = Y2D_DLY_YEAR / Y2D_TFC_YEAR,
@@ -319,7 +343,7 @@ library(RODBC)
 
       ) %>%
       select(
-        COUNTRY_NAME,
+        iso_2letter,
         FLIGHT_DATE,
         DAY_DLY,
         DAY_DLY_DIF_PREV_YEAR_PERC,
@@ -331,9 +355,9 @@ library(RODBC)
         AVG_DLY_ROLLING_WEEK,
         DIF_DLY_ROLLING_WEEK_PREV_YEAR_PERC,
         DIF_DLY_ROLLING_WEEK_2019_PERC,
-        RWEEK_DLY_FLT,
-        RWEEK_DLY_FLT_DIF_PY_PERC,
-        RWEEK_DLY_FLT_DIF_2019_PERC,
+        WEEK_DLY_FLT,
+        WEEK_DLY_FLT_DIF_PY_PERC,
+        WEEK_DLY_FLT_DIF_2019_PERC,
 
         Y2D_AVG_DLY_YEAR,
         Y2D_DLY_DIF_PREV_YEAR_PERC,
@@ -341,12 +365,20 @@ library(RODBC)
         Y2D_DLY_FLT,
         Y2D_DLY_FLT_DIF_PY_PERC,
         Y2D_DLY_FLT_DIF_2019_PERC
-      )
+      ) %>%
+      rename(
+        DAY_DLY_DIF_PY_PERC = DAY_DLY_DIF_PREV_YEAR_PERC,
 
-    st_delay_json <- st_delay_for_json %>%
-      toJSON() %>%
-      substr(., 1, nchar(.)-1) %>%
-      substr(., 2, nchar(.))
+        WEEK_DLY_AVG = AVG_DLY_ROLLING_WEEK,
+        WEEK_DLY_DIF_PY_PERC = DIF_DLY_ROLLING_WEEK_PREV_YEAR_PERC,
+        WEEK_DLY_DIF_2019_PERC = DIF_DLY_ROLLING_WEEK_2019_PERC,
+
+        Y2D_DLY_AVG = Y2D_AVG_DLY_YEAR,
+        Y2D_DLY_DIF_PY_PERC = Y2D_DLY_DIF_PREV_YEAR_PERC
+      ) %>%
+      right_join(state_iso, by ="iso_2letter") %>%
+      select(-state) %>%
+      arrange(iso_2letter)
 
   ###############################################
   # punctuality data
@@ -392,65 +424,65 @@ library(RODBC)
     st_punct_d_w <- st_punct_raw %>%
       arrange(ISO_2LETTER, DAY_DATE) %>%
       mutate(
-             ARR_PUNCTUALITY_PERCENTAGE = case_when(
+             DAY_ARR_PUNCT = case_when(
                ARR_SCHEDULE_FLIGHT == 0 ~ NA,
                .default = ARR_PUNCTUAL_FLIGHTS/ARR_SCHEDULE_FLIGHT * 100
                ),
-             DEP_PUNCTUALITY_PERCENTAGE = case_when(
+             DAY_DEP_PUNCT = case_when(
                DEP_SCHEDULE_FLIGHT == 0 ~ NA,
                .default = DEP_PUNCTUAL_FLIGHTS/DEP_SCHEDULE_FLIGHT * 100
              ),
-             ARR_PUN_PREV_YEAR = lag(ARR_PUNCTUALITY_PERCENTAGE, 364),
-             DEP_PUN_PREV_YEAR = lag(DEP_PUNCTUALITY_PERCENTAGE, 364),
-             ARR_PUN_2019 =if_else(YEAR == last_year_punct,
-                                   lag(ARR_PUNCTUALITY_PERCENTAGE,
+             DAY_ARR_PUNCT_PY = lag(DAY_ARR_PUNCT, 364),
+             DAY_DEP_PUNCT_PY = lag(DAY_DEP_PUNCT, 364),
+             DAY_ARR_PUNCT_2019 =if_else(YEAR == last_year_punct,
+                                   lag(DAY_ARR_PUNCT,
                                        364 * (last_year_punct - 2019) + floor((last_year_punct - 2019) / 4) * 7),
                                    NA),
-             DEP_PUN_2019 =if_else(YEAR == last_year_punct,
-                                   lag(DEP_PUNCTUALITY_PERCENTAGE,
+             DAY_DEP_PUNCT_2019 =if_else(YEAR == last_year_punct,
+                                   lag(DAY_DEP_PUNCT,
                                        364 * (last_year_punct - 2019) + floor((last_year_punct - 2019) / 4) * 7),
                                    NA),
              DAY_2019 = if_else(YEAR == last_year_punct,
                                 lag(DAY_DATE,
                                     364 * (last_year_punct - 2019) + floor((last_year_punct - 2019) / 4) * 7)
                                 , NA),
-             DAY_ARR_PUN_DIF_PY_PERC = ARR_PUNCTUALITY_PERCENTAGE - ARR_PUN_PREV_YEAR,
-             DAY_DEP_PUN_DIF_PY_PERC = DEP_PUNCTUALITY_PERCENTAGE - DEP_PUN_PREV_YEAR,
-             DAY_ARR_PUN_DIF_2019_PERC = ARR_PUNCTUALITY_PERCENTAGE - ARR_PUN_2019,
-             DAY_DEP_PUN_DIF_2019_PERC = DEP_PUNCTUALITY_PERCENTAGE - DEP_PUN_2019
+             DAY_ARR_PUNCT_DIF_PY = DAY_ARR_PUNCT - DAY_ARR_PUNCT_PY,
+             DAY_DEP_PUNCT_DIF_PY = DAY_DEP_PUNCT - DAY_DEP_PUNCT_PY,
+             DAY_ARR_PUNCT_DIF_2019 = DAY_ARR_PUNCT - DAY_ARR_PUNCT_2019,
+             DAY_DEP_PUNCT_DIF_2019 = DAY_DEP_PUNCT - DAY_DEP_PUNCT_2019
       ) %>%
       mutate(
-        ARR_PUN_WK = rollsum((ARR_PUNCTUAL_FLIGHTS), 7, fill = NA, align = "right") / rollsum(ARR_SCHEDULE_FLIGHT, 7, fill = NA, align = "right") * 100,
-        DEP_PUN_WK = rollsum((DEP_PUNCTUAL_FLIGHTS), 7, fill = NA, align = "right") / rollsum(DEP_SCHEDULE_FLIGHT, 7, fill = NA, align = "right") * 100
+        WEEK_ARR_PUNCT = rollsum((ARR_PUNCTUAL_FLIGHTS), 7, fill = NA, align = "right") / rollsum(ARR_SCHEDULE_FLIGHT, 7, fill = NA, align = "right") * 100,
+        WEEK_DEP_PUNCT = rollsum((DEP_PUNCTUAL_FLIGHTS), 7, fill = NA, align = "right") / rollsum(DEP_SCHEDULE_FLIGHT, 7, fill = NA, align = "right") * 100
       ) %>%
-      mutate(ARR_PUN_WK_PREV_YEAR = lag(ARR_PUN_WK, 364),
-             DEP_PUN_WK_PREV_YEAR = lag(DEP_PUN_WK, 364),
-             ARR_PUN_WK_2019 =if_else(YEAR == last_year_punct,
-                                      lag(ARR_PUN_WK, 364 * (last_year_punct - 2019) + floor((last_year_punct - 2019) / 4) * 7),
+      mutate(WEEK_ARR_PUNCT_PY = lag(WEEK_ARR_PUNCT, 364),
+             WEEK_DEP_PUNCT_PY = lag(WEEK_DEP_PUNCT, 364),
+             WEEK_ARR_PUNCT_2019 =if_else(YEAR == last_year_punct,
+                                      lag(WEEK_ARR_PUNCT, 364 * (last_year_punct - 2019) + floor((last_year_punct - 2019) / 4) * 7),
                                       NA),
-             DEP_PUN_WK_2019 =if_else(YEAR == last_year_punct,
-                                      lag(DEP_PUN_WK, 364 * (last_year_punct - 2019) + floor((last_year_punct - 2019) / 4) * 7),
+             WEEK_DEP_PUNCT_2019 =if_else(YEAR == last_year_punct,
+                                      lag(WEEK_DEP_PUNCT, 364 * (last_year_punct - 2019) + floor((last_year_punct - 2019) / 4) * 7),
                                       NA),
-             WK_ARR_PUN_DIF_PY_PERC = ARR_PUN_WK - ARR_PUN_WK_PREV_YEAR,
-             WK_DEP_PUN_DIF_PY_PERC = DEP_PUN_WK - DEP_PUN_WK_PREV_YEAR,
-             WK_ARR_PUN_DIF_2019_PERC = ARR_PUN_WK - ARR_PUN_WK_2019,
-             WK_DEP_PUN_DIF_2019_PERC = DEP_PUN_WK - DEP_PUN_WK_2019
+             WEEK_ARR_PUNCT_DIF_PY = WEEK_ARR_PUNCT - WEEK_ARR_PUNCT_PY,
+             WEEK_DEP_PUNCT_DIF_PY = WEEK_DEP_PUNCT - WEEK_DEP_PUNCT_PY,
+             WEEK_ARR_PUNCT_DIF_2019 = WEEK_ARR_PUNCT - WEEK_ARR_PUNCT_2019,
+             WEEK_DEP_PUNCT_DIF_2019 = WEEK_DEP_PUNCT - WEEK_DEP_PUNCT_2019
       ) %>%
       filter (DAY_DATE == last_day_punct) %>%
       select(
         ISO_2LETTER,
-        ARR_PUNCTUALITY_PERCENTAGE,
-        DEP_PUNCTUALITY_PERCENTAGE,
-        DAY_ARR_PUN_DIF_PY_PERC,
-        DAY_DEP_PUN_DIF_PY_PERC,
-        DAY_ARR_PUN_DIF_2019_PERC,
-        DAY_DEP_PUN_DIF_2019_PERC,
-        ARR_PUN_WK,
-        DEP_PUN_WK,
-        WK_ARR_PUN_DIF_PY_PERC,
-        WK_DEP_PUN_DIF_PY_PERC,
-        WK_ARR_PUN_DIF_2019_PERC,
-        WK_DEP_PUN_DIF_2019_PERC
+        DAY_ARR_PUNCT,
+        DAY_DEP_PUNCT,
+        DAY_ARR_PUNCT_DIF_PY,
+        DAY_DEP_PUNCT_DIF_PY,
+        DAY_ARR_PUNCT_DIF_2019,
+        DAY_DEP_PUNCT_DIF_2019,
+        WEEK_ARR_PUNCT,
+        WEEK_DEP_PUNCT,
+        WEEK_ARR_PUNCT_DIF_PY,
+        WEEK_DEP_PUNCT_DIF_PY,
+        WEEK_ARR_PUNCT_DIF_2019,
+        WEEK_DEP_PUNCT_DIF_2019
       )
 
     st_punct_y2d <- st_punct_raw %>%
@@ -458,35 +490,33 @@ library(RODBC)
       mutate(MONTH_DAY = as.numeric(format(DAY_DATE, format="%m%d"))) %>%
       filter(MONTH_DAY <= as.numeric(format(last_day_punct, format="%m%d"))) %>%
       group_by(ISO_2LETTER, YEAR) %>%
-      summarise (ARR_PUN_Y2D = sum(ARR_PUNCTUAL_FLIGHTS, na.rm=TRUE) / sum(ARR_SCHEDULE_FLIGHT, na.rm=TRUE) * 100,
-                 DEP_PUN_Y2D = sum(DEP_PUNCTUAL_FLIGHTS, na.rm=TRUE) / sum(DEP_SCHEDULE_FLIGHT, na.rm=TRUE) * 100) %>%
-      mutate(Y2D_ARR_PUN_PREV_YEAR = lag(ARR_PUN_Y2D, 1),
-             Y2D_DEP_PUN_PREV_YEAR = lag(DEP_PUN_Y2D, 1),
-             Y2D_ARR_PUN_2019 = lag(ARR_PUN_Y2D, last_year_punct - 2019),
-             Y2D_DEP_PUN_2019 = lag(DEP_PUN_Y2D, last_year_punct - 2019),
-             Y2D_ARR_PUN_DIF_PY_PERC = ARR_PUN_Y2D - Y2D_ARR_PUN_PREV_YEAR,
-             Y2D_DEP_PUN_DIF_PY_PERC = DEP_PUN_Y2D - Y2D_DEP_PUN_PREV_YEAR,
-             Y2D_ARR_PUN_DIF_2019_PERC = ARR_PUN_Y2D - Y2D_ARR_PUN_2019,
-             Y2D_DEP_PUN_DIF_2019_PERC = DEP_PUN_Y2D - Y2D_DEP_PUN_2019
+      summarise (Y2D_ARR_PUNCT = sum(ARR_PUNCTUAL_FLIGHTS, na.rm=TRUE) / sum(ARR_SCHEDULE_FLIGHT, na.rm=TRUE) * 100,
+                 Y2D_DEP_PUNCT = sum(DEP_PUNCTUAL_FLIGHTS, na.rm=TRUE) / sum(DEP_SCHEDULE_FLIGHT, na.rm=TRUE) * 100) %>%
+      mutate(Y2D_ARR_PUNCT_PY = lag(Y2D_ARR_PUNCT, 1),
+             Y2D_DEP_PUNCT_PY = lag(Y2D_DEP_PUNCT, 1),
+             Y2D_ARR_PUNCT_2019 = lag(Y2D_ARR_PUNCT, last_year_punct - 2019),
+             Y2D_DEP_PUNCT_2019 = lag(Y2D_DEP_PUNCT, last_year_punct - 2019),
+             Y2D_ARR_PUNCT_DIF_PY = Y2D_ARR_PUNCT - Y2D_ARR_PUNCT_PY,
+             Y2D_DEP_PUNCT_DIF_PY = Y2D_DEP_PUNCT - Y2D_DEP_PUNCT_PY,
+             Y2D_ARR_PUNCT_DIF_2019 = Y2D_ARR_PUNCT - Y2D_ARR_PUNCT_2019,
+             Y2D_DEP_PUNCT_DIF_2019 = Y2D_DEP_PUNCT - Y2D_DEP_PUNCT_2019
       ) %>%
       filter(YEAR == last_year_punct) %>%
       ungroup() %>%
       select(ISO_2LETTER,
-             ARR_PUN_Y2D,
-             DEP_PUN_Y2D,
-             Y2D_ARR_PUN_DIF_PY_PERC,
-             Y2D_DEP_PUN_DIF_PY_PERC,
-             Y2D_ARR_PUN_DIF_2019_PERC,
-             Y2D_DEP_PUN_DIF_2019_PERC
+             Y2D_ARR_PUNCT,
+             Y2D_DEP_PUNCT,
+             Y2D_ARR_PUNCT_DIF_PY,
+             Y2D_DEP_PUNCT_DIF_PY,
+             Y2D_ARR_PUNCT_DIF_2019,
+             Y2D_DEP_PUNCT_DIF_2019
       )
 
-    st_punct_json <- merge(st_punct_d_w, st_punct_y2d, by="ISO_2LETTER") %>%
+    st_punct_for_json <- merge(st_punct_d_w, st_punct_y2d, by="ISO_2LETTER") %>%
       rename(iso_2letter = ISO_2LETTER) %>%
       right_join(state_iso, by = "iso_2letter") %>%
-      relocate(state, .after= iso_2letter) %>%
-      toJSON() %>%
-      substr(., 1, nchar(.)-1) %>%
-      substr(., 2, nchar(.))
+      select (-state) %>%
+      arrange(iso_2letter)
 
   ###############################################
   # CO2 data
@@ -516,15 +546,16 @@ library(RODBC)
              YEAR,
              MONTH) %>%
       group_by(iso_2letter, FLIGHT_MONTH, YEAR, MONTH) %>%
-      summarise (MM_TTF = sum(TF, na.rm=TRUE),
-                 MM_TTF_PREV_YEAR = sum(LY_TF, na.rm=TRUE),
-                 MM_CO2 = sum(CO2_QTY_TONNES, na.rm=TRUE),
-                 MM_CO2_PREV_YEAR = sum(LY_CO2_QTY_TONNES, na.rm=TRUE)
+      summarise (MONTH_DEP = sum(TF, na.rm=TRUE),
+                 MONTH_DEP_PY = sum(LY_TF, na.rm=TRUE),
+                 MONTH_CO2 = sum(CO2_QTY_TONNES, na.rm=TRUE),
+                 MONTH_CO2_PY = sum(LY_CO2_QTY_TONNES, na.rm=TRUE)
       ) %>%
       ungroup() %>%
       mutate(
-        MM_CO2_DEP = MM_CO2 / MM_TTF,
-        MM_CO2_DEP_PREV_YEAR = MM_CO2_PREV_YEAR / MM_TTF_PREV_YEAR
+        CO2_DATE = FLIGHT_MONTH,
+        MONTH_CO2_DEP = MONTH_CO2 / MONTH_DEP,
+        MONTH_CO2_DEP_PY = MONTH_CO2_PY / MONTH_DEP_PY
       ) %>%
       arrange(iso_2letter, FLIGHT_MONTH) %>%
       mutate(FLIGHT_MONTH = ceiling_date(as_date(FLIGHT_MONTH), unit = 'month')-1)
@@ -537,7 +568,7 @@ library(RODBC)
     #check last month number of flights
     check_flights <- st_co2_data %>%
       filter (YEAR == st_co2_last_year) %>% filter(MONTH == st_co2_last_month_num) %>%
-      summarise (TTF = sum(MM_TTF, na.rm=TRUE)) %>%
+      summarise (TTF = sum(MONTH_DEP, na.rm=TRUE)) %>%
       select(TTF) %>% pull()
 
     if (check_flights < 1000) {
@@ -545,85 +576,86 @@ library(RODBC)
       st_co2_last_date <- max(st_co2_data$FLIGHT_MONTH, na.rm=TRUE)
     }
 
-    co2_for_json <- st_co2_data %>%
+    st_co2_for_json <- st_co2_data %>%
       arrange(iso_2letter, FLIGHT_MONTH) %>%
       mutate(
         MONTH_TEXT = format(FLIGHT_MONTH,'%B'),
-        MM_CO2_2019 = lag(MM_CO2, (as.numeric(st_co2_last_year) - 2019) * 12),
-        MM_TTF_2019 = lag(MM_TTF, (as.numeric(st_co2_last_year) - 2019) * 12),
-        MM_CO2_DEP_2019 = lag(MM_CO2_DEP, (as.numeric(st_co2_last_year) - 2019) * 12)
+        MONTH_CO2_2019 = lag(MONTH_CO2, (as.numeric(st_co2_last_year) - 2019) * 12),
+        MONTH_DEP_2019 = lag(MONTH_DEP, (as.numeric(st_co2_last_year) - 2019) * 12),
+        MONTH_CO2_DEP_2019 = lag(MONTH_CO2_DEP, (as.numeric(st_co2_last_year) - 2019) * 12)
       ) %>%
       mutate(
-        DIF_CO2_MONTH_PREV_YEAR = MM_CO2 / MM_CO2_PREV_YEAR - 1,
-        DIF_TTF_MONTH_PREV_YEAR = MM_TTF / MM_TTF_PREV_YEAR - 1,
-        DIF_CO2_DEP_MONTH_PREV_YEAR = MM_CO2_DEP / MM_CO2_DEP_PREV_YEAR - 1,
-        DIF_CO2_MONTH_2019 = MM_CO2 / MM_CO2_2019 - 1,
-        DIF_TTF_MONTH_2019 = MM_TTF / MM_TTF_2019 - 1,
-        DIF_CO2_DEP_MONTH_2019 = MM_CO2_DEP / MM_CO2_DEP_2019 - 1
+        MONTH_CO2_DIF_PY = MONTH_CO2 / MONTH_CO2_PY - 1,
+        MONTH_DEP_DIF_PY = MONTH_DEP / MONTH_DEP_PY - 1,
+        MONTH_CO2_DEP_DIF_PY = MONTH_CO2_DEP / MONTH_CO2_DEP_PY - 1,
+        MONTH_CO2_DIF_2019 = MONTH_CO2 / MONTH_CO2_2019 - 1,
+        MONTH_DEP_DIF_2019 = MONTH_DEP / MONTH_DEP_2019 - 1,
+        MONTH_CO2_DEP_DIF_2019 = MONTH_CO2_DEP / MONTH_CO2_DEP_2019 - 1
       ) %>%
       group_by(iso_2letter, YEAR) %>%
       mutate(
-        YTD_CO2 = cumsum(MM_CO2),
-        YTD_TTF = cumsum(MM_TTF),
-        YTD_CO2_DEP = cumsum(MM_CO2) / cumsum(MM_TTF)
+        Y2D_CO2 = cumsum(MONTH_CO2),
+        Y2D_DEP = cumsum(MONTH_DEP),
+        Y2D_CO2_DEP = cumsum(MONTH_CO2) / cumsum(MONTH_DEP)
       ) %>%
       ungroup() %>%
       mutate(
-        YTD_CO2_PREV_YEAR = lag(YTD_CO2, 12),
-        YTD_TTF_PREV_YEAR = lag(YTD_TTF, 12),
-        YTD_CO2_DEP_PREV_YEAR = lag(YTD_CO2_DEP, 12),
-        YTD_CO2_2019 = lag(YTD_CO2, (as.numeric(st_co2_last_year) - 2019) * 12),
-        YTD_CO2_DEP_2019 = lag(YTD_CO2_DEP, (as.numeric(st_co2_last_year) - 2019) * 12),
-        YTD_TTF_2019 = lag(YTD_TTF, (as.numeric(st_co2_last_year) - 2019) * 12)
+        Y2D_CO2_PY = lag(Y2D_CO2, 12),
+        Y2D_DEP_PY = lag(Y2D_DEP, 12),
+        Y2D_CO2_DEP_PY = lag(Y2D_CO2_DEP, 12),
+        Y2D_CO2_2019 = lag(Y2D_CO2, (as.numeric(st_co2_last_year) - 2019) * 12),
+        Y2D_DEP_2019 = lag(Y2D_DEP, (as.numeric(st_co2_last_year) - 2019) * 12),
+        Y2D_CO2_DEP_2019 = lag(Y2D_CO2_DEP, (as.numeric(st_co2_last_year) - 2019) * 12)
       ) %>%
       mutate(
-        YTD_DIF_CO2_PREV_YEAR = YTD_CO2 / YTD_CO2_PREV_YEAR - 1,
-        YTD_DIF_TTF_PREV_YEAR = YTD_TTF / YTD_TTF_PREV_YEAR - 1,
-        YTD_DIF_CO2_DEP_PREV_YEAR = YTD_CO2_DEP / YTD_CO2_DEP_PREV_YEAR - 1,
-        YTD_DIF_CO2_2019 = YTD_CO2 / YTD_CO2_2019 - 1,
-        YTD_DIF_CO2_DEP_2019 = YTD_CO2_DEP / YTD_CO2_DEP_2019 - 1,
-        YTD_DIF_TTF_2019 = YTD_TTF / YTD_TTF_2019 - 1
+        Y2D_CO2_DIF_PY = Y2D_CO2 / Y2D_CO2_PY - 1,
+        Y2D_DEP_DIF_PY = Y2D_DEP / Y2D_DEP_PY - 1,
+        Y2D_CO2_DEP_DIF_PY = Y2D_CO2_DEP / Y2D_CO2_DEP_PY - 1,
+        Y2D_CO2_DIF_2019 = Y2D_CO2 / Y2D_CO2_2019 - 1,
+        Y2D_DEP_DIF_2019 = Y2D_DEP / Y2D_DEP_2019 - 1,
+        Y2D_CO2_DEP_DIF_2019 = Y2D_CO2_DEP / Y2D_CO2_DEP_2019 - 1
       ) %>%
       select(
         iso_2letter,
-        FLIGHT_MONTH,
+        CO2_DATE,
         MONTH_TEXT,
-        MM_CO2,
-        DIF_CO2_MONTH_PREV_YEAR,
-        DIF_CO2_MONTH_2019,
-        MM_CO2_DEP,
-        DIF_CO2_DEP_MONTH_PREV_YEAR,
-        DIF_CO2_DEP_MONTH_2019,
-        YTD_CO2,
-        YTD_DIF_CO2_PREV_YEAR,
-        YTD_DIF_CO2_2019,
-        YTD_CO2_DEP,
-        YTD_DIF_CO2_DEP_PREV_YEAR,
-        YTD_DIF_CO2_DEP_2019
+        MONTH_CO2,
+        MONTH_CO2_DIF_PY,
+        MONTH_CO2_DIF_2019,
+        MONTH_CO2_DEP,
+        MONTH_CO2_DEP_DIF_PY,
+        MONTH_CO2_DEP_DIF_2019,
+        Y2D_CO2,
+        Y2D_CO2_DIF_PY,
+        Y2D_CO2_DIF_2019,
+        Y2D_CO2_DEP,
+        Y2D_CO2_DEP_DIF_PY,
+        Y2D_CO2_DEP_DIF_2019
       ) %>%
-      filter(FLIGHT_MONTH == st_co2_last_date)
-
-    st_co2_json <- co2_for_json %>%
+      filter(CO2_DATE == st_co2_last_date) %>%
       right_join(state_iso, by = "iso_2letter") %>%
-      toJSON() %>%
-      substr(., 1, nchar(.)-1) %>%
-      substr(., 2, nchar(.))
+      select(-state) %>%
+      arrange(iso_2letter)
+
 
   ###############################################
   # join data strings and save
-    # xxx try to merge with the state as axis
-    st_data_app <- paste0("{",
-                          '"st_daio":', st_daio_json,
-                          ', "st_dai":', st_dai_json,
-                          ', "st_delay":', st_delay_json,
-                          ', "st_punct":', st_punct_json,
-                          ', "st_co2":', st_co2_json,
-                          ', "st_billed":', st_billed_json,
-                          "}")
+    ### https://www.lexjansen.com/pharmasug-cn/2021/SR/Pharmasug-China-2021-SR031.pdf
+    st_json_app_j <- state_iso %>% select(iso_2letter, state) %>% arrange(iso_2letter)
+    st_json_app_j$st_daio <- st_daio_for_json
+    st_json_app_j$st_dai <- st_dai_for_json
+    st_json_app_j$st_delay <- st_delay_for_json
+    st_json_app_j$st_punct <- st_punct_for_json
+    st_json_app_j$st_billed <- st_billed_for_json
+    st_json_app_j$st_co2 <- st_co2_for_json
 
-    #xxx write(st_data_app, here(data_folder,"st_data_app.json"))
-    write(st_data_app, paste0(archive_dir, today, "_st_data_app.json"))
+    st_json_app <- st_json_app_j %>%
+      toJSON(., pretty = TRUE) %>%
+      substr(., 1, nchar(.)-1) %>%
+      substr(., 2, nchar(.))
 
+    #xxx write(st_json_app, here(data_folder,"st_json_app.json"))
+    write(st_json_app, paste0(archive_dir, today, "_st_json_app.json"))
 
 
 ###############################################################################################
@@ -846,7 +878,8 @@ library(RODBC)
       left_join(st_ao_data_day, by = "ST_RANK") %>%
       left_join(st_ao_data_wk, by = "ST_RANK") %>%
       left_join(st_ao_data_y2d, by = "ST_RANK") %>%
-      select(-ST_RANK)
+      select(-ST_RANK, -state) %>%
+      arrange (iso_2letter, RANK)
 
     # covert to json and save in app data folder and archive
     st_ao_data_j <- st_ao_data %>% toJSON()
@@ -1629,12 +1662,12 @@ library(RODBC)
 
     # calc
     st_apt_punct_calc <- st_apt_punct_raw %>%
-      # select(DAY_DATE, ARP_NAME, ARR_PUNCTUALITY_PERCENTAGE, RANK)
+      # select(DAY_DATE, ARP_NAME, DAY_ARR_PUNCT, RANK)
       group_by(ARP_NAME) %>%
       arrange(DAY_DATE) %>%
       mutate(
-        DY_PUNCT_DIF_PREV_WEEK_PERC = (ARR_PUNCTUALITY_PERCENTAGE - lag(ARR_PUNCTUALITY_PERCENTAGE, 7)) / 100,
-        DY_PUNCT_DIF_PREV_YEAR_PERC = (ARR_PUNCTUALITY_PERCENTAGE - lag(ARR_PUNCTUALITY_PERCENTAGE, 364)) / 100,
+        DY_PUNCT_DIF_PREV_WEEK_PERC = (DAY_ARR_PUNCT - lag(DAY_ARR_PUNCT, 7)) / 100,
+        DY_PUNCT_DIF_PREV_YEAR_PERC = (DAY_ARR_PUNCT - lag(DAY_ARR_PUNCT, 364)) / 100,
         WK_APT_ARR_PUNCT = rollsum(ARR_PUNCTUAL_FLIGHTS, 7, fill = NA, align = "right") / rollsum(ARR_SCHEDULE_FLIGHT,7, fill = NA, align = "right"),
         iso_2letter = ISO_COUNTRY_CODE,
         state = EC_ISO_CT_NAME
@@ -1644,7 +1677,7 @@ library(RODBC)
     # day
     st_apt_punct_dy <- st_apt_punct_calc %>%
       group_by(iso_2letter, DAY_DATE) %>%
-      arrange(iso_2letter, desc(ARR_PUNCTUALITY_PERCENTAGE), ARP_NAME) %>%
+      arrange(iso_2letter, desc(DAY_ARR_PUNCT), ARP_NAME) %>%
       mutate(RANK = row_number()) %>%
       ungroup() %>%
       group_by(ARP_NAME) %>%
@@ -1652,7 +1685,7 @@ library(RODBC)
       mutate(
              DY_RANK_DIF_PREV_WEEK = lag(RANK, 7) - RANK,
              DY_APT_NAME = ARP_NAME,
-             DY_APT_ARR_PUNCT = ARR_PUNCTUALITY_PERCENTAGE / 100,
+             DY_APT_ARR_PUNCT = DAY_ARR_PUNCT / 100,
              DY_TO_DATE = round_date(DAY_DATE, "day"),
              ST_RANK = paste0(tolower(state), RANK)
       ) %>%
@@ -1769,6 +1802,8 @@ library(RODBC)
     write(st_apt_punctuality_j, paste0(archive_dir, today, "_st_apt_ranking_punctuality.json"))
 
 
+state_daio %>% toJSON()
+state_daio %>% group_by(daio_zone) %>% toJSON(., pretty = TRUE)
 
 
 
