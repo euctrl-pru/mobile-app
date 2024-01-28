@@ -685,11 +685,11 @@ library(RODBC)
           is.na(RANK_PREV_WEEK) ~ RANK,
           .default = RANK_PREV_WEEK - RANK
         ),
-        DY_DIF_PREV_WEEK_PERC =   case_when(
+        DY_FLT_DIF_PREV_WEEK_PERC =   case_when(
           DAY_PREV_WEEK == 0 | is.na(DAY_PREV_WEEK) ~ NA,
           .default = CURRENT_DAY / DAY_PREV_WEEK - 1
         ),
-        DY_DIF_PREV_YEAR_PERC = case_when(
+        DY_FLT_DIF_PREV_YEAR_PERC = case_when(
           DAY_PREV_YEAR == 0 | is.na(DAY_PREV_YEAR) ~ NA,
           .default = CURRENT_DAY / DAY_PREV_YEAR - 1
         ),
@@ -701,16 +701,16 @@ library(RODBC)
       rename(
         DY_AO_GRP_NAME = AO_GRP_NAME,
         DY_TO_DATE = TO_DATE,
-        DY_FLIGHT = CURRENT_DAY
+        DY_FLT = CURRENT_DAY
       ) %>%
       select(
         ST_RANK,
         DY_RANK_DIF_PREV_WEEK,
         DY_AO_GRP_NAME,
         DY_TO_DATE,
-        DY_FLIGHT,
-        DY_DIF_PREV_WEEK_PERC,
-        DY_DIF_PREV_YEAR_PERC
+        DY_FLT,
+        DY_FLT_DIF_PREV_WEEK_PERC,
+        DY_FLT_DIF_PREV_YEAR_PERC
       )
 
     # week
@@ -731,11 +731,11 @@ library(RODBC)
           is.na(RANK_PREV_WEEK) ~ RANK,
           .default = RANK_PREV_WEEK - RANK
         ),
-        WK_DIF_PREV_WEEK_PERC =   case_when(
+        WK_FLT_DIF_PREV_WEEK_PERC =   case_when(
           PREV_ROLLING_WEEK == 0 | is.na(PREV_ROLLING_WEEK) ~ NA,
           .default = CURRENT_ROLLING_WEEK / PREV_ROLLING_WEEK - 1
         ),
-        WK_DIF_PREV_YEAR_PERC = case_when(
+        WK_FLT_DIF_PREV_YEAR_PERC = case_when(
           ROLLING_WEEK_PREV_YEAR == 0 | is.na(ROLLING_WEEK_PREV_YEAR) ~ NA,
           .default = CURRENT_ROLLING_WEEK / ROLLING_WEEK_PREV_YEAR - 1
         ),
@@ -745,7 +745,7 @@ library(RODBC)
         WK_AO_GRP_NAME = AO_GRP_NAME,
         WK_FROM_DATE = FROM_DATE,
         WK_TO_DATE = TO_DATE,
-        WK_DAILY_FLIGHT = CURRENT_ROLLING_WEEK
+        WK_FLT_AVG = CURRENT_ROLLING_WEEK
       ) %>%
       select(
         ST_RANK,
@@ -753,9 +753,9 @@ library(RODBC)
         WK_AO_GRP_NAME,
         WK_FROM_DATE,
         WK_TO_DATE,
-        WK_DAILY_FLIGHT,
-        WK_DIF_PREV_WEEK_PERC,
-        WK_DIF_PREV_YEAR_PERC
+        WK_FLT_AVG,
+        WK_FLT_DIF_PREV_WEEK_PERC,
+        WK_FLT_DIF_PREV_YEAR_PERC
       )
 
     # y2d
@@ -785,11 +785,11 @@ library(RODBC)
           is.na(RANK_PREV_YEAR) ~ RANK_CURRENT,
           .default = RANK_PREV_YEAR - RANK_CURRENT
         ),
-        Y2D_DIF_PREV_YEAR_PERC =   case_when(
+        Y2D_FLT_DIF_PREV_YEAR_PERC =   case_when(
           PREV_YEAR == 0 | is.na(PREV_YEAR) ~ NA,
           .default = CURRENT_YEAR / PREV_YEAR - 1
         ),
-        Y2D_DIF_2019_PERC  = case_when(
+        Y2D_FLT_DIF_2019_PERC  = case_when(
           PERIOD_2019 == 0 | is.na(PERIOD_2019) ~ NA,
           .default = CURRENT_YEAR / PERIOD_2019 - 1
         ),
@@ -798,16 +798,16 @@ library(RODBC)
       rename(
         Y2D_AO_GRP_NAME = AO_GRP_NAME,
         Y2D_TO_DATE = TO_DATE,
-        Y2D_DAILY_FLIGHT = CURRENT_YEAR
+        Y2D_FLT_AVG = CURRENT_YEAR
       ) %>%
       select(
         ST_RANK,
         Y2D_RANK_DIF_PREV_YEAR,
         Y2D_AO_GRP_NAME,
         Y2D_TO_DATE,
-        Y2D_DAILY_FLIGHT,
-        Y2D_DIF_PREV_YEAR_PERC,
-        Y2D_DIF_2019_PERC
+        Y2D_FLT_AVG,
+        Y2D_FLT_DIF_PREV_YEAR_PERC,
+        Y2D_FLT_DIF_2019_PERC
       )
 
     # main card
@@ -818,14 +818,14 @@ library(RODBC)
           AO_GRP_NAME,
           NA
         ),
-        MAIN_TFC_AO_GRP_FLIGHT = if_else(
+        MAIN_TFC_AO_GRP_FLT = if_else(
           R_RANK <= 4,
           CURRENT_DAY,
           NA
         ),
         ST_RANK = paste0(tolower(COUNTRY_NAME), R_RANK)
         ) %>%
-      select(ST_RANK, MAIN_TFC_AO_GRP_NAME, MAIN_TFC_AO_GRP_FLIGHT)
+      select(ST_RANK, MAIN_TFC_AO_GRP_NAME, MAIN_TFC_AO_GRP_FLT)
 
     st_ao_main_traffic_dif <- st_ao_data_day_int %>%
       arrange(COUNTRY_NAME, desc(abs(ST_TFC_AO_GRP_DIF)), R_RANK) %>%
@@ -839,20 +839,20 @@ library(RODBC)
           AO_GRP_NAME,
           NA
         ),
-        MAIN_TFC_AO_GRP_DIF = if_else(
+        MAIN_TFC_DIF_AO_GRP_FLT_DIF = if_else(
           RANK_DIF_AO_TFC <= 4,
           ST_TFC_AO_GRP_DIF,
           NA
         )
       ) %>%
-      arrange(COUNTRY_NAME, desc(MAIN_TFC_AO_GRP_DIF)) %>%
+      arrange(COUNTRY_NAME, desc(MAIN_TFC_DIF_AO_GRP_FLT_DIF)) %>%
       group_by(COUNTRY_NAME) %>%
       mutate(
         RANK_MAIN_DIF = row_number(),
         ST_RANK = paste0(tolower(COUNTRY_NAME), RANK_MAIN_DIF)
              ) %>%
       ungroup() %>%
-      select(ST_RANK, MAIN_TFC_DIF_AO_GRP_NAME, MAIN_TFC_AO_GRP_DIF)
+      select(ST_RANK, MAIN_TFC_DIF_AO_GRP_NAME, MAIN_TFC_DIF_AO_GRP_FLT_DIF)
 
     # create list of state/rankings for left join
     state_iso_ranking <- list()
@@ -878,6 +878,7 @@ library(RODBC)
       left_join(st_ao_data_day, by = "ST_RANK") %>%
       left_join(st_ao_data_wk, by = "ST_RANK") %>%
       left_join(st_ao_data_y2d, by = "ST_RANK") %>%
+      ungroup() %>%
       select(-ST_RANK, -state) %>%
       arrange (iso_2letter, RANK)
 
@@ -907,11 +908,11 @@ library(RODBC)
           is.na(RANK_PREV_WEEK) ~ RANK,
           .default = RANK_PREV_WEEK - RANK
         ),
-        DY_DIF_PREV_WEEK_PERC =   case_when(
+        DY_FLT_DIF_PREV_WEEK_PERC =   case_when(
           DAY_PREV_WEEK == 0 | is.na(DAY_PREV_WEEK) ~ NA,
           .default = CURRENT_DAY / DAY_PREV_WEEK - 1
         ),
-        DY_DIF_PREV_YEAR_PERC = case_when(
+        DY_FLT_DIF_PREV_YEAR_PERC = case_when(
           DAY_PREV_YEAR == 0 | is.na(DAY_PREV_YEAR) ~ NA,
           .default = CURRENT_DAY / DAY_PREV_YEAR - 1
         ),
@@ -923,16 +924,16 @@ library(RODBC)
       rename(
         DY_APT_NAME = AIRPORT_NAME,
         DY_TO_DATE = TO_DATE,
-        DY_FLIGHT = CURRENT_DAY
+        DY_FLT = CURRENT_DAY
       ) %>%
       select(
         ST_RANK,
         DY_RANK_DIF_PREV_WEEK,
         DY_APT_NAME,
         DY_TO_DATE,
-        DY_FLIGHT,
-        DY_DIF_PREV_WEEK_PERC,
-        DY_DIF_PREV_YEAR_PERC
+        DY_FLT,
+        DY_FLT_DIF_PREV_WEEK_PERC,
+        DY_FLT_DIF_PREV_YEAR_PERC
       )
 
     # week
@@ -953,11 +954,11 @@ library(RODBC)
           is.na(RANK_PREV_WEEK) ~ RANK,
           .default = RANK_PREV_WEEK - RANK
         ),
-        WK_DIF_PREV_WEEK_PERC =   case_when(
+        WK_FLT_DIF_PREV_WEEK_PERC =   case_when(
           PREV_ROLLING_WEEK == 0 | is.na(PREV_ROLLING_WEEK) ~ NA,
           .default = CURRENT_ROLLING_WEEK / PREV_ROLLING_WEEK - 1
         ),
-        WK_DIF_PREV_YEAR_PERC = case_when(
+        WK_FLT_DIF_PREV_YEAR_PERC = case_when(
           ROLLING_WEEK_PREV_YEAR == 0 | is.na(ROLLING_WEEK_PREV_YEAR) ~ NA,
           .default = CURRENT_ROLLING_WEEK / ROLLING_WEEK_PREV_YEAR - 1
         ),
@@ -967,7 +968,7 @@ library(RODBC)
         WK_APT_NAME = AIRPORT_NAME,
         WK_FROM_DATE = FROM_DATE,
         WK_TO_DATE = TO_DATE,
-        WK_DAILY_FLIGHT = CURRENT_ROLLING_WEEK
+        WK_FLT_AVG = CURRENT_ROLLING_WEEK
       ) %>%
       select(
         ST_RANK,
@@ -975,9 +976,9 @@ library(RODBC)
         WK_APT_NAME,
         WK_FROM_DATE,
         WK_TO_DATE,
-        WK_DAILY_FLIGHT,
-        WK_DIF_PREV_WEEK_PERC,
-        WK_DIF_PREV_YEAR_PERC
+        WK_FLT_AVG,
+        WK_FLT_DIF_PREV_WEEK_PERC,
+        WK_FLT_DIF_PREV_YEAR_PERC
       )
 
     # y2d
@@ -1007,11 +1008,11 @@ library(RODBC)
           is.na(RANK_PREV_YEAR) ~ RANK_CURRENT,
           .default = RANK_PREV_YEAR - RANK_CURRENT
         ),
-        Y2D_DIF_PREV_YEAR_PERC =   case_when(
+        Y2D_FLT_DIF_PREV_YEAR_PERC =   case_when(
           PREV_YEAR == 0 | is.na(PREV_YEAR) ~ NA,
           .default = CURRENT_YEAR / PREV_YEAR - 1
         ),
-        Y2D_DIF_2019_PERC  = case_when(
+        Y2D_FLT_DIF_2019_PERC  = case_when(
           PERIOD_2019 == 0 | is.na(PERIOD_2019) ~ NA,
           .default = CURRENT_YEAR / PERIOD_2019 - 1
         ),
@@ -1020,16 +1021,16 @@ library(RODBC)
       rename(
         Y2D_APT_NAME = AIRPORT_NAME,
         Y2D_TO_DATE = TO_DATE,
-        Y2D_DAILY_FLIGHT = CURRENT_YEAR
+        Y2D_FLT_AVG = CURRENT_YEAR
       ) %>%
       select(
         ST_RANK,
         Y2D_RANK_DIF_PREV_YEAR,
         Y2D_APT_NAME,
         Y2D_TO_DATE,
-        Y2D_DAILY_FLIGHT,
-        Y2D_DIF_PREV_YEAR_PERC,
-        Y2D_DIF_2019_PERC
+        Y2D_FLT_AVG,
+        Y2D_FLT_DIF_PREV_YEAR_PERC,
+        Y2D_FLT_DIF_2019_PERC
       )
 
     # main card
@@ -1040,14 +1041,14 @@ library(RODBC)
           AIRPORT_NAME,
           NA
         ),
-        MAIN_TFC_APT_FLIGHT = if_else(
+        MAIN_TFC_APT_FLT = if_else(
           R_RANK <= 4,
           CURRENT_DAY,
           NA
         ),
         ST_RANK = paste0(tolower(COUNTRY_NAME), R_RANK)
       ) %>%
-      select(ST_RANK, MAIN_TFC_APT_NAME, MAIN_TFC_APT_FLIGHT)
+      select(ST_RANK, MAIN_TFC_APT_NAME, MAIN_TFC_APT_FLT)
 
     st_apt_main_traffic_dif <- st_apt_data_day_int %>%
       arrange(COUNTRY_NAME, desc(abs(ST_TFC_APT_DIF)), R_RANK) %>%
@@ -1061,20 +1062,20 @@ library(RODBC)
           AIRPORT_NAME,
           NA
         ),
-        MAIN_TFC_APT_DIF = if_else(
+        MAIN_TFC_DIF_APT_FLT_DIF = if_else(
           RANK_DIF_APT_TFC <= 4,
           ST_TFC_APT_DIF,
           NA
         )
       ) %>%
-      arrange(COUNTRY_NAME, desc(MAIN_TFC_APT_DIF)) %>%
+      arrange(COUNTRY_NAME, desc(MAIN_TFC_DIF_APT_FLT_DIF)) %>%
       group_by(COUNTRY_NAME) %>%
       mutate(
         RANK_MAIN_DIF = row_number(),
         ST_RANK = paste0(tolower(COUNTRY_NAME), RANK_MAIN_DIF)
       ) %>%
       ungroup() %>%
-      select(ST_RANK, MAIN_TFC_DIF_APT_NAME, MAIN_TFC_APT_DIF)
+      select(ST_RANK, MAIN_TFC_DIF_APT_NAME, MAIN_TFC_DIF_APT_FLT_DIF)
 
     # create list of state/rankings for left join
     state_iso_ranking <- list()
@@ -1128,11 +1129,11 @@ library(RODBC)
           is.na(RANK_PREV_WEEK) ~ RANK,
           .default = RANK_PREV_WEEK - RANK
         ),
-        DY_DIF_PREV_WEEK_PERC =   case_when(
+        DY_FLT_DIF_PREV_WEEK_PERC =   case_when(
           DAY_PREV_WEEK == 0 | is.na(DAY_PREV_WEEK) ~ NA,
           .default = CURRENT_DAY / DAY_PREV_WEEK - 1
         ),
-        DY_DIF_PREV_YEAR_PERC = case_when(
+        DY_FLT_DIF_PREV_YEAR_PERC = case_when(
           DAY_PREV_YEAR == 0 | is.na(DAY_PREV_YEAR) ~ NA,
           .default = CURRENT_DAY / DAY_PREV_YEAR - 1
         ),
@@ -1144,16 +1145,16 @@ library(RODBC)
       rename(
         DY_COUNTRY_NAME = FROM_TO_COUNTRY_NAME,
         DY_TO_DATE = TO_DATE,
-        DY_FLIGHT = CURRENT_DAY
+        DY_FLT = CURRENT_DAY
       ) %>%
       select(
         ST_RANK,
         DY_RANK_DIF_PREV_WEEK,
         DY_COUNTRY_NAME,
         DY_TO_DATE,
-        DY_FLIGHT,
-        DY_DIF_PREV_WEEK_PERC,
-        DY_DIF_PREV_YEAR_PERC
+        DY_FLT,
+        DY_FLT_DIF_PREV_WEEK_PERC,
+        DY_FLT_DIF_PREV_YEAR_PERC
       )
 
     # week
@@ -1174,11 +1175,11 @@ library(RODBC)
           is.na(RANK_PREV_WEEK) ~ RANK,
           .default = RANK_PREV_WEEK - RANK
         ),
-        WK_DIF_PREV_WEEK_PERC =   case_when(
+        WK_FLT_DIF_PREV_WEEK_PERC =   case_when(
           PREV_ROLLING_WEEK == 0 | is.na(PREV_ROLLING_WEEK) ~ NA,
           .default = CURRENT_ROLLING_WEEK / PREV_ROLLING_WEEK - 1
         ),
-        WK_DIF_PREV_YEAR_PERC = case_when(
+        WK_FLT_DIF_PREV_YEAR_PERC = case_when(
           ROLLING_WEEK_PREV_YEAR == 0 | is.na(ROLLING_WEEK_PREV_YEAR) ~ NA,
           .default = CURRENT_ROLLING_WEEK / ROLLING_WEEK_PREV_YEAR - 1
         ),
@@ -1188,7 +1189,7 @@ library(RODBC)
         WK_COUNTRY_NAME = FROM_TO_COUNTRY_NAME,
         WK_FROM_DATE = FROM_DATE,
         WK_TO_DATE = TO_DATE,
-        WK_DAILY_FLIGHT = CURRENT_ROLLING_WEEK
+        WK_FLT_AVG = CURRENT_ROLLING_WEEK
       ) %>%
       select(
         ST_RANK,
@@ -1196,9 +1197,9 @@ library(RODBC)
         WK_COUNTRY_NAME,
         WK_FROM_DATE,
         WK_TO_DATE,
-        WK_DAILY_FLIGHT,
-        WK_DIF_PREV_WEEK_PERC,
-        WK_DIF_PREV_YEAR_PERC
+        WK_FLT_AVG,
+        WK_FLT_DIF_PREV_WEEK_PERC,
+        WK_FLT_DIF_PREV_YEAR_PERC
       )
 
     # y2d
@@ -1228,11 +1229,11 @@ library(RODBC)
           is.na(RANK_PREV_YEAR) ~ RANK_CURRENT,
           .default = RANK_PREV_YEAR - RANK_CURRENT
         ),
-        Y2D_DIF_PREV_YEAR_PERC =   case_when(
+        Y2D_FLT_DIF_PREV_YEAR_PERC =   case_when(
           PREV_YEAR == 0 | is.na(PREV_YEAR) ~ NA,
           .default = CURRENT_YEAR / PREV_YEAR - 1
         ),
-        Y2D_DIF_2019_PERC  = case_when(
+        Y2D_FLT_DIF_2019_PERC  = case_when(
           PERIOD_2019 == 0 | is.na(PERIOD_2019) ~ NA,
           .default = CURRENT_YEAR / PERIOD_2019 - 1
         ),
@@ -1241,16 +1242,16 @@ library(RODBC)
       rename(
         Y2D_COUNTRY_NAME = FROM_TO_COUNTRY_NAME,
         Y2D_TO_DATE = TO_DATE,
-        Y2D_DAILY_FLIGHT = CURRENT_YEAR
+        Y2D_FLT_AVG = CURRENT_YEAR
       ) %>%
       select(
         ST_RANK,
         Y2D_RANK_DIF_PREV_YEAR,
         Y2D_COUNTRY_NAME,
         Y2D_TO_DATE,
-        Y2D_DAILY_FLIGHT,
-        Y2D_DIF_PREV_YEAR_PERC,
-        Y2D_DIF_2019_PERC
+        Y2D_FLT_AVG,
+        Y2D_FLT_DIF_PREV_YEAR_PERC,
+        Y2D_FLT_DIF_2019_PERC
       )
 
     # main card
@@ -1261,14 +1262,14 @@ library(RODBC)
           FROM_TO_COUNTRY_NAME,
           NA
         ),
-        MAIN_TFC_CTRY_FLIGHT = if_else(
+        MAIN_TFC_CTRY_FLT = if_else(
           R_RANK <= 4,
           CURRENT_DAY,
           NA
         ),
         ST_RANK = paste0(tolower(COUNTRY_NAME), R_RANK)
       ) %>%
-      select(ST_RANK, MAIN_TFC_CTRY_NAME, MAIN_TFC_CTRY_FLIGHT)
+      select(ST_RANK, MAIN_TFC_CTRY_NAME, MAIN_TFC_CTRY_FLT)
 
     st_st_main_traffic_dif <- st_st_data_day_int %>%
       arrange(COUNTRY_NAME, desc(abs(ST_TFC_CTRY_DIF)), R_RANK) %>%
@@ -1282,20 +1283,20 @@ library(RODBC)
           FROM_TO_COUNTRY_NAME,
           NA
         ),
-        MAIN_TFC_CTRY_DIF = if_else(
+        MAIN_TFC_DIF_CTRY_FLT_DIF = if_else(
           RANK_DIF_CTRY_TFC <= 4,
           ST_TFC_CTRY_DIF,
           NA
         )
       ) %>%
-      arrange(COUNTRY_NAME, desc(MAIN_TFC_CTRY_DIF)) %>%
+      arrange(COUNTRY_NAME, desc(MAIN_TFC_DIF_CTRY_FLT_DIF)) %>%
       group_by(COUNTRY_NAME) %>%
       mutate(
         RANK_MAIN_DIF = row_number(),
         ST_RANK = paste0(tolower(COUNTRY_NAME), RANK_MAIN_DIF)
       ) %>%
       ungroup() %>%
-      select(ST_RANK, MAIN_TFC_DIF_CTRY_NAME, MAIN_TFC_CTRY_DIF)
+      select(ST_RANK, MAIN_TFC_DIF_CTRY_NAME, MAIN_TFC_DIF_CTRY_FLT_DIF)
 
     # create list of state/rankings for left join
     state_iso_ranking <- list()
@@ -1346,13 +1347,13 @@ library(RODBC)
       mutate(
         ICAO_code = UNIT_CODE,
         DY_ACC_NAME = NAME,
-        DY_ACC_DLY = DLY_ER,
-        DY_ACC_DLY_PER_FLT = DLY_ER/FLIGHT,
+        DY_ACC_ER_DLY = DLY_ER,
+        DY_ACC_ER_DLY_FLT = DLY_ER / FLIGHT,
         DY_TO_DATE = ENTRY_DATE) %>%
       right_join(acc, by = "ICAO_code") %>%
       left_join(state_iso, by = "iso_2letter") %>%
       group_by(iso_2letter) %>%
-      arrange(iso_2letter, desc(DY_ACC_DLY), DY_ACC_NAME) %>%
+      arrange(iso_2letter, desc(DY_ACC_ER_DLY), DY_ACC_NAME) %>%
       mutate (
         DY_RANK = row_number(),
         ST_RANK = paste0(tolower(state), DY_RANK),
@@ -1363,8 +1364,8 @@ library(RODBC)
         DY_RANK,
         DY_ACC_NAME,
         DY_TO_DATE,
-        DY_ACC_DLY,
-        DY_ACC_DLY_PER_FLT
+        DY_ACC_ER_DLY,
+        DY_ACC_ER_DLY_FLT
         )
 
     # week
@@ -1382,15 +1383,15 @@ library(RODBC)
       mutate(
         ICAO_code = UNIT_CODE,
         WK_ACC_NAME = NAME,
-        WK_ACC_DLY = DAILY_DLY_ER,
-        WK_ACC_DLY_PER_FLT = DAILY_DLY_ER / DAILY_FLIGHT,
+        WK_ACC_ER_DLY = DAILY_DLY_ER,
+        WK_ACC_ER_DLY_FLT = DAILY_DLY_ER / DAILY_FLIGHT,
         WK_FROM_DATE = MIN_ENTRY_DATE,
         WK_TO_DATE = MAX_ENTRY_DATE
         ) %>%
       right_join(acc, by = "ICAO_code") %>%
       left_join(state_iso, by = "iso_2letter") %>%
       group_by(iso_2letter) %>%
-      arrange(iso_2letter, desc(WK_ACC_DLY), WK_ACC_NAME) %>%
+      arrange(iso_2letter, desc(WK_ACC_ER_DLY), WK_ACC_NAME) %>%
       mutate (
         WK_RANK = row_number(),
         ST_RANK = paste0(tolower(state), WK_RANK),
@@ -1402,8 +1403,8 @@ library(RODBC)
         WK_ACC_NAME,
         WK_FROM_DATE,
         WK_TO_DATE,
-        WK_ACC_DLY,
-        WK_ACC_DLY_PER_FLT
+        WK_ACC_ER_DLY,
+        WK_ACC_ER_DLY_FLT
       )
 
     # y2d
@@ -1422,14 +1423,14 @@ library(RODBC)
       mutate(
         ICAO_code = UNIT_CODE,
         Y2D_ACC_NAME = NAME,
-        Y2D_ACC_DLY = Y2D_AVG_DLY,
-        Y2D_ACC_DLY_PER_FLT = Y2D_AVG_DLY / Y2D_AVG_FLIGHT,
+        Y2D_ACC_ER_DLY = Y2D_AVG_DLY,
+        Y2D_ACC_ER_DLY_FLT = Y2D_AVG_DLY / Y2D_AVG_FLIGHT,
         Y2D_TO_DATE = ENTRY_DATE
       ) %>%
       right_join(acc, by = "ICAO_code") %>%
       left_join(state_iso, by = "iso_2letter") %>%
       group_by(iso_2letter) %>%
-      arrange(iso_2letter, desc(Y2D_ACC_DLY), Y2D_ACC_NAME) %>%
+      arrange(iso_2letter, desc(Y2D_ACC_ER_DLY), Y2D_ACC_NAME) %>%
       mutate (
         Y2D_RANK = row_number(),
         ST_RANK = paste0(tolower(state), Y2D_RANK),
@@ -1441,8 +1442,8 @@ library(RODBC)
         Y2D_ACC_NAME,
         Y2D_FROM_DATE,
         Y2D_TO_DATE,
-        Y2D_ACC_DLY,
-        Y2D_ACC_DLY_PER_FLT
+        Y2D_ACC_ER_DLY,
+        Y2D_ACC_ER_DLY_FLT
       )
 
     # no main card
@@ -1495,11 +1496,11 @@ library(RODBC)
       arrange(desc(DLY_ARR),ARP_NAME) %>%
       mutate(
         DY_ARP_NAME = ARP_NAME,
-        DY_ARP_DLY = DLY_ARR,
-        DY_ARP_DLY_PER_FLT = ifelse(FLT_ARR == 0, 0, round(DLY_ARR / FLT_ARR, 2)),
+        DY_ARP_ARR_DLY = DLY_ARR,
+        DY_ARP_ARR_DLY_FLT = ifelse(FLT_ARR == 0, 0, round(DLY_ARR / FLT_ARR, 2)),
         DY_TO_DATE = FLIGHT_DATE) %>%
       group_by(iso_2letter) %>%
-      arrange(iso_2letter, desc(DY_ARP_DLY), DY_ARP_NAME) %>%
+      arrange(iso_2letter, desc(DY_ARP_ARR_DLY), DY_ARP_NAME) %>%
       mutate (
         DY_RANK = row_number(),
         ST_RANK = paste0(tolower(state), DY_RANK),
@@ -1510,8 +1511,8 @@ library(RODBC)
         DY_RANK,
         DY_ARP_NAME,
         DY_TO_DATE,
-        DY_ARP_DLY,
-        DY_ARP_DLY_PER_FLT
+        DY_ARP_ARR_DLY,
+        DY_ARP_ARR_DLY_FLT
       )
 
     # week data
@@ -1519,13 +1520,13 @@ library(RODBC)
       arrange(desc(ROLL_WEEK_DLY_ARR),ARP_NAME) %>%
       mutate(
         WK_ARP_NAME = ARP_NAME,
-        WK_ARP_DLY = ROLL_WEEK_DLY_ARR,
-        WK_ARP_DLY_PER_FLT = ifelse(ROLL_WEEK_ARR == 0, 0, round(ROLL_WEEK_DLY_ARR / ROLL_WEEK_ARR,2)),
+        WK_ARP_ARR_DLY = ROLL_WEEK_DLY_ARR,
+        WK_ARP_ARR_DLY_FLT = ifelse(ROLL_WEEK_ARR == 0, 0, round(ROLL_WEEK_DLY_ARR / ROLL_WEEK_ARR,2)),
         WK_FROM_DATE =  FLIGHT_DATE +  days(-6),
         WK_TO_DATE = FLIGHT_DATE
         ) %>%
       group_by(iso_2letter) %>%
-      arrange(iso_2letter, desc(WK_ARP_DLY), WK_ARP_NAME) %>%
+      arrange(iso_2letter, desc(WK_ARP_ARR_DLY), WK_ARP_NAME) %>%
       mutate (
         WK_RANK = row_number(),
         ST_RANK = paste0(tolower(state), WK_RANK),
@@ -1537,8 +1538,8 @@ library(RODBC)
         WK_ARP_NAME,
         WK_FROM_DATE,
         WK_TO_DATE,
-        WK_ARP_DLY,
-        WK_ARP_DLY_PER_FLT
+        WK_ARP_ARR_DLY,
+        WK_ARP_ARR_DLY_FLT
       )
 
     # y2d
@@ -1547,12 +1548,12 @@ library(RODBC)
       arrange(desc(Y2D_AVG_DLY_ARR),ARP_NAME) %>%
       mutate(
         Y2D_ARP_NAME = ARP_NAME,
-        Y2D_ARP_DLY = Y2D_AVG_DLY_ARR,
-        Y2D_ARP_DLY_PER_FLT = ifelse(Y2D_AVG_ARR == 0, 0, round(Y2D_AVG_DLY_ARR / Y2D_AVG_ARR, 2)),
+        Y2D_ARP_ARR_DLY = Y2D_AVG_DLY_ARR,
+        Y2D_ARP_ARR_DLY_FLT = ifelse(Y2D_AVG_ARR == 0, 0, round(Y2D_AVG_DLY_ARR / Y2D_AVG_ARR, 2)),
         Y2D_TO_DATE = FLIGHT_DATE
       ) %>%
       group_by(iso_2letter) %>%
-      arrange(iso_2letter, desc(Y2D_ARP_DLY), Y2D_ARP_NAME) %>%
+      arrange(iso_2letter, desc(Y2D_ARP_ARR_DLY), Y2D_ARP_NAME) %>%
       mutate (
         Y2D_RANK = row_number(),
         ST_RANK = paste0(tolower(state), Y2D_RANK),
@@ -1563,8 +1564,8 @@ library(RODBC)
         Y2D_RANK,
         Y2D_ARP_NAME,
         Y2D_TO_DATE,
-        Y2D_ARP_DLY,
-        Y2D_ARP_DLY_PER_FLT
+        Y2D_ARP_ARR_DLY,
+        Y2D_ARP_ARR_DLY_FLT
       )
 
     # no main card
@@ -1666,9 +1667,10 @@ library(RODBC)
       group_by(ARP_NAME) %>%
       arrange(DAY_DATE) %>%
       mutate(
-        DY_PUNCT_DIF_PREV_WEEK_PERC = (DAY_ARR_PUNCT - lag(DAY_ARR_PUNCT, 7)) / 100,
-        DY_PUNCT_DIF_PREV_YEAR_PERC = (DAY_ARR_PUNCT - lag(DAY_ARR_PUNCT, 364)) / 100,
-        WK_APT_ARR_PUNCT = rollsum(ARR_PUNCTUAL_FLIGHTS, 7, fill = NA, align = "right") / rollsum(ARR_SCHEDULE_FLIGHT,7, fill = NA, align = "right"),
+        DY_ARR_PUNCT = ARR_PUNCTUALITY_PERCENTAGE / 100,
+        DY_ARR_PUNCT_DIF_PREV_WEEK = (DY_ARR_PUNCT - lag(DY_ARR_PUNCT, 7)),
+        DY_ARR_PUNCT_DIF_PREV_YEAR = (DY_ARR_PUNCT - lag(DY_ARR_PUNCT, 364)),
+        WK_ARR_PUNCT = rollsum(ARR_PUNCTUAL_FLIGHTS, 7, fill = NA, align = "right") / rollsum(ARR_SCHEDULE_FLIGHT,7, fill = NA, align = "right"),
         iso_2letter = ISO_COUNTRY_CODE,
         state = EC_ISO_CT_NAME
       )  %>%
@@ -1677,63 +1679,61 @@ library(RODBC)
     # day
     st_apt_punct_dy <- st_apt_punct_calc %>%
       group_by(iso_2letter, DAY_DATE) %>%
-      arrange(iso_2letter, desc(DAY_ARR_PUNCT), ARP_NAME) %>%
+      arrange(iso_2letter, desc(DY_ARR_PUNCT), ARP_NAME) %>%
       mutate(RANK = row_number()) %>%
       ungroup() %>%
       group_by(ARP_NAME) %>%
       arrange(DAY_DATE) %>%
       mutate(
              DY_RANK_DIF_PREV_WEEK = lag(RANK, 7) - RANK,
-             DY_APT_NAME = ARP_NAME,
-             DY_APT_ARR_PUNCT = DAY_ARR_PUNCT / 100,
+             DY_ARP_NAME = ARP_NAME,
              DY_TO_DATE = round_date(DAY_DATE, "day"),
              ST_RANK = paste0(tolower(state), RANK)
       ) %>%
       ungroup() %>%
       filter(DAY_DATE == last_punctuality_day) %>%
       group_by(iso_2letter) %>%
-      arrange(iso_2letter, desc(DY_APT_ARR_PUNCT), DY_APT_NAME) %>%
+      arrange(iso_2letter, desc(DY_ARR_PUNCT), DY_ARP_NAME) %>%
       ungroup() %>%
       select(
         ST_RANK,
         DY_RANK_DIF_PREV_WEEK,
-        DY_APT_NAME,
+        DY_ARP_NAME,
         DY_TO_DATE,
-        DY_APT_ARR_PUNCT,
-        DY_PUNCT_DIF_PREV_WEEK_PERC,
-        DY_PUNCT_DIF_PREV_YEAR_PERC
+        DY_ARR_PUNCT,
+        DY_ARR_PUNCT_DIF_PREV_WEEK,
+        DY_ARR_PUNCT_DIF_PREV_YEAR
       )
 
     # week
     st_apt_punct_wk <- st_apt_punct_calc %>%
       group_by(iso_2letter, DAY_DATE) %>%
-      arrange(iso_2letter, desc(WK_APT_ARR_PUNCT), ARP_NAME) %>%
+      arrange(iso_2letter, desc(WK_ARR_PUNCT), ARP_NAME) %>%
       mutate(RANK = row_number()) %>%
       ungroup() %>%
       group_by(ARP_NAME) %>%
       arrange(DAY_DATE) %>%
       mutate(
         WK_RANK_DIF_PREV_WEEK = lag(RANK, 7) - RANK,
-        WK_APT_NAME = ARP_NAME,
-        WK_APT_ARR_PUNCT = WK_APT_ARR_PUNCT / 100,
+        WK_ARP_NAME = ARP_NAME,
         WK_TO_DATE = round_date(DAY_DATE, "day"),
-        WK_PUNCT_DIF_PREV_WEEK_PERC = (WK_APT_ARR_PUNCT - lag(WK_APT_ARR_PUNCT, 7)),
-        WK_PUNCT_DIF_PREV_YEAR_PERC = (WK_APT_ARR_PUNCT - lag(WK_APT_ARR_PUNCT, 364)),
+        WK_ARR_PUNCT_DIF_PREV_WEEK = (WK_ARR_PUNCT - lag(WK_ARR_PUNCT, 7)),
+        WK_ARR_PUNCT_DIF_PREV_YEAR = (WK_ARR_PUNCT - lag(WK_ARR_PUNCT, 364)),
         ST_RANK = paste0(tolower(state), RANK)
       ) %>%
       ungroup() %>%
       filter(DAY_DATE == last_punctuality_day) %>%
       group_by(iso_2letter) %>%
-      arrange(iso_2letter, desc(WK_APT_ARR_PUNCT), WK_APT_NAME) %>%
+      arrange(iso_2letter, desc(WK_ARR_PUNCT), WK_ARP_NAME) %>%
       ungroup() %>%
       select(
         ST_RANK,
         WK_RANK_DIF_PREV_WEEK,
-        WK_APT_NAME,
+        WK_ARP_NAME,
         WK_TO_DATE,
-        WK_APT_ARR_PUNCT,
-        WK_PUNCT_DIF_PREV_WEEK_PERC,
-        WK_PUNCT_DIF_PREV_YEAR_PERC
+        WK_ARR_PUNCT,
+        WK_ARR_PUNCT_DIF_PREV_WEEK,
+        WK_ARR_PUNCT_DIF_PREV_YEAR
       )
 
     # y2d
@@ -1742,11 +1742,11 @@ library(RODBC)
       filter(MONTH_DAY <= as.numeric(format(last_punctuality_day, format = "%m%d"))) %>%
       mutate(YEAR = as.numeric(format(DAY_DATE, format="%Y"))) %>%
       group_by(state, ARP_NAME, ICAO_CODE, YEAR) %>%
-      summarise (Y2D_APT_ARR_PUNCT = sum(ARR_PUNCTUAL_FLIGHTS, na.rm=TRUE) / sum(ARR_SCHEDULE_FLIGHT, na.rm=TRUE)
+      summarise (Y2D_ARR_PUNCT = sum(ARR_PUNCTUAL_FLIGHTS, na.rm=TRUE) / sum(ARR_SCHEDULE_FLIGHT, na.rm=TRUE)
       ) %>%
       ungroup() %>%
       group_by(state, YEAR) %>%
-      arrange(desc(Y2D_APT_ARR_PUNCT), ARP_NAME) %>%
+      arrange(desc(Y2D_ARR_PUNCT), ARP_NAME) %>%
       mutate(RANK = row_number(),
              Y2D_RANK = RANK) %>%
       ungroup() %>%
@@ -1754,20 +1754,20 @@ library(RODBC)
       arrange(YEAR) %>%
       mutate(
         Y2D_RANK_DIF_PREV_YEAR = lag(RANK, 1) - RANK,
-        Y2D_PUNCT_DIF_PREV_YEAR_PERC = (Y2D_APT_ARR_PUNCT - lag(Y2D_APT_ARR_PUNCT, 1)),
-        Y2D_PUNCT_DIF_2019_PERC = (Y2D_APT_ARR_PUNCT - lag(Y2D_APT_ARR_PUNCT, max(YEAR) - 2019)),
+        Y2D_ARR_PUNCT_DIF_PREV_YEAR = (Y2D_ARR_PUNCT - lag(Y2D_ARR_PUNCT, 1)),
+        Y2D_ARR_PUNCT_DIF_2019 = (Y2D_ARR_PUNCT - lag(Y2D_ARR_PUNCT, max(YEAR) - 2019)),
         ST_RANK = paste0(tolower(state), RANK)
       )  %>%
       ungroup() %>%
       filter(YEAR == max(YEAR), RANK < 11) %>%
-      mutate(Y2D_APT_NAME = ARP_NAME) %>%
+      mutate(Y2D_ARP_NAME = ARP_NAME) %>%
       select(
         ST_RANK,
         Y2D_RANK_DIF_PREV_YEAR,
-        Y2D_APT_NAME,
-        Y2D_APT_ARR_PUNCT,
-        Y2D_PUNCT_DIF_PREV_YEAR_PERC,
-        Y2D_PUNCT_DIF_2019_PERC
+        Y2D_ARP_NAME,
+        Y2D_ARR_PUNCT,
+        Y2D_ARR_PUNCT_DIF_PREV_YEAR,
+        Y2D_ARR_PUNCT_DIF_2019
       )
 
     # no main card
