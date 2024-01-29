@@ -93,10 +93,16 @@ ph_list_records(
 
 ### View
 
-NOT IMPLEMENTED YET
+You can retrieve one particular entry with eventually a subset of columns via the
+`field` option.
 
 ```{r view}
-# TBD
+ph_view_record(
+  app = app_test,
+  api = "/api/collections/",
+  collection = collection,
+  id = "r4a9ag9dpvz62gv",
+  fields = "id,FLIGHT_DATE,DAY_TFC")
 ```
 
 

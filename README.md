@@ -111,10 +111,24 @@ ph_list_records(
 
 ### View
 
-NOT IMPLEMENTED YET
+You can retrieve one particular entry with eventually a subset of
+columns via the `field` option.
 
 ``` r
-# TBD
+ph_view_record(
+  app = app_test,
+  api = "/api/collections/",
+  collection = collection,
+  id = "r4a9ag9dpvz62gv",
+  fields = "id,FLIGHT_DATE,DAY_TFC")
+#> $DAY_TFC
+#> [1] 21082
+#> 
+#> $FLIGHT_DATE
+#> [1] "2024-01-23 00:00:00.000Z"
+#> 
+#> $id
+#> [1] "r4a9ag9dpvz62gv"
 ```
 
 ### Authentication
