@@ -1435,7 +1435,7 @@ library(RODBC)
             a.* , b.*
           FROM APT_DAY a
           left join LDW_VDM.VIEW_FAC_PUNCTUALITY_AP_DAY b on a.day_date = b.\"DATE\" and a.arp_code = b.icao_code
-          where a.arp_code<>'LTBA'
+          where a.arp_code not in ('LTBA', 'UKBB')
           order by a.ARP_CODE, b.\"DATE\"
    "
 
