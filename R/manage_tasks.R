@@ -33,3 +33,23 @@ if (FALSE) {
   }
 }
 
+
+
+if (FALSE) {
+  # manually add a new action for
+  #   update API for network situation of AIU Portal
+
+  file_name <- path_abs("R/update_aiu_portal_network_situation.R", start = base_dir)
+  taskscheduler_create(
+    taskname = "update API network situation",
+    rscript = file_name,
+    schedule = "DAILY",
+    starttime = "08:30",
+    startdate = format(Sys.Date() + 1, "%Y/%m/%d")
+    # repeat every hour "/RI 60"
+    # for a duration of 2 hours "/DU 02:00"
+    # kill any pending task at the end of duration
+    #schtasks_extra = "/RI 60 /DU 03:00 /K"
+  )
+}
+
