@@ -19,3 +19,17 @@ if (FALSE) {
   }
 }
 
+if (FALSE) {
+  # REMEMBER to set the "Start from:" as the root of this project
+  file_name <- path_abs("R/update_pockethost_data.R", start = base_dir)
+  if (file_exists(file_name)) {
+    taskscheduler_create(
+      taskname = "update API mobile app data",
+      rscript = file_name,
+      schedule = "DAILY",
+      starttime = "08:30",
+      startdate = format(Sys.Date() + 1, "%Y/%m/%d")
+    )
+  }
+}
+
