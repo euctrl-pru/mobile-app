@@ -45,8 +45,8 @@ nw_traffic_data <-  read_xlsx(
   as_tibble()
 
 nw_traffic_last_day <- nw_traffic_data %>%
-  # filter(FLIGHT_DATE == max(LAST_DATA_DAY))
-  filter(FLIGHT_DATE == as_datetime("2024-01-28"))
+  filter(FLIGHT_DATE == max(LAST_DATA_DAY))
+  # filter(FLIGHT_DATE == as_datetime("2024-01-28"))
 
 nw_traffic_latest <- nw_traffic_last_day %>%
   select(
