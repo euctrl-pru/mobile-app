@@ -13,43 +13,25 @@ library(jsonlite)
 library(here)
 library(RODBC)
 
+source(here::here("R", "helpers.R"))
+
 
 # parameters
-  data_folder <- here::here("data")
-  base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/'
-  base_file <- '99_Traffic_Landing_Page_dataset_new_{today}.xlsx'
-  archive_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/web_daily_json_files/app/'
-  today <- (lubridate::now() +  days(-1)) %>% format("%Y%m%d")
-  last_day <-  (lubridate::now() +  days(-1))
-  last_year <- as.numeric(format(last_day,'%Y'))
-  nw_json_app <-""
-  # DB params
-  usr <- Sys.getenv("PRU_DEV_USR")
-  pwd <- Sys.getenv("PRU_DEV_PWD")
-  dbn <- Sys.getenv("PRU_DEV_DBNAME")
+data_folder <- here::here("data")
+base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/'
+base_file <- '99_Traffic_Landing_Page_dataset_new_{today}.xlsx'
+archive_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/web_daily_json_files/app/'
+today <- (lubridate::now() +  days(-1)) %>% format("%Y%m%d")
+last_day <-  (lubridate::now() +  days(-1))
+last_year <- as.numeric(format(last_day,'%Y'))
+nw_json_app <-""
+# DB params
+usr <- Sys.getenv("PRU_DEV_USR")
+pwd <- Sys.getenv("PRU_DEV_PWD")
+dbn <- Sys.getenv("PRU_DEV_DBNAME")
 
 
 # functions
-  export_query <- function(query) {
-
-    # NOTE: to be set before you create your ROracle connection!
-    # See http://www.oralytics.com/2015/05/r-roracle-and-oracle-date-formats_27.html
-    withr::local_envvar(c("TZ" = "UTC",
-                          "ORA_SDTZ" = "UTC"))
-    withr::local_namespace("ROracle")
-    con <- withr::local_db_connection(
-      DBI::dbConnect(
-        DBI::dbDriver("Oracle"),
-        usr, pwd,
-        dbname = dbn,
-        timezone = "UTC")
-    )
-
-    data <- DBI::dbSendQuery(con, query)
-    # ~2.5 min for one day
-    DBI::fetch(data, n = -1) %>%
-      tibble::as_tibble()
-  }
 
 ####billing json - we do this first to avoid 'R fatal error'
 
