@@ -28,7 +28,9 @@ adm_main <- ph_authenticate_admin_username_password(
   password)
 
 
-#---------- Traffic ----
+#---------- Network traffic ----
+collection <- "nw_traffic"
+
 nw_traffic_latest_full <- network_traffic_latest()
 
 nw_traffic_latest <- nw_traffic_latest_full |>
@@ -52,7 +54,6 @@ nw_traffic_latest <- nw_traffic_latest_full |>
 # * need to fill holes, i.e. missing days
 # * errors
 
-collection <- "nw_traffic"
 ph_create_record(
   app = app_test,
   api = "/api/collections",
@@ -68,8 +69,9 @@ ph_create_record(
   body = nw_traffic_latest)
 
 
-#---------- Delay ----
+#---------- Network delay ----
 collection <- "nw_delay"
+
 nw_delay_latest_full <- network_delay_latest()
 
 nw_delay_latest <- nw_delay_latest_full |>
