@@ -12,6 +12,9 @@ library(readxl)
 library(fs)
 library(stringr)
 
+library(zoo)
+
+
 
 export_query <- function(query) {
   # NOTE: to be set before you create your ROracle connection!
@@ -157,6 +160,139 @@ network_delay_latest <- function(today = lubridate::today()) {
     magrittr::extract2(1)
 
   nw_delay_latest
+}
+
+network_punctuality_latest <- function(today = lubridate::today()) {
+  yesterday <- today |> magrittr::subtract(days(1))
+  base_dir <- "//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/"
+  base_file <- str_glue(
+    "98_PUNCTUALITY_{yyyymmdd}.xlsx",
+    yyyymmdd = yesterday |> format("%Y%m%d")
+  )
+
+  last_day <- yesterday
+  last_year <- yesterday |> lubridate::year()
+
+
+  nw_punct_data_raw <- read_xlsx(
+    path  = fs::path_abs(base_file, start = base_dir),
+    sheet = "NETWORK",
+    range = cell_limits(c(1, 1), c(NA, NA))
+  ) |>
+    dplyr::mutate(across(starts_with("DATE"), lubridate::as_date)) |>
+    as_tibble()
+
+  nw_punct_data_d_w <- nw_punct_data_raw |>
+    arrange(DATE) |>
+    mutate(YEAR_FLIGHT = as.numeric(format(DATE, "%Y"))) |>
+    mutate(
+      ARR_PUN_PREV_YEAR = lag(ARR_PUNCTUALITY_PERCENTAGE, 364),
+      DEP_PUN_PREV_YEAR = lag(DEP_PUNCTUALITY_PERCENTAGE, 364),
+      ARR_PUN_2019 = if_else(YEAR_FLIGHT == last_year,
+        lag(
+          ARR_PUNCTUALITY_PERCENTAGE,
+          364 * (last_year - 2019) + floor((last_year - 2019) / 4) * 7
+        ),
+        1
+      ),
+      DEP_PUN_2019 = if_else(YEAR_FLIGHT == last_year,
+        lag(
+          DEP_PUNCTUALITY_PERCENTAGE,
+          364 * (last_year - 2019) + floor((last_year - 2019) / 4) * 7
+        ),
+        1
+      ),
+      DAY_2019 = if_else(YEAR_FLIGHT == last_year,
+        lag(
+          DATE,
+          364 * (last_year - 2019) + floor((last_year - 2019) / 4) * 7
+        ),
+        last_day
+      ),
+      DAY_ARR_PUN_DIF_PY_PERC = ARR_PUNCTUALITY_PERCENTAGE - ARR_PUN_PREV_YEAR,
+      DAY_DEP_PUN_DIF_PY_PERC = DEP_PUNCTUALITY_PERCENTAGE - DEP_PUN_PREV_YEAR,
+      DAY_ARR_PUN_DIF_2019_PERC = ARR_PUNCTUALITY_PERCENTAGE - ARR_PUN_2019,
+      DAY_DEP_PUN_DIF_2019_PERC = DEP_PUNCTUALITY_PERCENTAGE - DEP_PUN_2019
+    ) |>
+    mutate(
+      ARR_PUN_WK = rollsum((ARR_PUNCTUAL_FLIGHTS), 7, fill = NA, align = "right") / rollsum(ARR_SCHEDULE_FLIGHT, 7, fill = NA, align = "right") * 100,
+      DEP_PUN_WK = rollsum((DEP_PUNCTUAL_FLIGHTS), 7, fill = NA, align = "right") / rollsum(DEP_SCHEDULE_FLIGHT, 7, fill = NA, align = "right") * 100
+    ) |>
+    mutate(
+      ARR_PUN_WK_PREV_YEAR = lag(ARR_PUN_WK, 364),
+      DEP_PUN_WK_PREV_YEAR = lag(DEP_PUN_WK, 364),
+      ARR_PUN_WK_2019 = if_else(YEAR_FLIGHT == last_year,
+        lag(ARR_PUN_WK, 364 * (last_year - 2019) + floor((last_year - 2019) / 4) * 7),
+        1
+      ),
+      DEP_PUN_WK_2019 = if_else(YEAR_FLIGHT == last_year,
+        lag(DEP_PUN_WK, 364 * (last_year - 2019) + floor((last_year - 2019) / 4) * 7),
+        1
+      ),
+      WK_ARR_PUN_DIF_PY_PERC = ARR_PUN_WK - ARR_PUN_WK_PREV_YEAR,
+      WK_DEP_PUN_DIF_PY_PERC = DEP_PUN_WK - DEP_PUN_WK_PREV_YEAR,
+      WK_ARR_PUN_DIF_2019_PERC = ARR_PUN_WK - ARR_PUN_WK_2019,
+      WK_DEP_PUN_DIF_2019_PERC = DEP_PUN_WK - DEP_PUN_WK_2019
+    ) |>
+    filter(DATE == last_day) |>
+    mutate(FLIGHT_DATE = DATE) |>
+    select(
+      FLIGHT_DATE,
+      ARR_PUNCTUALITY_PERCENTAGE,
+      DEP_PUNCTUALITY_PERCENTAGE,
+      DAY_ARR_PUN_DIF_PY_PERC,
+      DAY_DEP_PUN_DIF_PY_PERC,
+      DAY_ARR_PUN_DIF_2019_PERC,
+      DAY_DEP_PUN_DIF_2019_PERC,
+      ARR_PUN_WK,
+      DEP_PUN_WK,
+      WK_ARR_PUN_DIF_PY_PERC,
+      WK_DEP_PUN_DIF_PY_PERC,
+      WK_ARR_PUN_DIF_2019_PERC,
+      WK_DEP_PUN_DIF_2019_PERC
+    ) |>
+    mutate(INDEX = 1)
+
+  nw_punct_data_y2d <- nw_punct_data_raw |>
+    arrange(DATE) |>
+    mutate(YEAR_FLIGHT = as.numeric(format(DATE, "%Y"))) |>
+    mutate(MONTH_DAY = as.numeric(format(DATE, format = "%m%d"))) |>
+    filter(MONTH_DAY <= as.numeric(format(last_day, format = "%m%d"))) |>
+    mutate(YEAR = as.numeric(format(DATE, format = "%Y"))) |>
+    group_by(YEAR) |>
+    summarise(
+      ARR_PUN_Y2D = sum(ARR_PUNCTUAL_FLIGHTS, na.rm = TRUE) / sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE) * 100,
+      DEP_PUN_Y2D = sum(DEP_PUNCTUAL_FLIGHTS, na.rm = TRUE) / sum(DEP_SCHEDULE_FLIGHT, na.rm = TRUE) * 100
+    ) |>
+    mutate(
+      Y2D_ARR_PUN_PREV_YEAR = lag(ARR_PUN_Y2D, 1),
+      Y2D_DEP_PUN_PREV_YEAR = lag(DEP_PUN_Y2D, 1),
+      Y2D_ARR_PUN_2019 = lag(ARR_PUN_Y2D, last_year - 2019),
+      Y2D_DEP_PUN_2019 = lag(DEP_PUN_Y2D, last_year - 2019),
+      Y2D_ARR_PUN_DIF_PY_PERC = ARR_PUN_Y2D - Y2D_ARR_PUN_PREV_YEAR,
+      Y2D_DEP_PUN_DIF_PY_PERC = DEP_PUN_Y2D - Y2D_DEP_PUN_PREV_YEAR,
+      Y2D_ARR_PUN_DIF_2019_PERC = ARR_PUN_Y2D - Y2D_ARR_PUN_2019,
+      Y2D_DEP_PUN_DIF_2019_PERC = DEP_PUN_Y2D - Y2D_DEP_PUN_2019
+    ) |>
+    filter(YEAR == as.numeric(format(last_day, format = "%Y"))) |>
+    select(
+      ARR_PUN_Y2D,
+      DEP_PUN_Y2D,
+      Y2D_ARR_PUN_DIF_PY_PERC,
+      Y2D_DEP_PUN_DIF_PY_PERC,
+      Y2D_ARR_PUN_DIF_2019_PERC,
+      Y2D_DEP_PUN_DIF_2019_PERC
+    ) |>
+    mutate(INDEX = 1)
+
+
+  nw_punct_json <- merge(nw_punct_data_d_w, nw_punct_data_y2d, by = "INDEX") |>
+    select(-INDEX) |>
+    as.list() |>
+    purrr::list_transpose() |>
+    magrittr::extract2(1)
+
+  nw_punct_json
 }
 
 network_billed_latest <- function() {
