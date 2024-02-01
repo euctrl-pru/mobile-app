@@ -31,8 +31,7 @@ pwd <- Sys.getenv("PRU_DEV_PWD")
 dbn <- Sys.getenv("PRU_DEV_DBNAME")
 
 
-# functions
-
+#------ Network billed ----
 ####billing json - we do this first to avoid 'R fatal error'
 
   # dir_billing <- "G:/HQ/dgof-pru/Data/DataProcessing/Covid19/Oscar/Billing"
@@ -116,7 +115,8 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
 
 
 
-    # traffic data
+#------ Network traffic ----
+  # traffic data
   nw_traffic_data <-  read_xlsx(
     path  = fs::path_abs(
       str_glue(base_file),
@@ -148,6 +148,8 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
     substr(., 1, nchar(.)-1) %>%
     substr(., 2, nchar(.))
 
+
+#------ Network delay ----
 
   # delay data
 
@@ -222,6 +224,9 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
     toJSON() %>%
     substr(., 1, nchar(.)-1) %>%
     substr(., 2, nchar(.))
+
+
+#------ Network punctuality ----
 
   # punctuality data
   ### select * from LDW_VDM.VIEW_FAC_PUNCTUALITY_NW_DAY
@@ -331,6 +336,9 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
     substr(., 1, nchar(.)-1) %>%
     substr(., 2, nchar(.))
 
+
+#------ Network CO2 emissions ----
+
   ####CO2 json
   query <- str_glue("
     SELECT *
@@ -437,6 +445,10 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
     substr(., 1, nchar(.)-1) %>%
     substr(., 2, nchar(.))
 
+
+
+#------ update date ----
+
   # add date to json
 
   update_day <-  floor_date(lubridate::now(),  unit = "days") %>% as_tibble() %>%
@@ -460,8 +472,9 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
   write(nw_json_app, paste0(archive_dir, today, "_nw_json_app.json"))
 
 
-# -----------------------------------------------------------------------------------------------------------------------------------------
-  ####json for mobile app graphs
+#---- json for mobile app graphs ------
+
+#----- mobile app graphs -------
   ### traffic
 
    # 7-day average daily
