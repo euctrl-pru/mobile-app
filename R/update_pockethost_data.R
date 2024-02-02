@@ -31,23 +31,7 @@ adm_main <- ph_authenticate_admin_username_password(
 #---------- Network traffic ----
 collection <- "nw_traffic"
 
-nw_traffic_latest_full <- network_traffic_latest()
-
-nw_traffic_latest <- nw_traffic_latest_full |>
-  magrittr::extract(
-    c("FLIGHT_DATE",
-      "DAY_TFC",
-      "DAY_DIFF_PREV_YEAR_PERC",
-      "DAY_TFC_DIFF_2019_PERC",
-      "AVG_ROLLING_WEEK",
-      "DIF_WEEK_PREV_YEAR_PERC",
-      "DIF_ROLLING_WEEK_2019_PERC",
-      "Y2D_TFC_YEAR",
-      "Y2D_AVG_TFC_YEAR",
-      "Y2D_DIFF_PREV_YEAR_PERC",
-      "Y2D_DIFF_2019_PERC")
-  )
-
+nw_traffic_latest <- network_traffic_latest()
 
 # TODO: cope with
 # * update of existing entry
@@ -67,6 +51,27 @@ ph_create_record(
   collection = collection,
   token = adm_main$token,
   body = nw_traffic_latest)
+
+## ------ traffic init -----
+# for (d in seq(from = ymd("2024-01-02"), to = ymd("2024-02-01"), by = "1 day")) {
+#   nw_traffic_latest <- network_traffic_latest(as_date(d))
+#   ph_create_record(
+#     app = app_test,
+#     api = "/api/collections",
+#     collection = collection,
+#     token = adm_test$token,
+#     body = nw_traffic_latest)
+#
+#   ph_create_record(
+#     app = app_main,
+#     api = "/api/collections",
+#     collection = collection,
+#     token = adm_main$token,
+#     body = nw_traffic_latest)
+# }
+
+
+
 
 
 #---------- Network delay ----

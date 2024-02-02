@@ -40,7 +40,7 @@ export_query <- function(query) {
 }
 
 # get values for the day before `tdy`
-network_traffic_latest <- function(today = lubridate::today()) {
+network_traffic_full_latest <- function(today = lubridate::today()) {
   yesterday <- today |> magrittr::subtract(days(1))
   base_dir <- "//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/"
   base_file <- str_glue(
@@ -62,24 +62,27 @@ network_traffic_latest <- function(today = lubridate::today()) {
     filter(FLIGHT_DATE == yesterday)
 
   nw_traffic_latest <- nw_traffic_last_day |>
-    # select(
-    #   FLIGHT_DATE,
-    #   DAY_TFC,
-    #   DAY_DIFF_PREV_YEAR_PERC,
-    #   DAY_TFC_DIFF_2019_PERC,
-    #   AVG_ROLLING_WEEK,
-    #   DIF_WEEK_PREV_YEAR_PERC,
-    #   DIF_ROLLING_WEEK_2019_PERC,
-    #   Y2D_TFC_YEAR,
-    #   Y2D_AVG_TFC_YEAR,
-    #   Y2D_DIFF_PREV_YEAR_PERC,
-    #   Y2D_DIFF_2019_PERC
-    # ) |>
     as.list() |>
     purrr::list_transpose() |>
     magrittr::extract2(1)
 
   nw_traffic_latest
+}
+network_traffic_latest <- function(today = lubridate::today()) {
+  network_traffic_full_latest(today) |>
+    magrittr::extract(
+      c("FLIGHT_DATE",
+        "DAY_TFC",
+        "DAY_DIFF_PREV_YEAR_PERC",
+        "DAY_TFC_DIFF_2019_PERC",
+        "AVG_ROLLING_WEEK",
+        "DIF_WEEK_PREV_YEAR_PERC",
+        "DIF_ROLLING_WEEK_2019_PERC",
+        "Y2D_TFC_YEAR",
+        "Y2D_AVG_TFC_YEAR",
+        "Y2D_DIFF_PREV_YEAR_PERC",
+        "Y2D_DIFF_2019_PERC")
+    )
 }
 
 network_delay_latest <- function(today = lubridate::today()) {
