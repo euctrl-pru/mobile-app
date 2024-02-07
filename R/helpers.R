@@ -14,29 +14,28 @@ library(stringr)
 
 library(zoo)
 
+library(eurocontrol)
 
 
-export_query <- function(query) {
-  # NOTE: to be set before you create your ROracle connection!
-  # See http://www.oralytics.com/2015/05/r-roracle-and-oracle-date-formats_27.html
+
+export_query <- function(query, schema = "PRU_DEV") {
   withr::local_envvar(c(
     "TZ" = "UTC",
-    "ORA_SDTZ" = "UTC"
+    "ORA_SDTZ" = "UTC",
+    "NLS_LANG" = ".AL32UTF8"
   ))
-  withr::local_namespace("ROracle")
+
   con <- withr::local_db_connection(
-    DBI::dbConnect(
-      DBI::dbDriver("Oracle"),
-      usr, pwd,
-      dbname = dbn,
-      timezone = "UTC"
-    )
+    eurocontrol::db_connection(schema = schema)
   )
 
-  data <- DBI::dbSendQuery(con, query)
-  # ~2.5 min for one day
-  DBI::fetch(data, n = -1) |>
-    tibble::as_tibble()
+  dplyr::tbl(con, dplyr::sql(query)) |>
+    collect()
+
+  # data <- DBI::dbSendQuery(con, query)
+  # # ~2.5 min for one day
+  # DBI::fetch(data, n = -1) |>
+  #   tibble::as_tibble()
 }
 
 # get values for the day before `tdy`
@@ -86,7 +85,7 @@ network_traffic_latest <- function(today = lubridate::today()) {
 }
 
 network_delay_latest <- function(today = lubridate::today()) {
-  nw_traffic_last_day <- network_traffic_latest(today)
+  nw_traffic_last_day <- network_traffic_full_latest(today)
 
   yesterday <- today |> magrittr::subtract(days(1))
   base_dir <- "//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/"
@@ -369,4 +368,135 @@ network_billed_latest <- function() {
     magrittr::extract2(1)
 
   nw_billed_latest
+}
+
+
+# network emissions for the month of `today` (tipycally 2 months before now)
+network_emissions_latest <- function(today = lubridate::today(tzone = "UTC")) {
+  first_today <- floor_date(today |> as_date(tzone = "UTC"), unit = "month")
+  query <- str_glue("
+    SELECT
+      FLIGHT_MONTH,
+      CO2_QTY_TONNES,
+      TF,
+      YEAR,
+      MONTH
+    FROM TABLE (emma_pub.api_aiu_stats.MM_AIU_STATE_DEP ())
+    WHERE
+      YEAR >= 2019 and STATE_NAME not in ('LIECHTENSTEIN')
+      AND FLIGHT_MONTH <= TO_DATE('{first_today}', 'YYYY-MM-DD')
+    ORDER BY YEAR, MONTH, STATE_NAME
+   ")
+
+  co2_data_raw <- export_query(query) |>
+    mutate(FLIGHT_MONTH = as_date(FLIGHT_MONTH, tz = "UTC"))
+
+  co2_data_evo_nw <- co2_data_raw |>
+    group_by(FLIGHT_MONTH) |>
+    summarise(MM_TTF = sum(TF) / 1000000, MM_CO2 = sum(CO2_QTY_TONNES) / 1000000) |>
+    mutate(
+      YEAR = as.numeric(format(FLIGHT_MONTH, "%Y")),
+      MONTH = as.numeric(format(FLIGHT_MONTH, "%m")),
+      MM_CO2_DEP = MM_CO2 / MM_TTF
+    ) |>
+    arrange(FLIGHT_MONTH) |>
+    mutate(FLIGHT_MONTH = ceiling_date(as_date(FLIGHT_MONTH), unit = "month") - 1)
+
+  last_of_month <- ceiling_date(today, unit = "month") - days(1)
+  year_of_month  <- month(last_of_month)
+
+  co2_last_date <- max(co2_data_evo_nw$FLIGHT_MONTH, na.rm = TRUE)
+  co2_last_month <- format(co2_last_date, "%B")
+  co2_last_month_num <- as.numeric(format(co2_last_date, "%m"))
+  co2_last_year <- max(co2_data_evo_nw$YEAR)
+
+  # check last month number of flights
+  check_flights <- co2_data_evo_nw |>
+    filter(YEAR == max(YEAR)) |>
+    filter(MONTH == max(MONTH)) |>
+    select(MM_TTF) |>
+    pull() * 1000000
+
+  if (check_flights < 1000) {
+    co2_data_raw <- co2_data_raw |> filter(FLIGHT_MONTH < max(FLIGHT_MONTH))
+    co2_data_evo_nw <- co2_data_evo_nw |> filter(FLIGHT_MONTH < max(FLIGHT_MONTH))
+    co2_last_date <- max(co2_data_evo_nw$FLIGHT_MONTH, na.rm = TRUE)
+  }
+
+  co2_latest <- co2_data_evo_nw |>
+    mutate(
+      MONTH_TEXT = format(FLIGHT_MONTH, "%B"),
+      MM_CO2_PREV_YEAR = lag(MM_CO2, 12),
+      MM_TTF_PREV_YEAR = lag(MM_TTF, 12),
+      MM_CO2_2019 = lag(MM_CO2, (as.numeric(co2_last_year) - 2019) * 12),
+      MM_TTF_2019 = lag(MM_TTF, (as.numeric(co2_last_year) - 2019) * 12),
+      MM_CO2_DEP_PREV_YEAR = lag(MM_CO2_DEP, 12),
+      MM_CO2_DEP_2019 = lag(MM_CO2_DEP, (as.numeric(co2_last_year) - 2019) * 12)
+    ) |>
+    mutate(
+      DIF_CO2_MONTH_PREV_YEAR = MM_CO2 / MM_CO2_PREV_YEAR - 1,
+      DIF_TTF_MONTH_PREV_YEAR = MM_TTF / MM_TTF_PREV_YEAR - 1,
+      DIF_CO2_DEP_MONTH_PREV_YEAR = MM_CO2_DEP / MM_CO2_DEP_PREV_YEAR - 1,
+      DIF_CO2_MONTH_2019 = MM_CO2 / MM_CO2_2019 - 1,
+      DIF_TTF_MONTH_2019 = MM_TTF / MM_TTF_2019 - 1,
+      DIF_CO2_DEP_MONTH_2019 = MM_CO2_DEP / MM_CO2_DEP_2019 - 1
+    ) |>
+    group_by(YEAR) |>
+    mutate(
+      YTD_CO2 = cumsum(MM_CO2),
+      YTD_TTF = cumsum(MM_TTF),
+      YTD_CO2_DEP = cumsum(MM_CO2) / cumsum(MM_TTF)
+    ) |>
+    ungroup() |>
+    mutate(
+      YTD_CO2_PREV_YEAR = lag(YTD_CO2, 12),
+      YTD_TTF_PREV_YEAR = lag(YTD_TTF, 12),
+      YTD_CO2_DEP_PREV_YEAR = lag(YTD_CO2_DEP, 12),
+      YTD_CO2_2019 = lag(YTD_CO2, (as.numeric(co2_last_year) - 2019) * 12),
+      YTD_CO2_DEP_2019 = lag(YTD_CO2_DEP, (as.numeric(co2_last_year) - 2019) * 12),
+      YTD_TTF_2019 = lag(YTD_TTF, (as.numeric(co2_last_year) - 2019) * 12)
+    ) |>
+    mutate(
+      YTD_DIF_CO2_PREV_YEAR = YTD_CO2 / YTD_CO2_PREV_YEAR - 1,
+      YTD_DIF_TTF_PREV_YEAR = YTD_TTF / YTD_TTF_PREV_YEAR - 1,
+      YTD_DIF_CO2_DEP_PREV_YEAR = YTD_CO2_DEP / YTD_CO2_DEP_PREV_YEAR - 1,
+      YTD_DIF_CO2_2019 = YTD_CO2 / YTD_CO2_2019 - 1,
+      YTD_DIF_CO2_DEP_2019 = YTD_CO2_DEP / YTD_CO2_DEP_2019 - 1,
+      YTD_DIF_TTF_2019 = YTD_TTF / YTD_TTF_2019 - 1
+    ) |>
+    select(
+      FLIGHT_MONTH,
+      MONTH_TEXT,
+      MM_CO2,
+      DIF_CO2_MONTH_PREV_YEAR,
+      DIF_CO2_MONTH_2019,
+      MM_CO2_DEP,
+      DIF_CO2_DEP_MONTH_PREV_YEAR,
+      DIF_CO2_DEP_MONTH_2019,
+      YTD_CO2,
+      YTD_DIF_CO2_PREV_YEAR,
+      YTD_DIF_CO2_2019,
+      YTD_CO2_DEP,
+      YTD_DIF_CO2_DEP_PREV_YEAR,
+      YTD_DIF_CO2_DEP_2019
+    ) |>
+    filter(FLIGHT_MONTH == co2_last_date) |>
+    as.list() |>
+    purrr::list_transpose() |>
+    magrittr::extract2(1)
+
+  co2_latest
+}
+
+init_collection <- function(wef, til, app, collection, extractor, token) {
+  for (d in seq(from = lubridate::as_date(wef), to = lubridate::as_date(til), by = "1 day")) {
+    record <- extractor(as_date(d))
+    ph_create_record(
+      app = app,
+      api = "/api/collections",
+      collection = collection,
+      token = token,
+      body = record)
+  }
+
 }

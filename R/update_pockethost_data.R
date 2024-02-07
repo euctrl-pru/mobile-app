@@ -52,7 +52,7 @@ ph_create_record(
   token = adm_main$token,
   body = nw_traffic_latest)
 
-## ------ traffic init -----
+## ------ Traffic init -----
 # for (d in seq(from = ymd("2024-01-02"), to = ymd("2024-02-01"), by = "1 day")) {
 #   nw_traffic_latest <- network_traffic_latest(as_date(d))
 #   ph_create_record(
@@ -77,33 +77,8 @@ ph_create_record(
 #---------- Network delay ----
 collection <- "nw_delay"
 
-nw_delay_latest_full <- network_delay_latest()
+nw_delay_latest <- network_delay_latest()
 
-nw_delay_latest <- nw_delay_latest_full |>
-  magrittr::extract(
-    c(
-      "FLIGHT_DATE",
-      "DAY_DLY",
-      "DAY_DIFF_PREV_YEAR_PERC",
-      "DAY_DLY_DIFF_2019_PERC",
-      "DAY_DLY_FLT",
-      "DAY_DLY_FLT_DIF_PY_PERC",
-      "DAY_DLY_FLT_DIF_2019_PERC",
-      "AVG_ROLLING_WEEK",
-      "DIF_WEEK_PREV_YEAR_PERC",
-      "DIF_ROLLING_WEEK_2019_PERC",
-      "RWEEK_DLY_FLT",
-      "RWEEK_DLY_FLT_DIF_PY_PERC",
-      "RWEEK_DLY_FLT_DIF_2019_PERC",
-      "Y2D_AVG_DLY_YEAR",
-      "Y2D_DIFF_PREV_YEAR_PERC",
-      "Y2D_DIFF_2019_PERC",
-      "Y2D_DLY_FLT",
-      "Y2D_DLY_FLT_DIF_PY_PERC",
-      "Y2D_DLY_FLT_DIF_2019_PERC",
-      NULL
-    )
-  )
 
 ph_create_record(
   app = app_test,
@@ -119,6 +94,23 @@ ph_create_record(
   token = adm_main$token,
   body = nw_delay_latest)
 
+## ------ Delay init -----
+# for (d in seq(from = ymd("2024-02-03"), to = ymd("2024-02-05"), by = "1 day")) {
+#   nw_delay_latest <- network_delay_latest(as_date(d))
+#   ph_create_record(
+#     app = app_test,
+#     api = "/api/collections",
+#     collection = collection,
+#     token = adm_test$token,
+#     body = nw_delay_latest)
+#
+#   ph_create_record(
+#     app = app_main,
+#     api = "/api/collections",
+#     collection = collection,
+#     token = adm_main$token,
+#     body = nw_delay_latest)
+# }
 
 
 #---------- Network billed ----
@@ -186,10 +178,8 @@ ph_create_record(
   token = adm_main$token,
   body = nw_punct_latest)
 
-
-
-#------ create API initiail records -----
-# for (d in seq(from = ymd("2024-01-02"), to = ymd("2024-01-31"), by = "1 day")) {
+# ## ------ Punctuality init -----
+# for (d in seq(from = ymd("2024-02-03"), to = ymd("2024-02-05"), by = "1 day")) {
 #   nw_punct_latest <- network_punctuality_latest(as_date(d))
 #   ph_create_record(
 #     app = app_test,
@@ -205,3 +195,57 @@ ph_create_record(
 #     token = adm_main$token,
 #     body = nw_punct_latest)
 # }
+
+
+##---------- Network Emissions ----------
+collection <- "nw_co2"
+
+latest <- ph_list_records(
+  app_main,
+  "/api/collections/",
+  collection = collection,
+  perPage = 1,
+  sort = "-FLIGHT_MONTH",
+  skipTotal = 1) |>
+  magrittr::extract2("FLIGHT_MONTH") |>
+  as_date()
+
+nw_emissions_latest <- network_emissions_latest()
+ee <- nw_emissions_latest$FLIGHT_MONTH |> as_date()
+
+if (latest != ee) {
+
+  ph_create_record(
+    app = app_test,
+    api = "/api/collections",
+    collection = collection,
+    token = adm_test$token,
+    body = nw_emissions_latest)
+
+  ph_create_record(
+    app = app_main,
+    api = "/api/collections",
+    collection = collection,
+    token = adm_main$token,
+    body = nw_emissions_latest)
+}
+
+# ## ------ Emissions init -----
+# for (d in seq(from = ymd("2020-01-01"), to = ymd("2023-11-01"), by = "1 month")) {
+#   nw_emissions_latest <- network_emissions_latest(as_date(d))
+#   ph_create_record(
+#     app = app_test,
+#     api = "/api/collections",
+#     collection = collection,
+#     token = adm_test$token,
+#     body = nw_emissions_latest)
+#
+#   ph_create_record(
+#     app = app_main,
+#     api = "/api/collections",
+#     collection = collection,
+#     token = adm_main$token,
+#     body = nw_emissions_latest)
+# }
+#
+
