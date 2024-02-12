@@ -1,4 +1,4 @@
-# insert latest entries in
+# insert latest entries in EUROCONTROL Data APIs
 library(here)
 
 # pak::pkg_install("euctrl-pru/pockethostr")
