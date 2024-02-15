@@ -500,3 +500,20 @@ init_collection <- function(wef, til, app, collection, extractor, token) {
   }
 
 }
+
+
+tasks_status_latest <- function() {
+  list(
+    product = "Portal Traffic Landing Page (traffic)",
+    status = "true",
+    last_day_data = lubridate::today(tzone = "UTC"),
+    source_type = "excel",
+    base_dir = "//ihx-vdm05/LIVE_var_www_Economics$/Download/",
+    file_name = "Network_Traffic.xlsx",
+    sheet = "Data",
+    task_name = "copy_traffic_landing_page_to_gsheet.R",
+    repo_folder = "grounded_aircraft/R",
+    update_frequency = "daily",
+    start_time = "08:30"
+  )
+}
