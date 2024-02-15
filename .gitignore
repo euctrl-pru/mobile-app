@@ -6,3 +6,5 @@ sqlnet.log
 copy_to_production.bat
 copy_to_production.log
 .Rproj.user/
+
+/data/

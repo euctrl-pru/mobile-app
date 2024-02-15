@@ -14,6 +14,8 @@ library(jsonlite)
 library(here)
 library(RODBC)
 
+source(here::here("R", "helpers.R"))
+
 # parameters
   data_folder <- here::here("data")
   # base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/'
@@ -32,27 +34,6 @@ library(RODBC)
   pwd <- Sys.getenv("PRU_DEV_PWD")
   dbn <- Sys.getenv("PRU_DEV_DBNAME")
 
-# functions
-  export_query <- function(query) {
-
-    # NOTE: to be set before you create your ROracle connection!
-    # See http://www.oralytics.com/2015/05/r-roracle-and-oracle-date-formats_27.html
-    withr::local_envvar(c("TZ" = "UTC",
-                          "ORA_SDTZ" = "UTC"))
-    withr::local_namespace("ROracle")
-    con <- withr::local_db_connection(
-      DBI::dbConnect(
-        DBI::dbDriver("Oracle"),
-        usr, pwd,
-        dbname = dbn,
-        timezone = "UTC")
-    )
-
-    data <- DBI::dbSendQuery(con, query)
-    # ~2.5 min for one day
-    DBI::fetch(data, n = -1) %>%
-      tibble::as_tibble()
-  }
 
 # dimension tables
   state_iso <-  read_xlsx(
