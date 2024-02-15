@@ -222,10 +222,62 @@ nw_delay_for_json <- nw_delay_data %>%
     Y2D_DLY_FLT_DIF_2019_PERC
   )
 
+<<<<<<< HEAD
+    data <- DBI::dbSendQuery(con, query)
+    # ~2.5 min for one day
+    DBI::fetch(data, n = -1) %>%
+      tibble::as_tibble()
+  }
+
+####billing json - we do this first to avoid 'R fatal error'
+
+  # dir_billing <- "G:/HQ/dgof-pru/Data/DataProcessing/Covid19/Oscar/Billing"
+  #
+  # nw_billed_data_raw <-  read_xlsx(
+  #   path  = fs::path_abs(
+  #     str_glue("Billing_tables.xlsx"),
+  #     start = dir_billing),
+  #   sheet = "network",
+  #   range = cell_limits(c(5, 2), c(NA, NA))) %>%
+  #   as_tibble()%>%
+  #   mutate(DATE = as.Date(Billing_period_start_date, format = "%d-%m-%Y"))
+
+  ## https://leowong.ca/blog/connect-to-microsoft-access-database-via-r/
+  ## Set up driver info and database path
+  DRIVERINFO <- "Driver={Microsoft Access Driver (*.mdb, *.accdb)};"
+  MDBPATH <- "G:/HQ/dgof-pru/Data/DataProcessing/Crco - Billing/CRCO_BILL.accdb"
+  PATH <- paste0(DRIVERINFO, "DBQ=", MDBPATH)
+
+  channel <- odbcDriverConnect(PATH)
+  query_bill <- "SELECT * FROM V_CRCO_BILL_PER_CZ"
+
+  ## Load data into R dataframe
+  nw_billed_raw <- sqlQuery(channel,
+                            query_bill,
+                            stringsAsFactors = FALSE)
+
+  ## Close and remove channel
+  close(channel)
+  rm(channel)
+
+  nw_billed_raw <- nw_billed_raw %>%
+    janitor::clean_names() %>%
+    filter(year <= 2023) %>% #added temporarily until app monthly section is fixed
+    mutate(billing_period_start_date = as.Date(billing_period_start_date, format = "%d-%m-%Y"))
+
+  last_billing_date <- max(nw_billed_raw$billing_period_start_date)
+  last_billing_year <- max(nw_billed_raw$year)
+
+  nw_billing <- nw_billed_raw %>%
+    group_by(year, month, billing_period_start_date) %>%
+    summarise(total_billing = sum(route_charges)) %>%
+    ungroup
+=======
 nw_delay_json <- nw_delay_for_json %>%
   toJSON() %>%
   substr(., 1, nchar(.) - 1) %>%
   substr(., 2, nchar(.))
+>>>>>>> 66b74ba5d099b6738cd4030bf38cc381ee766acc
 
 
 #------ Network punctuality ----
@@ -368,8 +420,14 @@ query <- str_glue("
     ORDER BY 2, 3, 4
    ")
 
+<<<<<<< HEAD
+  co2_data_raw <- export_query(query) %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
+    filter(YEAR <= 2023) ## temporary line while the app upgrade is implemented
+=======
 co2_data_raw <- export_query(query) %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+>>>>>>> 66b74ba5d099b6738cd4030bf38cc381ee766acc
 
 co2_data_evo_nw <- co2_data_raw %>%
   select(
