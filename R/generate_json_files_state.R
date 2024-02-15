@@ -68,7 +68,7 @@ library(RODBC)
       str_glue(base_file),
       start = base_dir),
     sheet = "lists",
-    range = cell_limits(c(2, 6), c(NA, 7))) %>%
+    range = cell_limits(c(2, 6), c(NA, 8))) %>%
     as_tibble()
 
   state_daio <-  read_xlsx(
@@ -76,7 +76,7 @@ library(RODBC)
       str_glue(base_file),
       start = base_dir),
     sheet = "lists",
-    range = cell_limits(c(2, 10), c(NA, 12))) %>%
+    range = cell_limits(c(2, 11), c(NA, 13))) %>%
     as_tibble()
 
   state_co2 <-  read_xlsx(
@@ -84,7 +84,7 @@ library(RODBC)
       str_glue(base_file),
       start = base_dir),
     sheet = "lists",
-    range = cell_limits(c(2, 15), c(NA, 16))) %>%
+    range = cell_limits(c(2, 16), c(NA, 17))) %>%
     as_tibble()
 
   acc <-  read_xlsx(
@@ -161,7 +161,7 @@ library(RODBC)
       mutate(
              BILLING_DATE = (billing_period_start_date + days(1) + months(1)) + days(-1),
              Year = year,
-             MONTH_F = format(billing_period_start_date + days(1),'%B'),
+             MONTH_TEXT = format(billing_period_start_date + days(1),'%B'),
              MONTH_BILLED_PY = lag(total_billing, 12),
              MONTH_BILLED_2019 = lag(total_billing, (last_billing_year - 2019) * 12),
              MONTH_BILLED_DIF_PY_PERC = total_billing / MONTH_BILLED_PY - 1,
@@ -183,7 +183,7 @@ library(RODBC)
       filter(billing_period_start_date == last_billing_date) %>%
       select(iso_2letter,
              BILLING_DATE,
-             MONTH_F,
+             MONTH_TEXT,
              MONTH_BILLED,
              MONTH_BILLED_DIF_PY_PERC,
              MONTH_BILLED_DIF_2019_PERC,
@@ -421,7 +421,7 @@ library(RODBC)
     last_day_punct <-  max(st_punct_raw$DAY_DATE)
     last_year_punct <- as.numeric(format(last_day_punct,'%Y'))
 
-    st_punct_d_w <- st_punct_raw %>%
+    st_punct_data <- st_punct_raw %>%
       arrange(ISO_2LETTER, DAY_DATE) %>%
       mutate(
              DAY_ARR_PUNCT = case_when(
@@ -467,7 +467,9 @@ library(RODBC)
              WEEK_DEP_PUNCT_DIF_PY = WEEK_DEP_PUNCT - WEEK_DEP_PUNCT_PY,
              WEEK_ARR_PUNCT_DIF_2019 = WEEK_ARR_PUNCT - WEEK_ARR_PUNCT_2019,
              WEEK_DEP_PUNCT_DIF_2019 = WEEK_DEP_PUNCT - WEEK_DEP_PUNCT_2019
-      ) %>%
+      )
+
+    st_punct_d_w <- st_punct_data %>%
       filter (DAY_DATE == last_day_punct) %>%
       select(
         ISO_2LETTER,
@@ -586,12 +588,12 @@ library(RODBC)
         MONTH_CO2_DEP_2019 = lag(MONTH_CO2_DEP, (as.numeric(st_co2_last_year) - 2019) * 12)
       ) %>%
       mutate(
-        MONTH_CO2_DIF_PY = MONTH_CO2 / MONTH_CO2_PY - 1,
-        MONTH_DEP_DIF_PY = MONTH_DEP / MONTH_DEP_PY - 1,
-        MONTH_CO2_DEP_DIF_PY = MONTH_CO2_DEP / MONTH_CO2_DEP_PY - 1,
-        MONTH_CO2_DIF_2019 = MONTH_CO2 / MONTH_CO2_2019 - 1,
-        MONTH_DEP_DIF_2019 = MONTH_DEP / MONTH_DEP_2019 - 1,
-        MONTH_CO2_DEP_DIF_2019 = MONTH_CO2_DEP / MONTH_CO2_DEP_2019 - 1
+        MONTH_CO2_DIF_PY_PERC = MONTH_CO2 / MONTH_CO2_PY - 1,
+        MONTH_DEP_DIF_PY_PERC = MONTH_DEP / MONTH_DEP_PY - 1,
+        MONTH_CO2_DEP_DIF_PY_PERC = MONTH_CO2_DEP / MONTH_CO2_DEP_PY - 1,
+        MONTH_CO2_DIF_2019_PERC = MONTH_CO2 / MONTH_CO2_2019 - 1,
+        MONTH_DEP_DIF_2019_PERC = MONTH_DEP / MONTH_DEP_2019 - 1,
+        MONTH_CO2_DEP_DIF_2019_PERC = MONTH_CO2_DEP / MONTH_CO2_DEP_2019 - 1
       ) %>%
       group_by(iso_2letter, YEAR) %>%
       mutate(
@@ -609,29 +611,29 @@ library(RODBC)
         Y2D_CO2_DEP_2019 = lag(Y2D_CO2_DEP, (as.numeric(st_co2_last_year) - 2019) * 12)
       ) %>%
       mutate(
-        Y2D_CO2_DIF_PY = Y2D_CO2 / Y2D_CO2_PY - 1,
-        Y2D_DEP_DIF_PY = Y2D_DEP / Y2D_DEP_PY - 1,
-        Y2D_CO2_DEP_DIF_PY = Y2D_CO2_DEP / Y2D_CO2_DEP_PY - 1,
-        Y2D_CO2_DIF_2019 = Y2D_CO2 / Y2D_CO2_2019 - 1,
-        Y2D_DEP_DIF_2019 = Y2D_DEP / Y2D_DEP_2019 - 1,
-        Y2D_CO2_DEP_DIF_2019 = Y2D_CO2_DEP / Y2D_CO2_DEP_2019 - 1
+        Y2D_CO2_DIF_PY_PERC = Y2D_CO2 / Y2D_CO2_PY - 1,
+        Y2D_DEP_DIF_PY_PERC = Y2D_DEP / Y2D_DEP_PY - 1,
+        Y2D_CO2_DEP_DIF_PY_PERC = Y2D_CO2_DEP / Y2D_CO2_DEP_PY - 1,
+        Y2D_CO2_DIF_2019_PERC = Y2D_CO2 / Y2D_CO2_2019 - 1,
+        Y2D_DEP_DIF_2019_PERC = Y2D_DEP / Y2D_DEP_2019 - 1,
+        Y2D_CO2_DEP_DIF_2019_PERC = Y2D_CO2_DEP / Y2D_CO2_DEP_2019 - 1
       ) %>%
       select(
         iso_2letter,
         CO2_DATE,
         MONTH_TEXT,
         MONTH_CO2,
-        MONTH_CO2_DIF_PY,
-        MONTH_CO2_DIF_2019,
+        MONTH_CO2_DIF_PY_PERC,
+        MONTH_CO2_DIF_2019_PERC,
         MONTH_CO2_DEP,
-        MONTH_CO2_DEP_DIF_PY,
-        MONTH_CO2_DEP_DIF_2019,
+        MONTH_CO2_DEP_DIF_PY_PERC,
+        MONTH_CO2_DEP_DIF_2019_PERC,
         Y2D_CO2,
-        Y2D_CO2_DIF_PY,
-        Y2D_CO2_DIF_2019,
+        Y2D_CO2_DIF_PY_PERC,
+        Y2D_CO2_DIF_2019_PERC,
         Y2D_CO2_DEP,
-        Y2D_CO2_DEP_DIF_PY,
-        Y2D_CO2_DEP_DIF_2019
+        Y2D_CO2_DEP_DIF_PY_PERC,
+        Y2D_CO2_DEP_DIF_2019_PERC
       ) %>%
       filter(CO2_DATE == st_co2_last_date) %>%
       right_join(state_iso, by = "iso_2letter") %>%
@@ -1721,6 +1723,7 @@ library(RODBC)
         WK_RANK_DIF_PREV_WEEK = lag(RANK, 7) - RANK,
         WK_APT_NAME = APT_NAME,
         WK_TO_DATE = round_date(DAY_DATE, "day"),
+        WK_FROM_DATE = round_date(DAY_DATE, "day") + days(-7),
         WK_ARR_PUNCT_DIF_PREV_WEEK = (WK_ARR_PUNCT - lag(WK_ARR_PUNCT, 7)),
         WK_ARR_PUNCT_DIF_PREV_YEAR = (WK_ARR_PUNCT - lag(WK_ARR_PUNCT, 364)),
         ST_RANK = paste0(tolower(state), RANK)
@@ -1734,6 +1737,7 @@ library(RODBC)
         ST_RANK,
         WK_RANK_DIF_PREV_WEEK,
         WK_APT_NAME,
+        WK_FROM_DATE,
         WK_TO_DATE,
         WK_ARR_PUNCT,
         WK_ARR_PUNCT_DIF_PREV_WEEK,
@@ -1801,11 +1805,213 @@ library(RODBC)
       select(-ST_RANK)
 
     # covert to json and save in app data folder and archive
-    st_apt_punctuality_j <- st_apt_punctuality %>% toJSON()
+    st_apt_punctuality_j <- st_apt_punctuality %>% toJSON(., pretty = TRUE)
     #xxx write(st_apt_punctuality_j, here(data_folder,"st_apt_ranking_punctuality.json"))
     write(st_apt_punctuality_j, paste0(archive_dir, today, "_st_apt_ranking_punctuality.json"))
 
 
+###############################################################################################
+#                                                                                             #
+#    json files for graphs                                                                    #
+#                                                                                             #
+###############################################################################################
+
+  ######### traffic
+    ### 7-day daio average
+    st_daio_evo_app <- st_daio_data %>%
+      mutate(daio_zone_lc = tolower(COUNTRY_NAME)) %>%
+      right_join(state_daio, by = "daio_zone_lc", relationship = "many-to-many") %>%
+      select(
+        iso_2letter,
+        daio_zone,
+        FLIGHT_DATE,
+        AVG_ROLLING_WEEK,
+        AVG_ROLLING_WEEK_PREV_YEAR,
+        AVG_ROLLING_WEEK_2020,
+        AVG_ROLLING_WEEK_2019
+        )
+
+    column_names <- c('iso_2letter', 'daio_zone', 'FLIGHT_DATE', last_year, last_year-1, 2020, 2019)
+    colnames(st_daio_evo_app) <- column_names
+
+    st_daio_evo_app_j <- st_daio_evo_app %>% toJSON(., pretty = TRUE)
+    # write(nw_traffic_evo_app_j, here(data_folder,"nw_traffic_evo_chart_daily.json"))
+    write(st_daio_evo_app_j, paste0(archive_dir, today, "_st_daio_evo_chart_daily.json"))
+
+    ### 7-day dai average
+    st_dai_evo_app <- st_dai_data %>%
+      mutate(daio_zone_lc = tolower(COUNTRY_NAME)) %>%
+      right_join(state_daio, by = "daio_zone_lc", relationship = "many-to-many") %>%
+      select(
+        iso_2letter,
+        daio_zone,
+        FLIGHT_DATE,
+        AVG_ROLLING_WEEK,
+        AVG_ROLLING_WEEK_PREV_YEAR,
+        AVG_ROLLING_WEEK_2020,
+        AVG_ROLLING_WEEK_2019
+      )
+
+    column_names <- c('iso_2letter', 'daio_zone', 'FLIGHT_DATE', last_year, last_year-1, 2020, 2019)
+    colnames(st_dai_evo_app) <- column_names
+
+    st_dai_evo_app_j <- st_dai_evo_app %>% toJSON(., pretty = TRUE)
+    # write(nw_traffic_evo_app_j, here(data_folder,"nw_traffic_evo_chart_daily.json"))
+    write(st_dai_evo_app_j, paste0(archive_dir, today, "_st_dai_evo_chart_daily.json"))
+
+  ######### punctuality 7-day average
+    st_punct_evo_app <- st_punct_raw %>%
+      filter(DAY_DATE >= as.Date(paste0("01-01-", last_year-2), format = "%d-%m-%Y")) %>%
+      arrange(ISO_2LETTER, DAY_DATE) %>%
+      mutate(
+        DEP_PUN_WK = rollsum(DEP_PUNCTUAL_FLIGHTS, 7, fill = NA, align = "right") /
+               rollsum(DEP_SCHEDULE_FLIGHT,7, fill = NA, align = "right") * 100,
+        ARR_PUN_WK = rollsum(ARR_PUNCTUAL_FLIGHTS, 7, fill = NA, align = "right") /
+               rollsum(ARR_SCHEDULE_FLIGHT,7, fill = NA, align = "right") * 100,
+        OP_FLT_WK = 100 - rollsum(MISSING_SCHED_FLIGHTS, 7, fill = NA, align = "right") /
+               rollsum((MISSING_SCHED_FLIGHTS+DEP_FLIGHTS_NO_OVERFLIGHTS),7, fill = NA, align = "right")*100
+             ) %>%
+      filter(DATE >= as.Date(paste0("01-01-", last_year-1), format = "%d-%m-%Y")) %>%
+      mutate(iso_2letter = ISO_2LETTER) %>%
+      right_join(state_iso, by ="iso_2letter") %>%
+      select(
+        iso_2letter,
+        state,
+        DAY_DATE,
+        DEP_PUN_WK,
+        ARR_PUN_WK,
+        OP_FLT_WK
+      )
+
+    column_names <- c('iso_2letter',
+                      'state',
+                      'FLIGHT_DATE',
+                      "Departure punct.",
+                      "Arrival punct.",
+                      "Operated schedules")
+
+    colnames(st_punct_evo_app) <- column_names
+
+    st_punct_evo_app_j <- st_punct_evo_app %>% toJSON(., pretty = TRUE)
+    # write(nw_punct_evo_app_j, here(data_folder,"nw_punct_evo_chart.json"))
+    write(st_punct_evo_app_j, paste0(archive_dir, today, "_st_punct_evo_chart.json"))
+
+  ######### delay
+    st_delay_data <-  read_xlsx(
+      path  = fs::path_abs(
+        str_glue(base_file),
+        start = base_dir),
+      sheet = "state_delay",
+      range = cell_limits(c(1, 1), c(NA, NA))) %>%
+      as_tibble() %>%
+      mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+    st_delay_last_day <- st_delay_data %>%
+      filter(FLIGHT_DATE == max(LAST_DATA_DAY)) %>%
+      mutate(daio_zone_lc = tolower(COUNTRY_NAME)) %>%
+      right_join(state_daio, by = "daio_zone_lc", relationship = "many-to-many")
+
+    st_delay_cause_data <-  read_xlsx(
+      path  = fs::path_abs(
+        str_glue(base_file),
+        start = base_dir),
+      sheet = "state_delay_cause",
+      range = cell_limits(c(1, 1), c(NA, NA))) %>%
+      as_tibble() %>%
+      mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
+      filter(YEAR >= last_year) %>%
+      mutate(daio_zone_lc = tolower(COUNTRY_NAME)) %>%
+      right_join(state_daio, by = "daio_zone_lc", relationship = "many-to-many")
 
 
+  ######### billing
+    st_billing_evo <- st_billing %>%
+      arrange(iso_2letter, year, month) %>%
+      mutate(
+        total_billing = total_billing/10^6,
+        total_billing_py = lag(total_billing, 12),
+        total_billing_dif_mm_perc = total_billing / total_billing_py -1
+      ) %>%
+      group_by(iso_2letter, corrected_cz, year) %>%
+      mutate(
+        total_billing_y2d = cumsum(total_billing)
+      ) %>%
+      ungroup() %>%
+      mutate(
+        total_billing_y2d_py = lag(total_billing_y2d, 12),
+        total_billing_dif_y2d_perc = total_billing_y2d / total_billing_y2d_py -1
+      ) %>%
+      filter(year == last_billing_year) %>%
+      select(
+        iso_2letter,
+        cz_proper,
+        month,
+        total_billing,
+        total_billing_py,
+        total_billing_dif_mm_perc,
+        total_billing_dif_y2d_perc
+        ) %>%
+      mutate(
+        month = month.name[month],
+        min_right_axis = -0.2,
+        max_right_axis = 1.3
+      )
 
+    column_names <- c(
+      'iso_2letter',
+      'charging_zone',
+      "Month",
+      last_billing_year,
+      last_billing_year - 1,
+      paste0("Monthly variation vs ", last_billing_year - 1),
+      paste0 ("Year-to-date variation vs ", last_billing_year - 1),
+      "min_right_axis",
+      "max_right_axis"
+    )
+
+    colnames(st_billing_evo) <- column_names
+
+    st_billing_evo_j <- st_billing_evo %>% toJSON(., pretty = TRUE)
+    # write(nw_billing_evo_j, here(data_folder,"nw_billing_evo_chart.json"))
+    write(st_billing_evo_j, paste0(archive_dir, today, "_st_billing_evo.json"))
+
+  ### co2 emissions
+    st_co2_data_filtered <- st_co2_data_raw %>%
+      mutate(co2_state = STATE_NAME) %>%
+      right_join(state_co2, by = "co2_state") %>%
+      left_join(state_iso, by = "iso_2letter") %>%
+      select(-c(STATE_NAME, STATE_CODE, co2_state, CREA_DATE) )
+
+    st_co2_evo <- st_co2_data_filtered %>%
+      group_by(iso_2letter, state, FLIGHT_MONTH)%>%
+      summarise(TTF = sum(TF), TCO2 = sum(CO2_QTY_TONNES)) %>%
+      mutate(
+        YEAR = as.numeric(format(FLIGHT_MONTH,'%Y')),
+        MONTH = as.numeric(format(FLIGHT_MONTH,'%m'))
+      )%>%
+      arrange(iso_2letter, FLIGHT_MONTH) %>%
+      mutate(
+        DEP_IDX = TTF / first(TTF) * 100,
+        CO2_IDX = TCO2 / first(TCO2) * 100,
+        FLIGHT_MONTH = ceiling_date(as_date(FLIGHT_MONTH), unit = 'month') - 1
+      ) %>%
+      select(
+        iso_2letter, state,
+        FLIGHT_MONTH,
+        CO2_IDX,
+        DEP_IDX
+      )
+
+    column_names <- c(
+      "iso_2letter",
+      "state",
+      "Month",
+      "CO2 index",
+      "Departures index"
+    )
+
+    colnames(st_co2_evo) <- column_names
+
+    st_co2_evo_j <- st_co2_evo %>% toJSON(., pretty = TRUE)
+    # write(st_co2_evo_j, here(data_folder,"nw_co2_evo_chart.json"))
+    write(st_co2_evo_j, paste0(archive_dir, today, "_st_co2_evo.json"))

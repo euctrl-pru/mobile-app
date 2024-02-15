@@ -84,6 +84,7 @@ library(RODBC)
 
   nw_billed_raw <- nw_billed_raw %>%
     janitor::clean_names() %>%
+    filter(year <= 2023) %>% #added temporarily until app monthly section is fixed
     mutate(billing_period_start_date = as.Date(billing_period_start_date, format = "%d-%m-%Y"))
 
   last_billing_date <- max(nw_billed_raw$billing_period_start_date)
@@ -358,7 +359,8 @@ library(RODBC)
    ")
 
   co2_data_raw <- export_query(query) %>%
-    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
+    filter(YEAR <= 2023) ## temporary line while the app upgrade is implemented
 
   co2_data_evo_nw <- co2_data_raw %>%
     select(FLIGHT_MONTH,
