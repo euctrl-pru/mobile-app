@@ -16,7 +16,7 @@ library(RODBC)
 
 source(here::here("R", "helpers.R"))
 
-# parameters
+# Parameters ----
   data_folder <- here::here("data")
   # base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/'
   base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Oscar/Develop/'
@@ -35,7 +35,7 @@ source(here::here("R", "helpers.R"))
   dbn <- Sys.getenv("PRU_DEV_DBNAME")
 
 
-# dimension tables
+# Dimension tables ----
   state_iso <-  read_xlsx(
     path  = fs::path_abs(
       str_glue(base_file),
@@ -86,13 +86,14 @@ source(here::here("R", "helpers.R"))
 
 
 
-###############################################################################################
-#                                                                                             #
-#    json files for state landing page                                                        #
-#                                                                                             #
-###############################################################################################
+# ____________________________________________________________________________________________
+#
+#    State landing page -----
+#
+# ____________________________________________________________________________________________
 
-  ####billing data - we do this first to avoid 'R fatal error'
+  #### Billing data ----
+  ## we do this first to avoid 'R fatal error'
 
     ## https://leowong.ca/blog/connect-to-microsoft-access-database-via-r/
     ## Set up driver info and database path
@@ -176,8 +177,7 @@ source(here::here("R", "helpers.R"))
       select(-state) %>%
       arrange(iso_2letter)
 
-  ###############################################
-  # traffic daio data
+  #### Traffic DAIO data ----
     st_daio_data <-  read_xlsx(
       path  = fs::path_abs(
         str_glue(base_file),
@@ -186,7 +186,6 @@ source(here::here("R", "helpers.R"))
       range = cell_limits(c(1, 1), c(NA, NA))) %>%
       as_tibble() %>%
       mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-
 
     st_daio_last_day <- st_daio_data %>%
       filter(FLIGHT_DATE == last_day) %>%
@@ -225,8 +224,7 @@ source(here::here("R", "helpers.R"))
       select(-state) %>%
       arrange(iso_2letter)
 
-  ###############################################
-  # traffic dai data
+  #### Traffic DAI data ----
     st_dai_data <-  read_xlsx(
       path  = fs::path_abs(
         str_glue(base_file),
@@ -273,9 +271,7 @@ source(here::here("R", "helpers.R"))
       select(-state) %>%
       arrange(iso_2letter)
 
-  ###############################################
-  # delay data
-
+  #### Delay data ----
     st_delay_data <-  read_xlsx(
       path  = fs::path_abs(
         str_glue(base_file),
@@ -361,8 +357,7 @@ source(here::here("R", "helpers.R"))
       select(-state) %>%
       arrange(iso_2letter)
 
-  ###############################################
-  # punctuality data
+  #### Punctuality data ----
     query <- "
       WITH
 
@@ -502,8 +497,7 @@ source(here::here("R", "helpers.R"))
       select (-state) %>%
       arrange(iso_2letter)
 
-  ###############################################
-  # CO2 data
+  #### CO2 data ----
     query <- str_glue("
     SELECT *
       FROM TABLE (emma_pub.api_aiu_stats.MM_AIU_STATE_DEP ())
@@ -622,8 +616,7 @@ source(here::here("R", "helpers.R"))
       arrange(iso_2letter)
 
 
-  ###############################################
-  # join data strings and save
+  #### Join strings and save  ----
     ### https://www.lexjansen.com/pharmasug-cn/2021/SR/Pharmasug-China-2021-SR031.pdf
     st_json_app_j <- state_iso %>% select(iso_2letter, state) %>% arrange(iso_2letter)
     st_json_app_j$st_daio <- st_daio_for_json
@@ -642,16 +635,15 @@ source(here::here("R", "helpers.R"))
     write(st_json_app, paste0(archive_dir, today, "_st_json_app.json"))
 
 
-###############################################################################################
-#                                                                                             #
-#    json files for state ranking tables                                                      #
-#                                                                                             #
-###############################################################################################
+# ____________________________________________________________________________________________
+#
+#    State ranking tables  -----
+#
+# ____________________________________________________________________________________________
 
-  ###############################################    TRAFFIC
-  # Aircraft operators traffic
-
-    # day
+  ## TRAFFIC ----
+  ### Aircraft operators ----
+    #### day ----
     st_ao_data_day_raw <- read_xlsx(
       path  = fs::path_abs(
         str_glue(base_file),
@@ -697,7 +689,7 @@ source(here::here("R", "helpers.R"))
         DY_FLT_DIF_PREV_YEAR_PERC
       )
 
-    # week
+    #### week ----
     st_ao_data_wk_raw <- read_xlsx(
       path  = fs::path_abs(
         str_glue(base_file),
@@ -742,7 +734,7 @@ source(here::here("R", "helpers.R"))
         WK_FLT_DIF_PREV_YEAR_PERC
       )
 
-    # y2d
+    #### y2d ----
     st_ao_data_y2d_raw <- read_xlsx(
       path  = fs::path_abs(
         str_glue(base_file),
@@ -794,7 +786,7 @@ source(here::here("R", "helpers.R"))
         Y2D_FLT_DIF_2019_PERC
       )
 
-    # main card
+    #### main card ----
     st_ao_main_traffic <- st_ao_data_day_int %>%
       mutate(
         MAIN_TFC_AO_GRP_NAME = if_else(
@@ -838,6 +830,7 @@ source(here::here("R", "helpers.R"))
       ungroup() %>%
       select(ST_RANK, MAIN_TFC_DIF_AO_GRP_NAME, MAIN_TFC_DIF_AO_GRP_FLT_DIF)
 
+    #### join tables ----
     # create list of state/rankings for left join
     state_iso_ranking <- list()
     i = 0
@@ -871,10 +864,8 @@ source(here::here("R", "helpers.R"))
     #xxx write(st_ao_data_j, here(data_folder,"ao_ranking_traffic.json"))
     write(st_ao_data_j, paste0(archive_dir, today, "_st_ao_ranking_traffic.json"))
 
-  ###############################################
-  # airports traffic
-
-    # day
+  ### Airports ----
+    #### day ----
     st_apt_data_day_raw <- read_xlsx(
       path  = fs::path_abs(
         str_glue(base_file),
@@ -920,7 +911,7 @@ source(here::here("R", "helpers.R"))
         DY_FLT_DIF_PREV_YEAR_PERC
       )
 
-    # week
+    #### week ----
     st_apt_data_wk_raw <- read_xlsx(
       path  = fs::path_abs(
         str_glue(base_file),
@@ -965,7 +956,7 @@ source(here::here("R", "helpers.R"))
         WK_FLT_DIF_PREV_YEAR_PERC
       )
 
-    # y2d
+    #### y2d ----
     st_apt_data_y2d_raw <- read_xlsx(
       path  = fs::path_abs(
         str_glue(base_file),
@@ -1017,7 +1008,7 @@ source(here::here("R", "helpers.R"))
         Y2D_FLT_DIF_2019_PERC
       )
 
-    # main card
+    #### main card ----
     st_apt_main_traffic <- st_apt_data_day_int %>%
       mutate(
         MAIN_TFC_APT_NAME = if_else(
@@ -1061,6 +1052,7 @@ source(here::here("R", "helpers.R"))
       ungroup() %>%
       select(ST_RANK, MAIN_TFC_DIF_APT_NAME, MAIN_TFC_DIF_APT_FLT_DIF)
 
+    #### join tables ----
     # create list of state/rankings for left join
     state_iso_ranking <- list()
     i = 0
@@ -1092,10 +1084,8 @@ source(here::here("R", "helpers.R"))
     #xxx write(st_ao_data_j, here(data_folder,"ao_ranking_traffic.json"))
     write(st_apt_data_j, paste0(archive_dir, today, "_st_apt_ranking_traffic.json"))
 
-  ###############################################
-  # state pair traffic
-
-    # day
+  ### State pair ----
+    #### day ----
     st_st_data_day_raw <- read_xlsx(
       path  = fs::path_abs(
         str_glue(base_file),
@@ -1141,7 +1131,7 @@ source(here::here("R", "helpers.R"))
         DY_FLT_DIF_PREV_YEAR_PERC
       )
 
-    # week
+    #### week ----
     st_st_data_wk_raw <- read_xlsx(
       path  = fs::path_abs(
         str_glue(base_file),
@@ -1186,7 +1176,7 @@ source(here::here("R", "helpers.R"))
         WK_FLT_DIF_PREV_YEAR_PERC
       )
 
-    # y2d
+    #### y2d ----
     st_st_data_y2d_raw <- read_xlsx(
       path  = fs::path_abs(
         str_glue(base_file),
@@ -1238,7 +1228,7 @@ source(here::here("R", "helpers.R"))
         Y2D_FLT_DIF_2019_PERC
       )
 
-    # main card
+    #### main card ----
     st_st_main_traffic <- st_st_data_day_int %>%
       mutate(
         MAIN_TFC_CTRY_NAME = if_else(
@@ -1282,6 +1272,7 @@ source(here::here("R", "helpers.R"))
       ungroup() %>%
       select(ST_RANK, MAIN_TFC_DIF_CTRY_NAME, MAIN_TFC_DIF_CTRY_FLT_DIF)
 
+    #### join tables ----
     # create list of state/rankings for left join
     state_iso_ranking <- list()
     i = 0
@@ -1313,10 +1304,9 @@ source(here::here("R", "helpers.R"))
     #xxx write(st_ao_data_j, here(data_folder,"ao_ranking_traffic.json"))
     write(st_st_data_j, paste0(archive_dir, today, "_st_st_ranking_traffic.json"))
 
-  ###############################################    DELAY
-  #### ACC delay
-
-    # day data
+  ## DELAY ----
+  ### ACC  ----
+    #### day ----
     acc_delay_day_raw <-  read_xlsx(
       path  = fs::path_abs(
         str_glue(nw_base_file),
@@ -1352,7 +1342,7 @@ source(here::here("R", "helpers.R"))
         DY_ACC_ER_DLY_FLT
         )
 
-    # week
+    #### week ----
     acc_delay_week_raw <-  read_xlsx(
       path  = fs::path_abs(
         str_glue(nw_base_file),
@@ -1391,7 +1381,7 @@ source(here::here("R", "helpers.R"))
         WK_ACC_ER_DLY_FLT
       )
 
-    # y2d
+    #### y2d ----
     acc_delay_y2d_raw <-  read_xlsx(
       path  = fs::path_abs(
         str_glue(nw_base_file),
@@ -1432,6 +1422,7 @@ source(here::here("R", "helpers.R"))
 
     # no main card
 
+    #### join tables ----
     # create list of state/rankings for left join
     state_iso_ranking <- list()
     i = 0
@@ -1461,7 +1452,7 @@ source(here::here("R", "helpers.R"))
     #xxx write(st_acc_delay_j, here(data_folder,"st_acc_ranking_delay.json"))
     write(st_acc_delay_j, paste0(archive_dir, today, "_st_acc_ranking_delay.json"))
 
-  #### airport delay
+  ### Airport ----
     # raw data
     st_apt_delay_raw <-  read_xlsx(
       path  = fs::path_abs(
@@ -1478,7 +1469,7 @@ source(here::here("R", "helpers.R"))
       left_join(airport, by = "ICAO_CODE") %>%
       left_join(state_iso, by = "iso_2letter")
 
-    # day data
+    #### day ----
     st_apt_delay_day <- st_apt_delay_raw %>%
       arrange(desc(DLY_ARR),APT_NAME) %>%
       mutate(
@@ -1502,7 +1493,7 @@ source(here::here("R", "helpers.R"))
         DY_APT_ARR_DLY_FLT
       )
 
-    # week data
+    #### week ----
     st_apt_delay_week <- st_apt_delay_raw %>%
       arrange(desc(ROLL_WEEK_DLY_ARR),APT_NAME) %>%
       mutate(
@@ -1529,8 +1520,7 @@ source(here::here("R", "helpers.R"))
         WK_APT_ARR_DLY_FLT
       )
 
-    # y2d
-
+    #### y2d ----
     st_apt_delay_y2d <- st_apt_delay_raw %>%
       arrange(desc(Y2D_AVG_DLY_ARR),APT_NAME) %>%
       mutate(
@@ -1557,6 +1547,7 @@ source(here::here("R", "helpers.R"))
 
     # no main card
 
+    #### join tables ----
     # create list of state/rankings for left join
     state_iso_ranking <- list()
     i = 0
@@ -1586,9 +1577,9 @@ source(here::here("R", "helpers.R"))
     #xxx write(st_apt_delay_j, here(data_folder,"st_apt_ranking_delay.json"))
     write(st_apt_delay_j, paste0(archive_dir, today, "_st_apt_ranking_delay.json"))
 
-  ######### punctuality
-    ### airport punctuality
-
+  ## PUNTCUALITY ----
+  ### Airport ----
+    # raw data
     query <- "
      WITH
         DIM_AIRPORT as (
@@ -1663,7 +1654,7 @@ source(here::here("R", "helpers.R"))
       )  %>%
       ungroup()
 
-    # day
+    #### day ----
     st_apt_punct_dy <- st_apt_punct_calc %>%
       group_by(iso_2letter, DAY_DATE) %>%
       arrange(iso_2letter, desc(DY_ARR_PUNCT), APT_NAME) %>%
@@ -1692,7 +1683,7 @@ source(here::here("R", "helpers.R"))
         DY_ARR_PUNCT_DIF_PREV_YEAR
       )
 
-    # week
+    #### week ----
     st_apt_punct_wk <- st_apt_punct_calc %>%
       group_by(iso_2letter, DAY_DATE) %>%
       arrange(iso_2letter, desc(WK_ARR_PUNCT), APT_NAME) %>%
@@ -1725,7 +1716,7 @@ source(here::here("R", "helpers.R"))
         WK_ARR_PUNCT_DIF_PREV_YEAR
       )
 
-    # y2d
+    #### y2d ----
     st_apt_punct_y2d <- st_apt_punct_calc %>%
       mutate(MONTH_DAY = as.numeric(format(DAY_DATE, format = "%m%d"))) %>%
       filter(MONTH_DAY <= as.numeric(format(last_punctuality_day, format = "%m%d"))) %>%
@@ -1761,6 +1752,7 @@ source(here::here("R", "helpers.R"))
 
     # no main card
 
+    #### join tables ----
     # create list of state/rankings for left join
     state_iso_ranking <- list()
     i = 0
@@ -1791,14 +1783,14 @@ source(here::here("R", "helpers.R"))
     write(st_apt_punctuality_j, paste0(archive_dir, today, "_st_apt_ranking_punctuality.json"))
 
 
-###############################################################################################
-#                                                                                             #
-#    json files for graphs                                                                    #
-#                                                                                             #
-###############################################################################################
+# ____________________________________________________________________________________________
+#
+#    State graphs  -----
+#
+# ____________________________________________________________________________________________
 
-  ######### traffic
-    ### 7-day daio average
+  ## TRAFFIC ----
+    ### 7-day DAIO avg ----
     st_daio_evo_app <- st_daio_data %>%
       mutate(daio_zone_lc = tolower(COUNTRY_NAME)) %>%
       right_join(state_daio, by = "daio_zone_lc", relationship = "many-to-many") %>%
@@ -1819,7 +1811,7 @@ source(here::here("R", "helpers.R"))
     # write(nw_traffic_evo_app_j, here(data_folder,"nw_traffic_evo_chart_daily.json"))
     write(st_daio_evo_app_j, paste0(archive_dir, today, "_st_daio_evo_chart_daily.json"))
 
-    ### 7-day dai average
+    ### 7-day DAI avg ----
     st_dai_evo_app <- st_dai_data %>%
       mutate(daio_zone_lc = tolower(COUNTRY_NAME)) %>%
       right_join(state_daio, by = "daio_zone_lc", relationship = "many-to-many") %>%
@@ -1840,7 +1832,8 @@ source(here::here("R", "helpers.R"))
     # write(nw_traffic_evo_app_j, here(data_folder,"nw_traffic_evo_chart_daily.json"))
     write(st_dai_evo_app_j, paste0(archive_dir, today, "_st_dai_evo_chart_daily.json"))
 
-  ######### punctuality 7-day average
+  ## PUNCTUALITY ----
+    ### 7-day punctuality avg ----
     st_punct_evo_app <- st_punct_raw %>%
       filter(DAY_DATE >= as.Date(paste0("01-01-", last_year-2), format = "%d-%m-%Y")) %>%
       arrange(ISO_2LETTER, DAY_DATE) %>%
@@ -1877,7 +1870,8 @@ source(here::here("R", "helpers.R"))
     # write(nw_punct_evo_app_j, here(data_folder,"nw_punct_evo_chart.json"))
     write(st_punct_evo_app_j, paste0(archive_dir, today, "_st_punct_evo_chart.json"))
 
-  ######### delay
+  ## DELAY ----
+    ### Delay cause ----
     st_delay_data <-  read_xlsx(
       path  = fs::path_abs(
         str_glue(base_file),
@@ -1905,7 +1899,7 @@ source(here::here("R", "helpers.R"))
       right_join(state_daio, by = "daio_zone_lc", relationship = "many-to-many")
 
 
-  ######### billing
+  ## BILLING ----
     st_billing_evo <- st_billing %>%
       arrange(iso_2letter, year, month) %>%
       mutate(
@@ -1956,7 +1950,7 @@ source(here::here("R", "helpers.R"))
     # write(nw_billing_evo_j, here(data_folder,"nw_billing_evo_chart.json"))
     write(st_billing_evo_j, paste0(archive_dir, today, "_st_billing_evo.json"))
 
-  ### co2 emissions
+  ## CO2 ----
     st_co2_data_filtered <- st_co2_data_raw %>%
       mutate(co2_state = STATE_NAME) %>%
       right_join(state_co2, by = "co2_state") %>%
