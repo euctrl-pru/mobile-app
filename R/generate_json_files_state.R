@@ -1814,6 +1814,7 @@ source(here::here("R", "helpers.R"))
     column_names <- c('iso_2letter', 'daio_zone', 'FLIGHT_DATE', last_year, last_year-1, 2020, 2019)
     colnames(st_daio_evo_app) <- column_names
 
+    ### nest data
     st_daio_evo_app_long <- st_daio_evo_app %>%
       pivot_longer(-c(iso_2letter, daio_zone, FLIGHT_DATE), names_to = 'year', values_to = 'daio') %>%
       group_by(iso_2letter, daio_zone, FLIGHT_DATE) %>%
@@ -1842,7 +1843,13 @@ source(here::here("R", "helpers.R"))
     column_names <- c('iso_2letter', 'daio_zone', 'FLIGHT_DATE', last_year, last_year-1, 2020, 2019)
     colnames(st_dai_evo_app) <- column_names
 
-    st_dai_evo_app_j <- st_dai_evo_app %>% toJSON(., pretty = TRUE)
+    ### nest data
+    st_dai_evo_app_long <- st_dai_evo_app %>%
+      pivot_longer(-c(iso_2letter, daio_zone, FLIGHT_DATE), names_to = 'year', values_to = 'dai') %>%
+      group_by(iso_2letter, daio_zone, FLIGHT_DATE) %>%
+      nest_legacy(.key = "statistics")
+
+    st_dai_evo_app_j <- st_dai_evo_app_long %>% toJSON(., pretty = TRUE)
     # write(nw_traffic_evo_app_j, here(data_folder,"nw_traffic_evo_chart_daily.json"))
     write(st_dai_evo_app_j, paste0(archive_dir, today, "_st_dai_evo_chart_daily.json"))
     write(st_dai_evo_app_j, paste0(archive_dir, "st_dai_evo_chart_daily.json"))
@@ -1881,7 +1888,14 @@ source(here::here("R", "helpers.R"))
 
     colnames(st_punct_evo_app) <- column_names
 
-    st_punct_evo_app_j <- st_punct_evo_app %>% toJSON(., pretty = TRUE)
+    ### nest data
+    st_punct_evo_app_long <- st_punct_evo_app %>%
+      pivot_longer(-c(iso_2letter, state, FLIGHT_DATE), names_to = 'metric', values_to = 'value') %>%
+      group_by(iso_2letter, state, FLIGHT_DATE) %>%
+      nest_legacy(.key = "statistics")
+
+
+    st_punct_evo_app_j <- st_punct_evo_app_long %>% toJSON(., pretty = TRUE)
     # write(nw_punct_evo_app_j, here(data_folder,"nw_punct_evo_chart.json"))
     write(st_punct_evo_app_j, paste0(archive_dir, today, "_st_punct_evo_chart.json"))
     write(st_punct_evo_app_j, paste0(archive_dir, "st_punct_evo_chart.json"))
@@ -1951,7 +1965,7 @@ source(here::here("R", "helpers.R"))
     column_names <- c(
       'iso_2letter',
       'charging_zone',
-      "Month",
+      "month",
       last_billing_year,
       last_billing_year - 1,
       paste0("Monthly variation vs ", last_billing_year - 1),
@@ -1962,7 +1976,14 @@ source(here::here("R", "helpers.R"))
 
     colnames(st_billing_evo) <- column_names
 
-    st_billing_evo_j <- st_billing_evo %>% toJSON(., pretty = TRUE)
+    ### nest data
+    st_billing_evo_long <- st_billing_evo %>%
+      pivot_longer(-c(iso_2letter, charging_zone, month), names_to = 'metric', values_to = 'value') %>%
+      group_by(iso_2letter, charging_zone, month) %>%
+      nest_legacy(.key = "statistics")
+
+
+    st_billing_evo_j <- st_billing_evo_long %>% toJSON(., pretty = TRUE)
     # write(nw_billing_evo_j, here(data_folder,"nw_billing_evo_chart.json"))
     write(st_billing_evo_j, paste0(archive_dir, today, "_st_billing_evo.json"))
     write(st_billing_evo_j, paste0(archive_dir, "st_billing_evo.json"))
@@ -1997,14 +2018,20 @@ source(here::here("R", "helpers.R"))
     column_names <- c(
       "iso_2letter",
       "state",
-      "Month",
+      "month",
       "CO2 index",
       "Departures index"
     )
 
     colnames(st_co2_evo) <- column_names
 
-    st_co2_evo_j <- st_co2_evo %>% toJSON(., pretty = TRUE)
+    ### nest data
+    st_co2_evo_long <- st_co2_evo %>%
+      pivot_longer(-c(iso_2letter, state, month), names_to = 'metric', values_to = 'value') %>%
+      group_by(iso_2letter, state, month) %>%
+      nest_legacy(.key = "statistics")
+
+    st_co2_evo_j <- st_co2_evo_long %>% toJSON(., pretty = TRUE)
     # write(st_co2_evo_j, here(data_folder,"nw_co2_evo_chart.json"))
     write(st_co2_evo_j, paste0(archive_dir, "st_co2_evo.json"))
     write(st_co2_evo_j, paste0(archive_dir, today, "_st_co2_evo.json"))
