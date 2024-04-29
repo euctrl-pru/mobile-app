@@ -632,6 +632,7 @@ source(here::here("R", "helpers.R"))
       substr(., 2, nchar(.))
 
     #xxx write(st_json_app, here(data_folder,"st_json_app.json"))
+    write(st_json_app, paste0(archive_dir, "st_json_app.json"))
     write(st_json_app, paste0(archive_dir, today, "_st_json_app.json"))
 
 
@@ -863,6 +864,7 @@ source(here::here("R", "helpers.R"))
     st_ao_data_j <- st_ao_data %>% toJSON(., pretty = TRUE)
     #xxx write(st_ao_data_j, here(data_folder,"ao_ranking_traffic.json"))
     write(st_ao_data_j, paste0(archive_dir, today, "_st_ao_ranking_traffic.json"))
+    write(st_ao_data_j, paste0(archive_dir, "st_ao_ranking_traffic.json"))
 
   ### Airports ----
     #### day ----
@@ -1083,6 +1085,7 @@ source(here::here("R", "helpers.R"))
     st_apt_data_j <- st_apt_data %>% toJSON(., pretty = TRUE)
     #xxx write(st_ao_data_j, here(data_folder,"ao_ranking_traffic.json"))
     write(st_apt_data_j, paste0(archive_dir, today, "_st_apt_ranking_traffic.json"))
+    write(st_apt_data_j, paste0(archive_dir, "st_apt_ranking_traffic.json"))
 
   ### State pair ----
     #### day ----
@@ -1303,6 +1306,7 @@ source(here::here("R", "helpers.R"))
     st_st_data_j <- st_st_data %>% toJSON(., pretty = TRUE)
     #xxx write(st_ao_data_j, here(data_folder,"ao_ranking_traffic.json"))
     write(st_st_data_j, paste0(archive_dir, today, "_st_st_ranking_traffic.json"))
+    write(st_st_data_j, paste0(archive_dir, "st_st_ranking_traffic.json"))
 
   ## DELAY ----
   ### ACC  ----
@@ -1451,6 +1455,7 @@ source(here::here("R", "helpers.R"))
     st_acc_delay_j <- st_acc_delay %>% toJSON(., pretty = TRUE)
     #xxx write(st_acc_delay_j, here(data_folder,"st_acc_ranking_delay.json"))
     write(st_acc_delay_j, paste0(archive_dir, today, "_st_acc_ranking_delay.json"))
+    write(st_acc_delay_j, paste0(archive_dir, "st_acc_ranking_delay.json"))
 
   ### Airport ----
     # raw data
@@ -1576,6 +1581,7 @@ source(here::here("R", "helpers.R"))
     st_apt_delay_j <- st_apt_delay %>% toJSON(., pretty = TRUE)
     #xxx write(st_apt_delay_j, here(data_folder,"st_apt_ranking_delay.json"))
     write(st_apt_delay_j, paste0(archive_dir, today, "_st_apt_ranking_delay.json"))
+    write(st_apt_delay_j, paste0(archive_dir, "st_apt_ranking_delay.json"))
 
   ## PUNTCUALITY ----
   ### Airport ----
@@ -1781,6 +1787,7 @@ source(here::here("R", "helpers.R"))
     st_apt_punctuality_j <- st_apt_punctuality %>% toJSON(., pretty = TRUE)
     #xxx write(st_apt_punctuality_j, here(data_folder,"st_apt_ranking_punctuality.json"))
     write(st_apt_punctuality_j, paste0(archive_dir, today, "_st_apt_ranking_punctuality.json"))
+    write(st_apt_punctuality_j, paste0(archive_dir, "st_apt_ranking_punctuality.json"))
 
 
 # ____________________________________________________________________________________________
@@ -1807,9 +1814,16 @@ source(here::here("R", "helpers.R"))
     column_names <- c('iso_2letter', 'daio_zone', 'FLIGHT_DATE', last_year, last_year-1, 2020, 2019)
     colnames(st_daio_evo_app) <- column_names
 
-    st_daio_evo_app_j <- st_daio_evo_app %>% toJSON(., pretty = TRUE)
+    st_daio_evo_app_long <- st_daio_evo_app %>%
+      pivot_longer(-c(iso_2letter, daio_zone, FLIGHT_DATE), names_to = 'year', values_to = 'daio') %>%
+      group_by(iso_2letter, daio_zone, FLIGHT_DATE) %>%
+      nest_legacy(.key = "statistics")
+
+
+    st_daio_evo_app_j <- st_daio_evo_app_long %>% toJSON(., pretty = TRUE)
     # write(nw_traffic_evo_app_j, here(data_folder,"nw_traffic_evo_chart_daily.json"))
     write(st_daio_evo_app_j, paste0(archive_dir, today, "_st_daio_evo_chart_daily.json"))
+    write(st_daio_evo_app_j, paste0(archive_dir, "st_daio_evo_chart_daily.json"))
 
     ### 7-day DAI avg ----
     st_dai_evo_app <- st_dai_data %>%
@@ -1831,6 +1845,7 @@ source(here::here("R", "helpers.R"))
     st_dai_evo_app_j <- st_dai_evo_app %>% toJSON(., pretty = TRUE)
     # write(nw_traffic_evo_app_j, here(data_folder,"nw_traffic_evo_chart_daily.json"))
     write(st_dai_evo_app_j, paste0(archive_dir, today, "_st_dai_evo_chart_daily.json"))
+    write(st_dai_evo_app_j, paste0(archive_dir, "st_dai_evo_chart_daily.json"))
 
   ## PUNCTUALITY ----
     ### 7-day punctuality avg ----
@@ -1869,6 +1884,7 @@ source(here::here("R", "helpers.R"))
     st_punct_evo_app_j <- st_punct_evo_app %>% toJSON(., pretty = TRUE)
     # write(nw_punct_evo_app_j, here(data_folder,"nw_punct_evo_chart.json"))
     write(st_punct_evo_app_j, paste0(archive_dir, today, "_st_punct_evo_chart.json"))
+    write(st_punct_evo_app_j, paste0(archive_dir, "st_punct_evo_chart.json"))
 
   ## DELAY ----
     ### Delay cause ----
@@ -1949,6 +1965,7 @@ source(here::here("R", "helpers.R"))
     st_billing_evo_j <- st_billing_evo %>% toJSON(., pretty = TRUE)
     # write(nw_billing_evo_j, here(data_folder,"nw_billing_evo_chart.json"))
     write(st_billing_evo_j, paste0(archive_dir, today, "_st_billing_evo.json"))
+    write(st_billing_evo_j, paste0(archive_dir, "st_billing_evo.json"))
 
   ## CO2 ----
     st_co2_data_filtered <- st_co2_data_raw %>%
@@ -1989,4 +2006,5 @@ source(here::here("R", "helpers.R"))
 
     st_co2_evo_j <- st_co2_evo %>% toJSON(., pretty = TRUE)
     # write(st_co2_evo_j, here(data_folder,"nw_co2_evo_chart.json"))
+    write(st_co2_evo_j, paste0(archive_dir, "st_co2_evo.json"))
     write(st_co2_evo_j, paste0(archive_dir, today, "_st_co2_evo.json"))

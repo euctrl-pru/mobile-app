@@ -151,7 +151,7 @@ nw_traffic_json <- nw_traffic_last_day %>%
     Y2D_DIFF_PREV_YEAR_PERC,
     Y2D_DIFF_2019_PERC
   ) %>%
-  toJSON(., digits = 10) %>%
+  toJSON(., pretty = TRUE)., digits = 10) %>%
   substr(., 1, nchar(.) - 1) %>%
   substr(., 2, nchar(.))
 
@@ -225,7 +225,7 @@ nw_delay_for_json <- nw_delay_data %>%
   )
 
 nw_delay_json <- nw_delay_for_json %>%
-  toJSON() %>%
+  toJSON(., pretty = TRUE)) %>%
   substr(., 1, nchar(.) - 1) %>%
   substr(., 2, nchar(.))
 
@@ -355,7 +355,7 @@ nw_punct_data_y2d <- nw_punct_data_raw %>%
 
 nw_punct_json <- merge(nw_punct_data_d_w, nw_punct_data_y2d, by = "INDEX") %>%
   select(-INDEX) %>%
-  toJSON() %>%
+  toJSON(., pretty = TRUE)) %>%
   substr(., 1, nchar(.) - 1) %>%
   substr(., 2, nchar(.))
 
@@ -470,7 +470,7 @@ co2_for_json <- co2_data_evo_nw %>%
   filter(FLIGHT_MONTH == co2_last_date)
 
 nw_co2_json <- co2_for_json %>%
-  toJSON() %>%
+  toJSON(., pretty = TRUE)) %>%
   substr(., 1, nchar(.) - 1) %>%
   substr(., 2, nchar(.))
 
@@ -485,7 +485,7 @@ update_day <- floor_date(lubridate::now(), unit = "days") %>%
   rename(APP_UPDATE = 1)
 
 update_day_json <- update_day %>%
-  toJSON() %>%
+  toJSON(., pretty = TRUE)) %>%
   substr(., 1, nchar(.) - 1) %>%
   substr(., 2, nchar(.))
 
@@ -524,7 +524,7 @@ colnames(nw_traffic_evo_app) <- column_names
 #           file = here(data_folder,"nw_traffic_evo_app.csv"),
 #           row.names = FALSE)
 
-nw_traffic_evo_app_j <- nw_traffic_evo_app %>% toJSON()
+nw_traffic_evo_app_j <- nw_traffic_evo_app %>% toJSON(., pretty = TRUE)
 write(nw_traffic_evo_app_j, here(data_folder, "nw_traffic_evo_chart_daily.json"))
 write(nw_traffic_evo_app_j, paste0(archive_dir, today, "_nw_traffic_evo_chart_daily.json"))
 
@@ -543,7 +543,7 @@ nw_traffic_month_data <- read_xlsx(
 ) %>%
   as_tibble()
 
-nw_traffic_month_data_j <- nw_traffic_month_data %>% toJSON()
+nw_traffic_month_data_j <- nw_traffic_month_data %>% toJSON(., pretty = TRUE)
 write(nw_traffic_month_data_j, here(data_folder, "nw_traffic_evo_chart_monthly.json"))
 write(nw_traffic_month_data_j, paste0(archive_dir, today, "_nw_traffic_evo_chart_monthly.json"))
 
@@ -606,7 +606,7 @@ column_names <- c(
 )
 colnames(nw_delay_evo_app) <- column_names
 
-nw_delay_evo_app_j <- nw_delay_evo_app %>% toJSON()
+nw_delay_evo_app_j <- nw_delay_evo_app %>% toJSON(., pretty = TRUE)
 write(nw_delay_evo_app_j, here(data_folder, "nw_delay_category_evo_chart.json"))
 write(nw_delay_evo_app_j, paste0(archive_dir, today, "_nw_delay_category_evo_chart.json"))
 
@@ -636,7 +636,7 @@ column_names <- c(
 )
 colnames(nw_delay_flt_evo_app) <- column_names
 
-nw_delay_flt_evo_app_j <- nw_delay_flt_evo_app %>% toJSON()
+nw_delay_flt_evo_app_j <- nw_delay_flt_evo_app %>% toJSON(., pretty = TRUE)
 write(nw_delay_flt_evo_app_j, here(data_folder, "nw_delay_flt_type_evo_chart.json"))
 write(nw_delay_flt_evo_app_j, paste0(archive_dir, today, "_nw_delay_flt_type_evo_chart.json"))
 
@@ -663,7 +663,7 @@ column_names <- c(
 )
 colnames(nw_punct_evo_app) <- column_names
 
-nw_punct_evo_app_j <- nw_punct_evo_app %>% toJSON()
+nw_punct_evo_app_j <- nw_punct_evo_app %>% toJSON(., pretty = TRUE)
 write(nw_punct_evo_app_j, here(data_folder, "nw_punct_evo_chart.json"))
 write(nw_punct_evo_app_j, paste0(archive_dir, today, "_nw_punct_evo_chart.json"))
 
@@ -711,7 +711,7 @@ column_names <- c(
 
 colnames(nw_billing_evo) <- column_names
 
-nw_billing_evo_j <- nw_billing_evo %>% toJSON()
+nw_billing_evo_j <- nw_billing_evo %>% toJSON(., pretty = TRUE)
 write(nw_billing_evo_j, here(data_folder, "nw_billing_evo_chart.json"))
 write(nw_billing_evo_j, paste0(archive_dir, today, "_nw_billing_evo_chart.json"))
 
@@ -751,14 +751,14 @@ column_names <- c(
 
 colnames(nw_co2_evo) <- column_names
 
-nw_co2_evo_j <- nw_co2_evo %>% toJSON()
+nw_co2_evo_j <- nw_co2_evo %>% toJSON(., pretty = TRUE)
 write(nw_co2_evo_j, here(data_folder, "nw_co2_evo_chart.json"))
 write(nw_co2_evo_j, paste0(archive_dir, today, "_nw_co2_evo_chart.json"))
 
 
 # --- json for mobile app ranking tables --------------------
 
-######### Aircraft operators traffic
+## Aircraft operators traffic ----
 
 # day
 ao_data_dy <- read_xlsx(
@@ -849,23 +849,25 @@ ao_data <- ao_data %>%
     WK_AO_GRP_NAME,
     WK_FROM_DATE = WK_MIN_ENTRY_DATE,
     WK_TO_DATE = WK_MAX_ENTRY_DATE,
+    # WK_FLIGHT = WK_DAILY_FLIGHT,
     WK_DAILY_FLIGHT,
     WK_DIF_PREV_WEEK_PERC = WK_FLIGHT_DIFF_7DAY_PERC,
     WK_DIF_PREV_YEAR_PERC = WK_FLIGHT_DIFF_PERC,
     Y2D_RANK_DIF_PREV_YEAR,
     Y2D_AO_GRP_NAME,
     Y2D_TO_DATE = last_data_day,
+    # Y2D_FLIGHT = "1_Y2D_CURRENT_YEAR",
     Y2D_DAILY_FLIGHT = "1_Y2D_CURRENT_YEAR",
     Y2D_DIF_PREV_YEAR_PERC = Dif_prev_year,
     Y2D_DIF_2019_PERC = Dif_2019
   ))
 
 # covert to json and save in app data folder and archive
-ao_data_j <- ao_data %>% toJSON()
+ao_data_j <- ao_data %>% toJSON(., pretty = TRUE)
 write(ao_data_j, here(data_folder, "ao_ranking_traffic.json"))
 write(ao_data_j, paste0(archive_dir, today, "_ao_ranking_traffic.json"))
 
-######### Airport traffic
+## Airport traffic ----
 
 # day
 apt_data_dy <- read_xlsx(
@@ -967,11 +969,11 @@ apt_data <- apt_data %>%
   ))
 
 # covert to json and save in app data folder and archive
-apt_data_j <- apt_data %>% toJSON()
+apt_data_j <- apt_data %>% toJSON(., pretty = TRUE)
 write(apt_data_j, here(data_folder, "apt_ranking_traffic.json"))
 write(apt_data_j, paste0(archive_dir, today, "_apt_ranking_traffic.json"))
 
-######### Country traffic DAI
+## Country traffic DAI ----
 
 # day
 ct_dai_data_dy <- read_xlsx(
@@ -1069,11 +1071,11 @@ ct_dai_data <- ct_dai_data %>%
   ))
 
 # covert to json and save in app data folder and archive
-ct_dai_data_j <- ct_dai_data %>% toJSON()
+ct_dai_data_j <- ct_dai_data %>% toJSON(., pretty = TRUE)
 write(ct_dai_data_j, here(data_folder, "ctry_ranking_traffic_DAI.json"))
 write(ct_dai_data_j, paste0(archive_dir, today, "_ctry_ranking_traffic_DAI.json"))
 
-######### Airport delay
+## Airport delay -----
 
 # raw data
 apt_rank_data_raw <- read_xlsx(
@@ -1197,12 +1199,12 @@ apt_rank_data <- apt_rank_data %>%
   ))
 
 # covert to json and save in app data folder and archive
-apt_rank_data_j <- apt_rank_data %>% toJSON()
+apt_rank_data_j <- apt_rank_data %>% toJSON(., pretty = TRUE)
 write(apt_rank_data_j, here(data_folder, "apt_ranking_delay.json"))
 write(apt_rank_data_j, paste0(archive_dir, today, "_apt_ranking_delay.json"))
 
 
-######### ACC delay
+## ACC delay ----
 
 # day data
 acc_rank_data_day_raw <- read_xlsx(
@@ -1347,12 +1349,12 @@ acc_rank_data <- acc_rank_data %>%
   ))
 
 # covert to json and save in app data folder and archive
-acc_rank_data_j <- acc_rank_data %>% toJSON()
+acc_rank_data_j <- acc_rank_data %>% toJSON(., pretty = TRUE)
 write(acc_rank_data_j, here(data_folder, "acc_ranking_delay.json"))
 write(acc_rank_data_j, paste0(archive_dir, today, "_acc_ranking_delay.json"))
 
 
-######### Country delay
+## Country delay ----
 
 # day data
 ct_rank_data_day_raw <- read_xlsx(
@@ -1484,12 +1486,12 @@ ct_rank_data <- ct_rank_data %>%
   ))
 
 # covert to json and save in app data folder and archive
-ct_rank_data_j <- ct_rank_data %>% toJSON()
+ct_rank_data_j <- ct_rank_data %>% toJSON(., pretty = TRUE)
 write(ct_rank_data_j, here(data_folder, "ctry_ranking_delay.json"))
 write(ct_rank_data_j, paste0(archive_dir, today, "_ctry_ranking_delay.json"))
 
 
-######### Airport punctuality
+## Airport punctuality ----
 ### we need data from 2019 so I'm using the source view instead of the excel file
 
 query <- "
@@ -1729,11 +1731,11 @@ apt_punct_data <- apt_punct_data %>%
   ))
 
 # covert to json and save in app data folder and archive
-apt_punct_data_j <- apt_punct_data %>% toJSON()
+apt_punct_data_j <- apt_punct_data %>% toJSON(., pretty = TRUE)
 write(apt_punct_data_j, here(data_folder, "apt_ranking_punctuality.json"))
 write(apt_punct_data_j, paste0(archive_dir, today, "_apt_ranking_punctuality.json"))
 
-######### Country punctuality
+## Country punctuality ----
 ##### NOte: the time series for each country is not full. At some point it needs to be fixed either here or in the initial query so the lag functions yield the right result
 
 ### we need data from 2019 so I'm using the source view instead of the excel file
@@ -1946,6 +1948,6 @@ ct_punct_data <- ct_punct_data %>%
   ))
 
 # covert to json and save in app data folder and archive
-ct_punct_data_j <- ct_punct_data %>% toJSON()
+ct_punct_data_j <- ct_punct_data %>% toJSON(., pretty = TRUE)
 write(ct_punct_data_j, here(data_folder, "ctry_ranking_punctuality.json"))
 write(ct_punct_data_j, paste0(archive_dir, today, "_ctry_ranking_punctuality.json"))
