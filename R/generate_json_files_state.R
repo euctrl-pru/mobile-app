@@ -281,6 +281,7 @@ source(here::here("R", "helpers.R"))
       mutate_all(~replace(., is.na(.), 0)) %>%
       select(FLIGHT_DATE,
              iso_2letter,
+             daio_zone,
              flight_type,
              DAY_TFC,
              DAY_TFC_PREV_WEEK,
@@ -300,7 +301,7 @@ source(here::here("R", "helpers.R"))
              Y2D_AVG_TFC_PREV_YEAR,
              Y2D_AVG_TFC_2019
       ) %>%
-      mutate(across(-c(FLIGHT_DATE, flight_type, iso_2letter), ~ .* -1 ))
+      mutate(across(-c(FLIGHT_DATE, flight_type, iso_2letter, daio_zone), ~ .* -1 ))
 
 
     st_daio_data_zone_p <- st_daio_data_zone %>%
@@ -308,6 +309,7 @@ source(here::here("R", "helpers.R"))
       mutate_all(~replace(., is.na(.), 0)) %>%
       select(FLIGHT_DATE,
              iso_2letter,
+             daio_zone,
              flight_type,
              DAY_TFC,
              DAY_TFC_PREV_WEEK,
@@ -329,7 +331,7 @@ source(here::here("R", "helpers.R"))
       )
 
     st_overflight_data_zone <- rbind(st_daio_data_zone_p, st_dai_data_zone_p) %>%
-      group_by(iso_2letter, FLIGHT_DATE) %>%
+      group_by(iso_2letter, daio_zone, FLIGHT_DATE) %>%
       summarise(DAY_TFC = sum(DAY_TFC),
                 DAY_TFC_PREV_WEEK = sum(DAY_TFC_PREV_WEEK),
                 DAY_TFC_PREV_YEAR = sum(DAY_TFC_PREV_YEAR),
@@ -1930,9 +1932,7 @@ source(here::here("R", "helpers.R"))
 
   ## TRAFFIC ----
     ### 7-day DAIO avg ----
-    st_daio_evo_app <- st_daio_data %>%
-      mutate(daio_zone_lc = tolower(COUNTRY_NAME)) %>%
-      right_join(state_daio, by = "daio_zone_lc", relationship = "many-to-many") %>%
+    st_daio_evo_app <- st_daio_data_zone  %>%
       select(
         iso_2letter,
         daio_zone,
@@ -1959,9 +1959,7 @@ source(here::here("R", "helpers.R"))
     write(st_daio_evo_app_j, paste0(archive_dir, "st_daio_evo_chart_daily.json"))
 
     ### 7-day DAI avg ----
-    st_dai_evo_app <- st_dai_data %>%
-      mutate(daio_zone_lc = tolower(COUNTRY_NAME)) %>%
-      right_join(state_daio, by = "daio_zone_lc", relationship = "many-to-many") %>%
+    st_dai_evo_app <- st_dai_data_zone %>%
       select(
         iso_2letter,
         daio_zone,
@@ -1985,6 +1983,32 @@ source(here::here("R", "helpers.R"))
     # write(nw_traffic_evo_app_j, here(data_folder,"nw_traffic_evo_chart_daily.json"))
     write(st_dai_evo_app_j, paste0(archive_dir, today, "_st_dai_evo_chart_daily.json"))
     write(st_dai_evo_app_j, paste0(archive_dir, "st_dai_evo_chart_daily.json"))
+
+    ### 7-day OVF avg ----
+    st_ovf_evo_app <- st_overflight_data_zone %>%
+      select(
+        iso_2letter,
+        daio_zone,
+        FLIGHT_DATE,
+        AVG_ROLLING_WEEK,
+        AVG_ROLLING_WEEK_PREV_YEAR,
+        AVG_ROLLING_WEEK_2020,
+        AVG_ROLLING_WEEK_2019
+      )
+
+    column_names <- c('iso_2letter', 'daio_zone', 'FLIGHT_DATE', last_year, last_year-1, 2020, 2019)
+    colnames(st_ovf_evo_app) <- column_names
+
+    ### nest data
+    st_ovf_evo_app_long <- st_ovf_evo_app %>%
+      pivot_longer(-c(iso_2letter, daio_zone, FLIGHT_DATE), names_to = 'year', values_to = 'ovf') %>%
+      group_by(iso_2letter, daio_zone, FLIGHT_DATE) %>%
+      nest_legacy(.key = "statistics")
+
+    st_ovf_evo_app_j <- st_ovf_evo_app_long %>% toJSON(., pretty = TRUE)
+    # write(nw_traffic_evo_app_j, here(data_folder,"nw_traffic_evo_chart_daily.json"))
+    write(st_ovf_evo_app_j, paste0(archive_dir, today, "_st_ovf_evo_chart_daily.json"))
+    write(st_ovf_evo_app_j, paste0(archive_dir, "st_ovf_evo_chart_daily.json"))
 
   ## PUNCTUALITY ----
     ### 7-day punctuality avg ----
@@ -2167,3 +2191,4 @@ source(here::here("R", "helpers.R"))
     # write(st_co2_evo_j, here(data_folder,"nw_co2_evo_chart.json"))
     write(st_co2_evo_j, paste0(archive_dir, "st_co2_evo.json"))
     write(st_co2_evo_j, paste0(archive_dir, today, "_st_co2_evo.json"))
+
