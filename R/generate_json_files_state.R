@@ -187,13 +187,15 @@ source(here::here("R", "helpers.R"))
       as_tibble() %>%
       mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-    st_daio_last_day <- st_daio_data %>%
-      filter(FLIGHT_DATE == last_day) %>%
+    st_daio_data_zone <- st_daio_data %>%
       mutate(daio_zone_lc = tolower(COUNTRY_NAME)) %>%
-      right_join(state_daio, by = "daio_zone_lc", relationship = "many-to-many")
+      right_join(state_daio, by = "daio_zone_lc", relationship = "many-to-many") %>%
+      arrange(iso_2letter, daio_zone_lc, FLIGHT_DATE)
+
+    st_daio_last_day <- st_daio_data_zone %>%
+      filter(FLIGHT_DATE == last_day)
 
     st_daio_for_json <- st_daio_last_day %>%
-      filter(FLIGHT_DATE == last_day) %>%
       select(
         iso_2letter,
         FLIGHT_DATE,
@@ -234,13 +236,15 @@ source(here::here("R", "helpers.R"))
       as_tibble() %>%
       mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-    st_dai_last_day <- st_dai_data %>%
-      filter(FLIGHT_DATE == last_day) %>%
+    st_dai_data_zone <- st_dai_data %>%
       mutate(daio_zone_lc = tolower(COUNTRY_NAME)) %>%
-      right_join(state_daio, by = "daio_zone_lc", relationship = "many-to-many")
+      right_join(state_daio, by = "daio_zone_lc", relationship = "many-to-many") %>%
+      arrange(iso_2letter, daio_zone_lc, FLIGHT_DATE)
+
+    st_dai_last_day <- st_dai_data_zone %>%
+      filter(FLIGHT_DATE == last_day)
 
     st_dai_for_json <- st_dai_last_day %>%
-      filter(FLIGHT_DATE == last_day) %>%
       select(
         iso_2letter,
         FLIGHT_DATE,
@@ -266,6 +270,131 @@ source(here::here("R", "helpers.R"))
         Y2D_DAI_AVG = Y2D_AVG_TFC_YEAR,
         Y2D_DAI_DIF_PY_PERC = Y2D_DIFF_PREV_YEAR_PERC,
         Y2D_DAI_DIF_2019_PERC = Y2D_DIFF_2019_PERC
+      ) %>%
+      right_join(state_iso, by ="iso_2letter") %>%
+      select(-state) %>%
+      arrange(iso_2letter)
+
+  #### Traffic overflight data ----
+    st_dai_data_zone_p <- st_dai_data_zone %>%
+      mutate(flight_type = 'dai') %>%
+      mutate_all(~replace(., is.na(.), 0)) %>%
+      select(FLIGHT_DATE,
+             iso_2letter,
+             flight_type,
+             DAY_TFC,
+             DAY_TFC_PREV_WEEK,
+             DAY_TFC_PREV_YEAR,
+             DAY_TFC_2019,
+
+             AVG_ROLLING_WEEK,
+             AVG_ROLLING_PREV_WEEK,
+             AVG_ROLLING_WEEK_PREV_YEAR,
+             AVG_ROLLING_WEEK_2020,
+             AVG_ROLLING_WEEK_2019,
+
+             Y2D_TFC_YEAR,
+             Y2D_TFC_PREV_YEAR,
+             Y2D_TFC_2019,
+             Y2D_AVG_TFC_YEAR,
+             Y2D_AVG_TFC_PREV_YEAR,
+             Y2D_AVG_TFC_2019
+      ) %>%
+      mutate(across(-c(FLIGHT_DATE, flight_type, iso_2letter), ~ .* -1 ))
+
+
+    st_daio_data_zone_p <- st_daio_data_zone %>%
+      mutate(flight_type = 'daio') %>%
+      mutate_all(~replace(., is.na(.), 0)) %>%
+      select(FLIGHT_DATE,
+             iso_2letter,
+             flight_type,
+             DAY_TFC,
+             DAY_TFC_PREV_WEEK,
+             DAY_TFC_PREV_YEAR,
+             DAY_TFC_2019,
+
+             AVG_ROLLING_WEEK,
+             AVG_ROLLING_PREV_WEEK,
+             AVG_ROLLING_WEEK_PREV_YEAR,
+             AVG_ROLLING_WEEK_2020,
+             AVG_ROLLING_WEEK_2019,
+
+             Y2D_TFC_YEAR,
+             Y2D_TFC_PREV_YEAR,
+             Y2D_TFC_2019,
+             Y2D_AVG_TFC_YEAR,
+             Y2D_AVG_TFC_PREV_YEAR,
+             Y2D_AVG_TFC_2019
+      )
+
+    st_overflight_data_zone <- rbind(st_daio_data_zone_p, st_dai_data_zone_p) %>%
+      group_by(iso_2letter, FLIGHT_DATE) %>%
+      summarise(DAY_TFC = sum(DAY_TFC),
+                DAY_TFC_PREV_WEEK = sum(DAY_TFC_PREV_WEEK),
+                DAY_TFC_PREV_YEAR = sum(DAY_TFC_PREV_YEAR),
+                DAY_TFC_2019 = sum(DAY_TFC_2019),
+
+                AVG_ROLLING_WEEK = sum(AVG_ROLLING_WEEK),
+                AVG_ROLLING_PREV_WEEK = sum(AVG_ROLLING_PREV_WEEK),
+                AVG_ROLLING_WEEK_PREV_YEAR = sum(AVG_ROLLING_WEEK_PREV_YEAR),
+                AVG_ROLLING_WEEK_2020 = sum(AVG_ROLLING_WEEK_2020),
+                AVG_ROLLING_WEEK_2019 = sum(AVG_ROLLING_WEEK_2019),
+
+                Y2D_TFC_YEAR = sum(Y2D_TFC_YEAR),
+                Y2D_TFC_PREV_YEAR = sum(Y2D_TFC_PREV_YEAR),
+                Y2D_TFC_2019 = sum(Y2D_TFC_2019),
+                Y2D_AVG_TFC_YEAR = sum(Y2D_AVG_TFC_YEAR),
+                Y2D_AVG_TFC_PREV_YEAR = sum(Y2D_AVG_TFC_PREV_YEAR),
+                Y2D_AVG_TFC_2019 = sum(Y2D_AVG_TFC_2019)
+      ) %>%
+      mutate(
+        DAY_TFC_DIFF_PREV_WEEK = DAY_TFC - DAY_TFC_PREV_WEEK,
+        DAY_TFC_DIFF_PREV_YEAR = DAY_TFC - DAY_TFC_PREV_YEAR,
+        DAY_TFC_DIFF_2019 = DAY_TFC - DAY_TFC_2019,
+        DAY_TFC_PREV_WEEK_PERC = if_else(DAY_TFC_PREV_WEEK != 0, DAY_TFC/DAY_TFC_PREV_WEEK - 1, 0),
+        DAY_DIFF_PREV_YEAR_PERC	= if_else(DAY_TFC_PREV_YEAR != 0, DAY_TFC/DAY_TFC_PREV_YEAR - 1, 0),
+        DAY_TFC_DIFF_2019_PERC = if_else(DAY_TFC_2019 != 0, DAY_TFC/DAY_TFC_2019 - 1, 0),
+
+        DIF_WEEK_PREV_YEAR_PERC = if_else(AVG_ROLLING_WEEK_PREV_YEAR != 0, AVG_ROLLING_WEEK/AVG_ROLLING_WEEK_PREV_YEAR - 1, 0),
+        DIF_ROLLING_WEEK_2019_PERC = if_else(AVG_ROLLING_WEEK_2019 != 0, AVG_ROLLING_WEEK/AVG_ROLLING_WEEK_2019 - 1, 0),
+
+        Y2D_DIFF_PREV_YEAR_PERC	= if_else(Y2D_AVG_TFC_PREV_YEAR != 0, Y2D_AVG_TFC_YEAR/Y2D_AVG_TFC_PREV_YEAR - 1, 0),
+        Y2D_DIFF_2019_PERC = if_else(Y2D_AVG_TFC_2019 != 0, Y2D_AVG_TFC_YEAR/Y2D_AVG_TFC_2019 - 1, 0)
+      ) %>% ungroup()
+
+    st_overflight_last_day <- st_overflight_data_zone %>%
+      filter(FLIGHT_DATE == last_day)
+
+    mycolnames <- colnames(st_overflight_last_day) %>%
+      str_replace_all('TFC', 'OVF')
+
+    st_overflight_for_json <- st_overflight_last_day %>%
+      select(
+        iso_2letter,
+        FLIGHT_DATE,
+        DAY_TFC,
+        DAY_DIFF_PREV_YEAR_PERC,
+        DAY_TFC_DIFF_2019_PERC,
+        AVG_ROLLING_WEEK,
+        DIF_WEEK_PREV_YEAR_PERC,
+        DIF_ROLLING_WEEK_2019_PERC,
+        Y2D_TFC_YEAR,
+        Y2D_AVG_TFC_YEAR,
+        Y2D_DIFF_PREV_YEAR_PERC,
+        Y2D_DIFF_2019_PERC
+      ) %>%
+      rename(
+        DAY_OVF = DAY_TFC,
+        DAY_OVF_DIF_PY_PERC = DAY_DIFF_PREV_YEAR_PERC,
+        DAY_OVF_DIF_2019_PERC = DAY_TFC_DIFF_2019_PERC,
+        WEEK_OVF_AVG = AVG_ROLLING_WEEK,
+        WEEK_OVF_DIF_PY_PERC = DIF_WEEK_PREV_YEAR_PERC,
+        WEEK_OVF_DIF_2019_PERC = DIF_ROLLING_WEEK_2019_PERC,
+        Y2D_OVF = Y2D_TFC_YEAR,
+        Y2D_OVF_AVG = Y2D_AVG_TFC_YEAR,
+        Y2D_OVF_DIF_PY_PERC = Y2D_DIFF_PREV_YEAR_PERC,
+        Y2D_OVF_DIF_2019_PERC = Y2D_DIFF_2019_PERC
       ) %>%
       right_join(state_iso, by ="iso_2letter") %>%
       select(-state) %>%
@@ -356,6 +485,8 @@ source(here::here("R", "helpers.R"))
       right_join(state_iso, by ="iso_2letter") %>%
       select(-state) %>%
       arrange(iso_2letter)
+
+  #### Traffic overflight data ----
 
   #### Punctuality data ----
     query <- "
@@ -621,6 +752,7 @@ source(here::here("R", "helpers.R"))
     st_json_app_j <- state_iso %>% select(iso_2letter, state) %>% arrange(iso_2letter)
     st_json_app_j$st_daio <- st_daio_for_json
     st_json_app_j$st_dai <- st_dai_for_json
+    st_json_app_j$st_ofv <- st_overflight_for_json
     st_json_app_j$st_delay <- st_delay_for_json
     st_json_app_j$st_punct <- st_punct_for_json
     st_json_app_j$st_billed <- st_billed_for_json
