@@ -79,7 +79,7 @@ nw_billing <- nw_billed_raw %>%
   ungroup()
 
 
-nw_billed_json <- nw_billing %>%
+nw_billed_for_json <- nw_billing %>%
   arrange(year, billing_period_start_date) %>%
   mutate(
     BILLING_DATE = (billing_period_start_date + days(1) + months(1)) + days(-1),
@@ -113,11 +113,24 @@ nw_billed_json <- nw_billing %>%
     BILLED_Y2D,
     DIF_BILL_Y2D_PY,
     DIF_BILL_Y2D_2019
-  ) %>%
+  )
+
+nw_billed_for_json_v2 <- nw_billed_for_json %>%
+  rename(MM_BILLED = BILLED,
+         MM_BILLED_DIF_PREV_YEAR = DIF_BILL_MONTH_PY,
+         Y2D_BILLED = BILLED_Y2D,
+         Y2D_BILLED_DIF_PREV_YEAR = DIF_BILL_Y2D_PY,
+         Y2D_BILLED_DIF_2019 = DIF_BILL_Y2D_2019)
+
+nw_billed_json <- nw_billed_for_json %>%
   toJSON() %>%
   substr(., 1, nchar(.) - 1) %>%
   substr(., 2, nchar(.))
 
+nw_billed_json_v2 <- nw_billed_for_json_v2 %>%
+  toJSON() %>%
+  substr(., 1, nchar(.) - 1) %>%
+  substr(., 2, nchar(.))
 
 
 #------ Network traffic ----
@@ -136,7 +149,7 @@ nw_traffic_data <- read_xlsx(
 nw_traffic_last_day <- nw_traffic_data %>%
   filter(FLIGHT_DATE == max(LAST_DATA_DAY))
 
-nw_traffic_json <- nw_traffic_last_day %>%
+nw_traffic_for_json <- nw_traffic_last_day %>%
   filter(FLIGHT_DATE == max(LAST_DATA_DAY)) %>%
   select(
     FLIGHT_DATE,
@@ -150,11 +163,27 @@ nw_traffic_json <- nw_traffic_last_day %>%
     Y2D_AVG_TFC_YEAR,
     Y2D_DIFF_PREV_YEAR_PERC,
     Y2D_DIFF_2019_PERC
-  ) %>%
-  toJSON(., pretty = TRUE)., digits = 10) %>%
+  )
+
+nw_traffic_for_json_v2 <- nw_traffic_for_json %>%
+  rename(
+    DY_TFC = DAY_TFC,
+    DY_DIFF_PREV_YEAR_PERC = DAY_DIFF_PREV_YEAR_PERC,
+    DY_TFC_DIFF_2019_PERC = DAY_TFC_DIFF_2019_PERC,
+    WK_AVG_ROLLING = AVG_ROLLING_WEEK,
+    WK_DIF_PREV_YEAR_PERC = DIF_WEEK_PREV_YEAR_PERC,
+    WK_DIF_2019_PERC = DIF_ROLLING_WEEK_2019_PERC
+  )
+
+nw_traffic_json <- nw_traffic_for_json %>%
+  toJSON(., pretty = TRUE, digits = 10) %>%
   substr(., 1, nchar(.) - 1) %>%
   substr(., 2, nchar(.))
 
+nw_traffic_json_v2 <- nw_traffic_for_json_v2 %>%
+  toJSON(., pretty = TRUE, digits = 10) %>%
+  substr(., 1, nchar(.) - 1) %>%
+  substr(., 2, nchar(.))
 
 #------ Network delay ----
 
@@ -224,11 +253,31 @@ nw_delay_for_json <- nw_delay_data %>%
     Y2D_DLY_FLT_DIF_2019_PERC
   )
 
+nw_delay_for_json_v2 <- nw_delay_for_json %>%
+  rename(
+    DY_DLY = DAY_DLY,
+    DY_DIFF_PREV_YEAR_PERC = DAY_DIFF_PREV_YEAR_PERC,
+    DY_DLY_DIFF_2019_PERC = DAY_DLY_DIFF_2019_PERC,
+    DY_DLY_FLT = DAY_DLY_FLT,
+    DY_DLY_FLT_DIF_PY_PERC = DAY_DLY_FLT_DIF_PY_PERC,
+    DY_DLY_FLT_DIF_2019_PERC = DAY_DLY_FLT_DIF_2019_PERC,
+    WK_AVG_ROLLING = AVG_ROLLING_WEEK,
+    WK_DIF_PREV_YEAR_PERC = DIF_WEEK_PREV_YEAR_PERC,
+    WK_DIF_2019_PERC = DIF_ROLLING_WEEK_2019_PERC,
+    WK_DLY_FLT = RWEEK_DLY_FLT,
+    WK_DLY_FLT_DIF_PREV_YEAR_PERC = RWEEK_DLY_FLT_DIF_PY_PERC,
+    WK_DLY_FLT_DIF_2019_PERC = RWEEK_DLY_FLT_DIF_2019_PERC
+    )
+
 nw_delay_json <- nw_delay_for_json %>%
-  toJSON(., pretty = TRUE)) %>%
+  toJSON(., pretty = TRUE) %>%
   substr(., 1, nchar(.) - 1) %>%
   substr(., 2, nchar(.))
 
+nw_delay_json_v2 <- nw_delay_for_json_v2 %>%
+  toJSON(., pretty = TRUE) %>%
+  substr(., 1, nchar(.) - 1) %>%
+  substr(., 2, nchar(.))
 
 #------ Network punctuality ----
 
@@ -353,9 +402,29 @@ nw_punct_data_y2d <- nw_punct_data_raw %>%
   mutate(INDEX = 1)
 
 
-nw_punct_json <- merge(nw_punct_data_d_w, nw_punct_data_y2d, by = "INDEX") %>%
-  select(-INDEX) %>%
-  toJSON(., pretty = TRUE)) %>%
+nw_punct_for_json <- merge(nw_punct_data_d_w, nw_punct_data_y2d, by = "INDEX") %>%
+  select(-INDEX)
+
+nw_punct_for_json_v2 <- nw_punct_for_json %>%
+  rename(
+    DY_ARR_PUNCTUALITY_PERCENTAGE = ARR_PUNCTUALITY_PERCENTAGE,
+    DY_DEP_PUNCTUALITY_PERCENTAGE = DEP_PUNCTUALITY_PERCENTAGE,
+    DY_ARR_PUN_DIF_PY_PERC = DAY_ARR_PUN_DIF_PY_PERC,
+    DY_DEP_PUN_DIF_PY_PERC = DAY_DEP_PUN_DIF_PY_PERC,
+    DY_ARR_PUN_DIF_2019_PERC = DAY_ARR_PUN_DIF_2019_PERC,
+    DY_DEP_PUN_DIF_2019_PERC = DAY_DEP_PUN_DIF_2019_PERC,
+    WK_ARR_PUN = ARR_PUN_WK,
+    WK_DEP_PUN = DEP_PUN_WK,
+    Y2D_ARR_PUN = ARR_PUN_Y2D,
+    Y2D_DEP_PUN = DEP_PUN_Y2D)
+
+nw_punct_json <- nw_punct_for_json %>%
+  toJSON(., pretty = TRUE) %>%
+  substr(., 1, nchar(.) - 1) %>%
+  substr(., 2, nchar(.))
+
+nw_punct_json_v2 <- nw_punct_for_json_v2 %>%
+  toJSON(., pretty = TRUE) %>%
   substr(., 1, nchar(.) - 1) %>%
   substr(., 2, nchar(.))
 
@@ -469,12 +538,29 @@ co2_for_json <- co2_data_evo_nw %>%
   ) %>%
   filter(FLIGHT_MONTH == co2_last_date)
 
+co2_for_json_v2 <- co2_for_json %>%
+  rename(
+    MM_CO2_DIF_PREV_YEAR = DIF_CO2_MONTH_PREV_YEAR,
+    MM_DIF_CO2_2019 = DIF_CO2_MONTH_2019,
+    MM_CO2_DEP_DIF_PREV_YEAR = DIF_CO2_DEP_MONTH_PREV_YEAR,
+    MM_CO2_DEP_DIF_2019 = DIF_CO2_DEP_MONTH_2019
+    , Y2D_CO2 = YTD_CO2
+    , Y2D_DIF_CO2_PREV_YEAR = YTD_DIF_CO2_PREV_YEAR
+    , Y2D_DIF_CO2_2019 = YTD_DIF_CO2_2019
+    , Y2D_CO2_DEP = YTD_CO2_DEP
+    , Y2D_DIF_CO2_DEP_PREV_YEAR = YTD_DIF_CO2_DEP_PREV_YEAR
+    , YTD_DIF_CO2_DEP_2019 = YTD_DIF_CO2_DEP_2019
+    )
+
 nw_co2_json <- co2_for_json %>%
-  toJSON(., pretty = TRUE)) %>%
+  toJSON(., pretty = TRUE) %>%
   substr(., 1, nchar(.) - 1) %>%
   substr(., 2, nchar(.))
 
-
+nw_co2_json_v2 <- co2_for_json_v2 %>%
+  toJSON(., pretty = TRUE) %>%
+  substr(., 1, nchar(.) - 1) %>%
+  substr(., 2, nchar(.))
 
 #------ update date ----
 
@@ -485,7 +571,7 @@ update_day <- floor_date(lubridate::now(), unit = "days") %>%
   rename(APP_UPDATE = 1)
 
 update_day_json <- update_day %>%
-  toJSON(., pretty = TRUE)) %>%
+  toJSON(., pretty = TRUE) %>%
   substr(., 1, nchar(.) - 1) %>%
   substr(., 2, nchar(.))
 
@@ -500,9 +586,23 @@ nw_json_app <- paste0(
   ', "app_update":', update_day_json,
   "}"
 )
+
+nw_json_app_v2 <- paste0(
+  "{",
+  '"nw_traffic":', nw_traffic_json_v2,
+  ', "nw_delay":', nw_delay_json_v2,
+  ', "nw_punct":', nw_punct_json_v2,
+  ', "nw_co2":', nw_co2_json_v2,
+  ', "nw_billed":', nw_billed_json_v2,
+  ', "app_update":', update_day_json,
+  "}"
+)
+
 write(nw_json_app, here(data_folder, "nw_json_app.json"))
 write(nw_json_app, paste0(archive_dir, today, "_nw_json_app.json"))
 
+write(nw_json_app_v2, here(data_folder, "v2", "nw_json_app.json"))
+write(nw_json_app, paste0(archive_dir, today, "_nw_json_app_v2.json"))
 
 #---- json for mobile app graphs ------
 
@@ -526,6 +626,7 @@ colnames(nw_traffic_evo_app) <- column_names
 
 nw_traffic_evo_app_j <- nw_traffic_evo_app %>% toJSON(., pretty = TRUE)
 write(nw_traffic_evo_app_j, here(data_folder, "nw_traffic_evo_chart_daily.json"))
+write(nw_traffic_evo_app_j, here(data_folder, "v2", "nw_traffic_evo_chart_daily.json"))
 write(nw_traffic_evo_app_j, paste0(archive_dir, today, "_nw_traffic_evo_chart_daily.json"))
 
 # monthly
@@ -545,6 +646,7 @@ nw_traffic_month_data <- read_xlsx(
 
 nw_traffic_month_data_j <- nw_traffic_month_data %>% toJSON(., pretty = TRUE)
 write(nw_traffic_month_data_j, here(data_folder, "nw_traffic_evo_chart_monthly.json"))
+write(nw_traffic_month_data_j, here(data_folder,"v2", "nw_traffic_evo_chart_monthly.json"))
 write(nw_traffic_month_data_j, paste0(archive_dir, today, "_nw_traffic_evo_chart_monthly.json"))
 
 
@@ -608,6 +710,7 @@ colnames(nw_delay_evo_app) <- column_names
 
 nw_delay_evo_app_j <- nw_delay_evo_app %>% toJSON(., pretty = TRUE)
 write(nw_delay_evo_app_j, here(data_folder, "nw_delay_category_evo_chart.json"))
+write(nw_delay_evo_app_j, here(data_folder, "v2", "nw_delay_category_evo_chart.json"))
 write(nw_delay_evo_app_j, paste0(archive_dir, today, "_nw_delay_category_evo_chart.json"))
 
 ## delay per flight per type
@@ -638,6 +741,7 @@ colnames(nw_delay_flt_evo_app) <- column_names
 
 nw_delay_flt_evo_app_j <- nw_delay_flt_evo_app %>% toJSON(., pretty = TRUE)
 write(nw_delay_flt_evo_app_j, here(data_folder, "nw_delay_flt_type_evo_chart.json"))
+write(nw_delay_flt_evo_app_j, here(data_folder, "v2", "nw_delay_flt_type_evo_chart.json"))
 write(nw_delay_flt_evo_app_j, paste0(archive_dir, today, "_nw_delay_flt_type_evo_chart.json"))
 
 ### punctuality
@@ -665,6 +769,7 @@ colnames(nw_punct_evo_app) <- column_names
 
 nw_punct_evo_app_j <- nw_punct_evo_app %>% toJSON(., pretty = TRUE)
 write(nw_punct_evo_app_j, here(data_folder, "nw_punct_evo_chart.json"))
+write(nw_punct_evo_app_j, here(data_folder, "v2", "nw_punct_evo_chart.json"))
 write(nw_punct_evo_app_j, paste0(archive_dir, today, "_nw_punct_evo_chart.json"))
 
 
@@ -713,10 +818,10 @@ colnames(nw_billing_evo) <- column_names
 
 nw_billing_evo_j <- nw_billing_evo %>% toJSON(., pretty = TRUE)
 write(nw_billing_evo_j, here(data_folder, "nw_billing_evo_chart.json"))
+write(nw_billing_evo_j, here(data_folder, "v2", "nw_billing_evo_chart.json"))
 write(nw_billing_evo_j, paste0(archive_dir, today, "_nw_billing_evo_chart.json"))
 
 ### co2 emissions
-
 nw_co2_evo <- co2_data_raw %>%
   select(
     FLIGHT_MONTH,
@@ -753,6 +858,7 @@ colnames(nw_co2_evo) <- column_names
 
 nw_co2_evo_j <- nw_co2_evo %>% toJSON(., pretty = TRUE)
 write(nw_co2_evo_j, here(data_folder, "nw_co2_evo_chart.json"))
+write(nw_co2_evo_j, here(data_folder, "v2", "nw_co2_evo_chart.json"))
 write(nw_co2_evo_j, paste0(archive_dir, today, "_nw_co2_evo_chart.json"))
 
 
@@ -865,6 +971,7 @@ ao_data <- ao_data %>%
 # covert to json and save in app data folder and archive
 ao_data_j <- ao_data %>% toJSON(., pretty = TRUE)
 write(ao_data_j, here(data_folder, "ao_ranking_traffic.json"))
+write(ao_data_j, here(data_folder, "v2", "ao_ranking_traffic.json"))
 write(ao_data_j, paste0(archive_dir, today, "_ao_ranking_traffic.json"))
 
 ## Airport traffic ----
@@ -971,6 +1078,7 @@ apt_data <- apt_data %>%
 # covert to json and save in app data folder and archive
 apt_data_j <- apt_data %>% toJSON(., pretty = TRUE)
 write(apt_data_j, here(data_folder, "apt_ranking_traffic.json"))
+write(apt_data_j, here(data_folder, "v2", "apt_ranking_traffic.json"))
 write(apt_data_j, paste0(archive_dir, today, "_apt_ranking_traffic.json"))
 
 ## Country traffic DAI ----
@@ -1073,6 +1181,7 @@ ct_dai_data <- ct_dai_data %>%
 # covert to json and save in app data folder and archive
 ct_dai_data_j <- ct_dai_data %>% toJSON(., pretty = TRUE)
 write(ct_dai_data_j, here(data_folder, "ctry_ranking_traffic_DAI.json"))
+write(ct_dai_data_j, here(data_folder, "v2", "ctry_ranking_traffic_DAI.json"))
 write(ct_dai_data_j, paste0(archive_dir, today, "_ctry_ranking_traffic_DAI.json"))
 
 ## Airport delay -----
@@ -1201,6 +1310,7 @@ apt_rank_data <- apt_rank_data %>%
 # covert to json and save in app data folder and archive
 apt_rank_data_j <- apt_rank_data %>% toJSON(., pretty = TRUE)
 write(apt_rank_data_j, here(data_folder, "apt_ranking_delay.json"))
+write(apt_rank_data_j, here(data_folder, "v2", "apt_ranking_delay.json"))
 write(apt_rank_data_j, paste0(archive_dir, today, "_apt_ranking_delay.json"))
 
 
@@ -1351,6 +1461,7 @@ acc_rank_data <- acc_rank_data %>%
 # covert to json and save in app data folder and archive
 acc_rank_data_j <- acc_rank_data %>% toJSON(., pretty = TRUE)
 write(acc_rank_data_j, here(data_folder, "acc_ranking_delay.json"))
+write(acc_rank_data_j, here(data_folder, "v2", "acc_ranking_delay.json"))
 write(acc_rank_data_j, paste0(archive_dir, today, "_acc_ranking_delay.json"))
 
 
@@ -1488,6 +1599,7 @@ ct_rank_data <- ct_rank_data %>%
 # covert to json and save in app data folder and archive
 ct_rank_data_j <- ct_rank_data %>% toJSON(., pretty = TRUE)
 write(ct_rank_data_j, here(data_folder, "ctry_ranking_delay.json"))
+write(ct_rank_data_j, here(data_folder, "v2", "ctry_ranking_delay.json"))
 write(ct_rank_data_j, paste0(archive_dir, today, "_ctry_ranking_delay.json"))
 
 
@@ -1733,6 +1845,7 @@ apt_punct_data <- apt_punct_data %>%
 # covert to json and save in app data folder and archive
 apt_punct_data_j <- apt_punct_data %>% toJSON(., pretty = TRUE)
 write(apt_punct_data_j, here(data_folder, "apt_ranking_punctuality.json"))
+write(apt_punct_data_j, here(data_folder, "v2", "apt_ranking_punctuality.json"))
 write(apt_punct_data_j, paste0(archive_dir, today, "_apt_ranking_punctuality.json"))
 
 ## Country punctuality ----
@@ -1950,4 +2063,5 @@ ct_punct_data <- ct_punct_data %>%
 # covert to json and save in app data folder and archive
 ct_punct_data_j <- ct_punct_data %>% toJSON(., pretty = TRUE)
 write(ct_punct_data_j, here(data_folder, "ctry_ranking_punctuality.json"))
+write(ct_punct_data_j, here(data_folder, "v2", "ctry_ranking_punctuality.json"))
 write(ct_punct_data_j, paste0(archive_dir, today, "_ctry_ranking_punctuality.json"))
