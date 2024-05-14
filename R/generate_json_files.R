@@ -116,19 +116,21 @@ nw_billed_for_json <- nw_billing %>%
   )
 
 nw_billed_for_json_v2 <- nw_billed_for_json %>%
-  rename(MM_BILLED = BILLED,
+  rename(MONTH_TEXT = MONTH_F,
+         MM_BILLED = BILLED,
          MM_BILLED_DIF_PREV_YEAR = DIF_BILL_MONTH_PY,
+         MM_BILLED_DIF_2019 = DIF_BILL_MONTH_2019,
          Y2D_BILLED = BILLED_Y2D,
          Y2D_BILLED_DIF_PREV_YEAR = DIF_BILL_Y2D_PY,
          Y2D_BILLED_DIF_2019 = DIF_BILL_Y2D_2019)
 
 nw_billed_json <- nw_billed_for_json %>%
-  toJSON() %>%
+  toJSON(., pretty = TRUE) %>%
   substr(., 1, nchar(.) - 1) %>%
   substr(., 2, nchar(.))
 
 nw_billed_json_v2 <- nw_billed_for_json_v2 %>%
-  toJSON() %>%
+  toJSON(., pretty = TRUE) %>%
   substr(., 1, nchar(.) - 1) %>%
   substr(., 2, nchar(.))
 
@@ -168,12 +170,16 @@ nw_traffic_for_json <- nw_traffic_last_day %>%
 nw_traffic_for_json_v2 <- nw_traffic_for_json %>%
   rename(
     DY_TFC = DAY_TFC,
-    DY_DIFF_PREV_YEAR_PERC = DAY_DIFF_PREV_YEAR_PERC,
-    DY_TFC_DIFF_2019_PERC = DAY_TFC_DIFF_2019_PERC,
-    WK_AVG_ROLLING = AVG_ROLLING_WEEK,
-    WK_DIF_PREV_YEAR_PERC = DIF_WEEK_PREV_YEAR_PERC,
-    WK_DIF_2019_PERC = DIF_ROLLING_WEEK_2019_PERC
-  )
+    DY_TFC_DIF_PREV_YEAR_PERC = DAY_DIFF_PREV_YEAR_PERC,
+    DY_TFC_DIF_2019_PERC = DAY_TFC_DIFF_2019_PERC,
+    WK_TFC_AVG_ROLLING = AVG_ROLLING_WEEK,
+    WK_TFC_DIF_PREV_YEAR_PERC = DIF_WEEK_PREV_YEAR_PERC,
+    WK_TFC_DIF_2019_PERC = DIF_ROLLING_WEEK_2019_PERC,
+    Y2D_TFC = Y2D_TFC_YEAR,
+    Y2D_TFC_AVG = Y2D_AVG_TFC_YEAR,
+    Y2D_TFC_DIF_PREV_YEAR_PERC = Y2D_DIFF_PREV_YEAR_PERC,
+    Y2D_TFC_DIF_2019_PERC = Y2D_DIFF_2019_PERC
+    )
 
 nw_traffic_json <- nw_traffic_for_json %>%
   toJSON(., pretty = TRUE, digits = 10) %>%
@@ -256,17 +262,21 @@ nw_delay_for_json <- nw_delay_data %>%
 nw_delay_for_json_v2 <- nw_delay_for_json %>%
   rename(
     DY_DLY = DAY_DLY,
-    DY_DIFF_PREV_YEAR_PERC = DAY_DIFF_PREV_YEAR_PERC,
-    DY_DLY_DIFF_2019_PERC = DAY_DLY_DIFF_2019_PERC,
+    DY_DLY_DIF_PREV_YEAR_PERC = DAY_DIFF_PREV_YEAR_PERC,
+    DY_DLY_DIF_2019_PERC = DAY_DLY_DIFF_2019_PERC,
     DY_DLY_FLT = DAY_DLY_FLT,
-    DY_DLY_FLT_DIF_PY_PERC = DAY_DLY_FLT_DIF_PY_PERC,
+    DY_DLY_FLT_DIF_PREV_YEAR_PERC = DAY_DLY_FLT_DIF_PY_PERC,
     DY_DLY_FLT_DIF_2019_PERC = DAY_DLY_FLT_DIF_2019_PERC,
-    WK_AVG_ROLLING = AVG_ROLLING_WEEK,
-    WK_DIF_PREV_YEAR_PERC = DIF_WEEK_PREV_YEAR_PERC,
-    WK_DIF_2019_PERC = DIF_ROLLING_WEEK_2019_PERC,
+    WK_DLY_AVG_ROLLING = AVG_ROLLING_WEEK,
+    WK_DLY_DIF_PREV_YEAR_PERC = DIF_WEEK_PREV_YEAR_PERC,
+    WK_DLY_DIF_2019_PERC = DIF_ROLLING_WEEK_2019_PERC,
     WK_DLY_FLT = RWEEK_DLY_FLT,
     WK_DLY_FLT_DIF_PREV_YEAR_PERC = RWEEK_DLY_FLT_DIF_PY_PERC,
-    WK_DLY_FLT_DIF_2019_PERC = RWEEK_DLY_FLT_DIF_2019_PERC
+    WK_DLY_FLT_DIF_2019_PERC = RWEEK_DLY_FLT_DIF_2019_PERC,
+    Y2D_DLY_AVG = Y2D_AVG_DLY_YEAR,
+    Y2D_DLY_DIF_PREV_YEAR_PERC = Y2D_DIFF_PREV_YEAR_PERC,
+    Y2D_DLY_DIF_2019_PERC = Y2D_DIFF_2019_PERC,
+    Y2D_DLY_FLT_DIF_PREV_YEAR_PERC = Y2D_DLY_FLT_DIF_PY_PERC,
     )
 
 nw_delay_json <- nw_delay_for_json %>%
@@ -407,16 +417,25 @@ nw_punct_for_json <- merge(nw_punct_data_d_w, nw_punct_data_y2d, by = "INDEX") %
 
 nw_punct_for_json_v2 <- nw_punct_for_json %>%
   rename(
-    DY_ARR_PUNCTUALITY_PERCENTAGE = ARR_PUNCTUALITY_PERCENTAGE,
-    DY_DEP_PUNCTUALITY_PERCENTAGE = DEP_PUNCTUALITY_PERCENTAGE,
-    DY_ARR_PUN_DIF_PY_PERC = DAY_ARR_PUN_DIF_PY_PERC,
-    DY_DEP_PUN_DIF_PY_PERC = DAY_DEP_PUN_DIF_PY_PERC,
-    DY_ARR_PUN_DIF_2019_PERC = DAY_ARR_PUN_DIF_2019_PERC,
-    DY_DEP_PUN_DIF_2019_PERC = DAY_DEP_PUN_DIF_2019_PERC,
+    DY_ARR_PUN = ARR_PUNCTUALITY_PERCENTAGE,
+    DY_DEP_PUN = DEP_PUNCTUALITY_PERCENTAGE,
+    DY_ARR_PUN_DIF_PREV_YEAR = DAY_ARR_PUN_DIF_PY_PERC,
+    DY_DEP_PUN_DIF_PREV_YEAR = DAY_DEP_PUN_DIF_PY_PERC,
+    DY_ARR_PUN_DIF_2019 = DAY_ARR_PUN_DIF_2019_PERC,
+    DY_DEP_PUN_DIF_2019 = DAY_DEP_PUN_DIF_2019_PERC,
     WK_ARR_PUN = ARR_PUN_WK,
     WK_DEP_PUN = DEP_PUN_WK,
+    WK_ARR_PUN_DIF_PREV_YEAR = WK_ARR_PUN_DIF_PY_PERC,
+    WK_DEP_PUN_DIF_PREV_YEAR = WK_DEP_PUN_DIF_PY_PERC,
+    WK_ARR_PUN_DIF_2019 = WK_ARR_PUN_DIF_2019_PERC,
+    WK_DEP_PUN_DIF_2019 = WK_DEP_PUN_DIF_2019_PERC,
     Y2D_ARR_PUN = ARR_PUN_Y2D,
-    Y2D_DEP_PUN = DEP_PUN_Y2D)
+    Y2D_DEP_PUN = DEP_PUN_Y2D,
+    Y2D_ARR_PUN_DIF_PREV_YEAR = Y2D_ARR_PUN_DIF_PY_PERC,
+    Y2D_DEP_PUN_DIF_PREV_YEAR = Y2D_DEP_PUN_DIF_PY_PERC,
+    Y2D_ARR_PUN_DIF_2019 = Y2D_ARR_PUN_DIF_2019_PERC,
+    Y2D_DEP_PUN_DIF_2019 = Y2D_DEP_PUN_DIF_2019_PERC
+    )
 
 nw_punct_json <- nw_punct_for_json %>%
   toJSON(., pretty = TRUE) %>%
@@ -541,15 +560,15 @@ co2_for_json <- co2_data_evo_nw %>%
 co2_for_json_v2 <- co2_for_json %>%
   rename(
     MM_CO2_DIF_PREV_YEAR = DIF_CO2_MONTH_PREV_YEAR,
-    MM_DIF_CO2_2019 = DIF_CO2_MONTH_2019,
+    MM_CO2_DIF_2019 = DIF_CO2_MONTH_2019,
     MM_CO2_DEP_DIF_PREV_YEAR = DIF_CO2_DEP_MONTH_PREV_YEAR,
     MM_CO2_DEP_DIF_2019 = DIF_CO2_DEP_MONTH_2019
     , Y2D_CO2 = YTD_CO2
-    , Y2D_DIF_CO2_PREV_YEAR = YTD_DIF_CO2_PREV_YEAR
-    , Y2D_DIF_CO2_2019 = YTD_DIF_CO2_2019
+    , Y2D_CO2_DIF_PREV_YEAR = YTD_DIF_CO2_PREV_YEAR
+    , Y2D_CO2_DIF_2019 = YTD_DIF_CO2_2019
     , Y2D_CO2_DEP = YTD_CO2_DEP
-    , Y2D_DIF_CO2_DEP_PREV_YEAR = YTD_DIF_CO2_DEP_PREV_YEAR
-    , YTD_DIF_CO2_DEP_2019 = YTD_DIF_CO2_DEP_2019
+    , Y2D_CO2_DEP_DIF_PREV_YEAR = YTD_DIF_CO2_DEP_PREV_YEAR
+    , Y2D_CO2_DEP_DIF_2019 = YTD_DIF_CO2_DEP_2019
     )
 
 nw_co2_json <- co2_for_json %>%
@@ -575,7 +594,7 @@ update_day_json <- update_day %>%
   substr(., 1, nchar(.) - 1) %>%
   substr(., 2, nchar(.))
 
-# join data strings and save
+#------ join data strings and save ----
 nw_json_app <- paste0(
   "{",
   '"nw_traffic":', nw_traffic_json,

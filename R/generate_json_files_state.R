@@ -17,7 +17,7 @@ library(RODBC)
 source(here::here("R", "helpers.R"))
 
 # Parameters ----
-  data_folder <- here::here("data")
+  data_folder <- here::here("data", "v2")
   # base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/'
   base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Oscar/Develop/'
   base_file <- '99a_app_state_dataset.xlsx'
@@ -144,11 +144,11 @@ source(here::here("R", "helpers.R"))
              BILLING_DATE = (billing_period_start_date + days(1) + months(1)) + days(-1),
              Year = year,
              MONTH_TEXT = format(billing_period_start_date + days(1),'%B'),
-             MONTH_BILLED_PY = lag(total_billing, 12),
-             MONTH_BILLED_2019 = lag(total_billing, (last_billing_year - 2019) * 12),
-             MONTH_BILLED_DIF_PY_PERC = total_billing / MONTH_BILLED_PY - 1,
-             MONTH_BILLED_DIF_2019_PERC = total_billing / MONTH_BILLED_2019 - 1,
-             MONTH_BILLED = round(total_billing / 1000000, 1)
+             MM_BILLED_PY = lag(total_billing, 12),
+             MM_BILLED_2019 = lag(total_billing, (last_billing_year - 2019) * 12),
+             MM_BILLED_DIF_PREV_YEAR = total_billing / MM_BILLED_PY - 1,
+             MM_BILLED_DIF_2019 = total_billing / MM_BILLED_2019 - 1,
+             MM_BILLED = round(total_billing / 1000000, 1)
       ) %>%
       group_by(iso_2letter, Year) %>%
       mutate(
@@ -158,20 +158,20 @@ source(here::here("R", "helpers.R"))
       mutate(
         Y2D_BILLED_PY = lag(total_billing_y2d, 12),
         Y2D_BILLED_2019 = lag(total_billing_y2d, (last_billing_year - 2019) * 12),
-        Y2D_BILLED_DIF_PY_PERC = total_billing_y2d / Y2D_BILLED_PY -1,
-        Y2D_BILLED_DIF_2019_PERC = total_billing_y2d / Y2D_BILLED_2019 -1,
+        Y2D_BILLED_DIF_PREV_YEAR = total_billing_y2d / Y2D_BILLED_PY -1,
+        Y2D_BILLED_DIF_2019 = total_billing_y2d / Y2D_BILLED_2019 -1,
         Y2D_BILLED = round(total_billing_y2d / 1000000, 1)
       ) %>%
       filter(billing_period_start_date == last_billing_date) %>%
       select(iso_2letter,
              BILLING_DATE,
              MONTH_TEXT,
-             MONTH_BILLED,
-             MONTH_BILLED_DIF_PY_PERC,
-             MONTH_BILLED_DIF_2019_PERC,
+             MM_BILLED,
+             MM_BILLED_DIF_PREV_YEAR,
+             MM_BILLED_DIF_2019,
              Y2D_BILLED,
-             Y2D_BILLED_DIF_PY_PERC,
-             Y2D_BILLED_DIF_2019_PERC
+             Y2D_BILLED_DIF_PREV_YEAR,
+             Y2D_BILLED_DIF_2019
       ) %>%
       right_join(state_iso, by ="iso_2letter") %>%
       select(-state) %>%
@@ -211,15 +211,15 @@ source(here::here("R", "helpers.R"))
         Y2D_DIFF_2019_PERC
       ) %>%
       rename(
-        DAY_DAIO = DAY_TFC,
-        DAY_DAIO_DIF_PY_PERC = DAY_DIFF_PREV_YEAR_PERC,
-        DAY_DAIO_DIF_2019_PERC = DAY_TFC_DIFF_2019_PERC,
-        WEEK_DAIO_AVG = AVG_ROLLING_WEEK,
-        WEEK_DAIO_DIF_PY_PERC = DIF_WEEK_PREV_YEAR_PERC,
-        WEEK_DAIO_DIF_2019_PERC = DIF_ROLLING_WEEK_2019_PERC,
+        DY_DAIO = DAY_TFC,
+        DY_DAIO_DIF_PREV_YEAR_PERC = DAY_DIFF_PREV_YEAR_PERC,
+        DY_DAIO_DIF_2019_PERC = DAY_TFC_DIFF_2019_PERC,
+        WK_DAIO_AVG_ROLLING = AVG_ROLLING_WEEK,
+        WK_DAIO_DIF_PREV_YEAR_PERC = DIF_WEEK_PREV_YEAR_PERC,
+        WK_DAIO_DIF_2019_PERC = DIF_ROLLING_WEEK_2019_PERC,
         Y2D_DAIO = Y2D_TFC_YEAR,
         Y2D_DAIO_AVG = Y2D_AVG_TFC_YEAR,
-        Y2D_DAIO_DIF_PY_PERC = Y2D_DIFF_PREV_YEAR_PERC,
+        Y2D_DAIO_DIF_PREV_YEAR_PERC = Y2D_DIFF_PREV_YEAR_PERC,
         Y2D_DAIO_DIF_2019_PERC = Y2D_DIFF_2019_PERC
       ) %>%
       right_join(state_iso, by ="iso_2letter") %>%
@@ -260,15 +260,15 @@ source(here::here("R", "helpers.R"))
         Y2D_DIFF_2019_PERC
       ) %>%
       rename(
-        DAY_DAI = DAY_TFC,
-        DAY_DAI_DIF_PY_PERC = DAY_DIFF_PREV_YEAR_PERC,
-        DAY_DAI_DIF_2019_PERC = DAY_TFC_DIFF_2019_PERC,
-        WEEK_DAI_AVG = AVG_ROLLING_WEEK,
-        WEEK_DAI_DIF_PY_PERC = DIF_WEEK_PREV_YEAR_PERC,
-        WEEK_DAI_DIF_2019_PERC = DIF_ROLLING_WEEK_2019_PERC,
+        DY_DAI = DAY_TFC,
+        DY_DAI_DIF_PREV_YEAR_PERC = DAY_DIFF_PREV_YEAR_PERC,
+        DY_DAI_DIF_2019_PERC = DAY_TFC_DIFF_2019_PERC,
+        WK_DAI_AVG_ROLLING = AVG_ROLLING_WEEK,
+        WK_DAI_DIF_PREV_YEAR_PERC = DIF_WEEK_PREV_YEAR_PERC,
+        WK_DAI_DIF_2019_PERC = DIF_ROLLING_WEEK_2019_PERC,
         Y2D_DAI = Y2D_TFC_YEAR,
         Y2D_DAI_AVG = Y2D_AVG_TFC_YEAR,
-        Y2D_DAI_DIF_PY_PERC = Y2D_DIFF_PREV_YEAR_PERC,
+        Y2D_DAI_DIF_PREV_YEAR_PERC = Y2D_DIFF_PREV_YEAR_PERC,
         Y2D_DAI_DIF_2019_PERC = Y2D_DIFF_2019_PERC
       ) %>%
       right_join(state_iso, by ="iso_2letter") %>%
@@ -387,15 +387,15 @@ source(here::here("R", "helpers.R"))
         Y2D_DIFF_2019_PERC
       ) %>%
       rename(
-        DAY_OVF = DAY_TFC,
-        DAY_OVF_DIF_PY_PERC = DAY_DIFF_PREV_YEAR_PERC,
-        DAY_OVF_DIF_2019_PERC = DAY_TFC_DIFF_2019_PERC,
-        WEEK_OVF_AVG = AVG_ROLLING_WEEK,
-        WEEK_OVF_DIF_PY_PERC = DIF_WEEK_PREV_YEAR_PERC,
-        WEEK_OVF_DIF_2019_PERC = DIF_ROLLING_WEEK_2019_PERC,
+        DY_OVF = DAY_TFC,
+        DY_OVF_DIF_PREV_YEAR_PERC = DAY_DIFF_PREV_YEAR_PERC,
+        DY_OVF_DIF_2019_PERC = DAY_TFC_DIFF_2019_PERC,
+        WK_OVF_AVG_ROLLING = AVG_ROLLING_WEEK,
+        WK_OVF_DIF_PREV_YEAR_PERC = DIF_WEEK_PREV_YEAR_PERC,
+        WK_OVF_DIF_2019_PERC = DIF_ROLLING_WEEK_2019_PERC,
         Y2D_OVF = Y2D_TFC_YEAR,
         Y2D_OVF_AVG = Y2D_AVG_TFC_YEAR,
-        Y2D_OVF_DIF_PY_PERC = Y2D_DIFF_PREV_YEAR_PERC,
+        Y2D_OVF_DIF_PREV_YEAR_PERC = Y2D_DIFF_PREV_YEAR_PERC,
         Y2D_OVF_DIF_2019_PERC = Y2D_DIFF_2019_PERC
       ) %>%
       right_join(state_iso, by ="iso_2letter") %>%
@@ -475,20 +475,26 @@ source(here::here("R", "helpers.R"))
         Y2D_DLY_FLT_DIF_2019_PERC
       ) %>%
       rename(
-        DAY_DLY_DIF_PY_PERC = DAY_DLY_DIF_PREV_YEAR_PERC,
+        DY_DLY = DAY_DLY,
+        DY_DLY_DIF_PREV_YEAR_PERC = DAY_DLY_DIF_PREV_YEAR_PERC,
+        DY_DLY_DIF_2019_PERC = DAY_DLY_DIF_2019_PERC,
+        DY_DLY_FLT = DAY_DLY_FLT,
+        DY_DLY_FLT_DIF_PREV_YEAR_PERC = DAY_DLY_FLT_DIF_PY_PERC,
+        DY_DLY_FLT_DIF_2019_PERC = DAY_DLY_FLT_DIF_2019_PERC,
 
-        WEEK_DLY_AVG = AVG_DLY_ROLLING_WEEK,
-        WEEK_DLY_DIF_PY_PERC = DIF_DLY_ROLLING_WEEK_PREV_YEAR_PERC,
-        WEEK_DLY_DIF_2019_PERC = DIF_DLY_ROLLING_WEEK_2019_PERC,
+        WK_DLY_AVG_ROLLING = AVG_DLY_ROLLING_WEEK,
+        WK_DLY_DIF_PREV_YEAR_PERC = DIF_DLY_ROLLING_WEEK_PREV_YEAR_PERC,
+        WK_DLY_DIF_2019_PERC = DIF_DLY_ROLLING_WEEK_2019_PERC,
+        WK_DLY_FLT = WEEK_DLY_FLT,
+        WK_DLY_FLT_DIF_PREV_YEAR_PERC = WEEK_DLY_FLT_DIF_PY_PERC,
+        WK_DLY_FLT_DIF_2019_PERC = WEEK_DLY_FLT_DIF_2019_PERC,
 
         Y2D_DLY_AVG = Y2D_AVG_DLY_YEAR,
-        Y2D_DLY_DIF_PY_PERC = Y2D_DLY_DIF_PREV_YEAR_PERC
+        Y2D_DLY_FLT_DIF_PREV_YEAR_PERC = Y2D_DLY_FLT_DIF_PY_PERC
       ) %>%
       right_join(state_iso, by ="iso_2letter") %>%
       select(-state) %>%
       arrange(iso_2letter)
-
-  #### Traffic overflight data ----
 
   #### Punctuality data ----
     query <- "
@@ -595,6 +601,21 @@ source(here::here("R", "helpers.R"))
         WEEK_DEP_PUNCT_DIF_PY,
         WEEK_ARR_PUNCT_DIF_2019,
         WEEK_DEP_PUNCT_DIF_2019
+      ) %>%
+      rename(
+        FLIGHT_DATE = DAY_DATE,
+        DY_ARR_PUN = DAY_ARR_PUNCT,
+        DY_DEP_PUN = DAY_DEP_PUNCT,
+        DY_ARR_PUN_DIF_PREV_YEAR = DAY_ARR_PUNCT_DIF_PY,
+        DY_DEP_PUN_DIF_PREV_YEAR = DAY_DEP_PUNCT_DIF_PY,
+        DY_ARR_PUN_DIF_2019 = DAY_ARR_PUNCT_DIF_2019,
+        DY_DEP_PUN_DIF_2019 = DAY_DEP_PUNCT_DIF_2019,
+        WK_ARR_PUN = WEEK_ARR_PUNCT,
+        WK_DEP_PUN = WEEK_DEP_PUNCT,
+        WK_ARR_PUN_DIF_PREV_YEAR = WEEK_ARR_PUNCT_DIF_PY,
+        WK_DEP_PUN_DIF_PREV_YEAR = WEEK_DEP_PUNCT_DIF_PY,
+        WK_ARR_PUN_DIF_2019 = WEEK_ARR_PUNCT_DIF_2019,
+        WK_DEP_PUN_DIF_2019 = WEEK_DEP_PUNCT_DIF_2019
       )
 
     st_punct_y2d <- st_punct_raw %>%
@@ -602,26 +623,26 @@ source(here::here("R", "helpers.R"))
       mutate(MONTH_DAY = as.numeric(format(DAY_DATE, format="%m%d"))) %>%
       filter(MONTH_DAY <= as.numeric(format(last_day_punct, format="%m%d"))) %>%
       group_by(ISO_2LETTER, YEAR) %>%
-      summarise (Y2D_ARR_PUNCT = sum(ARR_PUNCTUAL_FLIGHTS, na.rm=TRUE) / sum(ARR_SCHEDULE_FLIGHT, na.rm=TRUE) * 100,
-                 Y2D_DEP_PUNCT = sum(DEP_PUNCTUAL_FLIGHTS, na.rm=TRUE) / sum(DEP_SCHEDULE_FLIGHT, na.rm=TRUE) * 100) %>%
-      mutate(Y2D_ARR_PUNCT_PY = lag(Y2D_ARR_PUNCT, 1),
-             Y2D_DEP_PUNCT_PY = lag(Y2D_DEP_PUNCT, 1),
-             Y2D_ARR_PUNCT_2019 = lag(Y2D_ARR_PUNCT, last_year_punct - 2019),
-             Y2D_DEP_PUNCT_2019 = lag(Y2D_DEP_PUNCT, last_year_punct - 2019),
-             Y2D_ARR_PUNCT_DIF_PY = Y2D_ARR_PUNCT - Y2D_ARR_PUNCT_PY,
-             Y2D_DEP_PUNCT_DIF_PY = Y2D_DEP_PUNCT - Y2D_DEP_PUNCT_PY,
-             Y2D_ARR_PUNCT_DIF_2019 = Y2D_ARR_PUNCT - Y2D_ARR_PUNCT_2019,
-             Y2D_DEP_PUNCT_DIF_2019 = Y2D_DEP_PUNCT - Y2D_DEP_PUNCT_2019
+      summarise (Y2D_ARR_PUN = sum(ARR_PUNCTUAL_FLIGHTS, na.rm=TRUE) / sum(ARR_SCHEDULE_FLIGHT, na.rm=TRUE) * 100,
+                 Y2D_DEP_PUN = sum(DEP_PUNCTUAL_FLIGHTS, na.rm=TRUE) / sum(DEP_SCHEDULE_FLIGHT, na.rm=TRUE) * 100) %>%
+      mutate(Y2D_ARR_PUN_PY = lag(Y2D_ARR_PUN, 1),
+             Y2D_DEP_PUN_PY = lag(Y2D_DEP_PUN, 1),
+             Y2D_ARR_PUN_2019 = lag(Y2D_ARR_PUN, last_year_punct - 2019),
+             Y2D_DEP_PUN_2019 = lag(Y2D_DEP_PUN, last_year_punct - 2019),
+             Y2D_ARR_PUN_DIF_PREV_YEAR = Y2D_ARR_PUN - Y2D_ARR_PUN_PY,
+             Y2D_DEP_PUN_DIF_PREV_YEAR = Y2D_DEP_PUN - Y2D_DEP_PUN_PY,
+             Y2D_ARR_PUN_DIF_2019 = Y2D_ARR_PUN - Y2D_ARR_PUN_2019,
+             Y2D_DEP_PUN_DIF_2019 = Y2D_DEP_PUN - Y2D_DEP_PUN_2019
       ) %>%
       filter(YEAR == last_year_punct) %>%
       ungroup() %>%
       select(ISO_2LETTER,
-             Y2D_ARR_PUNCT,
-             Y2D_DEP_PUNCT,
-             Y2D_ARR_PUNCT_DIF_PY,
-             Y2D_DEP_PUNCT_DIF_PY,
-             Y2D_ARR_PUNCT_DIF_2019,
-             Y2D_DEP_PUNCT_DIF_2019
+             Y2D_ARR_PUN,
+             Y2D_DEP_PUN,
+             Y2D_ARR_PUN_DIF_PREV_YEAR,
+             Y2D_DEP_PUN_DIF_PREV_YEAR,
+             Y2D_ARR_PUN_DIF_2019,
+             Y2D_DEP_PUN_DIF_2019
       )
 
     st_punct_for_json <- merge(st_punct_d_w, st_punct_y2d, by="ISO_2LETTER") %>%
@@ -657,16 +678,16 @@ source(here::here("R", "helpers.R"))
              YEAR,
              MONTH) %>%
       group_by(iso_2letter, FLIGHT_MONTH, YEAR, MONTH) %>%
-      summarise (MONTH_DEP = sum(TF, na.rm=TRUE),
-                 MONTH_DEP_PY = sum(LY_TF, na.rm=TRUE),
-                 MONTH_CO2 = sum(CO2_QTY_TONNES, na.rm=TRUE),
-                 MONTH_CO2_PY = sum(LY_CO2_QTY_TONNES, na.rm=TRUE)
+      summarise (MM_DEP = sum(TF, na.rm=TRUE) / 10^6,
+                 MM_DEP_PY = sum(LY_TF, na.rm=TRUE) / 10^6,
+                 MM_CO2 = sum(CO2_QTY_TONNES, na.rm=TRUE) / 10^6,
+                 MM_CO2_PY = sum(LY_CO2_QTY_TONNES, na.rm=TRUE) / 10^6
       ) %>%
       ungroup() %>%
       mutate(
         CO2_DATE = FLIGHT_MONTH,
-        MONTH_CO2_DEP = MONTH_CO2 / MONTH_DEP,
-        MONTH_CO2_DEP_PY = MONTH_CO2_PY / MONTH_DEP_PY
+        MM_CO2_DEP = MM_CO2 / MM_DEP,
+        MM_CO2_DEP_PY = MM_CO2_PY / MM_DEP_PY
       ) %>%
       arrange(iso_2letter, FLIGHT_MONTH) %>%
       mutate(FLIGHT_MONTH = ceiling_date(as_date(FLIGHT_MONTH), unit = 'month')-1)
@@ -679,7 +700,7 @@ source(here::here("R", "helpers.R"))
     #check last month number of flights
     check_flights <- st_co2_data %>%
       filter (YEAR == st_co2_last_year) %>% filter(MONTH == st_co2_last_month_num) %>%
-      summarise (TTF = sum(MONTH_DEP, na.rm=TRUE)) %>%
+      summarise (TTF = sum(MM_DEP, na.rm=TRUE)) %>%
       select(TTF) %>% pull()
 
     if (check_flights < 1000) {
@@ -691,23 +712,23 @@ source(here::here("R", "helpers.R"))
       arrange(iso_2letter, FLIGHT_MONTH) %>%
       mutate(
         MONTH_TEXT = format(FLIGHT_MONTH,'%B'),
-        MONTH_CO2_2019 = lag(MONTH_CO2, (as.numeric(st_co2_last_year) - 2019) * 12),
-        MONTH_DEP_2019 = lag(MONTH_DEP, (as.numeric(st_co2_last_year) - 2019) * 12),
-        MONTH_CO2_DEP_2019 = lag(MONTH_CO2_DEP, (as.numeric(st_co2_last_year) - 2019) * 12)
+        MM_CO2_2019 = lag(MM_CO2, (as.numeric(st_co2_last_year) - 2019) * 12),
+        MM_DEP_2019 = lag(MM_DEP, (as.numeric(st_co2_last_year) - 2019) * 12),
+        MM_CO2_DEP_2019 = lag(MM_CO2_DEP, (as.numeric(st_co2_last_year) - 2019) * 12)
       ) %>%
       mutate(
-        MONTH_CO2_DIF_PY_PERC = MONTH_CO2 / MONTH_CO2_PY - 1,
-        MONTH_DEP_DIF_PY_PERC = MONTH_DEP / MONTH_DEP_PY - 1,
-        MONTH_CO2_DEP_DIF_PY_PERC = MONTH_CO2_DEP / MONTH_CO2_DEP_PY - 1,
-        MONTH_CO2_DIF_2019_PERC = MONTH_CO2 / MONTH_CO2_2019 - 1,
-        MONTH_DEP_DIF_2019_PERC = MONTH_DEP / MONTH_DEP_2019 - 1,
-        MONTH_CO2_DEP_DIF_2019_PERC = MONTH_CO2_DEP / MONTH_CO2_DEP_2019 - 1
+        MM_CO2_DIF_PREV_YEAR = MM_CO2 / MM_CO2_PY - 1,
+        MM_DEP_DIF_PREV_YEAR = MM_DEP / MM_DEP_PY - 1,
+        MM_CO2_DEP_DIF_PREV_YEAR = MM_CO2_DEP / MM_CO2_DEP_PY - 1,
+        MM_CO2_DIF_2019 = MM_CO2 / MM_CO2_2019 - 1,
+        MM_DEP_DIF_2019 = MM_DEP / MM_DEP_2019 - 1,
+        MM_CO2_DEP_DIF_2019 = MM_CO2_DEP / MM_CO2_DEP_2019 - 1
       ) %>%
       group_by(iso_2letter, YEAR) %>%
       mutate(
-        Y2D_CO2 = cumsum(MONTH_CO2),
-        Y2D_DEP = cumsum(MONTH_DEP),
-        Y2D_CO2_DEP = cumsum(MONTH_CO2) / cumsum(MONTH_DEP)
+        Y2D_CO2 = cumsum(MM_CO2),
+        Y2D_DEP = cumsum(MM_DEP),
+        Y2D_CO2_DEP = cumsum(MM_CO2) / cumsum(MM_DEP)
       ) %>%
       ungroup() %>%
       mutate(
@@ -719,31 +740,31 @@ source(here::here("R", "helpers.R"))
         Y2D_CO2_DEP_2019 = lag(Y2D_CO2_DEP, (as.numeric(st_co2_last_year) - 2019) * 12)
       ) %>%
       mutate(
-        Y2D_CO2_DIF_PY_PERC = Y2D_CO2 / Y2D_CO2_PY - 1,
-        Y2D_DEP_DIF_PY_PERC = Y2D_DEP / Y2D_DEP_PY - 1,
-        Y2D_CO2_DEP_DIF_PY_PERC = Y2D_CO2_DEP / Y2D_CO2_DEP_PY - 1,
-        Y2D_CO2_DIF_2019_PERC = Y2D_CO2 / Y2D_CO2_2019 - 1,
-        Y2D_DEP_DIF_2019_PERC = Y2D_DEP / Y2D_DEP_2019 - 1,
-        Y2D_CO2_DEP_DIF_2019_PERC = Y2D_CO2_DEP / Y2D_CO2_DEP_2019 - 1
+        Y2D_CO2_DIF_PREV_YEAR = Y2D_CO2 / Y2D_CO2_PY - 1,
+        Y2D_DEP_DIF_PREV_YEAR = Y2D_DEP / Y2D_DEP_PY - 1,
+        Y2D_CO2_DEP_DIF_PREV_YEAR = Y2D_CO2_DEP / Y2D_CO2_DEP_PY - 1,
+        Y2D_CO2_DIF_2019 = Y2D_CO2 / Y2D_CO2_2019 - 1,
+        Y2D_DEP_DIF_2019 = Y2D_DEP / Y2D_DEP_2019 - 1,
+        Y2D_CO2_DEP_DIF_2019 = Y2D_CO2_DEP / Y2D_CO2_DEP_2019 - 1
       ) %>%
       select(
         iso_2letter,
-        CO2_DATE,
+        FLIGHT_MONTH,
         MONTH_TEXT,
-        MONTH_CO2,
-        MONTH_CO2_DIF_PY_PERC,
-        MONTH_CO2_DIF_2019_PERC,
-        MONTH_CO2_DEP,
-        MONTH_CO2_DEP_DIF_PY_PERC,
-        MONTH_CO2_DEP_DIF_2019_PERC,
+        MM_CO2,
+        MM_CO2_DIF_PREV_YEAR,
+        MM_CO2_DIF_2019,
+        MM_CO2_DEP,
+        MM_CO2_DEP_DIF_PREV_YEAR,
+        MM_CO2_DEP_DIF_2019,
         Y2D_CO2,
-        Y2D_CO2_DIF_PY_PERC,
-        Y2D_CO2_DIF_2019_PERC,
+        Y2D_CO2_DIF_PREV_YEAR,
+        Y2D_CO2_DIF_2019,
         Y2D_CO2_DEP,
-        Y2D_CO2_DEP_DIF_PY_PERC,
-        Y2D_CO2_DEP_DIF_2019_PERC
+        Y2D_CO2_DEP_DIF_PREV_YEAR,
+        Y2D_CO2_DEP_DIF_2019
       ) %>%
-      filter(CO2_DATE == st_co2_last_date) %>%
+      filter(FLIGHT_MONTH == st_co2_last_date) %>%
       right_join(state_iso, by = "iso_2letter") %>%
       select(-state) %>%
       arrange(iso_2letter)
@@ -751,21 +772,55 @@ source(here::here("R", "helpers.R"))
 
   #### Join strings and save  ----
     ### https://www.lexjansen.com/pharmasug-cn/2021/SR/Pharmasug-China-2021-SR031.pdf
+
     st_json_app_j <- state_iso %>% select(iso_2letter, state) %>% arrange(iso_2letter)
-    st_json_app_j$st_daio <- st_daio_for_json
-    st_json_app_j$st_dai <- st_dai_for_json
-    st_json_app_j$st_ofv <- st_overflight_for_json
-    st_json_app_j$st_delay <- st_delay_for_json
-    st_json_app_j$st_punct <- st_punct_for_json
-    st_json_app_j$st_billed <- st_billed_for_json
-    st_json_app_j$st_co2 <- st_co2_for_json
+    st_json_app_j <- st_json_app_j %>% cbind(select(st_daio_for_json, -c(iso_2letter))) %>%
+      group_by(iso_2letter, state) %>%
+      nest_legacy(.key = "st_daio")
+
+    st_json_app_j <- st_json_app_j %>% cbind(select(st_dai_for_json, -c(iso_2letter))) %>%
+      group_by(iso_2letter, state, st_daio) %>%
+      nest_legacy(.key = "st_dai")
+
+    st_json_app_j <- st_json_app_j %>% cbind(select(st_overflight_for_json, -c(iso_2letter))) %>%
+      group_by(iso_2letter, state, st_daio, st_dai) %>%
+      nest_legacy(.key = "st_ovf")
+
+    st_json_app_j <- st_json_app_j %>% cbind(select(st_delay_for_json, -c(iso_2letter))) %>%
+      group_by(iso_2letter, state, st_daio, st_dai, st_ovf) %>%
+      nest_legacy(.key = "st_delay")
+
+    st_json_app_j <- st_json_app_j %>% cbind(select(st_punct_for_json, -c(iso_2letter))) %>%
+      group_by(iso_2letter, state, st_daio, st_dai, st_ovf, st_delay) %>%
+      nest_legacy(.key = "st_punct")
+
+    st_json_app_j <- st_json_app_j %>% cbind(select(st_billed_for_json, -c(iso_2letter))) %>%
+      group_by(iso_2letter, state, st_daio, st_dai, st_ovf, st_delay, st_punct) %>%
+      nest_legacy(.key = "st_billed")
+
+    st_json_app_j <- st_json_app_j %>% cbind(select(st_co2_for_json, -c(iso_2letter))) %>%
+      group_by(iso_2letter, state, st_daio, st_dai, st_ovf, st_delay, st_punct, st_billed) %>%
+      nest_legacy(.key = "st_co2")
 
     st_json_app <- st_json_app_j %>%
-      toJSON(., pretty = TRUE) %>%
-      substr(., 1, nchar(.)-1) %>%
-      substr(., 2, nchar(.))
+      toJSON(., pretty = TRUE)
 
-    #xxx write(st_json_app, here(data_folder,"st_json_app.json"))
+
+    # st_json_app_j <- state_iso %>% select(iso_2letter, state) %>% arrange(iso_2letter)
+    # st_json_app_j$st_daio <- st_daio_for_json
+    # st_json_app_j$st_dai <- st_dai_for_json
+    # st_json_app_j$st_ofv <- st_overflight_for_json
+    # st_json_app_j$st_delay <- st_delay_for_json
+    # st_json_app_j$st_punct <- st_punct_for_json
+    # st_json_app_j$st_billed <- st_billed_for_json
+    # st_json_app_j$st_co2 <- st_co2_for_json
+    #
+    # st_json_app <- st_json_app_j %>%
+    #   toJSON(., pretty = TRUE) %>%
+    #   substr(., 1, nchar(.)-1) %>%
+    #   substr(., 2, nchar(.))
+
+    write(st_json_app, here(data_folder,"st_json_app.json"))
     write(st_json_app, paste0(archive_dir, "st_json_app.json"))
     write(st_json_app, paste0(archive_dir, today, "_st_json_app.json"))
 
