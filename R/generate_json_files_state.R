@@ -773,52 +773,57 @@ source(here::here("R", "helpers.R"))
   #### Join strings and save  ----
     ### https://www.lexjansen.com/pharmasug-cn/2021/SR/Pharmasug-China-2021-SR031.pdf
 
+    # st_json_app_j <- state_iso %>% select(iso_2letter, state) %>% arrange(iso_2letter)
+    # st_json_app_j <- st_json_app_j %>% cbind(select(st_daio_for_json, -c(iso_2letter))) %>%
+    #   group_by(iso_2letter, state) %>%
+    #   nest_legacy(.key = "st_daio")
+    #
+    # st_json_app_j <- st_json_app_j %>% cbind(select(st_dai_for_json, -c(iso_2letter))) %>%
+    #   group_by(iso_2letter, state, st_daio) %>%
+    #   nest_legacy(.key = "st_dai")
+    #
+    # st_json_app_j <- st_json_app_j %>% cbind(select(st_overflight_for_json, -c(iso_2letter))) %>%
+    #   group_by(iso_2letter, state, st_daio, st_dai) %>%
+    #   nest_legacy(.key = "st_ovf")
+    #
+    # st_json_app_j <- st_json_app_j %>% cbind(select(st_delay_for_json, -c(iso_2letter))) %>%
+    #   group_by(iso_2letter, state, st_daio, st_dai, st_ovf) %>%
+    #   nest_legacy(.key = "st_delay")
+    #
+    # st_json_app_j <- st_json_app_j %>% cbind(select(st_punct_for_json, -c(iso_2letter))) %>%
+    #   group_by(iso_2letter, state, st_daio, st_dai, st_ovf, st_delay) %>%
+    #   nest_legacy(.key = "st_punct")
+    #
+    # st_json_app_j <- st_json_app_j %>% cbind(select(st_billed_for_json, -c(iso_2letter))) %>%
+    #   group_by(iso_2letter, state, st_daio, st_dai, st_ovf, st_delay, st_punct) %>%
+    #   nest_legacy(.key = "st_billed")
+    #
+    # st_json_app_j <- st_json_app_j %>% cbind(select(st_co2_for_json, -c(iso_2letter))) %>%
+    #   group_by(iso_2letter, state, st_daio, st_dai, st_ovf, st_delay, st_punct, st_billed) %>%
+    #   nest_legacy(.key = "st_co2")
+    #
+    # st_json_app <- st_json_app_j %>%
+    #   toJSON(., pretty = TRUE)
+
+
     st_json_app_j <- state_iso %>% select(iso_2letter, state) %>% arrange(iso_2letter)
-    st_json_app_j <- st_json_app_j %>% cbind(select(st_daio_for_json, -c(iso_2letter))) %>%
-      group_by(iso_2letter, state) %>%
-      nest_legacy(.key = "st_daio")
+    st_json_app_j$st_daio <- select(st_daio_for_json, -c(iso_2letter))
+    st_json_app_j$st_dai <- select(st_dai_for_json, -c(iso_2letter))
+    st_json_app_j$st_ovf <- select(st_overflight_for_json, -c(iso_2letter))
+    st_json_app_j$st_delay <- select(st_delay_for_json, -c(iso_2letter))
+    st_json_app_j$st_billed <- select(st_billed_for_json, -c(iso_2letter))
+    st_json_app_j$st_co2 <- select(st_co2_for_json, -c(iso_2letter))
 
-    st_json_app_j <- st_json_app_j %>% cbind(select(st_dai_for_json, -c(iso_2letter))) %>%
-      group_by(iso_2letter, state, st_daio) %>%
-      nest_legacy(.key = "st_dai")
+    update_day <- floor_date(lubridate::now(), unit = "days") %>%
+      as_tibble() %>%
+      rename(APP_UPDATE = 1)
 
-    st_json_app_j <- st_json_app_j %>% cbind(select(st_overflight_for_json, -c(iso_2letter))) %>%
-      group_by(iso_2letter, state, st_daio, st_dai) %>%
-      nest_legacy(.key = "st_ovf")
+    st_json_app_j$st_update <- update_day
 
-    st_json_app_j <- st_json_app_j %>% cbind(select(st_delay_for_json, -c(iso_2letter))) %>%
-      group_by(iso_2letter, state, st_daio, st_dai, st_ovf) %>%
-      nest_legacy(.key = "st_delay")
-
-    st_json_app_j <- st_json_app_j %>% cbind(select(st_punct_for_json, -c(iso_2letter))) %>%
-      group_by(iso_2letter, state, st_daio, st_dai, st_ovf, st_delay) %>%
-      nest_legacy(.key = "st_punct")
-
-    st_json_app_j <- st_json_app_j %>% cbind(select(st_billed_for_json, -c(iso_2letter))) %>%
-      group_by(iso_2letter, state, st_daio, st_dai, st_ovf, st_delay, st_punct) %>%
-      nest_legacy(.key = "st_billed")
-
-    st_json_app_j <- st_json_app_j %>% cbind(select(st_co2_for_json, -c(iso_2letter))) %>%
-      group_by(iso_2letter, state, st_daio, st_dai, st_ovf, st_delay, st_punct, st_billed) %>%
-      nest_legacy(.key = "st_co2")
+    st_json_app_j <- st_json_app_j %>%   group_by(iso_2letter, state)
 
     st_json_app <- st_json_app_j %>%
       toJSON(., pretty = TRUE)
-
-
-    # st_json_app_j <- state_iso %>% select(iso_2letter, state) %>% arrange(iso_2letter)
-    # st_json_app_j$st_daio <- st_daio_for_json
-    # st_json_app_j$st_dai <- st_dai_for_json
-    # st_json_app_j$st_ofv <- st_overflight_for_json
-    # st_json_app_j$st_delay <- st_delay_for_json
-    # st_json_app_j$st_punct <- st_punct_for_json
-    # st_json_app_j$st_billed <- st_billed_for_json
-    # st_json_app_j$st_co2 <- st_co2_for_json
-    #
-    # st_json_app <- st_json_app_j %>%
-    #   toJSON(., pretty = TRUE) %>%
-    #   substr(., 1, nchar(.)-1) %>%
-    #   substr(., 2, nchar(.))
 
     write(st_json_app, here(data_folder,"st_json_app.json"))
     write(st_json_app, paste0(archive_dir, "st_json_app.json"))
@@ -1051,7 +1056,7 @@ source(here::here("R", "helpers.R"))
 
     # covert to json and save in app data folder and archive
     st_ao_data_j <- st_ao_data %>% toJSON(., pretty = TRUE)
-    #xxx write(st_ao_data_j, here(data_folder,"ao_ranking_traffic.json"))
+    write(st_ao_data_j, here(data_folder,"st_ao_ranking_traffic.json"))
     write(st_ao_data_j, paste0(archive_dir, today, "_st_ao_ranking_traffic.json"))
     write(st_ao_data_j, paste0(archive_dir, "st_ao_ranking_traffic.json"))
 
@@ -1272,7 +1277,7 @@ source(here::here("R", "helpers.R"))
 
     # covert to json and save in app data folder and archive
     st_apt_data_j <- st_apt_data %>% toJSON(., pretty = TRUE)
-    #xxx write(st_ao_data_j, here(data_folder,"ao_ranking_traffic.json"))
+    write(st_apt_data_j, here(data_folder,"st_apt_ranking_traffic.json"))
     write(st_apt_data_j, paste0(archive_dir, today, "_st_apt_ranking_traffic.json"))
     write(st_apt_data_j, paste0(archive_dir, "st_apt_ranking_traffic.json"))
 
@@ -1493,7 +1498,7 @@ source(here::here("R", "helpers.R"))
 
     # covert to json and save in app data folder and archive
     st_st_data_j <- st_st_data %>% toJSON(., pretty = TRUE)
-    #xxx write(st_ao_data_j, here(data_folder,"ao_ranking_traffic.json"))
+    write(st_st_data_j, here(data_folder,"st_st_ranking_traffic.json"))
     write(st_st_data_j, paste0(archive_dir, today, "_st_st_ranking_traffic.json"))
     write(st_st_data_j, paste0(archive_dir, "st_st_ranking_traffic.json"))
 
@@ -1509,23 +1514,26 @@ source(here::here("R", "helpers.R"))
       as_tibble() %>%
       mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-    acc_delay_day <- acc_delay_day_raw %>%
+    acc_delay_day_sorted <- acc_delay_day_raw %>%
       arrange(desc(DLY_ER), NAME) %>%
       mutate(
+        DY_RANK = rank(desc(DLY_ER), ties.method = "max"),
         ICAO_code = UNIT_CODE,
         DY_ACC_NAME = NAME,
         DY_ACC_ER_DLY = DLY_ER,
-        DY_ACC_ER_DLY_FLT = DLY_ER / FLIGHT,
+        DY_ACC_ER_DLY_FLT = if_else(FLIGHT == 0, 0, DLY_ER / FLIGHT),
+        DY_RANK_ER_DLY_FLT = rank(desc(DY_ACC_ER_DLY_FLT), ties.method = "max"),
         DY_TO_DATE = ENTRY_DATE) %>%
       right_join(acc, by = "ICAO_code") %>%
       left_join(state_iso, by = "iso_2letter") %>%
       group_by(iso_2letter) %>%
       arrange(iso_2letter, desc(DY_ACC_ER_DLY), DY_ACC_NAME) %>%
       mutate (
-        DY_RANK = row_number(),
-        ST_RANK = paste0(tolower(state), DY_RANK),
+        ST_RANK = paste0(tolower(state), row_number()),
       ) %>%
-      ungroup() %>%
+      ungroup()
+
+      acc_delay_day <- acc_delay_day_sorted %>%
       select(
         ST_RANK,
         DY_RANK,
@@ -1548,10 +1556,11 @@ source(here::here("R", "helpers.R"))
     acc_delay_week <- acc_delay_week_raw %>%
       arrange(desc(DAILY_DLY_ER), NAME) %>%
       mutate(
+        WK_RANK = rank(desc(DAILY_DLY_ER), ties.method = "max"),
         ICAO_code = UNIT_CODE,
         WK_ACC_NAME = NAME,
         WK_ACC_ER_DLY = DAILY_DLY_ER,
-        WK_ACC_ER_DLY_FLT = DAILY_DLY_ER / DAILY_FLIGHT,
+        WK_ACC_ER_DLY_FLT = if_else(DAILY_FLIGHT == 0, 0, DAILY_DLY_ER / DAILY_FLIGHT),
         WK_FROM_DATE = MIN_ENTRY_DATE,
         WK_TO_DATE = MAX_ENTRY_DATE
         ) %>%
@@ -1560,8 +1569,7 @@ source(here::here("R", "helpers.R"))
       group_by(iso_2letter) %>%
       arrange(iso_2letter, desc(WK_ACC_ER_DLY), WK_ACC_NAME) %>%
       mutate (
-        WK_RANK = row_number(),
-        ST_RANK = paste0(tolower(state), WK_RANK),
+        ST_RANK = paste0(tolower(state), row_number()),
       ) %>%
       ungroup() %>%
       select(
@@ -1588,10 +1596,11 @@ source(here::here("R", "helpers.R"))
     acc_delay_y2d <- acc_delay_y2d_raw %>%
       arrange(desc(Y2D_AVG_DLY), NAME) %>%
       mutate(
+        Y2D_RANK = rank(desc(Y2D_AVG_DLY), ties.method = "max"),
         ICAO_code = UNIT_CODE,
         Y2D_ACC_NAME = NAME,
         Y2D_ACC_ER_DLY = Y2D_AVG_DLY,
-        Y2D_ACC_ER_DLY_FLT = Y2D_AVG_DLY / Y2D_AVG_FLIGHT,
+        Y2D_ACC_ER_DLY_FLT = if_else(Y2D_AVG_FLIGHT == 0, 0, Y2D_AVG_DLY / Y2D_AVG_FLIGHT),
         Y2D_TO_DATE = ENTRY_DATE
       ) %>%
       right_join(acc, by = "ICAO_code") %>%
@@ -1599,8 +1608,7 @@ source(here::here("R", "helpers.R"))
       group_by(iso_2letter) %>%
       arrange(iso_2letter, desc(Y2D_ACC_ER_DLY), Y2D_ACC_NAME) %>%
       mutate (
-        Y2D_RANK = row_number(),
-        ST_RANK = paste0(tolower(state), Y2D_RANK),
+        ST_RANK = paste0(tolower(state), row_number()),
       ) %>%
       ungroup() %>%
       select(
@@ -1613,7 +1621,29 @@ source(here::here("R", "helpers.R"))
         Y2D_ACC_ER_DLY_FLT
       )
 
-    # no main card
+    #### main card ----
+    st_acc_main_delay <- acc_delay_day_sorted %>%
+      mutate(
+        MAIN_DLY_ACC_RANK = DY_RANK,
+        MAIN_DLY_ACC_NAME = DY_ACC_NAME,
+        MAIN_DLY_ACC_DLY = DY_ACC_ER_DLY
+        ) %>%
+      select(ST_RANK, MAIN_DLY_ACC_RANK, MAIN_DLY_ACC_NAME, MAIN_DLY_ACC_DLY)
+
+    st_acc_main_delay_flt <- acc_delay_day_sorted %>%
+      group_by(iso_2letter) %>%
+      arrange(iso_2letter, DY_RANK_ER_DLY_FLT, DY_ACC_NAME) %>%
+      mutate (
+        ST_RANK = paste0(tolower(state), row_number()),
+      ) %>%
+      ungroup() %>%
+      mutate(
+        MAIN_DLY_FLT_ACC_RANK = DY_RANK_ER_DLY_FLT,
+        MAIN_DLY_FLT_ACC_NAME = DY_ACC_NAME,
+        MAIN_DLY_FLT_ACC_DLY_FLT = DY_ACC_ER_DLY_FLT
+      ) %>%
+      select(ST_RANK, MAIN_DLY_FLT_ACC_RANK, MAIN_DLY_FLT_ACC_NAME, MAIN_DLY_FLT_ACC_DLY_FLT)
+
 
     #### join tables ----
     # create list of state/rankings for left join
@@ -1638,11 +1668,13 @@ source(here::here("R", "helpers.R"))
       left_join(acc_delay_day, by = "ST_RANK") %>%
       left_join(acc_delay_week, by = "ST_RANK") %>%
       left_join(acc_delay_y2d, by = "ST_RANK") %>%
+      left_join(st_acc_main_delay, by = "ST_RANK") %>%
+      left_join(st_acc_main_delay_flt, by = "ST_RANK") %>%
       select(-ST_RANK)
 
     # covert to json and save in app data folder and archive
     st_acc_delay_j <- st_acc_delay %>% toJSON(., pretty = TRUE)
-    #xxx write(st_acc_delay_j, here(data_folder,"st_acc_ranking_delay.json"))
+    write(st_acc_delay_j, here(data_folder,"st_acc_ranking_delay.json"))
     write(st_acc_delay_j, paste0(archive_dir, today, "_st_acc_ranking_delay.json"))
     write(st_acc_delay_j, paste0(archive_dir, "st_acc_ranking_delay.json"))
 
@@ -1664,20 +1696,23 @@ source(here::here("R", "helpers.R"))
       left_join(state_iso, by = "iso_2letter")
 
     #### day ----
-    st_apt_delay_day <- st_apt_delay_raw %>%
+    st_apt_delay_day_sorted <- st_apt_delay_raw %>%
       arrange(desc(DLY_ARR),APT_NAME) %>%
       mutate(
+        DY_RANK = rank(desc(DLY_ARR), ties.method = "max"),
         DY_APT_NAME = APT_NAME,
         DY_APT_ARR_DLY = DLY_ARR,
         DY_APT_ARR_DLY_FLT = ifelse(FLT_ARR == 0, 0, round(DLY_ARR / FLT_ARR, 2)),
+        DY_RANK_ARR_DLY_FLT = rank(desc(DY_APT_ARR_DLY_FLT), ties.method = "max"),
         DY_TO_DATE = FLIGHT_DATE) %>%
       group_by(iso_2letter) %>%
       arrange(iso_2letter, desc(DY_APT_ARR_DLY), DY_APT_NAME) %>%
       mutate (
-        DY_RANK = row_number(),
-        ST_RANK = paste0(tolower(state), DY_RANK),
+        ST_RANK = paste0(tolower(state), row_number()),
       ) %>%
-      ungroup() %>%
+      ungroup()
+
+    st_apt_delay_day <- st_apt_delay_day_sorted %>%
       select(
         ST_RANK,
         DY_RANK,
@@ -1691,6 +1726,7 @@ source(here::here("R", "helpers.R"))
     st_apt_delay_week <- st_apt_delay_raw %>%
       arrange(desc(ROLL_WEEK_DLY_ARR),APT_NAME) %>%
       mutate(
+        WK_RANK = rank(desc(ROLL_WEEK_DLY_ARR), ties.method = "max"),
         WK_APT_NAME = APT_NAME,
         WK_APT_ARR_DLY = ROLL_WEEK_DLY_ARR,
         WK_APT_ARR_DLY_FLT = ifelse(ROLL_WEEK_ARR == 0, 0, round(ROLL_WEEK_DLY_ARR / ROLL_WEEK_ARR,2)),
@@ -1700,8 +1736,7 @@ source(here::here("R", "helpers.R"))
       group_by(iso_2letter) %>%
       arrange(iso_2letter, desc(WK_APT_ARR_DLY), WK_APT_NAME) %>%
       mutate (
-        WK_RANK = row_number(),
-        ST_RANK = paste0(tolower(state), WK_RANK),
+        ST_RANK = paste0(tolower(state), row_number()),
       ) %>%
       ungroup() %>%
       select(
@@ -1718,6 +1753,7 @@ source(here::here("R", "helpers.R"))
     st_apt_delay_y2d <- st_apt_delay_raw %>%
       arrange(desc(Y2D_AVG_DLY_ARR),APT_NAME) %>%
       mutate(
+        Y2D_RANK = rank(desc(Y2D_AVG_DLY_ARR), ties.method = "max"),
         Y2D_APT_NAME = APT_NAME,
         Y2D_APT_ARR_DLY = Y2D_AVG_DLY_ARR,
         Y2D_APT_ARR_DLY_FLT = ifelse(Y2D_AVG_ARR == 0, 0, round(Y2D_AVG_DLY_ARR / Y2D_AVG_ARR, 2)),
@@ -1726,8 +1762,7 @@ source(here::here("R", "helpers.R"))
       group_by(iso_2letter) %>%
       arrange(iso_2letter, desc(Y2D_APT_ARR_DLY), Y2D_APT_NAME) %>%
       mutate (
-        Y2D_RANK = row_number(),
-        ST_RANK = paste0(tolower(state), Y2D_RANK),
+        ST_RANK = paste0(tolower(state), row_number()),
       ) %>%
       ungroup() %>%
       select(
@@ -1739,7 +1774,33 @@ source(here::here("R", "helpers.R"))
         Y2D_APT_ARR_DLY_FLT
       )
 
-    # no main card
+    #### main card ----
+    st_apt_main_delay <- st_apt_delay_day_sorted %>%
+      mutate(
+        MAIN_DLY_APT_RANK = DY_RANK,
+        MAIN_DLY_APT_NAME = DY_APT_NAME,
+        MAIN_DLY_APT_DLY = DY_APT_ARR_DLY
+      ) %>%
+      group_by(iso_2letter) %>%
+      filter(row_number(MAIN_DLY_APT_RANK) < 6) %>%
+      ungroup() %>%
+      select(ST_RANK, MAIN_DLY_APT_RANK, MAIN_DLY_APT_NAME, MAIN_DLY_APT_DLY)
+
+
+    st_apt_main_delay_flt <- st_apt_delay_day_sorted %>%
+      group_by(iso_2letter) %>%
+      arrange(iso_2letter, DY_RANK_ARR_DLY_FLT, DY_APT_NAME) %>%
+      mutate (
+        ST_RANK = paste0(tolower(state), row_number()),
+      ) %>%
+      filter(row_number(DY_RANK_ARR_DLY_FLT) < 6) %>%
+      ungroup() %>%
+      mutate(
+        MAIN_DLY_FLT_APT_RANK = DY_RANK_ARR_DLY_FLT,
+        MAIN_DLY_FLT_APT_NAME = DY_APT_NAME,
+        MAIN_DLY_FLT_APT_DLY_FLT = DY_APT_ARR_DLY_FLT
+      ) %>%
+      select(ST_RANK, DY_RANK_ARR_DLY_FLT, MAIN_DLY_FLT_APT_NAME, MAIN_DLY_FLT_APT_DLY_FLT)
 
     #### join tables ----
     # create list of state/rankings for left join
@@ -1764,11 +1825,13 @@ source(here::here("R", "helpers.R"))
       left_join(st_apt_delay_day, by = "ST_RANK") %>%
       left_join(st_apt_delay_week, by = "ST_RANK") %>%
       left_join(st_apt_delay_y2d, by = "ST_RANK") %>%
+      left_join(st_apt_main_delay, by = "ST_RANK") %>%
+      left_join(st_apt_main_delay_flt, by = "ST_RANK") %>%
       select(-ST_RANK)
 
     # covert to json and save in app data folder and archive
     st_apt_delay_j <- st_apt_delay %>% toJSON(., pretty = TRUE)
-    #xxx write(st_apt_delay_j, here(data_folder,"st_apt_ranking_delay.json"))
+    write(st_apt_delay_j, here(data_folder,"st_apt_ranking_delay.json"))
     write(st_apt_delay_j, paste0(archive_dir, today, "_st_apt_ranking_delay.json"))
     write(st_apt_delay_j, paste0(archive_dir, "st_apt_ranking_delay.json"))
 
@@ -1974,7 +2037,7 @@ source(here::here("R", "helpers.R"))
 
     # covert to json and save in app data folder and archive
     st_apt_punctuality_j <- st_apt_punctuality %>% toJSON(., pretty = TRUE)
-    #xxx write(st_apt_punctuality_j, here(data_folder,"st_apt_ranking_punctuality.json"))
+    write(st_apt_punctuality_j, here(data_folder,"st_apt_ranking_punctuality.json"))
     write(st_apt_punctuality_j, paste0(archive_dir, today, "_st_apt_ranking_punctuality.json"))
     write(st_apt_punctuality_j, paste0(archive_dir, "st_apt_ranking_punctuality.json"))
 
@@ -2009,7 +2072,7 @@ source(here::here("R", "helpers.R"))
 
 
     st_daio_evo_app_j <- st_daio_evo_app_long %>% toJSON(., pretty = TRUE)
-    # write(nw_traffic_evo_app_j, here(data_folder,"nw_traffic_evo_chart_daily.json"))
+    write(st_daio_evo_app_j, here(data_folder,"st_daio_evo_chart_daily.json"))
     write(st_daio_evo_app_j, paste0(archive_dir, today, "_st_daio_evo_chart_daily.json"))
     write(st_daio_evo_app_j, paste0(archive_dir, "st_daio_evo_chart_daily.json"))
 
@@ -2035,7 +2098,7 @@ source(here::here("R", "helpers.R"))
       nest_legacy(.key = "statistics")
 
     st_dai_evo_app_j <- st_dai_evo_app_long %>% toJSON(., pretty = TRUE)
-    # write(nw_traffic_evo_app_j, here(data_folder,"nw_traffic_evo_chart_daily.json"))
+    write(st_dai_evo_app_j, here(data_folder,"st_dai_evo_chart_daily.json"))
     write(st_dai_evo_app_j, paste0(archive_dir, today, "_st_dai_evo_chart_daily.json"))
     write(st_dai_evo_app_j, paste0(archive_dir, "st_dai_evo_chart_daily.json"))
 
@@ -2061,7 +2124,7 @@ source(here::here("R", "helpers.R"))
       nest_legacy(.key = "statistics")
 
     st_ovf_evo_app_j <- st_ovf_evo_app_long %>% toJSON(., pretty = TRUE)
-    # write(nw_traffic_evo_app_j, here(data_folder,"nw_traffic_evo_chart_daily.json"))
+    write(st_ovf_evo_app_j, here(data_folder,"st_ovf_evo_chart_daily.json"))
     write(st_ovf_evo_app_j, paste0(archive_dir, today, "_st_ovf_evo_chart_daily.json"))
     write(st_ovf_evo_app_j, paste0(archive_dir, "st_ovf_evo_chart_daily.json"))
 
@@ -2107,7 +2170,7 @@ source(here::here("R", "helpers.R"))
 
 
     st_punct_evo_app_j <- st_punct_evo_app_long %>% toJSON(., pretty = TRUE)
-    # write(nw_punct_evo_app_j, here(data_folder,"nw_punct_evo_chart.json"))
+    write(st_punct_evo_app_j, here(data_folder,"st_punct_evo_chart.json"))
     write(st_punct_evo_app_j, paste0(archive_dir, today, "_st_punct_evo_chart.json"))
     write(st_punct_evo_app_j, paste0(archive_dir, "st_punct_evo_chart.json"))
 
@@ -2195,7 +2258,7 @@ source(here::here("R", "helpers.R"))
 
 
     st_billing_evo_j <- st_billing_evo_long %>% toJSON(., pretty = TRUE)
-    # write(nw_billing_evo_j, here(data_folder,"nw_billing_evo_chart.json"))
+    write(st_billing_evo_j, here(data_folder,"st_billing_evo.json"))
     write(st_billing_evo_j, paste0(archive_dir, today, "_st_billing_evo.json"))
     write(st_billing_evo_j, paste0(archive_dir, "st_billing_evo.json"))
 
@@ -2243,7 +2306,7 @@ source(here::here("R", "helpers.R"))
       nest_legacy(.key = "statistics")
 
     st_co2_evo_j <- st_co2_evo_long %>% toJSON(., pretty = TRUE)
-    # write(st_co2_evo_j, here(data_folder,"nw_co2_evo_chart.json"))
+    write(st_co2_evo_j, here(data_folder,"st_co2_evo.json"))
     write(st_co2_evo_j, paste0(archive_dir, "st_co2_evo.json"))
     write(st_co2_evo_j, paste0(archive_dir, today, "_st_co2_evo.json"))
 
