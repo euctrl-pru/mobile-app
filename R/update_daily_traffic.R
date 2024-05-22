@@ -7,6 +7,7 @@ library(stringr)
 library(pockethostr)
 library(yyjsonr)
 
+# in the Task manager set "Start in" to this repo root
 source(here::here("R", "helpers.R"))
 
 # TODO: use ph_list_records()
