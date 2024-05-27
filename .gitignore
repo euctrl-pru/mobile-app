@@ -5,6 +5,7 @@ R/.Rhistory
 sqlnet.log
 copy_to_production.bat
 copy_to_production.log
+update_daily_traffic.log
 .Rproj.user/
 
 /data/

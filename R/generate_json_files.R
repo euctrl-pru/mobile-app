@@ -13,9 +13,8 @@ library(jsonlite)
 library(here)
 library(RODBC)
 
-source(here::here("R", "helpers.R"))
-# source(here("..", "mobile-app","R", "helpers.R")) # so it can be launched from the checkupdates script in grounded aircraft
-
+# source(here::here("R", "helpers.R"))
+source(here("R", "helpers.R")) # so it can be launched from the checkupdates script in grounded aircraft
 
 # parameters
 data_folder <- here::here("data")
