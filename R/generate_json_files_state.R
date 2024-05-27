@@ -2200,7 +2200,189 @@ source(here::here("R", "helpers.R"))
       mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
       filter(YEAR >= last_year) %>%
       mutate(daio_zone_lc = tolower(COUNTRY_NAME)) %>%
-      right_join(state_daio, by = "daio_zone_lc", relationship = "many-to-many")
+      right_join(state_daio, by = "daio_zone_lc", relationship = "many-to-many") %>%
+      filter(is.na(YEAR) == FALSE) %>%
+      mutate(
+        TDM_G = TDM_ARP_G + TDM_ERT_G,
+        TDM_CS = TDM_ARP_CS + TDM_ERT_CS,
+        TDM_IT = TDM_ARP_IT + TDM_ERT_IT,
+        TDM_WD = TDM_ARP_WD + TDM_ERT_WD,
+        TDM_NOCSGITWD = TDM - TDM_G - TDM_CS - TDM_IT - TDM_WD,
+      )
+
+    #### day ----
+    st_delay_cause_day <- st_delay_cause_data %>%
+      filter(FLIGHT_DATE == max(FLIGHT_DATE)) %>%
+      mutate(
+        SHARE_TDM_G = if_else(TDM == 0, 0, TDM_G / TDM),
+        SHARE_TDM_CS = if_else(TDM == 0, 0, TDM_CS / TDM),
+        SHARE_TDM_IT = if_else(TDM == 0, 0, TDM_IT / TDM),
+        SHARE_TDM_WD = if_else(TDM == 0, 0, TDM_WD / TDM),
+        SHARE_TDM_NOCSGITWD = if_else(TDM == 0, 0, TDM_NOCSGITWD / TDM)
+      ) %>%
+      select(iso_2letter,
+             daio_zone,
+             FLIGHT_DATE,
+             TDM_G,
+             TDM_CS,
+             TDM_IT,
+             TDM_WD,
+             TDM_NOCSGITWD,
+             TDM_PREV_YEAR,
+             SHARE_TDM_G,
+             SHARE_TDM_CS,
+             SHARE_TDM_IT,
+             SHARE_TDM_WD,
+             SHARE_TDM_NOCSGITWD
+      )
+
+    column_names <- c(
+      "iso_2letter",
+      "daio_zone",
+      "FLIGHT_DATE",
+      "Aerodrome capacity",
+      "Capacity/Staffing (ATC)",
+      "Disruptions (ATC)",
+      "Weather",
+      "Other",
+      paste0("Total delay ", last_year - 1),
+      "share_aerodrome_capacity",
+      "share_capacity_staffing_atc",
+      "share_disruptions_atc",
+      "share_weather",
+      "share_other"
+    )
+
+    colnames(st_delay_cause_day) <- column_names
+
+
+    #### week ----
+    st_delay_cause_wk <- st_delay_cause_data %>%
+      filter(FLIGHT_DATE >= max(FLIGHT_DATE) + lubridate::days(-6)) %>%
+      group_by(iso_2letter) %>%
+      reframe(
+        iso_2letter,
+        daio_zone,
+        FLIGHT_DATE,
+        TDM_G,
+        TDM_CS,
+        TDM_IT,
+        TDM_WD,
+        TDM_NOCSGITWD,
+        TDM_PREV_YEAR,
+        WK_TDM_G = sum(TDM_G),
+        WK_TDM_CS = sum(TDM_CS),
+        WK_TDM_IT = sum(TDM_IT),
+        WK_TDM_WD = sum(TDM_WD),
+        WK_TDM_NOCSGITWD = sum(TDM_NOCSGITWD),
+        WK_TDM = sum(TDM)
+        ) %>%
+      ungroup() %>%
+      mutate(
+        WK_SHARE_TDM_G = if_else(WK_TDM == 0, 0, WK_TDM_G / WK_TDM),
+        WK_SHARE_TDM_CS = if_else(WK_TDM == 0, 0, WK_TDM_CS / WK_TDM),
+        WK_SHARE_TDM_IT = if_else(WK_TDM == 0, 0, WK_TDM_IT / WK_TDM),
+        WK_SHARE_TDM_WD = if_else(WK_TDM == 0, 0, WK_TDM_WD / WK_TDM),
+        WK_SHARE_TDM_NOCSGITWD = if_else(WK_TDM == 0, 0, WK_TDM_NOCSGITWD / WK_TDM)
+      ) %>%
+      select(iso_2letter,
+             daio_zone,
+             FLIGHT_DATE,
+             TDM_G,
+             TDM_CS,
+             TDM_IT,
+             TDM_WD,
+             TDM_NOCSGITWD,
+             TDM_PREV_YEAR,
+             WK_SHARE_TDM_G,
+             WK_SHARE_TDM_CS,
+             WK_SHARE_TDM_IT,
+             WK_SHARE_TDM_WD,
+             WK_SHARE_TDM_NOCSGITWD
+      )
+
+    colnames(st_delay_cause_wk) <- column_names
+
+    #### y2d ----
+    st_delay_cause_y2d <- st_delay_cause_data %>%
+      group_by(iso_2letter) %>%
+      reframe(
+        iso_2letter,
+        daio_zone,
+        FLIGHT_DATE,
+        TDM_G,
+        TDM_CS,
+        TDM_IT,
+        TDM_WD,
+        TDM_NOCSGITWD,
+        TDM_PREV_YEAR,
+        Y2D_TDM_G = sum(TDM_G),
+        Y2D_TDM_CS = sum(TDM_CS),
+        Y2D_TDM_IT = sum(TDM_IT),
+        Y2D_TDM_WD = sum(TDM_WD),
+        Y2D_TDM_NOCSGITWD = sum(TDM_NOCSGITWD),
+        Y2D_TDM = sum(TDM)
+      ) %>%
+      ungroup() %>%
+      mutate(
+        Y2D_SHARE_TDM_G = if_else(Y2D_TDM == 0, 0, Y2D_TDM_G / Y2D_TDM),
+        Y2D_SHARE_TDM_CS = if_else(Y2D_TDM == 0, 0, Y2D_TDM_CS / Y2D_TDM),
+        Y2D_SHARE_TDM_IT = if_else(Y2D_TDM == 0, 0, Y2D_TDM_IT / Y2D_TDM),
+        Y2D_SHARE_TDM_WD = if_else(Y2D_TDM == 0, 0, Y2D_TDM_WD / Y2D_TDM),
+        Y2D_SHARE_TDM_NOCSGITWD = if_else(Y2D_TDM == 0, 0, Y2D_TDM_NOCSGITWD / Y2D_TDM)
+      ) %>%
+      select(iso_2letter,
+             daio_zone,
+             FLIGHT_DATE,
+             TDM_G,
+             TDM_CS,
+             TDM_IT,
+             TDM_WD,
+             TDM_NOCSGITWD,
+             TDM_PREV_YEAR,
+             Y2D_SHARE_TDM_G,
+             Y2D_SHARE_TDM_CS,
+             Y2D_SHARE_TDM_IT,
+             Y2D_SHARE_TDM_WD,
+             Y2D_SHARE_TDM_NOCSGITWD
+      )
+
+    colnames(st_delay_cause_y2d) <- column_names
+
+    ### nest data
+    st_delay_value_y2d_long <- st_delay_cause_y2d %>%
+      select(-c(share_aerodrome_capacity,
+                share_capacity_staffing_atc,
+                share_disruptions_atc,
+                share_weather,
+                share_other)
+             ) %>%
+      pivot_longer(-c(iso_2letter, daio_zone, FLIGHT_DATE), names_to = 'metric', values_to = 'value')
+
+     st_delay_share_y2d_long <- st_delay_cause_y2d %>%
+       select(-c("Aerodrome capacity",
+                "Capacity/Staffing (ATC)",
+                "Disruptions (ATC)",
+                "Weather",
+                "Other",
+                paste0("Total delay ", last_year - 1)
+                )
+      )  %>%
+       mutate(share_delay_prev_year = NA) %>%
+       pivot_longer(-c(iso_2letter, daio_zone, FLIGHT_DATE), names_to = 'name', values_to = 'share') %>%
+       select(name, share)
+
+     st_delay_cause_y2d_long <- cbind(st_delay_value_y2d_long, st_delay_share_y2d_long) %>%
+       select(-name) %>%
+       group_by(iso_2letter, daio_zone, FLIGHT_DATE) %>%
+       nest_legacy(.key = "statistics")
+
+
+    st_delay_cause_evo_y2d_j <- st_delay_cause_y2d_long %>% toJSON(., pretty = TRUE)
+    write(st_delay_cause_evo_y2d_j, here(data_folder,"st_delay_cause_evo_y2d.json"))
+    write(st_delay_cause_evo_y2d_j, paste0(archive_dir, today, "_st_delay_cause_evo_y2d.json"))
+    write(st_delay_cause_evo_y2d_j, paste0(archive_dir, "st_delay_cause_evo_y2d.json"))
+
 
 
   ## BILLING ----
