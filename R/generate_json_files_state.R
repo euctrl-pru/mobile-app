@@ -2255,6 +2255,39 @@ source(here::here("R", "helpers.R"))
 
     colnames(st_delay_cause_day) <- column_names
 
+    ### nest data
+    st_delay_value_day_long <- st_delay_cause_day %>%
+      select(-c(share_aerodrome_capacity,
+                share_capacity_staffing_atc,
+                share_disruptions_atc,
+                share_weather,
+                share_other)
+      ) %>%
+      pivot_longer(-c(iso_2letter, daio_zone, FLIGHT_DATE), names_to = 'metric', values_to = 'value')
+
+    st_delay_share_day_long <- st_delay_cause_day %>%
+      select(-c("Aerodrome capacity",
+                "Capacity/Staffing (ATC)",
+                "Disruptions (ATC)",
+                "Weather",
+                "Other",
+                paste0("Total delay ", last_year - 1)
+      )
+      )  %>%
+      mutate(share_delay_prev_year = NA) %>%
+      pivot_longer(-c(iso_2letter, daio_zone, FLIGHT_DATE), names_to = 'name', values_to = 'share') %>%
+      select(name, share)
+
+    st_delay_cause_day_long <- cbind(st_delay_value_day_long, st_delay_share_day_long) %>%
+      select(-name) %>%
+      group_by(iso_2letter, daio_zone, FLIGHT_DATE) %>%
+      nest_legacy(.key = "statistics")
+
+
+    st_delay_cause_evo_dy_j <- st_delay_cause_day_long %>% toJSON(., pretty = TRUE)
+    write(st_delay_cause_evo_dy_j, here(data_folder,"st_delay_cause_evo_chart_dy.json"))
+    write(st_delay_cause_evo_dy_j, paste0(archive_dir, today, "_st_delay_cause_chart_evo_dy.json"))
+    write(st_delay_cause_evo_dy_j, paste0(archive_dir, "st_delay_cause_evo_chart_dy.json"))
 
     #### week ----
     st_delay_cause_wk <- st_delay_cause_data %>%
@@ -2302,6 +2335,40 @@ source(here::here("R", "helpers.R"))
       )
 
     colnames(st_delay_cause_wk) <- column_names
+
+    ### nest data
+    st_delay_value_wk_long <- st_delay_cause_wk %>%
+      select(-c(share_aerodrome_capacity,
+                share_capacity_staffing_atc,
+                share_disruptions_atc,
+                share_weather,
+                share_other)
+      ) %>%
+      pivot_longer(-c(iso_2letter, daio_zone, FLIGHT_DATE), names_to = 'metric', values_to = 'value')
+
+    st_delay_share_wk_long <- st_delay_cause_wk %>%
+      select(-c("Aerodrome capacity",
+                "Capacity/Staffing (ATC)",
+                "Disruptions (ATC)",
+                "Weather",
+                "Other",
+                paste0("Total delay ", last_year - 1)
+      )
+      )  %>%
+      mutate(share_delay_prev_year = NA) %>%
+      pivot_longer(-c(iso_2letter, daio_zone, FLIGHT_DATE), names_to = 'name', values_to = 'share') %>%
+      select(name, share)
+
+    st_delay_cause_wk_long <- cbind(st_delay_value_wk_long, st_delay_share_wk_long) %>%
+      select(-name) %>%
+    group_by(iso_2letter, daio_zone, FLIGHT_DATE) %>%
+      nest_legacy(.key = "statistics")
+
+
+    st_delay_cause_evo_wk_j <- st_delay_cause_wk_long %>% toJSON(., pretty = TRUE)
+    write(st_delay_cause_evo_wk_j, here(data_folder,"st_delay_cause_evo_chart_wk.json"))
+    write(st_delay_cause_evo_wk_j, paste0(archive_dir, today, "_st_delay_cause_evo_chart_wk.json"))
+    write(st_delay_cause_evo_wk_j, paste0(archive_dir, "st_delay_cause_evo_chart_wk.json"))
 
     #### y2d ----
     st_delay_cause_y2d <- st_delay_cause_data %>%
@@ -2379,9 +2446,9 @@ source(here::here("R", "helpers.R"))
 
 
     st_delay_cause_evo_y2d_j <- st_delay_cause_y2d_long %>% toJSON(., pretty = TRUE)
-    write(st_delay_cause_evo_y2d_j, here(data_folder,"st_delay_cause_evo_y2d.json"))
-    write(st_delay_cause_evo_y2d_j, paste0(archive_dir, today, "_st_delay_cause_evo_y2d.json"))
-    write(st_delay_cause_evo_y2d_j, paste0(archive_dir, "st_delay_cause_evo_y2d.json"))
+    write(st_delay_cause_evo_y2d_j, here(data_folder,"st_delay_cause_evo_chart_y2d.json"))
+    write(st_delay_cause_evo_y2d_j, paste0(archive_dir, today, "_st_delay_cause_evo_chart_y2d.json"))
+    write(st_delay_cause_evo_y2d_j, paste0(archive_dir, "st_delay_cause_evo_chart_y2d.json"))
 
 
 
