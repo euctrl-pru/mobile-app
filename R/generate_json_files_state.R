@@ -2175,7 +2175,7 @@ source(here::here("R", "helpers.R"))
     write(st_punct_evo_app_j, paste0(archive_dir, "st_punct_evo_chart.json"))
 
   ## DELAY ----
-    ### Delay cause ----
+    ### Delay category ----
     st_delay_data <-  read_xlsx(
       path  = fs::path_abs(
         str_glue(base_file),
@@ -2185,11 +2185,6 @@ source(here::here("R", "helpers.R"))
       as_tibble() %>%
       mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-    st_delay_last_day <- st_delay_data %>%
-      filter(FLIGHT_DATE == max(LAST_DATA_DAY)) %>%
-      mutate(daio_zone_lc = tolower(COUNTRY_NAME)) %>%
-      right_join(state_daio, by = "daio_zone_lc", relationship = "many-to-many")
-
     st_delay_cause_data <-  read_xlsx(
       path  = fs::path_abs(
         str_glue(base_file),
@@ -2198,17 +2193,25 @@ source(here::here("R", "helpers.R"))
       range = cell_limits(c(1, 1), c(NA, NA))) %>%
       as_tibble() %>%
       mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
-      filter(YEAR >= last_year) %>%
-      mutate(daio_zone_lc = tolower(COUNTRY_NAME)) %>%
-      right_join(state_daio, by = "daio_zone_lc", relationship = "many-to-many") %>%
-      filter(is.na(YEAR) == FALSE) %>%
       mutate(
         TDM_G = TDM_ARP_G + TDM_ERT_G,
         TDM_CS = TDM_ARP_CS + TDM_ERT_CS,
         TDM_IT = TDM_ARP_IT + TDM_ERT_IT,
         TDM_WD = TDM_ARP_WD + TDM_ERT_WD,
         TDM_NOCSGITWD = TDM - TDM_G - TDM_CS - TDM_IT - TDM_WD,
-      )
+      ) %>%                             # create 7day average for y2d graph
+      mutate(
+        RWK_TDM_G = rollsum(TDM_G, 7, fill = NA, align = "right") / 7,
+        RWK_TDM_CS = rollsum(TDM_CS, 7, fill = NA, align = "right") / 7,
+        RWK_TDM_IT = rollsum(TDM_IT, 7, fill = NA, align = "right") / 7,
+        RWK_TDM_WD = rollsum(TDM_WD, 7, fill = NA, align = "right") / 7,
+        RWK_TDM_NOCSGITWD = rollsum(TDM_NOCSGITWD, 7, fill = NA, align = "right") / 7,
+        RWK_TDM_PREV_YEAR = rollsum(TDM_PREV_YEAR, 7, fill = NA, align = "right") / 7
+      ) %>%
+      filter(YEAR >= last_year) %>%
+      mutate(daio_zone_lc = tolower(COUNTRY_NAME)) %>%
+      right_join(state_daio, by = "daio_zone_lc", relationship = "many-to-many") %>%
+      filter(is.na(YEAR) == FALSE)
 
     #### day ----
     st_delay_cause_day <- st_delay_cause_data %>%
@@ -2283,11 +2286,11 @@ source(here::here("R", "helpers.R"))
       group_by(iso_2letter, daio_zone, FLIGHT_DATE) %>%
       nest_legacy(.key = "statistics")
 
-
+    # for consistency with v1 we use the word category in the name files... should have been cause
     st_delay_cause_evo_dy_j <- st_delay_cause_day_long %>% toJSON(., pretty = TRUE)
-    write(st_delay_cause_evo_dy_j, here(data_folder,"st_delay_cause_evo_chart_dy.json"))
-    write(st_delay_cause_evo_dy_j, paste0(archive_dir, today, "_st_delay_cause_chart_evo_dy.json"))
-    write(st_delay_cause_evo_dy_j, paste0(archive_dir, "st_delay_cause_evo_chart_dy.json"))
+    write(st_delay_cause_evo_dy_j, here(data_folder,"st_delay_category_evo_chart_dy.json"))
+    write(st_delay_cause_evo_dy_j, paste0(archive_dir, today, "_st_delay_category_chart_evo_dy.json"))
+    write(st_delay_cause_evo_dy_j, paste0(archive_dir, "st_delay_category_evo_chart_dy.json"))
 
     #### week ----
     st_delay_cause_wk <- st_delay_cause_data %>%
@@ -2365,10 +2368,11 @@ source(here::here("R", "helpers.R"))
       nest_legacy(.key = "statistics")
 
 
+    # for consistency with v1 we use the word category in the name files... should have been cause
     st_delay_cause_evo_wk_j <- st_delay_cause_wk_long %>% toJSON(., pretty = TRUE)
-    write(st_delay_cause_evo_wk_j, here(data_folder,"st_delay_cause_evo_chart_wk.json"))
-    write(st_delay_cause_evo_wk_j, paste0(archive_dir, today, "_st_delay_cause_evo_chart_wk.json"))
-    write(st_delay_cause_evo_wk_j, paste0(archive_dir, "st_delay_cause_evo_chart_wk.json"))
+    write(st_delay_cause_evo_wk_j, here(data_folder,"st_delay_category_evo_chart_wk.json"))
+    write(st_delay_cause_evo_wk_j, paste0(archive_dir, today, "_st_delay_category_evo_chart_wk.json"))
+    write(st_delay_cause_evo_wk_j, paste0(archive_dir, "st_delay_category_evo_chart_wk.json"))
 
     #### y2d ----
     st_delay_cause_y2d <- st_delay_cause_data %>%
@@ -2377,12 +2381,12 @@ source(here::here("R", "helpers.R"))
         iso_2letter,
         daio_zone,
         FLIGHT_DATE,
-        TDM_G,
-        TDM_CS,
-        TDM_IT,
-        TDM_WD,
-        TDM_NOCSGITWD,
-        TDM_PREV_YEAR,
+        RWK_TDM_G,
+        RWK_TDM_CS,
+        RWK_TDM_IT,
+        RWK_TDM_WD,
+        RWK_TDM_NOCSGITWD,
+        RWK_TDM_PREV_YEAR,
         Y2D_TDM_G = sum(TDM_G),
         Y2D_TDM_CS = sum(TDM_CS),
         Y2D_TDM_IT = sum(TDM_IT),
@@ -2401,12 +2405,12 @@ source(here::here("R", "helpers.R"))
       select(iso_2letter,
              daio_zone,
              FLIGHT_DATE,
-             TDM_G,
-             TDM_CS,
-             TDM_IT,
-             TDM_WD,
-             TDM_NOCSGITWD,
-             TDM_PREV_YEAR,
+             RWK_TDM_G,
+             RWK_TDM_CS,
+             RWK_TDM_IT,
+             RWK_TDM_WD,
+             RWK_TDM_NOCSGITWD,
+             RWK_TDM_PREV_YEAR,
              Y2D_SHARE_TDM_G,
              Y2D_SHARE_TDM_CS,
              Y2D_SHARE_TDM_IT,
@@ -2445,11 +2449,11 @@ source(here::here("R", "helpers.R"))
        nest_legacy(.key = "statistics")
 
 
+    # for consistency with v1 we use the word category in the name files... should have been cause
     st_delay_cause_evo_y2d_j <- st_delay_cause_y2d_long %>% toJSON(., pretty = TRUE)
-    write(st_delay_cause_evo_y2d_j, here(data_folder,"st_delay_cause_evo_chart_y2d.json"))
-    write(st_delay_cause_evo_y2d_j, paste0(archive_dir, today, "_st_delay_cause_evo_chart_y2d.json"))
-    write(st_delay_cause_evo_y2d_j, paste0(archive_dir, "st_delay_cause_evo_chart_y2d.json"))
-
+    write(st_delay_cause_evo_y2d_j, here(data_folder,"st_delay_category_evo_chart_y2d.json"))
+    write(st_delay_cause_evo_y2d_j, paste0(archive_dir, today, "_st_delay_category_evo_chart_y2d.json"))
+    write(st_delay_cause_evo_y2d_j, paste0(archive_dir, "st_delay_category_evo_chart_y2d.json"))
 
 
   ## BILLING ----
