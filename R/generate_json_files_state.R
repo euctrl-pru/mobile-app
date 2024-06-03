@@ -1903,75 +1903,84 @@ source(here::here("R", "helpers.R"))
       group_by(APT_NAME) %>%
       arrange(DAY_DATE) %>%
       mutate(
-        DY_ARR_PUNCT = ARR_PUNCTUALITY_PERCENTAGE / 100,
-        DY_ARR_PUNCT_DIF_PREV_WEEK = (DY_ARR_PUNCT - lag(DY_ARR_PUNCT, 7)),
-        DY_ARR_PUNCT_DIF_PREV_YEAR = (DY_ARR_PUNCT - lag(DY_ARR_PUNCT, 364)),
-        WK_ARR_PUNCT = rollsum(ARR_PUNCTUAL_FLIGHTS, 7, fill = NA, align = "right") / rollsum(ARR_SCHEDULE_FLIGHT,7, fill = NA, align = "right"),
+        DY_APT_ARR_PUNCT = ARR_PUNCTUALITY_PERCENTAGE / 100,
+        DY_APT_ARR_PUNCT_DIF_PREV_WEEK = (DY_APT_ARR_PUNCT - lag(DY_APT_ARR_PUNCT, 7)),
+        DY_APT_ARR_PUNCT_DIF_PREV_YEAR = (DY_APT_ARR_PUNCT - lag(DY_APT_ARR_PUNCT, 364)),
+        WK_APT_ARR_PUNCT = rollsum(ARR_PUNCTUAL_FLIGHTS, 7, fill = NA, align = "right") / rollsum(ARR_SCHEDULE_FLIGHT, 7,
+                                                                                              fill = NA, align = "right"),
         iso_2letter = ISO_COUNTRY_CODE,
         state = EC_ISO_CT_NAME
       )  %>%
       ungroup()
 
     #### day ----
-    st_apt_punct_dy <- st_apt_punct_calc %>%
+    st_apt_punct_dy_all <- st_apt_punct_calc %>%
       group_by(iso_2letter, DAY_DATE) %>%
-      arrange(iso_2letter, desc(DY_ARR_PUNCT), APT_NAME) %>%
-      mutate(RANK = row_number()) %>%
+      arrange(iso_2letter, desc(DY_APT_ARR_PUNCT), APT_NAME) %>%
+      mutate(
+        ST_RANK = row_number(),
+        ST_RANK = paste0(tolower(state), ST_RANK)     #index for joining tables later
+        ) %>%
       ungroup() %>%
       group_by(APT_NAME) %>%
       arrange(DAY_DATE) %>%
       mutate(
-             DY_RANK_DIF_PREV_WEEK = lag(RANK, 7) - RANK,
+             # DY_RANK_DIF_PREV_WEEK = lag(RANK, 7) - RANK,          #not used anymore
              DY_APT_NAME = APT_NAME,
-             DY_TO_DATE = round_date(DAY_DATE, "day"),
-             ST_RANK = paste0(tolower(state), RANK)
-      ) %>%
+             DY_TO_DATE = round_date(DAY_DATE, "day")
+             ) %>%
       ungroup() %>%
       filter(DAY_DATE == last_punctuality_day) %>%
+      mutate(DY_RANK = rank(desc(DY_APT_ARR_PUNCT), ties.method = "max")) %>%
       group_by(iso_2letter) %>%
-      arrange(iso_2letter, desc(DY_ARR_PUNCT), DY_APT_NAME) %>%
-      ungroup() %>%
+      arrange(iso_2letter, desc(DY_APT_ARR_PUNCT), DY_APT_NAME) %>%
+      ungroup()
+
+    st_apt_punct_dy <- st_apt_punct_dy_all %>%
       select(
         ST_RANK,
-        DY_RANK_DIF_PREV_WEEK,
+        DY_RANK,
         DY_APT_NAME,
         DY_TO_DATE,
-        DY_ARR_PUNCT,
-        DY_ARR_PUNCT_DIF_PREV_WEEK,
-        DY_ARR_PUNCT_DIF_PREV_YEAR
+        DY_APT_ARR_PUNCT,
+        DY_APT_ARR_PUNCT_DIF_PREV_WEEK,
+        DY_APT_ARR_PUNCT_DIF_PREV_YEAR
       )
 
     #### week ----
     st_apt_punct_wk <- st_apt_punct_calc %>%
       group_by(iso_2letter, DAY_DATE) %>%
-      arrange(iso_2letter, desc(WK_ARR_PUNCT), APT_NAME) %>%
-      mutate(RANK = row_number()) %>%
+      arrange(iso_2letter, desc(WK_APT_ARR_PUNCT), APT_NAME) %>%
+      mutate(
+        ST_RANK = row_number(),
+        ST_RANK = paste0(tolower(state), ST_RANK)     #index for joining tables later
+      ) %>%
       ungroup() %>%
       group_by(APT_NAME) %>%
       arrange(DAY_DATE) %>%
       mutate(
-        WK_RANK_DIF_PREV_WEEK = lag(RANK, 7) - RANK,
+        # WK_RANK_DIF_PREV_WEEK = lag(RANK, 7) - RANK,            #not used anymore
         WK_APT_NAME = APT_NAME,
         WK_TO_DATE = round_date(DAY_DATE, "day"),
         WK_FROM_DATE = round_date(DAY_DATE, "day") + days(-7),
-        WK_ARR_PUNCT_DIF_PREV_WEEK = (WK_ARR_PUNCT - lag(WK_ARR_PUNCT, 7)),
-        WK_ARR_PUNCT_DIF_PREV_YEAR = (WK_ARR_PUNCT - lag(WK_ARR_PUNCT, 364)),
-        ST_RANK = paste0(tolower(state), RANK)
+        WK_APT_ARR_PUNCT_DIF_PREV_WEEK = (WK_APT_ARR_PUNCT - lag(WK_APT_ARR_PUNCT, 7)),
+        WK_APT_ARR_PUNCT_DIF_PREV_YEAR = (WK_APT_ARR_PUNCT - lag(WK_APT_ARR_PUNCT, 364))
       ) %>%
       ungroup() %>%
       filter(DAY_DATE == last_punctuality_day) %>%
+      mutate(WK_RANK = rank(desc(WK_APT_ARR_PUNCT), ties.method = "max")) %>%
       group_by(iso_2letter) %>%
-      arrange(iso_2letter, desc(WK_ARR_PUNCT), WK_APT_NAME) %>%
+      arrange(iso_2letter, desc(WK_APT_ARR_PUNCT), WK_APT_NAME) %>%
       ungroup() %>%
       select(
         ST_RANK,
-        WK_RANK_DIF_PREV_WEEK,
+        WK_RANK,
         WK_APT_NAME,
         WK_FROM_DATE,
         WK_TO_DATE,
-        WK_ARR_PUNCT,
-        WK_ARR_PUNCT_DIF_PREV_WEEK,
-        WK_ARR_PUNCT_DIF_PREV_YEAR
+        WK_APT_ARR_PUNCT,
+        WK_APT_ARR_PUNCT_DIF_PREV_WEEK,
+        WK_APT_ARR_PUNCT_DIF_PREV_YEAR
       )
 
     #### y2d ----
@@ -1980,35 +1989,69 @@ source(here::here("R", "helpers.R"))
       filter(MONTH_DAY <= as.numeric(format(last_punctuality_day, format = "%m%d"))) %>%
       mutate(YEAR = as.numeric(format(DAY_DATE, format="%Y"))) %>%
       group_by(state, APT_NAME, ICAO_CODE, YEAR) %>%
-      summarise (Y2D_ARR_PUNCT = sum(ARR_PUNCTUAL_FLIGHTS, na.rm=TRUE) / sum(ARR_SCHEDULE_FLIGHT, na.rm=TRUE)
+      summarise (Y2D_APT_ARR_PUNCT = sum(ARR_PUNCTUAL_FLIGHTS, na.rm=TRUE) / sum(ARR_SCHEDULE_FLIGHT, na.rm=TRUE)
       ) %>%
       ungroup() %>%
       group_by(state, YEAR) %>%
-      arrange(desc(Y2D_ARR_PUNCT), APT_NAME) %>%
-      mutate(RANK = row_number(),
-             Y2D_RANK = RANK) %>%
+      arrange(desc(Y2D_APT_ARR_PUNCT), APT_NAME) %>%
+      mutate(
+        ST_RANK = row_number(),
+        ST_RANK = paste0(tolower(state), ST_RANK)     #index for joining tables later
+        ) %>%
       ungroup() %>%
       group_by(APT_NAME) %>%
       arrange(YEAR) %>%
       mutate(
-        Y2D_RANK_DIF_PREV_YEAR = lag(RANK, 1) - RANK,
-        Y2D_ARR_PUNCT_DIF_PREV_YEAR = (Y2D_ARR_PUNCT - lag(Y2D_ARR_PUNCT, 1)),
-        Y2D_ARR_PUNCT_DIF_2019 = (Y2D_ARR_PUNCT - lag(Y2D_ARR_PUNCT, max(YEAR) - 2019)),
-        ST_RANK = paste0(tolower(state), RANK)
+        # Y2D_RANK_DIF_PREV_YEAR = lag(RANK, 1) - RANK,
+        Y2D_APT_ARR_PUNCT_DIF_PREV_YEAR = (Y2D_APT_ARR_PUNCT - lag(Y2D_APT_ARR_PUNCT, 1)),
+        Y2D_APT_ARR_PUNCT_DIF_2019 = (Y2D_APT_ARR_PUNCT - lag(Y2D_APT_ARR_PUNCT, max(YEAR) - 2019))
       )  %>%
       ungroup() %>%
-      filter(YEAR == max(YEAR), RANK < 11) %>%
+      filter(YEAR == max(YEAR)) %>%
+      mutate(Y2D_RANK = rank(desc(Y2D_APT_ARR_PUNCT), ties.method = "max")) %>%
       mutate(Y2D_APT_NAME = APT_NAME) %>%
+      group_by(state) %>%
+      arrange(Y2D_RANK, Y2D_APT_NAME) %>%
+      mutate(
+        NO_APTS = row_number(),
+        Y2D_TO_DATE = lubridate::round_date(last_punctuality_day, unit = 'day')
+        ) %>%
+      filter(NO_APTS < 11) %>%
+      ungroup() %>%
       select(
         ST_RANK,
-        Y2D_RANK_DIF_PREV_YEAR,
+        Y2D_RANK,
         Y2D_APT_NAME,
-        Y2D_ARR_PUNCT,
-        Y2D_ARR_PUNCT_DIF_PREV_YEAR,
-        Y2D_ARR_PUNCT_DIF_2019
+        Y2D_TO_DATE,
+        Y2D_APT_ARR_PUNCT,
+        Y2D_APT_ARR_PUNCT_DIF_PREV_YEAR,
+        Y2D_APT_ARR_PUNCT_DIF_2019
       )
 
-    # no main card
+    #### main card ----
+
+    st_apt_main_punct <- st_apt_punct_dy %>%
+      mutate(
+        MAIN_PUNCT_APT_RANK = DY_RANK,
+        MAIN_PUNCT_APT_NAME = DY_APT_NAME,
+        MAIN_PUNCT_APT_ARR_PUNCT = DY_APT_ARR_PUNCT
+      ) %>%
+      select(ST_RANK, MAIN_PUNCT_APT_RANK, MAIN_PUNCT_APT_NAME, MAIN_PUNCT_APT_ARR_PUNCT)
+
+    st_apt_main_punct_dif <- st_apt_punct_dy_all %>%
+      mutate(
+        MAIN_PUNCT_DIF_APT_RANK = rank(desc(DY_APT_ARR_PUNCT_DIF_PREV_WEEK), ties.method = "max"),
+        MAIN_PUNCT_DIF_APT_NAME = DY_APT_NAME,
+        MAIN_PUNCT_DIF_APT_ARR_PUNCT_DIF = DY_APT_ARR_PUNCT_DIF_PREV_WEEK
+      ) %>%
+      group_by(iso_2letter) %>%
+      arrange(iso_2letter, MAIN_PUNCT_DIF_APT_RANK, MAIN_PUNCT_DIF_APT_NAME) %>%
+      mutate (
+        ST_RANK = paste0(tolower(state), row_number()),
+      ) %>%
+      ungroup() %>%
+      select(ST_RANK, MAIN_PUNCT_DIF_APT_RANK, MAIN_PUNCT_DIF_APT_NAME, MAIN_PUNCT_DIF_APT_ARR_PUNCT_DIF)
+
 
     #### join tables ----
     # create list of state/rankings for left join
@@ -2033,6 +2076,8 @@ source(here::here("R", "helpers.R"))
       left_join(st_apt_punct_dy, by = "ST_RANK") %>%
       left_join(st_apt_punct_wk, by = "ST_RANK") %>%
       left_join(st_apt_punct_y2d, by = "ST_RANK") %>%
+      left_join(st_apt_main_punct, by = "ST_RANK") %>%
+      left_join(st_apt_main_punct_dif, by = "ST_RANK") %>%
       select(-ST_RANK)
 
     # covert to json and save in app data folder and archive
