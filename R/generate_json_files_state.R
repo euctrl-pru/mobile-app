@@ -1300,11 +1300,11 @@ source(here::here("..", "mobile-app", "R", "helpers.R"))
           is.na(RANK_PREV_WEEK) ~ RANK,
           .default = RANK_PREV_WEEK - RANK
         ),
-        DY_FLT_DIF_PREV_WEEK_PERC =   case_when(
+        DY_DIF_PREV_WEEK_PERC =   case_when(
           DAY_PREV_WEEK == 0 | is.na(DAY_PREV_WEEK) ~ NA,
           .default = CURRENT_DAY / DAY_PREV_WEEK - 1
         ),
-        DY_FLT_DIF_PREV_YEAR_PERC = case_when(
+        DY_DIF_PREV_YEAR_PERC = case_when(
           DAY_PREV_YEAR == 0 | is.na(DAY_PREV_YEAR) ~ NA,
           .default = CURRENT_DAY / DAY_PREV_YEAR - 1
         ),
@@ -1316,16 +1316,16 @@ source(here::here("..", "mobile-app", "R", "helpers.R"))
       rename(
         DY_COUNTRY_NAME = FROM_TO_COUNTRY_NAME,
         DY_TO_DATE = TO_DATE,
-        DY_FLT = CURRENT_DAY
+        DY_CTRY_DAI = CURRENT_DAY
       ) %>%
       select(
         ST_RANK,
         DY_RANK_DIF_PREV_WEEK,
         DY_COUNTRY_NAME,
         DY_TO_DATE,
-        DY_FLT,
-        DY_FLT_DIF_PREV_WEEK_PERC,
-        DY_FLT_DIF_PREV_YEAR_PERC
+        DY_CTRY_DAI,
+        DY_DIF_PREV_WEEK_PERC,
+        DY_DIF_PREV_YEAR_PERC
       )
 
     #### week ----
@@ -1346,11 +1346,11 @@ source(here::here("..", "mobile-app", "R", "helpers.R"))
           is.na(RANK_PREV_WEEK) ~ RANK,
           .default = RANK_PREV_WEEK - RANK
         ),
-        WK_FLT_DIF_PREV_WEEK_PERC =   case_when(
+        WK_DIF_PREV_WEEK_PERC =   case_when(
           PREV_ROLLING_WEEK == 0 | is.na(PREV_ROLLING_WEEK) ~ NA,
           .default = CURRENT_ROLLING_WEEK / PREV_ROLLING_WEEK - 1
         ),
-        WK_FLT_DIF_PREV_YEAR_PERC = case_when(
+        WK_DIF_PREV_YEAR_PERC = case_when(
           ROLLING_WEEK_PREV_YEAR == 0 | is.na(ROLLING_WEEK_PREV_YEAR) ~ NA,
           .default = CURRENT_ROLLING_WEEK / ROLLING_WEEK_PREV_YEAR - 1
         ),
@@ -1360,7 +1360,7 @@ source(here::here("..", "mobile-app", "R", "helpers.R"))
         WK_COUNTRY_NAME = FROM_TO_COUNTRY_NAME,
         WK_FROM_DATE = FROM_DATE,
         WK_TO_DATE = TO_DATE,
-        WK_FLT_AVG = CURRENT_ROLLING_WEEK
+        WK_CTRY_DAI = CURRENT_ROLLING_WEEK
       ) %>%
       select(
         ST_RANK,
@@ -1368,9 +1368,9 @@ source(here::here("..", "mobile-app", "R", "helpers.R"))
         WK_COUNTRY_NAME,
         WK_FROM_DATE,
         WK_TO_DATE,
-        WK_FLT_AVG,
-        WK_FLT_DIF_PREV_WEEK_PERC,
-        WK_FLT_DIF_PREV_YEAR_PERC
+        WK_CTRY_DAI,
+        WK_DIF_PREV_WEEK_PERC,
+        WK_DIF_PREV_YEAR_PERC
       )
 
     #### y2d ----
@@ -1400,11 +1400,11 @@ source(here::here("..", "mobile-app", "R", "helpers.R"))
           is.na(RANK_PREV_YEAR) ~ RANK_CURRENT,
           .default = RANK_PREV_YEAR - RANK_CURRENT
         ),
-        Y2D_FLT_DIF_PREV_YEAR_PERC =   case_when(
+        Y2D_CTRY_DAI_PREV_YEAR_PERC =   case_when(
           PREV_YEAR == 0 | is.na(PREV_YEAR) ~ NA,
           .default = CURRENT_YEAR / PREV_YEAR - 1
         ),
-        Y2D_FLT_DIF_2019_PERC  = case_when(
+        Y2D_CTRY_DAI_2019_PERC  = case_when(
           PERIOD_2019 == 0 | is.na(PERIOD_2019) ~ NA,
           .default = CURRENT_YEAR / PERIOD_2019 - 1
         ),
@@ -1413,16 +1413,16 @@ source(here::here("..", "mobile-app", "R", "helpers.R"))
       rename(
         Y2D_COUNTRY_NAME = FROM_TO_COUNTRY_NAME,
         Y2D_TO_DATE = TO_DATE,
-        Y2D_FLT_AVG = CURRENT_YEAR
+        Y2D_CTRY_DAI = CURRENT_YEAR
       ) %>%
       select(
         ST_RANK,
         Y2D_RANK_DIF_PREV_YEAR,
         Y2D_COUNTRY_NAME,
         Y2D_TO_DATE,
-        Y2D_FLT_AVG,
-        Y2D_FLT_DIF_PREV_YEAR_PERC,
-        Y2D_FLT_DIF_2019_PERC
+        Y2D_CTRY_DAI,
+        Y2D_CTRY_DAI_PREV_YEAR_PERC,
+        Y2D_CTRY_DAI_2019_PERC
       )
 
     #### main card ----
@@ -1433,14 +1433,14 @@ source(here::here("..", "mobile-app", "R", "helpers.R"))
           FROM_TO_COUNTRY_NAME,
           NA
         ),
-        MAIN_TFC_CTRY_FLT = if_else(
+        MAIN_TFC_CTRY_DAI = if_else(
           R_RANK <= 4,
           CURRENT_DAY,
           NA
         ),
         ST_RANK = paste0(tolower(COUNTRY_NAME), R_RANK)
       ) %>%
-      select(ST_RANK, MAIN_TFC_CTRY_NAME, MAIN_TFC_CTRY_FLT)
+      select(ST_RANK, MAIN_TFC_CTRY_NAME, MAIN_TFC_CTRY_DAI)
 
     st_st_main_traffic_dif <- st_st_data_day_int %>%
       arrange(COUNTRY_NAME, desc(abs(ST_TFC_CTRY_DIF)), R_RANK) %>%
@@ -1454,20 +1454,20 @@ source(here::here("..", "mobile-app", "R", "helpers.R"))
           FROM_TO_COUNTRY_NAME,
           NA
         ),
-        MAIN_TFC_DIF_CTRY_FLT_DIF = if_else(
+        MAIN_TFC_CTRY_DIF = if_else(
           RANK_DIF_CTRY_TFC <= 4,
           ST_TFC_CTRY_DIF,
           NA
         )
       ) %>%
-      arrange(COUNTRY_NAME, desc(MAIN_TFC_DIF_CTRY_FLT_DIF)) %>%
+      arrange(COUNTRY_NAME, desc(MAIN_TFC_CTRY_DIF)) %>%
       group_by(COUNTRY_NAME) %>%
       mutate(
         RANK_MAIN_DIF = row_number(),
         ST_RANK = paste0(tolower(COUNTRY_NAME), RANK_MAIN_DIF)
       ) %>%
       ungroup() %>%
-      select(ST_RANK, MAIN_TFC_DIF_CTRY_NAME, MAIN_TFC_DIF_CTRY_FLT_DIF)
+      select(ST_RANK, MAIN_TFC_DIF_CTRY_NAME, MAIN_TFC_CTRY_DIF)
 
     #### join tables ----
     # create list of state/rankings for left join
@@ -1498,9 +1498,10 @@ source(here::here("..", "mobile-app", "R", "helpers.R"))
 
     # covert to json and save in app data folder and archive
     st_st_data_j <- st_st_data %>% toJSON(., pretty = TRUE)
-    write(st_st_data_j, here(data_folder,"st_st_ranking_traffic.json"))
-    write(st_st_data_j, paste0(archive_dir, today, "_st_st_ranking_traffic.json"))
-    write(st_st_data_j, paste0(archive_dir, "st_st_ranking_traffic.json"))
+    # name of json file in consistency with network
+    write(st_st_data_j, here(data_folder,"st_ctry_ranking_traffic_DAI.json"))
+    write(st_st_data_j, paste0(archive_dir, today, "_st_ctry_ranking_traffic_DAI.json"))
+    write(st_st_data_j, paste0(archive_dir, "st_ctry_ranking_traffic_DAI.json"))
 
   ## DELAY ----
   ### ACC  ----

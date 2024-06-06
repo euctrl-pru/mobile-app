@@ -758,8 +758,8 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
 
     nw_delay_evo_app_j <- nw_delay_evo_app %>% toJSON(., pretty = TRUE)
     write(nw_delay_evo_app_j, here(data_folder, "nw_delay_category_evo_chart.json"))
-    write(nw_delay_evo_app_j, here(data_folder, "v2", "nw_delay_category_evo_chart.json"))
-    write(nw_delay_evo_app_j, paste0(archive_dir, today, "_nw_delay_category_evo_chart.json"))
+    # write(nw_delay_evo_app_j, here(data_folder, "v2", "nw_delay_category_evo_chart.json"))
+    # write(nw_delay_evo_app_j, paste0(archive_dir, today, "_nw_delay_category_evo_chart.json"))
 
     ### delay per cause v2 ----
     #### day ----
@@ -970,10 +970,14 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
 
     #### convert to json and save in data folder and archive
     nw_delay_cause_evo_y2d_j <- nw_delay_cause_y2d_long %>% toJSON(., pretty = TRUE)
-    write(nw_delay_cause_evo_y2d_j, here(data_folder, 'v2', "nw_delay_category_evo_chart_y2d.json"))
-    write(nw_delay_cause_evo_y2d_j, paste0(archive_dir, today, "_nw_delay_category_chart_evo_y2d.json"))
+    #old name compatible with v1
+    write(nw_delay_cause_evo_y2d_j, here(data_folder, 'v2', "nw_delay_category_evo_chart.json"))
+    write(nw_delay_cause_evo_y2d_j, paste0(archive_dir, today, "_nw_delay_category_evo_chart.json"))
     write(nw_delay_cause_evo_y2d_j, paste0(archive_dir, "nw_delay_category_evo_chart_y2d.json"))
-
+    #new name for v2 in line with delay per category
+    write(nw_delay_cause_evo_y2d_j, here(data_folder, 'v2', "nw_delay_category_evo_chart_y2d.json"))
+    write(nw_delay_cause_evo_y2d_j, paste0(archive_dir, today, "_nw_delay_category_evo_chart_y2d.json"))
+    write(nw_delay_cause_evo_y2d_j, paste0(archive_dir, "nw_delay_category_evo_chart_y2d.json"))
 
   ### delay per flight per type v1----
   nw_delay_flt_evo <- nw_delay_raw %>%
@@ -1136,9 +1140,9 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
 
   #### convert to json and save in data folder and archive
   nw_delay_flt_wk_j <- nw_delay_flt_wk_long %>% toJSON(., pretty = TRUE)
-  write(nw_delay_flt_wk_j, here(data_folder, "v2", "nw_delay_flt_type_evo_chart_y2d.json"))
-  write(nw_delay_flt_wk_j, paste0(archive_dir, today, "_nw_delay_flt_type_evo_chart_y2d.json"))
-  write(nw_delay_flt_wk_j, paste0(archive_dir, "nw_delay_flt_type_evo_chart_y2d.json"))
+  write(nw_delay_flt_wk_j, here(data_folder, "v2", "nw_delay_flt_type_evo_chart_wk.json"))
+  write(nw_delay_flt_wk_j, paste0(archive_dir, today, "_nw_delay_flt_type_evo_chart_wk.json"))
+  write(nw_delay_flt_wk_j, paste0(archive_dir, "nw_delay_flt_type_evo_chart_wk.json"))
 
 
   #### y2d ----
