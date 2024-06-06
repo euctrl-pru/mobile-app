@@ -14,7 +14,7 @@ library(jsonlite)
 library(here)
 library(RODBC)
 
-source(here::here("R", "helpers.R"))
+source(here::here("..", "mobile-app", "R", "helpers.R"))
 
 # Parameters ----
   data_folder <- here::here("data", "v2")
@@ -2080,7 +2080,7 @@ source(here::here("R", "helpers.R"))
       left_join(st_apt_main_punct_dif, by = "ST_RANK") %>%
       select(-ST_RANK)
 
-    # covert to json and save in app data folder and archive
+    # convert to json and save in app data folder and archive
     st_apt_punctuality_j <- st_apt_punctuality %>% toJSON(., pretty = TRUE)
     write(st_apt_punctuality_j, here(data_folder,"st_apt_ranking_punctuality.json"))
     write(st_apt_punctuality_j, paste0(archive_dir, today, "_st_apt_ranking_punctuality.json"))
