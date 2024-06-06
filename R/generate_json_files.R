@@ -999,6 +999,7 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
 
 
   ## billing ----
+  ### app v1
   nw_billing_evo <- nw_billing %>%
     arrange(year, month) %>%
     mutate(
@@ -1043,8 +1044,24 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
 
   nw_billing_evo_j <- nw_billing_evo %>% toJSON(., pretty = TRUE)
   write(nw_billing_evo_j, here(data_folder, "nw_billing_evo_chart.json"))
-  write(nw_billing_evo_j, here(data_folder, "v2", "nw_billing_evo_chart.json"))
-  write(nw_billing_evo_j, paste0(archive_dir, today, "_nw_billing_evo_chart.json"))
+  # write(nw_billing_evo_j, paste0(archive_dir, today, "_nw_billing_evo_chart.json"))
+
+  ### app v2
+  nw_billing_evo_v2 <- nw_billing_evo %>%
+    mutate(iso_2letter = 'XX', state = 'Network') %>%
+    rename(month = Month) %>%
+    relocate(iso_2letter:state, .before = 'month')
+
+  ### nest data
+  nw_billing_evo_v2_long <- nw_billing_evo_v2 %>%
+    pivot_longer(-c(iso_2letter, state, month), names_to = 'metric', values_to = 'value') %>%
+    group_by(iso_2letter, state, month) %>%
+    nest_legacy(.key = "statistics")
+
+  nw_billing_evo_v2_j <- nw_billing_evo_v2_long %>% toJSON(., pretty = TRUE)
+  write(nw_billing_evo_v2_j, here(data_folder, "v2", "nw_billing_evo_chart.json"))
+  write(nw_billing_evo_v2_j, paste0(archive_dir, today, "_nw_billing_evo_chart.json"))
+
 
   ## co2 emissions ----
   ### app v1
@@ -1089,12 +1106,13 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
   ### app v2
   nw_co2_evo_v2 <- nw_co2_evo %>%
     mutate(iso_2letter = 'XX', state = 'Network') %>%
-    relocate(iso_2letter:state, .before = 'Month')
+    rename(month = Month) %>%
+    relocate(iso_2letter:state, .before = 'month')
 
   ### nest data
   nw_co2_evo_v2_long <- nw_co2_evo_v2 %>%
-    pivot_longer(-c(iso_2letter, state, Month), names_to = 'metric', values_to = 'value') %>%
-    group_by(iso_2letter, state, Month) %>%
+    pivot_longer(-c(iso_2letter, state, month), names_to = 'metric', values_to = 'value') %>%
+    group_by(iso_2letter, state, month) %>%
     nest_legacy(.key = "statistics")
 
   nw_co2_evo_v2_j <- nw_co2_evo_v2_long %>% toJSON(., pretty = TRUE)
