@@ -14,7 +14,7 @@ library(here)
 library(RODBC)
 
 # source(here::here("R", "helpers.R"))
-source(here("R", "helpers.R")) # so it can be launched from the checkupdates script in grounded aircraft
+source(here("..", "mobile-app", "R", "helpers.R")) # so it can be launched from the checkupdates script in grounded aircraft
 
 # parameters ----
 data_folder <- here::here("data")
@@ -1047,6 +1047,7 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
   write(nw_billing_evo_j, paste0(archive_dir, today, "_nw_billing_evo_chart.json"))
 
   ## co2 emissions ----
+  ### app v1
   nw_co2_evo <- co2_data_raw %>%
     select(
       FLIGHT_MONTH,
@@ -1080,11 +1081,25 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
   )
 
   colnames(nw_co2_evo) <- column_names
+  write(nw_co2_evo_j, here(data_folder, "nw_co2_evo_chart.json"))
+  # write(nw_co2_evo_j, paste0(archive_dir, today, "_nw_co2_evo_chart.json"))
 
   nw_co2_evo_j <- nw_co2_evo %>% toJSON(., pretty = TRUE)
-  write(nw_co2_evo_j, here(data_folder, "nw_co2_evo_chart.json"))
-  write(nw_co2_evo_j, here(data_folder, "v2", "nw_co2_evo_chart.json"))
-  write(nw_co2_evo_j, paste0(archive_dir, today, "_nw_co2_evo_chart.json"))
+
+  ### app v2
+  nw_co2_evo_v2 <- nw_co2_evo %>%
+    mutate(iso_2letter = 'XX', state = 'Network') %>%
+    relocate(iso_2letter:state, .before = 'Month')
+
+  ### nest data
+  nw_co2_evo_v2_long <- nw_co2_evo_v2 %>%
+    pivot_longer(-c(iso_2letter, state, Month), names_to = 'metric', values_to = 'value') %>%
+    group_by(iso_2letter, state, Month) %>%
+    nest_legacy(.key = "statistics")
+
+  nw_co2_evo_v2_j <- nw_co2_evo_v2_long %>% toJSON(., pretty = TRUE)
+  write(nw_co2_evo_v2_j, here(data_folder, "v2", "nw_co2_evo_chart.json"))
+  write(nw_co2_evo_v2_j, paste0(archive_dir, today, "_nw_co2_evo_chart.json"))
 
 
 # jsons for ranking tables ----
