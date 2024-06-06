@@ -971,6 +971,7 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
   write(nw_delay_flt_evo_app_j, paste0(archive_dir, today, "_nw_delay_flt_type_evo_chart.json"))
 
   ## punctuality ----
+  ### app v1
   nw_punct_evo_app <- nw_punct_data_raw %>%
     filter(DATE >= as.Date(paste0("01-01-", last_year - 2), format = "%d-%m-%Y")) %>%
     arrange(DATE) %>%
@@ -994,8 +995,22 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
 
   nw_punct_evo_app_j <- nw_punct_evo_app %>% toJSON(., pretty = TRUE)
   write(nw_punct_evo_app_j, here(data_folder, "nw_punct_evo_chart.json"))
-  write(nw_punct_evo_app_j, here(data_folder, "v2", "nw_punct_evo_chart.json"))
-  write(nw_punct_evo_app_j, paste0(archive_dir, today, "_nw_punct_evo_chart.json"))
+  # write(nw_punct_evo_app_j, paste0(archive_dir, today, "_nw_punct_evo_chart.json"))
+
+  ### app v2
+  nw_punct_evo_app_v2 <- nw_punct_evo_app %>%
+    mutate(iso_2letter = 'XX', state = 'Network') %>%
+    relocate(iso_2letter:state, .before = 'FLIGHT_DATE')
+
+  ### nest data
+  nw_punct_evo_app_v2_long <- nw_punct_evo_app_v2 %>%
+    pivot_longer(-c(iso_2letter, state, FLIGHT_DATE), names_to = 'metric', values_to = 'value') %>%
+    group_by(iso_2letter, state, FLIGHT_DATE) %>%
+    nest_legacy(.key = "statistics")
+
+  nw_punct_evo_v2_j <- nw_punct_evo_app_v2_long %>% toJSON(., pretty = TRUE)
+  write(nw_punct_evo_v2_j, here(data_folder, "v2", "nw_punct_evo_chart.json"))
+  write(nw_punct_evo_v2_j, paste0(archive_dir, today, "_nw_punct_evo_chart.json"))
 
 
   ## billing ----
