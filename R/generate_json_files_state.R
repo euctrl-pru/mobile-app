@@ -811,6 +811,7 @@ source(here::here("..", "mobile-app", "R", "helpers.R"))
     st_json_app_j$st_dai <- select(st_dai_for_json, -c(iso_2letter))
     st_json_app_j$st_ovf <- select(st_overflight_for_json, -c(iso_2letter))
     st_json_app_j$st_delay <- select(st_delay_for_json, -c(iso_2letter))
+    st_json_app_j$st_punct <- select(st_punct_for_json, -c(iso_2letter))
     st_json_app_j$st_billed <- select(st_billed_for_json, -c(iso_2letter))
     st_json_app_j$st_co2 <- select(st_co2_for_json, -c(iso_2letter))
 

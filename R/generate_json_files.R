@@ -1351,6 +1351,7 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
   )
 
   colnames(nw_co2_evo) <- column_names
+  nw_co2_evo_j <- nw_co2_evo %>% toJSON(., pretty = TRUE)
   write(nw_co2_evo_j, here(data_folder, "nw_co2_evo_chart.json"))
   # write(nw_co2_evo_j, paste0(archive_dir, today, "_nw_co2_evo_chart.json"))
 
