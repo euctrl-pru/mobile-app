@@ -17,7 +17,7 @@ library(RODBC)
 source(here("..", "mobile-app", "R", "helpers.R")) # so it can be launched from the checkupdates script in grounded aircraft
 
 # parameters ----
-data_folder <- here::here("data")
+data_folder <- here::here("..", "mobile-app", "data")
 base_dir <- "//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/"
 base_file <- "099_Traffic_Landing_Page_dataset_new_{today}.xlsx"
 archive_dir <- "//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/web_daily_json_files/app/"

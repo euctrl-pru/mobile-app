@@ -17,7 +17,7 @@ library(RODBC)
 source(here::here("..", "mobile-app", "R", "helpers.R"))
 
 # Parameters ----
-  data_folder <- here::here("data", "v2")
+  data_folder <- here::here("..", "mobile-app", "data", "v2")
   # base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/'
   base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/LastVersion/'
   base_file <- '099a_app_state_dataset.xlsx'
