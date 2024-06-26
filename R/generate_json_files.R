@@ -19,7 +19,7 @@ source(here("..", "mobile-app", "R", "helpers.R")) # so it can be launched from 
 # parameters ----
 data_folder <- here::here("data")
 base_dir <- "//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/"
-base_file <- "99_Traffic_Landing_Page_dataset_new_{today}.xlsx"
+base_file <- "099_Traffic_Landing_Page_dataset_new_{today}.xlsx"
 archive_dir <- "//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/web_daily_json_files/app/"
 today <- (lubridate::now() + days(-1)) %>% format("%Y%m%d")
 last_day <- (lubridate::now() + days(-1))
@@ -308,7 +308,7 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
 
     nw_punct_data_raw <- read_xlsx(
       path = fs::path_abs(
-        str_glue("98_PUNCTUALITY_{today}.xlsx"),
+        str_glue("098_PUNCTUALITY_{today}.xlsx"),
         start = base_dir
       ),
       sheet = "NETWORK",
@@ -696,7 +696,7 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
     ### monthly ----
     # this graph has been discontinued but we keep it here just in case
     base_dir <- "//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/"
-    base_file <- "99_Traffic_Landing_Page_dataset_new_{today}.xlsx"
+    base_file <- "099_Traffic_Landing_Page_dataset_new_{today}.xlsx"
 
     nw_traffic_month_data <- read_xlsx(
       path = fs::path_abs(

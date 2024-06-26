@@ -22,7 +22,7 @@ source(here::here("..", "mobile-app", "R", "helpers.R"))
   base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Oscar/Develop/'
   base_file <- '99a_app_state_dataset.xlsx'
   nw_base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/LastVersion/'
-  nw_base_file <- '99_Traffic_Landing_Page_dataset_new.xlsx'
+  nw_base_file <- '099_Traffic_Landing_Page_dataset_new.xlsx'
   # archive_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/web_daily_json_files/app/'
   archive_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Oscar/old/'
   today <- (lubridate::now() +  days(-1)) %>% format("%Y%m%d")

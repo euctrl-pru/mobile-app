@@ -11,7 +11,7 @@ library(pockethostr)
 
 today <- (lubridate::now() +  days(-1)) |> format("%Y%m%d")
 base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/'
-base_file <- '99_Traffic_Landing_Page_dataset_new_{today}.xlsx'
+base_file <- '099_Traffic_Landing_Page_dataset_new_{today}.xlsx'
 
 username <- Sys.getenv("PH_AIU_PORTAL_USR")
 password <- Sys.getenv("PH_AIU_PORTAL_PWD")
