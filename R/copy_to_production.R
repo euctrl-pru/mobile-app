@@ -1,6 +1,8 @@
 library(here)
 library("R.utils")
 library(sendmailR)
+library(dplyr)
+library(stringr)
 library(readxl)
 
 # check data status ----
