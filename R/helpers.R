@@ -550,3 +550,17 @@ get_billing_data <- function() {
 
   return(billed_raw)
 }
+
+get_co2_data <- function() {
+  query <- str_glue("
+        SELECT *
+          FROM TABLE (emma_pub.api_aiu_stats.MM_AIU_STATE_DEP ())
+          where year >= 2019 and STATE_NAME not in ('LIECHTENSTEIN')
+        ORDER BY 2, 3, 4
+       ")
+
+  co2_data_raw <- export_query(query) %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+  return(co2_data_raw)
+}

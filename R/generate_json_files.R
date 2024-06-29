@@ -448,16 +448,7 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
   ##------ Network CO2 emissions ----
 
     # CO2 data
-    query <- str_glue("
-        SELECT *
-          FROM TABLE (emma_pub.api_aiu_stats.MM_AIU_STATE_DEP ())
-          where year >= 2019 and STATE_NAME not in ('LIECHTENSTEIN')
-        ORDER BY 2, 3, 4
-       ")
-
-    co2_data_raw <- export_query(query) %>%
-      mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-      # filter(YEAR <= 2023) ## NOTE: temporary line while the app upgrade is implemented
+    if (exists("co2_data_raw") == FALSE) {co2_data_raw <- get_co2_data()}
 
     # calcs + format
     co2_data_evo_nw <- co2_data_raw %>%

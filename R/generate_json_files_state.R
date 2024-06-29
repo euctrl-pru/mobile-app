@@ -628,17 +628,9 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
       arrange(iso_2letter)
 
   #### CO2 data ----
-    query <- str_glue("
-    SELECT *
-      FROM TABLE (emma_pub.api_aiu_stats.MM_AIU_STATE_DEP ())
-      where year >= 2019 and STATE_NAME not in ('LIECHTENSTEIN')
-    ORDER BY 2, 3, 4
-   ")
+    if (exists("co2_data_raw") == FALSE) {co2_data_raw <- get_co2_data()}
 
-    st_co2_data_raw <- export_query(query) %>%
-      mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-
-    st_co2_data_filtered <- st_co2_data_raw %>%
+    st_co2_data_filtered <- co2_data_raw %>%
       mutate(co2_state = STATE_NAME) %>%
       right_join(state_co2, by = "co2_state") %>%
       select(-c(STATE_NAME, STATE_CODE, co2_state, CREA_DATE) )
@@ -2760,7 +2752,7 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
     write(st_billing_evo_j, paste0(archive_dir, "st_billing_evo.json"))
 
   ## CO2 ----
-    st_co2_data_filtered <- st_co2_data_raw %>%
+    st_co2_data_filtered <- co2_data_raw %>%
       mutate(co2_state = STATE_NAME) %>%
       right_join(state_co2, by = "co2_state") %>%
       left_join(state_iso, by = "iso_2letter") %>%
