@@ -95,42 +95,18 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
   #### Billing data ----
   ## we do this first to avoid 'R fatal error'
 
-    ## https://leowong.ca/blog/connect-to-microsoft-access-database-via-r/
-    ## Set up driver info and database path
-    DRIVERINFO <- "Driver={Microsoft Access Driver (*.mdb, *.accdb)};"
-    MDBPATH <- "G:/HQ/dgof-pru/Data/DataProcessing/Crco - Billing/CRCO_BILL.accdb"
-    PATH <- paste0(DRIVERINFO, "DBQ=", MDBPATH)
-
-    channel <- odbcDriverConnect(PATH)
-    query_bill <- "SELECT *,
-                  iif(
-	            [Billing Zone Number] = '33', 'Bosnia and Herzegovina',
-	            iif ([Billing Zone Number] = '10' OR [Billing Zone Number] = '11', 'Spain' ,
-            	iif ([Billing Zone Number] = '08' OR [Billing Zone Number] = '12', 'Portugal',
-	            iif ([Billing Zone Number] = '32' OR [Billing Zone Number] = '41', 'Ukraine',
-	[Billing Zone Name]
-)))) as corrected_cz
-    FROM V_CRCO_BILL_PER_CZ
-  "
-
-    ## Load data into R dataframe
-    st_billed_raw <- sqlQuery(channel,
-                            query_bill,
-                            stringsAsFactors = FALSE)
-
-    ## Close and remove channel
-    close(channel)
-    rm(channel)
+  # so this script is stand alone
+  if (exists("billed_raw") == FALSE) {billed_raw <- get_billing_data()}
 
     ## process billing data
-    st_billed_raw <- st_billed_raw %>%
+    st_billed_clean <- billed_raw %>%
       janitor::clean_names() %>%
       mutate(billing_period_start_date = as.Date(billing_period_start_date, format = "%d-%m-%Y"))
 
-    last_billing_date <- max(st_billed_raw$billing_period_start_date)
-    last_billing_year <- max(st_billed_raw$year)
+    last_billing_date <- max(st_billed_clean$billing_period_start_date)
+    last_billing_year <- max(st_billed_clean$year)
 
-    st_billing <- st_billed_raw %>%
+    st_billing <- st_billed_clean %>%
       group_by(corrected_cz, year, month, billing_period_start_date) %>%
       summarise(total_billing = sum(route_charges)) %>%
       ungroup

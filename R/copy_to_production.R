@@ -20,6 +20,8 @@ st_file_status <- read_xlsx(path = fs::path_abs(str_glue(st_file),start = data_d
 
 # generate json files, if data files updated ----
 if (nw_file_status == "OK") {
+  source(here("..", "mobile-app", "R", "helpers.R"))
+  source(here("..", "mobile-app", "R", "get_common_data.R"))
   source(here("..", "mobile-app", "R", "generate_json_files.R"))
   # rmarkdown::render(here::here("R", "mob_ao_traffic_rank_day.Rmd"), output_dir = here::here("iframes"))
   # rmarkdown::render(here::here("R", "mob_apt_traffic_rank_day.Rmd"), output_dir = here::here("iframes"))
@@ -67,10 +69,10 @@ if (nw_file_status == "OK" & st_file_status == "OK") {
 # send email ----
 from    <- "oscar.alfaro@eurocontrol.int"
 to      <- c("oscar.alfaro@eurocontrol.int"
-             ,
-             "quinten.goens@eurocontrol.int",
-             "enrico.spinielli@eurocontrol.int",
-             "denis.huet@eurocontrol.int"
+             # ,
+             # "quinten.goens@eurocontrol.int",
+             # "enrico.spinielli@eurocontrol.int",
+             # "denis.huet@eurocontrol.int"
 )
 # cc      <- c("enrico.spinielli@eurocontrol.int")
 control <- list(smtpServer="mailservices.eurocontrol.int")

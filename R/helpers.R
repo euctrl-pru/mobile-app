@@ -517,3 +517,36 @@ tasks_status_latest <- function() {
     start_time = "08:30"
   )
 }
+
+########## added by Oscar, discuss with Enrico how to merge both billing functions
+get_billing_data <- function() {
+
+  ## https://leowong.ca/blog/connect-to-microsoft-access-database-via-r/
+  ## Set up driver info and database path
+  DRIVERINFO <- "Driver={Microsoft Access Driver (*.mdb, *.accdb)};"
+  MDBPATH <- "G:/HQ/dgof-pru/Data/DataProcessing/Crco - Billing/CRCO_BILL.accdb"
+  PATH <- paste0(DRIVERINFO, "DBQ=", MDBPATH)
+
+  channel <- odbcDriverConnect(PATH)
+  query_bill <- "SELECT *,
+                  iif(
+	            [Billing Zone Number] = '33', 'Bosnia and Herzegovina',
+	            iif ([Billing Zone Number] = '10' OR [Billing Zone Number] = '11', 'Spain' ,
+            	iif ([Billing Zone Number] = '08' OR [Billing Zone Number] = '12', 'Portugal',
+	            iif ([Billing Zone Number] = '32' OR [Billing Zone Number] = '41', 'Ukraine',
+	[Billing Zone Name]
+)))) as corrected_cz
+    FROM V_CRCO_BILL_PER_CZ
+  "
+
+  ## Load data into R dataframe
+  billed_raw <- sqlQuery(channel,
+                         query_bill,
+                         stringsAsFactors = FALSE)
+
+  ## Close and remove channel
+  close(channel)
+  rm(channel)
+
+  return(billed_raw)
+}

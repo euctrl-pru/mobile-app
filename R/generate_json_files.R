@@ -35,47 +35,19 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
   ## Network billed ----
     #### billing json - we do this first to avoid 'R fatal error'
 
-    # dir_billing <- "G:/HQ/dgof-pru/Data/DataProcessing/Covid19/Oscar/Billing"
-    #
-    # nw_billed_data_raw <-  read_xlsx(
-    #   path  = fs::path_abs(
-    #     str_glue("Billing_tables.xlsx"),
-    #     start = dir_billing),
-    #   sheet = "network",
-    #   range = cell_limits(c(5, 2), c(NA, NA))) %>%
-    #   as_tibble()%>%
-    #   mutate(DATE = as.Date(Billing_period_start_date, format = "%d-%m-%Y"))
-
-    # https://leowong.ca/blog/connect-to-microsoft-access-database-via-r/
-
-    # Set up driver info and database path
-    DRIVERINFO <- "Driver={Microsoft Access Driver (*.mdb, *.accdb)};"
-    MDBPATH <- "G:/HQ/dgof-pru/Data/DataProcessing/Crco - Billing/CRCO_BILL.accdb"
-    PATH <- paste0(DRIVERINFO, "DBQ=", MDBPATH)
-
-    channel <- odbcDriverConnect(PATH)
-    query_bill <- "SELECT * FROM V_CRCO_BILL_PER_CZ"
-
-    # Load data into R dataframe
-    nw_billed_raw <- sqlQuery(channel,
-      query_bill,
-      stringsAsFactors = FALSE
-    )
-
-    # Close and remove channel
-    close(channel)
-    rm(channel)
+    # so this script is stand alone
+    if (exists("billed_raw") == FALSE) {billed_raw <- get_billing_data()}
 
     # format dates and extract date parameters
-    nw_billed_raw <- nw_billed_raw %>%
+    nw_billed_clean <- billed_raw %>%
       janitor::clean_names() %>%
       mutate(billing_period_start_date = as.Date(billing_period_start_date, format = "%d-%m-%Y"))
 
-    last_billing_date <- max(nw_billed_raw$billing_period_start_date)
-    last_billing_year <- max(nw_billed_raw$year)
+    last_billing_date <- max(nw_billed_clean$billing_period_start_date)
+    last_billing_year <- max(nw_billed_clean$year)
 
     # calculate network total
-    nw_billing <- nw_billed_raw %>%
+    nw_billing <- nw_billed_clean %>%
       group_by(year, month, billing_period_start_date) %>%
       summarise(total_billing = sum(route_charges)) %>%
       ungroup()
