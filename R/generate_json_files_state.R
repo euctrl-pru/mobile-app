@@ -82,9 +82,10 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
     as_tibble() %>%
     mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
     select(ICAO_CODE, ISO_COUNTRY_CODE) %>%
+    #in case we need to separate spain from canarias
+    # mutate(ISO_COUNTRY_CODE = if_else(substr(ICAO_CODE,1,2) == "GC",
+    #                                   "IC", ISO_COUNTRY_CODE)) %>%
     rename(iso_2letter = ISO_COUNTRY_CODE)
-
-
 
 # ____________________________________________________________________________________________
 #
