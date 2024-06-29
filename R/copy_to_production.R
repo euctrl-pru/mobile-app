@@ -69,10 +69,10 @@ if (nw_file_status == "OK" & st_file_status == "OK") {
 # send email ----
 from    <- "oscar.alfaro@eurocontrol.int"
 to      <- c("oscar.alfaro@eurocontrol.int"
-             # ,
-             # "quinten.goens@eurocontrol.int",
-             # "enrico.spinielli@eurocontrol.int",
-             # "denis.huet@eurocontrol.int"
+             ,
+             "quinten.goens@eurocontrol.int",
+             "enrico.spinielli@eurocontrol.int",
+             "denis.huet@eurocontrol.int"
 )
 # cc      <- c("enrico.spinielli@eurocontrol.int")
 control <- list(smtpServer="mailservices.eurocontrol.int")
