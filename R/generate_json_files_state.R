@@ -24,7 +24,7 @@ base_file <- '099a_app_state_dataset.xlsx'
 nw_base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/LastVersion/'
 nw_base_file <- '099_Traffic_Landing_Page_dataset_new.xlsx'
 # archive_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/web_daily_json_files/app/'
-archive_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Oscar/old/'
+archive_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/web_daily_json_files/app/'
 today <- (lubridate::now() +  days(-1)) %>% format("%Y%m%d")
 last_day <-  trunc((lubridate::now() +  days(-1)), "day")
 last_year <- as.numeric(format(last_day,'%Y'))
