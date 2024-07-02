@@ -2128,7 +2128,8 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
         AVG_ROLLING_WEEK_PREV_YEAR,
         AVG_ROLLING_WEEK_2020,
         AVG_ROLLING_WEEK_2019
-      )
+      ) %>%
+      mutate (AVG_ROLLING_WEEK = if_else(FLIGHT_DATE > last_day, NA, AVG_ROLLING_WEEK))
 
     column_names <- c('iso_2letter', 'daio_zone', 'FLIGHT_DATE', last_year, last_year-1, 2020, 2019)
     colnames(st_ovf_evo_app) <- column_names
