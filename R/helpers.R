@@ -46,7 +46,7 @@ network_traffic_full_latest <- function(today = lubridate::today()) {
   yesterday <- today |> magrittr::subtract(days(1))
   base_dir <- "//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/"
   base_file <- str_glue(
-    "99_Traffic_Landing_Page_dataset_new_{yyyymmdd}.xlsx",
+    "099_Traffic_Landing_Page_dataset_new_{yyyymmdd}.xlsx",
     yyyymmdd = yesterday |> format("%Y%m%d")
   )
 
@@ -93,7 +93,7 @@ network_delay_latest <- function(today = lubridate::today()) {
   yesterday <- today |> magrittr::subtract(days(1))
   base_dir <- "//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/"
   base_file <- str_glue(
-    "99_Traffic_Landing_Page_dataset_new_{yyyymmdd}.xlsx",
+    "099_Traffic_Landing_Page_dataset_new_{yyyymmdd}.xlsx",
     yyyymmdd = yesterday |> format("%Y%m%d")
   )
 
@@ -171,7 +171,7 @@ network_punctuality_latest <- function(today = lubridate::today()) {
   yesterday <- today |> magrittr::subtract(days(1))
   base_dir <- "//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/"
   base_file <- str_glue(
-    "98_PUNCTUALITY_{yyyymmdd}.xlsx",
+    "098_PUNCTUALITY_{yyyymmdd}.xlsx",
     yyyymmdd = yesterday |> format("%Y%m%d")
   )
 

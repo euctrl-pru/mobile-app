@@ -12,7 +12,9 @@ source(here::here("R", "helpers.R"))
 
 # TODO: use ph_list_records()
 
-retrieve_from_db <- function(wef = today(tzone = "UTC") - dweeks(3)) {
+weeks_back <- 5
+
+retrieve_from_db <- function(wef = today(tzone = "UTC") - dweeks(weeks_back)) {
   from_date <- wef |> lubridate::as_date()
   query <- str_glue("
     SELECT
@@ -50,7 +52,7 @@ retrieve_from_api <- function(wef) {
 }
 
 # check if there are missing data points in the last 3 weeks
-wef <- today(tzone = "UTC") - dweeks(3)
+wef <- today(tzone = "UTC") - dweeks(weeks_back)
 # 1. perform a query on last 3 weeks
 aa <- retrieve_from_api(wef)
 # 2. run DB query for last 3 weeks
