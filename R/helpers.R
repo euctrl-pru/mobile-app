@@ -13,6 +13,9 @@ library(fs)
 library(stringr)
 
 library(zoo)
+library(DBI)
+library(ROracle)
+library(RODBC)
 
 library(eurocontrol)
 
