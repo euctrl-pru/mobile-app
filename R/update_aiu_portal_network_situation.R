@@ -50,6 +50,14 @@ nw_traffic_data_main_page <- nw_traffic_data |>
 body <- nw_traffic_data_main_page |>
   select(
     date = FLIGHT_DATE,
+    day_traffic =  DAY_TFC,
+    dif_day_prev_week = DAY_TFC_DIFF_PREV_WEEK,
+    dif_day_prev_year = DAY_TFC_DIFF_PREV_YEAR,
+    dif_day_2019 = DAY_TFC_DIFF_2019,
+    avg_week_traffic = AVG_ROLLING_WEEK,
+    dif_week_prev_week = DIF_PREV_WEEK_PERC,
+    dif_week_prev_year = DIF_WEEK_PREV_YEAR_PERC,
+    dif_week_2019 = DIF_ROLLING_WEEK_2019_PERC,
     y2d_flights_total = Y2D_TFC_YEAR,
     y2d_flights_daily_average = Y2D_AVG_TFC_YEAR,
     y2d_diff_previous_year_percentage = Y2D_DIFF_PREV_YEAR_PERC,
@@ -63,12 +71,12 @@ body <- nw_traffic_data_main_page |>
 # * need to fill holes, i.e. missing days
 # * errors
 
-ph_create_record(
-  app = app_test,
-  api = "/api/collections",
-  collection = collection,
-  token = adm_test$token,
-  body = body)
+# ph_create_record(
+#   app = app_test,
+#   api = "/api/collections",
+#   collection = collection,
+#   token = adm_test$token,
+#   body = body)
 
 ph_create_record(
   app = app_main,

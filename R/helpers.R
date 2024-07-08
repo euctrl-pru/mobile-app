@@ -75,9 +75,11 @@ network_traffic_latest <- function(today = lubridate::today()) {
     magrittr::extract(
       c("FLIGHT_DATE",
         "DAY_TFC",
+        "DAY_TFC_DIFF_PREV_WEEK",
         "DAY_DIFF_PREV_YEAR_PERC",
         "DAY_TFC_DIFF_2019_PERC",
         "AVG_ROLLING_WEEK",
+        "DIF_PREV_WEEK_PERC",
         "DIF_WEEK_PREV_YEAR_PERC",
         "DIF_ROLLING_WEEK_2019_PERC",
         "Y2D_TFC_YEAR",
