@@ -35,17 +35,26 @@ adm_main <- ph_authenticate_admin_username_password(
   username,
   password)
 
-
+# import data
 nw_traffic_data <- read_xlsx(
   path  = fs::path_abs(str_glue(base_file), start = base_dir),
   sheet = "NM_Daily_Traffic_All",
   range = cell_limits(c(2, 1), c(NA, 39))) |>
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-# for traffic update on the portal landing page
+nw_delay_data <- read_xlsx(
+  path  = fs::path_abs(str_glue(base_file), start = base_dir),
+  sheet = "NM_Daily_Delay_All",
+  range = cell_limits(c(2, 1), c(NA, 39))) |>
+  mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+# process data for traffic update on the portal landing page
 nw_traffic_data_main_page <- nw_traffic_data |>
   filter(DAY_TFC > 0) |>
   filter(FLIGHT_DATE == max(FLIGHT_DATE))
+
+nw_delay_data_main_page <- nw_delay_data |>
+  filter(FLIGHT_DATE == max(nw_traffic_data_main_page$FLIGHT_DATE))
 
 body <- nw_traffic_data_main_page |>
   select(
@@ -61,7 +70,22 @@ body <- nw_traffic_data_main_page |>
     y2d_flights_total = Y2D_TFC_YEAR,
     y2d_flights_daily_average = Y2D_AVG_TFC_YEAR,
     y2d_diff_previous_year_percentage = Y2D_DIFF_PREV_YEAR_PERC,
-    y2d_diff_2019_year_percentage = Y2D_DIFF_2019_PERC) |>
+    y2d_diff_2019_year_percentage = Y2D_DIFF_2019_PERC
+    ) |>
+  mutate(
+    day_delay = nw_delay_data_main_page$DAY_DLY,
+    dif_day_delay_prev_week_perc = nw_delay_data_main_page$DAY_DLY_PREV_WEEK_PERC,
+    dif_day_delay_prev_year_perc = nw_delay_data_main_page$DAY_DIFF_PREV_YEAR_PERC,
+    dif_day_delay_2019_perc = nw_delay_data_main_page$DAY_DLY_DIFF_2019_PERC,
+    avg_week_delay = nw_delay_data_main_page$AVG_ROLLING_WEEK,
+    dif_week_delay_prev_week_perc = nw_delay_data_main_page$DIF_PREV_WEEK_PERC,
+    dif_week_delay_prev_year_perc = nw_delay_data_main_page$DIF_WEEK_PREV_YEAR_PERC,
+    dif_week_delay_2019_perc = nw_delay_data_main_page$DIF_ROLLING_WEEK_2019_PERC,
+    y2d_delay_total = nw_delay_data_main_page$Y2D_DLY_YEAR,
+    y2d_delay_daily_average = nw_delay_data_main_page$Y2D_AVG_DLY_YEAR,
+    dif_y2d_delay_prev_year_perc = nw_delay_data_main_page$Y2D_DIFF_PREV_YEAR_PERC,
+    dif_y2d_delay_2019_perc = nw_delay_data_main_page$Y2D_DIFF_2019_PERC
+  ) |>
   as.list() |>
   purrr::list_transpose() |>
   magrittr::extract2(1)
