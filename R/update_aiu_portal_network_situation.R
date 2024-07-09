@@ -51,9 +51,9 @@ body <- nw_traffic_data_main_page |>
   select(
     date = FLIGHT_DATE,
     day_traffic =  DAY_TFC,
-    dif_day_prev_week = DAY_TFC_DIFF_PREV_WEEK,
-    dif_day_prev_year = DAY_TFC_DIFF_PREV_YEAR,
-    dif_day_2019 = DAY_TFC_DIFF_2019,
+    dif_day_prev_week = DAY_TFC_PREV_WEEK_PERC,
+    dif_day_prev_year = DAY_DIFF_PREV_YEAR_PERC,
+    dif_day_2019 = DAY_TFC_DIFF_2019_PERC,
     avg_week_traffic = AVG_ROLLING_WEEK,
     dif_week_prev_week = DIF_PREV_WEEK_PERC,
     dif_week_prev_year = DIF_WEEK_PREV_YEAR_PERC,
