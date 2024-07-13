@@ -1408,9 +1408,14 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
           CURRENT_DAY,
           NA
         ),
-        ST_RANK = paste0(tolower(COUNTRY_NAME), R_RANK)
+        ST_RANK = paste0(tolower(COUNTRY_NAME), R_RANK),
+        MAIN_TFC_CTRY_ISO_CODE = if_else(
+          R_RANK <= 4,
+          FROM_TO_ISO_CT_CODE,
+          NA
+        ),
       ) %>%
-      select(ST_RANK, MAIN_TFC_CTRY_NAME, MAIN_TFC_CTRY_DAI)
+      select(ST_RANK, MAIN_TFC_CTRY_NAME, MAIN_TFC_CTRY_DAI, MAIN_TFC_CTRY_ISO_CODE)
 
     st_st_main_traffic_dif <- st_st_data_day_int %>%
       arrange(COUNTRY_NAME, desc(abs(ST_TFC_CTRY_DIF)), R_RANK) %>%
@@ -1428,6 +1433,11 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
           RANK_DIF_CTRY_TFC <= 4,
           ST_TFC_CTRY_DIF,
           NA
+        ),
+        MAIN_TFC_DIF_CTRY_ISO_CODE = if_else(
+          RANK_DIF_CTRY_TFC <= 4,
+          FROM_TO_ISO_CT_CODE,
+          NA
         )
       ) %>%
       arrange(COUNTRY_NAME, desc(MAIN_TFC_CTRY_DIF)) %>%
@@ -1437,7 +1447,7 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
         ST_RANK = paste0(tolower(COUNTRY_NAME), RANK_MAIN_DIF)
       ) %>%
       ungroup() %>%
-      select(ST_RANK, MAIN_TFC_DIF_CTRY_NAME, MAIN_TFC_CTRY_DIF)
+      select(ST_RANK, MAIN_TFC_DIF_CTRY_NAME, MAIN_TFC_CTRY_DIF, MAIN_TFC_DIF_CTRY_ISO_CODE)
 
     #### join tables ----
     # create list of state/rankings for left join
