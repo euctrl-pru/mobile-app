@@ -1643,8 +1643,10 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
         RANK = DY_R_RANK_BY_DAY,
         MAIN_TFC_CTRY_NAME,
         MAIN_TFC_CTRY_DAI,
+        MAIN_TFC_CTRY_CODE,
         MAIN_TFC_DIF_CTRY_NAME,
         MAIN_TFC_CTRY_DIF,
+        MAIN_TFC_DIF_CTRY_CODE,
         DY_RANK_DIF_PREV_WEEK,
         DY_COUNTRY_NAME,
         DY_TO_DATE = DY_ENTRY_DATE,
@@ -2077,8 +2079,10 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
         RANK,
         MAIN_DLY_CTRY_NAME,
         MAIN_DLY_CTRY_DLY,
+        MAIN_DLY_CTRY_CODE,
         MAIN_DLY_FLT_CTRY_NAME,
         MAIN_DLY_FLT_CTRY_DLY_FLT,
+        MAIN_DLY_FLT_CTRY_CODE,
         DY_RANK,
         DY_CTRY_DLY_NAME,
         DY_TO_DATE,
@@ -2356,11 +2360,13 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
 
     query <- "
     WITH
-      LIST_STATE as (
-        SELECT
-          EC_ISO_CT_NAME, EC_ISO_CT_CODE
-        FROM SWH_FCT.DIM_ISO_COUNTRY
-        WHERE VALID_TO > TRUNC(SYSDATE)-1
+      LIST_STATE as
+      (select EC_ISO_CT_CODE,
+                  case when EC_ISO_CT_CODE = 'MD' then 'Moldova'
+                          else EC_ISO_CT_NAME
+                  end EC_ISO_CT_NAME
+       from SWH_FCT.DIM_ISO_COUNTRY
+       where VALID_TO > TRUNC(SYSDATE)-1
       )
 
       SELECT
@@ -2401,13 +2407,15 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
       ungroup()
 
     ### day
-    ct_punct_dy <- ct_punct_calc %>%
+    ct_punct_dy_calc <- ct_punct_calc %>%
       filter(DATE == last_punctuality_day, RANK < 11) %>%
       mutate(
         DY_CTRY_NAME = EC_ISO_CT_NAME,
         DY_CTRY_ARR_PUNCT = ARR_PUNCTUALITY_PERCENTAGE / 100,
         DY_TO_DATE = round_date(DATE, "day")
-      ) %>%
+      )
+
+    ct_punct_dy <-ct_punct_dy_calc |>
       select(
         RANK,
         DY_TO_DATE,
@@ -2487,7 +2495,7 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
       )
 
     ### main card
-    ct_main_punct_top <- ct_punct_dy %>%
+    ct_main_punct_top <- ct_punct_dy_calc %>%
       mutate(
         MAIN_PUNCT_CTRY_NAME = if_else(
           RANK <= 4,
@@ -2498,9 +2506,17 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
           RANK <= 4,
           DY_CTRY_ARR_PUNCT,
           NA
+        ),
+        MAIN_PUNCT_CTRY_CODE = if_else(
+          RANK <= 4,
+          ISO_CT_CODE,
+          NA
         )
       ) %>%
-      select(RANK, MAIN_PUNCT_CTRY_NAME, MAIN_PUNCT_CTRY_ARR_PUNCT)
+      select(RANK,
+             MAIN_PUNCT_CTRY_NAME,
+             MAIN_PUNCT_CTRY_ARR_PUNCT,
+             MAIN_PUNCT_CTRY_CODE)
 
     ct_main_punct_bottom <- ct_punct_calc %>%
       filter(DATE == last_punctuality_day) %>%
@@ -2519,11 +2535,19 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
           RANK <= 4,
           DY_CTRY_ARR_PUNCT,
           NA
+        ),
+        MAIN_PUNCT_CTRY_CODE_BOTTOM = if_else(
+          RANK <= 4,
+          ISO_CT_CODE,
+          NA
         )
       ) %>%
       filter(RANK < 11) %>%
       arrange(RANK) %>%
-      select(RANK, MAIN_PUNCT_CTRY_NAME_BOTTOM, MAIN_PUNCT_CTRY_ARR_PUNCT_BOTTOM)
+      select(RANK,
+             MAIN_PUNCT_CTRY_NAME_BOTTOM,
+             MAIN_PUNCT_CTRY_ARR_PUNCT_BOTTOM,
+             MAIN_PUNCT_CTRY_CODE_BOTTOM)
 
 
     ### merge and reorder tables
@@ -2538,8 +2562,10 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
         RANK,
         MAIN_PUNCT_CTRY_NAME,
         MAIN_PUNCT_CTRY_ARR_PUNCT,
+        MAIN_PUNCT_CTRY_CODE,
         MAIN_PUNCT_CTRY_NAME_BOTTOM,
         MAIN_PUNCT_CTRY_ARR_PUNCT_BOTTOM,
+        MAIN_PUNCT_CTRY_CODE_BOTTOM,
         DY_RANK_DIF_PREV_WEEK,
         DY_CTRY_NAME,
         DY_TO_DATE,
