@@ -1962,7 +1962,7 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
         start = base_dir
       ),
       sheet = "CTRY_DLY_DAY",
-      range = cell_limits(c(5, 2), c(NA, 5))
+      range = cell_limits(c(5, 2), c(NA, 6))
     ) %>%
       as_tibble() %>%
       mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
@@ -2019,8 +2019,9 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
       filter(DY_RANK <= 10)
 
     ### main card
-    ct_main_delay <- ct_rank_data_day %>%
+    ct_main_delay <- ct_rank_data_day_raw %>%
       mutate(
+        DY_RANK = row_number(),
         MAIN_DLY_CTRY_NAME = if_else(
           DY_RANK <= 4,
           DY_CTRY_DLY_NAME,
@@ -2030,9 +2031,14 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
           DY_RANK <= 4,
           DY_CTRY_DLY,
           NA
+        ),
+        MAIN_DLY_CTRY_CODE = if_else(
+          DY_RANK <= 4,
+          DY_CTRY_DLY_CODE,
+          NA
         )
       ) %>%
-      select(DY_RANK, MAIN_DLY_CTRY_NAME, MAIN_DLY_CTRY_DLY) %>%
+      select(DY_RANK, MAIN_DLY_CTRY_NAME, MAIN_DLY_CTRY_DLY, MAIN_DLY_CTRY_CODE) %>%
       filter(DY_RANK <= 10)
 
     ct_main_delay_flt <- ct_rank_data_day_raw %>%
@@ -2048,9 +2054,16 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
           DY_RANK <= 4,
           DY_CTRY_DLY_PER_FLT,
           NA
-        )
+        ),
+        MAIN_DLY_FLT_CTRY_CODE = if_else(
+          DY_RANK <= 4,
+          DY_CTRY_DLY_CODE,
+          NA)
       ) %>%
-      select(DY_RANK, MAIN_DLY_FLT_CTRY_NAME, MAIN_DLY_FLT_CTRY_DLY_FLT) %>%
+      select(DY_RANK,
+             MAIN_DLY_FLT_CTRY_NAME,
+             MAIN_DLY_FLT_CTRY_DLY_FLT,
+             MAIN_DLY_FLT_CTRY_CODE) %>%
       filter(DY_RANK <= 10)
 
     ### merge and reorder tables
