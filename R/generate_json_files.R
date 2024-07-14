@@ -1564,16 +1564,19 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
   ## Country traffic DAI ----
 
     ### day
-    ct_dai_data_dy <- read_xlsx(
+    ct_dai_data_dy_raw <- read_xlsx(
       path = fs::path_abs(
         str_glue(base_file),
         start = base_dir
       ),
       sheet = "CTRY_DAI_DAY",
-      range = cell_limits(c(3, 2), c(NA, 8))
+      range = cell_limits(c(3, 2), c(NA, 10))
     ) %>%
       mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
       filter(DY_R_RANK_BY_DAY <= 10)
+
+    ct_dai_data_dy <- ct_dai_data_dy_raw |>
+      select(1:8)
 
     ### week
     ct_dai_data_wk <- read_xlsx(
@@ -1600,7 +1603,7 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
       filter(DY_R_RANK_BY_DAY <= 10)
 
     ### main card
-    ct_main_traffic <- ct_dai_data_dy %>%
+    ct_main_traffic <- ct_dai_data_dy_raw %>%
       mutate(
         MAIN_TFC_CTRY_NAME = if_else(
           DY_R_RANK_BY_DAY <= 4,
@@ -1611,9 +1614,14 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
           DY_R_RANK_BY_DAY <= 4,
           DY_CTRY_DAI,
           NA
+        ),
+        MAIN_TFC_CTRY_CODE = if_else(
+          DY_R_RANK_BY_DAY <= 4,
+          ISO_CODE,
+          NA
         )
       ) %>%
-      select(DY_R_RANK_BY_DAY, MAIN_TFC_CTRY_NAME, MAIN_TFC_CTRY_DAI)
+      select(DY_R_RANK_BY_DAY, MAIN_TFC_CTRY_NAME, MAIN_TFC_CTRY_DAI, MAIN_TFC_CTRY_CODE)
 
     ct_main_traffic_dif <- read_xlsx(
       path = fs::path_abs(
@@ -1621,7 +1629,7 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
         start = base_dir
       ),
       sheet = "CTRY_DAI_MAIN",
-      range = cell_limits(c(3, 2), c(NA, 4))
+      range = cell_limits(c(3, 2), c(NA, 5))
     )
 
     ### merge and reorder tables
