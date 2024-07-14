@@ -2132,7 +2132,7 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
             ),
 
             LIST_STATE as (
-              SELECT
+              SELECT distinct
                 AIU_ISO_COUNTRY_NAME as EC_ISO_CT_NAME,
                 AIU_ISO_COUNTRY_CODE AS EC_ISO_CT_CODE
               FROM prudev.pru_country_iso
@@ -2360,13 +2360,12 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
 
     query <- "
     WITH
-      LIST_STATE as
-      (select EC_ISO_CT_CODE,
-                  case when EC_ISO_CT_CODE = 'MD' then 'Moldova'
-                          else EC_ISO_CT_NAME
-                  end EC_ISO_CT_NAME
-       from SWH_FCT.DIM_ISO_COUNTRY
-       where VALID_TO > TRUNC(SYSDATE)-1
+      LIST_STATE as (
+        SELECT distinct
+          AIU_ISO_COUNTRY_NAME as EC_ISO_CT_NAME,
+          AIU_ISO_COUNTRY_CODE AS EC_ISO_CT_CODE
+        FROM prudev.pru_country_iso
+        WHERE till > TRUNC(SYSDATE)-1
       )
 
       SELECT
