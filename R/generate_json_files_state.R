@@ -667,7 +667,7 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
     st_co2_last_year <- max(st_co2_data$YEAR, na.rm=TRUE)
 
     #check last month number of flights
-    check_flights <- st_co2_data %>%
+    check_flights <- st_co2_data %>% ungroup() |>
       filter (YEAR == st_co2_last_year) %>% filter(MONTH == st_co2_last_month_num) %>%
       summarise (TTF = sum(MM_DEP, na.rm=TRUE)) %>%
       select(TTF) %>% pull()
