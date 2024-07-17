@@ -776,3 +776,227 @@ ao_st_des_data_j <- ao_st_des_data %>% toJSON(., pretty = TRUE)
 write(ao_st_des_data_j, here(data_folder,"ao_st_des_ranking_traffic.json"))
 write(ao_st_des_data_j, paste0(archive_dir, today, "_ao_st_des_ranking_traffic.json"))
 write(ao_st_des_data_j, paste0(archive_dir, "ao_st_des_ranking_traffic.json"))
+
+### Departure airport ----
+#### day ----
+ao_apt_dep_data_day_raw <- read_xlsx(
+  path  = fs::path_abs(
+    str_glue(base_file),
+    start = base_dir),
+  sheet = "ao_apt_dep_day",
+  range = cell_limits(c(1, 1), c(NA, NA))) %>%
+  mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+ao_apt_dep_data_day_int <- ao_apt_dep_data_day_raw %>%
+  mutate(TO_DATE = max(TO_DATE)) %>%
+  spread(., key = FLAG_DAY, value = FLIGHT) %>%
+  arrange(AO_GRP_NAME, R_RANK) %>%
+  mutate(
+    DY_RANK_DIF_PREV_WEEK = case_when(
+      is.na(RANK_PREV_WEEK) ~ RANK,
+      .default = RANK_PREV_WEEK - RANK
+    ),
+    DY_FLT_DIF_PREV_WEEK_PERC =   case_when(
+      DAY_PREV_WEEK == 0 | is.na(DAY_PREV_WEEK) ~ NA,
+      .default = CURRENT_DAY / DAY_PREV_WEEK - 1
+    ),
+    DY_FLT_DIF_PREV_YEAR_PERC = case_when(
+      DAY_PREV_YEAR == 0 | is.na(DAY_PREV_YEAR) ~ NA,
+      .default = CURRENT_DAY / DAY_PREV_YEAR - 1
+    ),
+    AO_GRP_RANK = paste0(tolower(AO_GRP_NAME), R_RANK),
+    AO_GRP_TFC_APT_DEP_DIF = CURRENT_DAY - DAY_PREV_WEEK
+  )
+
+ao_apt_dep_data_day <- ao_apt_dep_data_day_int %>%
+  rename(
+    DY_APT_DEP_NAME = ADEP_NAME,
+    DY_TO_DATE = TO_DATE,
+    DY_FLT = CURRENT_DAY
+  ) %>%
+  select(
+    AO_GRP_RANK,
+    DY_RANK_DIF_PREV_WEEK,
+    DY_APT_DEP_NAME,
+    DY_TO_DATE,
+    DY_FLT,
+    DY_FLT_DIF_PREV_WEEK_PERC,
+    DY_FLT_DIF_PREV_YEAR_PERC
+  )
+
+#### week ----
+ao_apt_dep_data_wk_raw <- read_xlsx(
+  path  = fs::path_abs(
+    str_glue(base_file),
+    start = base_dir),
+  sheet = "ao_apt_dep_week",
+  range = cell_limits(c(1, 1), c(NA, NA))) %>%
+  mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+ao_apt_dep_data_wk <- ao_apt_dep_data_wk_raw %>%
+  mutate(FLIGHT = FLIGHT / 7) %>%
+  spread(., key = FLAG_ROLLING_WEEK, value = FLIGHT) %>%
+  arrange(AO_GRP_NAME, R_RANK) %>%
+  mutate(
+    WK_RANK_DIF_PREV_WEEK = case_when(
+      is.na(RANK_PREV_WEEK) ~ RANK,
+      .default = RANK_PREV_WEEK - RANK
+    ),
+    WK_FLT_DIF_PREV_WEEK_PERC =   case_when(
+      PREV_ROLLING_WEEK == 0 | is.na(PREV_ROLLING_WEEK) ~ NA,
+      .default = CURRENT_ROLLING_WEEK / PREV_ROLLING_WEEK - 1
+    ),
+    WK_FLT_DIF_PREV_YEAR_PERC = case_when(
+      ROLLING_WEEK_PREV_YEAR == 0 | is.na(ROLLING_WEEK_PREV_YEAR) ~ NA,
+      .default = CURRENT_ROLLING_WEEK / ROLLING_WEEK_PREV_YEAR - 1
+    ),
+    AO_GRP_RANK = paste0(tolower(AO_GRP_NAME), R_RANK)
+  ) %>%
+  rename(
+    WK_APT_DEP_NAME = ADEP_NAME,
+    WK_FROM_DATE = FROM_DATE,
+    WK_TO_DATE = TO_DATE,
+    WK_FLT_AVG = CURRENT_ROLLING_WEEK
+  ) %>%
+  select(
+    AO_GRP_RANK,
+    WK_RANK_DIF_PREV_WEEK,
+    WK_APT_DEP_NAME,
+    WK_FROM_DATE,
+    WK_TO_DATE,
+    WK_FLT_AVG,
+    WK_FLT_DIF_PREV_WEEK_PERC,
+    WK_FLT_DIF_PREV_YEAR_PERC
+  )
+
+#### y2d ----
+ao_apt_dep_data_y2d_raw <- read_xlsx(
+  path  = fs::path_abs(
+    str_glue(base_file),
+    start = base_dir),
+  sheet = "ao_apt_dep_y2d",
+  range = cell_limits(c(1, 1), c(NA, NA))) %>%
+  mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+ao_apt_dep_data_y2d <- ao_apt_dep_data_y2d_raw %>%
+  mutate(
+    FROM_DATE = max(FROM_DATE),
+    TO_DATE = max(TO_DATE),
+    PERIOD =   case_when(
+      YEAR == max(YEAR) ~ 'CURRENT_YEAR',
+      YEAR == max(YEAR) - 1 ~ 'PREV_YEAR',
+      .default = paste0('PERIOD_', YEAR)
+    )
+  ) %>%
+  select(-FLIGHT, -YEAR, -NO_DAYS) %>%
+  spread(., key = PERIOD, value = AVG_FLIGHT) %>%
+  arrange(AO_GRP_NAME, R_RANK) |>
+  mutate(
+    Y2D_RANK_DIF_PREV_YEAR = case_when(
+      is.na(RANK_PREV_YEAR) ~ RANK,
+      .default = RANK_PREV_YEAR - RANK
+    ),
+    Y2D_FLT_DIF_PREV_YEAR_PERC =   case_when(
+      PREV_YEAR == 0 | is.na(PREV_YEAR) ~ NA,
+      .default = CURRENT_YEAR / PREV_YEAR - 1
+    ),
+    Y2D_FLT_DIF_2019_PERC  = case_when(
+      PERIOD_2019 == 0 | is.na(PERIOD_2019) ~ NA,
+      .default = CURRENT_YEAR / PERIOD_2019 - 1
+    ),
+    AO_GRP_RANK = paste0(tolower(AO_GRP_NAME), R_RANK)
+  ) %>%
+  rename(
+    Y2D_APT_DEP_NAME = ADEP_NAME,
+    Y2D_TO_DATE = TO_DATE,
+    Y2D_FLT_AVG = CURRENT_YEAR
+  ) %>%
+  select(
+    AO_GRP_RANK,
+    Y2D_RANK_DIF_PREV_YEAR,
+    Y2D_APT_DEP_NAME,
+    Y2D_TO_DATE,
+    Y2D_FLT_AVG,
+    Y2D_FLT_DIF_PREV_YEAR_PERC,
+    Y2D_FLT_DIF_2019_PERC
+  )
+
+#### main card ----
+ao_apt_dep_main_traffic <- ao_apt_dep_data_day_int %>%
+  mutate(
+    MAIN_TFC_APT_DEP_NAME = if_else(
+      R_RANK <= 4,
+      ADEP_NAME,
+      NA
+    ),
+    MAIN_TFC_APT_DEP_FLT = if_else(
+      R_RANK <= 4,
+      CURRENT_DAY,
+      NA
+    ),
+    ############ we need to add the iso code so the flag can be shown
+    AO_GRP_RANK = paste0(tolower(AO_GRP_NAME), R_RANK)
+  ) %>%
+  select(AO_GRP_RANK, MAIN_TFC_APT_DEP_NAME, MAIN_TFC_APT_DEP_FLT)
+
+ao_apt_dep_main_traffic_dif <- ao_apt_dep_data_day_int %>%
+  arrange(AO_GRP_NAME, desc(abs(AO_GRP_TFC_APT_DEP_DIF)), R_RANK) %>%
+  group_by(AO_GRP_NAME) %>%
+  mutate(RANK_DIF_APT_DEP_TFC = row_number()) %>%
+  ungroup() %>%
+  arrange(AO_GRP_NAME, R_RANK) %>%
+  mutate(
+    MAIN_TFC_DIF_APT_DEP_NAME = if_else(
+      RANK_DIF_APT_DEP_TFC <= 4,
+      ADEP_NAME,
+      NA
+    ),
+    MAIN_TFC_DIF_APT_DEP_FLT_DIF = if_else(
+      RANK_DIF_APT_DEP_TFC <= 4,
+      AO_GRP_TFC_APT_DEP_DIF,
+      NA
+    )
+  ) %>%
+  arrange(AO_GRP_NAME, desc(MAIN_TFC_DIF_APT_DEP_FLT_DIF)) %>%
+  group_by(AO_GRP_NAME) %>%
+  mutate(
+    RANK_MAIN_DIF = row_number(),
+    AO_GRP_RANK = paste0(tolower(AO_GRP_NAME), RANK_MAIN_DIF)
+  ) %>%
+  ungroup() %>%
+  select(AO_GRP_RANK, MAIN_TFC_DIF_APT_DEP_NAME, MAIN_TFC_DIF_APT_DEP_FLT_DIF)
+
+#### join tables ----
+# create list of ao_grp/rankings for left join
+ao_grp_icao_ranking <- list()
+i = 0
+for (i in 1:10) {
+  i = i + 1
+  ao_grp_icao_ranking <- ao_grp_icao_ranking %>%
+    bind_rows(ao_grp_icao, .)
+}
+
+ao_grp_icao_ranking <- ao_grp_icao_ranking %>%
+  arrange(AO_GRP_NAME) %>%
+  group_by(AO_GRP_NAME) %>%
+  mutate(
+    RANK = row_number(),
+    AO_GRP_RANK = paste0(tolower(AO_GRP_NAME), RANK)
+  )
+
+# join and reorder tables
+ao_apt_dep_data <- ao_grp_icao_ranking %>%
+  left_join(ao_apt_dep_main_traffic, by = "AO_GRP_RANK") %>%
+  left_join(ao_apt_dep_main_traffic_dif, by = "AO_GRP_RANK") %>%
+  left_join(ao_apt_dep_data_day, by = "AO_GRP_RANK") %>%
+  left_join(ao_apt_dep_data_wk, by = "AO_GRP_RANK") %>%
+  left_join(ao_apt_dep_data_y2d, by = "AO_GRP_RANK") %>%
+  ungroup() %>%
+  select(-AO_GRP_RANK) %>%
+  arrange (AO_GRP_CODE, RANK)
+
+# covert to json and save in app data folder and archive
+ao_apt_dep_data_j <- ao_apt_dep_data %>% toJSON(., pretty = TRUE)
+write(ao_apt_dep_data_j, here(data_folder,"ao_apt_dep_ranking_traffic.json"))
+write(ao_apt_dep_data_j, paste0(archive_dir, today, "_ao_apt_dep_ranking_traffic.json"))
+write(ao_apt_dep_data_j, paste0(archive_dir, "ao_apt_dep_ranking_traffic.json"))
