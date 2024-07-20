@@ -669,7 +669,7 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
     #check last month number of flights
     check_flights <- st_co2_data %>% ungroup() |>
       filter (YEAR == st_co2_last_year) %>% filter(MONTH == st_co2_last_month_num) %>%
-      summarise (TTF = sum(MM_DEP, na.rm=TRUE)) %>%
+      summarise (TTF = sum(MM_DEP, na.rm=TRUE)*10^6) %>%
       select(TTF) %>% pull()
 
     if (check_flights < 1000) {
