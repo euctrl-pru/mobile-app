@@ -34,6 +34,7 @@ usr <- Sys.getenv("PRU_DEV_USR")
 pwd <- Sys.getenv("PRU_DEV_PWD")
 dbn <- Sys.getenv("PRU_DEV_DBNAME")
 
+
 # Dimension tables ----
 ao_grp_icao <-  read_xlsx(
   path  = fs::path_abs(
@@ -49,6 +50,64 @@ ao_grp_icao <-  read_xlsx(
 #    AO landing page -----
 #
 # ____________________________________________________________________________________________
+
+#### Billing data ----
+## we do this first to avoid 'R fatal error'
+billed_ao_raw <- get_ao_billing_data()
+
+## process billing data
+ao_billed_clean <- billed_ao_raw %>%
+  janitor::clean_names() %>%
+  as_tibble() |>
+  right_join(ao_grp_icao, by = c("ao_grp_last_name" = "AO_GRP_NAME")) |>
+  mutate(billing_period_start_date = as.Date(billing_period_start_date, format = "%d-%m-%Y")) |>
+  rename(AO_GRP_NAME = ao_grp_last_name)
+
+last_billing_date <- max(ao_billed_clean$billing_period_start_date)
+last_billing_year <- max(ao_billed_clean$year)
+last_billing_month <- max(ao_billed_clean$month)
+
+ao_billing <- ao_billed_clean %>%
+  group_by(AO_GRP_CODE, AO_GRP_NAME, year, month, billing_period_start_date) %>%
+  summarise(total_billing = sum(route_charges)) %>%
+  ungroup
+
+ao_billed_for_json <- ao_billing %>%
+  arrange(AO_GRP_CODE, year, billing_period_start_date) %>%
+  mutate(
+    BILLING_DATE = (billing_period_start_date + days(1) + months(1)) + days(-1),
+    Year = year,
+    MONTH_TEXT = format(billing_period_start_date + days(1),'%B'),
+    MM_BILLED_PY = lag(total_billing, last_billing_month),
+    MM_BILLED_2019 = lag(total_billing, 2* last_billing_month),  # we only load 2019, current year and current year-1
+    MM_BILLED_DIF_PREV_YEAR = total_billing / MM_BILLED_PY - 1,
+    MM_BILLED_DIF_2019 = total_billing / MM_BILLED_2019 - 1,
+    MM_BILLED = round(total_billing / 1000000, 1)
+  ) %>%
+  group_by(AO_GRP_CODE, AO_GRP_NAME, Year) %>%
+  mutate(
+    total_billing_y2d = cumsum(total_billing)
+  ) %>%
+  ungroup() %>%
+  mutate(
+    Y2D_BILLED_PY = lag(total_billing_y2d, last_billing_month),
+    Y2D_BILLED_2019 = lag(total_billing_y2d, 2 * last_billing_month), # we only load 2019, current year and current year-1
+    Y2D_BILLED_DIF_PREV_YEAR = total_billing_y2d / Y2D_BILLED_PY -1,
+    Y2D_BILLED_DIF_2019 = total_billing_y2d / Y2D_BILLED_2019 -1,
+    Y2D_BILLED = round(total_billing_y2d / 1000000, 1)
+  ) %>%
+  filter(billing_period_start_date == last_billing_date) %>%
+  select(AO_GRP_CODE,
+         AO_GRP_NAME,
+         BILLING_DATE,
+         MONTH_TEXT,
+         MM_BILLED,
+         MM_BILLED_DIF_PREV_YEAR,
+         MM_BILLED_DIF_2019,
+         Y2D_BILLED,
+         Y2D_BILLED_DIF_PREV_YEAR,
+         Y2D_BILLED_DIF_2019
+  )
 
 #### Traffic data ----
 ao_traffic_delay_data <-  read_xlsx(
@@ -97,44 +156,60 @@ ao_delay_for_json <- ao_traffic_delay_last_day %>%
     AO_GRP_NAME,
     AO_GRP_CODE,
     FLIGHT_DATE,
-    DAY_DLY,
-    DAY_DLY_DIF_PREV_YEAR_PERC,
-    DAY_DLY_DIF_2019_PERC,
-    DAY_DLY_FLT,
-    DAY_DLY_FLT_DIF_PREV_YEAR_PERC,
-    DAY_DLY_FLT_DIF_2019_PERC,
 
-    RWK_AVG_DLY,
-    RWK_DLY_DIF_PREV_YEAR_PERC,
-    RWK_DLY_DIF_2019_PERC,
-    RWK_DLY_FLT,
-    RWK_DLY_FLT_DIF_PREV_YEAR_PERC,
-    RWK_DLY_FLT_DIF_2019_PERC,
-
-    Y2D_AVG_DLY_YEAR,
-    Y2D_DLY_DIF_PREV_YEAR_PERC,
-    Y2D_DLY_DIF_2019_PERC,
-    Y2D_DLY_FLT_YEAR,
-    Y2D_DLY_FLT_DIF_PREV_YEAR_PERC,
-    Y2D_DLY_FLT_DIF_2019_PERC
-  ) %>%
-  rename(
+    # delay
     DY_DLY = DAY_DLY,
     DY_DLY_DIF_PREV_YEAR_PERC = DAY_DLY_DIF_PREV_YEAR_PERC,
     DY_DLY_DIF_2019_PERC = DAY_DLY_DIF_2019_PERC,
-    DY_DLY_FLT = DAY_DLY_FLT,
-    DY_DLY_FLT_DIF_PREV_YEAR_PERC = DAY_DLY_FLT_DIF_PREV_YEAR_PERC,
-    DY_DLY_FLT_DIF_2019_PERC = DAY_DLY_FLT_DIF_2019_PERC,
 
     WK_DLY_AVG_ROLLING = RWK_AVG_DLY,
     WK_DLY_DIF_PREV_YEAR_PERC = RWK_DLY_DIF_PREV_YEAR_PERC,
     WK_DLY_DIF_2019_PERC = RWK_DLY_DIF_2019_PERC,
+
+    Y2D_DLY_AVG = Y2D_AVG_DLY_YEAR,
+    Y2D_DLY_DIF_PREV_YEAR_PERC,
+    Y2D_DLY_DIF_2019_PERC,
+
+    #delay per flight
+    DY_DLY_FLT = DAY_DLY_FLT,
+    DY_DLY_FLT_DIF_PREV_YEAR_PERC = DAY_DLY_FLT_DIF_PREV_YEAR_PERC,
+    DY_DLY_FLT_DIF_2019_PERC = DAY_DLY_FLT_DIF_2019_PERC,
+
     WK_DLY_FLT = RWK_DLY_FLT,
     WK_DLY_FLT_DIF_PREV_YEAR_PERC = RWK_DLY_FLT_DIF_PREV_YEAR_PERC,
     WK_DLY_FLT_DIF_2019_PERC = RWK_DLY_FLT_DIF_2019_PERC,
 
-    Y2D_DLY_AVG = Y2D_AVG_DLY_YEAR
-  )
+    Y2D_DLY_FLT_YEAR,
+    Y2D_DLY_FLT_DIF_PREV_YEAR_PERC,
+    Y2D_DLY_FLT_DIF_2019_PERC,
+
+    #% of delayed flights
+    DY_DELAYED_TFC_PERC = DAY_DELAYED_TFC_PERC,
+    DY_DELAYED_TFC_PERC_DIF_PREV_YEAR = DAY_DELAYED_TFC_PERC_DIF_PREV_YEAR,
+    DY_DELAYED_TFC_PERC_DIF_2019 = DAY_DELAYED_TFC_PERC_DIF_2019,
+
+    WK_DELAYED_TFC_PERC = RWK_DELAYED_TFC_PERC,
+    WK_DELAYED_TFC_PERC_DIF_PREV_YEAR = RWK_DELAYED_TFC_PERC_DIF_PREV_YEAR,
+    WK_DELAYED_TFC_PERC_DIF_2019 = RWK_DELAYED_TFC_PERC_DIF_2019,
+
+    Y2D_DELAYED_TFC_PERC,
+    Y2D_DELAYED_TFC_PERC_DIF_PREV_YEAR,
+    Y2D_DELAYED_TFC_PERC_DIF_2019,
+
+    #% of delayed flights >15'
+    DY_DELAYED_TFC_15_PERC = DAY_DELAYED_TFC_15_PERC,
+    DY_DELAYED_TFC_15_PERC_DIF_PREV_YEAR = DAY_DELAYED_TFC_15_PERC_DIF_PREV_YEAR,
+    DY_DELAYED_TFC_15_PERC_DIF_2019 = DAY_DELAYED_TFC_15_PERC_DIF_2019,
+
+    WK_DELAYED_TFC_15_PERC = RWK_DELAYED_TFC_15_PERC,
+    WK_DELAYED_TFC_15_PERC_DIF_PREV_YEAR = RWK_DELAYED_TFC_15_PERC_DIF_PREV_YEAR,
+    WK_DELAYED_TFC_15_PERC_DIF_2019 = RWK_DELAYED_TFC_15_PERC_DIF_2019,
+
+    Y2D_DELAYED_TFC_15_PERC,
+    Y2D_DELAYED_TFC_15_PERC_DIF_PREV_YEAR,
+    Y2D_DELAYED_TFC_15_PERC_DIF_2019
+    )
+
 
 #### Punctuality data ----
 # it won't be published initially, but we prepare the data
@@ -292,7 +367,7 @@ ao_punct_y2d <- ao_punct_raw %>%
          Y2D_DEP_PUN_DIF_2019
   )
 
-ao_punct_for_json <- merge(ao_punct_d_w, ao_punct_y2d, by="AO_GRP_NAME")
+ao_punct_for_json <- merge(ao_punct_d_w, ao_punct_y2d, by= c("AO_GRP_NAME", "AO_GRP_CODE"))
 
 #### CO2 data ----
 # it won't be published initially, but we prepare the data
@@ -424,6 +499,8 @@ ao_co2_raw <- export_query(query) %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
 ao_co2_data <- ao_co2_raw %>%
+  select(-AO_GRP_NAME) |>
+  right_join(ao_grp_icao, by = "AO_GRP_CODE") |>
   select(AO_GRP_NAME,
          AO_GRP_CODE,
          FLIGHT_MONTH,
@@ -470,9 +547,9 @@ ao_co2_for_json <- ao_co2_data %>%
   arrange(AO_GRP_NAME, FLIGHT_MONTH) %>%
   mutate(
     MONTH_TEXT = format(FLIGHT_MONTH,'%B'),
-    MM_CO2_2019 = lag(MM_CO2, (as.numeric(st_co2_last_year) - 2019) * 12),
-    MM_DEP_2019 = lag(MM_DEP, (as.numeric(st_co2_last_year) - 2019) * 12),
-    MM_CO2_DEP_2019 = lag(MM_CO2_DEP, (as.numeric(st_co2_last_year) - 2019) * 12)
+    MM_CO2_2019 = lag(MM_CO2, (as.numeric(ao_co2_last_year) - 2019) * 12),
+    MM_DEP_2019 = lag(MM_DEP, (as.numeric(ao_co2_last_year) - 2019) * 12),
+    MM_CO2_DEP_2019 = lag(MM_CO2_DEP, (as.numeric(ao_co2_last_year) - 2019) * 12)
   ) %>%
   mutate(
     MM_CO2_DIF_PREV_YEAR = MM_CO2 / MM_CO2_PY - 1,
@@ -493,9 +570,9 @@ ao_co2_for_json <- ao_co2_data %>%
     Y2D_CO2_PY = lag(Y2D_CO2, 12),
     Y2D_DEP_PY = lag(Y2D_DEP, 12),
     Y2D_CO2_DEP_PY = lag(Y2D_CO2_DEP, 12),
-    Y2D_CO2_2019 = lag(Y2D_CO2, (as.numeric(st_co2_last_year) - 2019) * 12),
-    Y2D_DEP_2019 = lag(Y2D_DEP, (as.numeric(st_co2_last_year) - 2019) * 12),
-    Y2D_CO2_DEP_2019 = lag(Y2D_CO2_DEP, (as.numeric(st_co2_last_year) - 2019) * 12)
+    Y2D_CO2_2019 = lag(Y2D_CO2, (as.numeric(ao_co2_last_year) - 2019) * 12),
+    Y2D_DEP_2019 = lag(Y2D_DEP, (as.numeric(ao_co2_last_year) - 2019) * 12),
+    Y2D_CO2_DEP_2019 = lag(Y2D_CO2_DEP, (as.numeric(ao_co2_last_year) - 2019) * 12)
   ) %>%
   mutate(
     Y2D_CO2_DIF_PREV_YEAR = Y2D_CO2 / Y2D_CO2_PY - 1,
@@ -524,12 +601,15 @@ ao_co2_for_json <- ao_co2_data %>%
     Y2D_CO2_DEP_DIF_2019
   ) |>
   filter(FLIGHT_MONTH == ao_co2_last_date) |>
-  right_join(ao_grp_icao, by = 'AO_GRP_CODE')
+  right_join(ao_grp_icao, by = c('AO_GRP_CODE', 'AO_GRP_NAME'))
 
 #### Join strings and save  ----
 ao_json_app_j <- ao_grp_icao %>% arrange(AO_GRP_NAME)
 ao_json_app_j$ao_traffic <- select(arrange(ao_traffic_for_json, AO_GRP_NAME), -c(AO_GRP_CODE, AO_GRP_NAME))
 ao_json_app_j$ao_delay <- select(arrange(ao_delay_for_json, AO_GRP_NAME), -c(AO_GRP_CODE, AO_GRP_NAME))
+ao_json_app_j$ao_punct <- select(arrange(ao_punct_for_json, AO_GRP_NAME), -c(AO_GRP_CODE, AO_GRP_NAME))
+ao_json_app_j$ao_billed <- select(arrange(ao_billed_for_json, AO_GRP_NAME), -c(AO_GRP_CODE, AO_GRP_NAME))
+ao_json_app_j$ao_co2 <- select(arrange(ao_co2_for_json, AO_GRP_NAME), -c(AO_GRP_CODE, AO_GRP_NAME))
 
 update_day <- floor_date(lubridate::now(), unit = "days") %>%
   as_tibble() %>%
@@ -773,9 +853,9 @@ ao_st_des_data <- ao_grp_icao_ranking %>%
 
 # covert to json and save in app data folder and archive
 ao_st_des_data_j <- ao_st_des_data %>% toJSON(., pretty = TRUE)
-write(ao_st_des_data_j, here(data_folder,"ao_st_des_ranking_traffic.json"))
-write(ao_st_des_data_j, paste0(archive_dir, today, "_ao_st_des_ranking_traffic.json"))
-write(ao_st_des_data_j, paste0(archive_dir, "ao_st_des_ranking_traffic.json"))
+write(ao_st_des_data_j, here(data_folder,"ao_st_ranking_traffic.json"))
+write(ao_st_des_data_j, paste0(archive_dir, today, "_ao_st_ranking_traffic.json"))
+write(ao_st_des_data_j, paste0(archive_dir, "ao_st_ranking_traffic.json"))
 
 ### Departure airport ----
 #### day ----
@@ -996,9 +1076,9 @@ ao_apt_dep_data <- ao_grp_icao_ranking %>%
 
 # covert to json and save in app data folder and archive
 ao_apt_dep_data_j <- ao_apt_dep_data %>% toJSON(., pretty = TRUE)
-write(ao_apt_dep_data_j, here(data_folder,"ao_apt_dep_ranking_traffic.json"))
-write(ao_apt_dep_data_j, paste0(archive_dir, today, "_ao_apt_dep_ranking_traffic.json"))
-write(ao_apt_dep_data_j, paste0(archive_dir, "ao_apt_dep_ranking_traffic.json"))
+write(ao_apt_dep_data_j, here(data_folder,"ao_apt_ranking_traffic.json"))
+write(ao_apt_dep_data_j, paste0(archive_dir, today, "_ao_apt_ranking_traffic.json"))
+write(ao_apt_dep_data_j, paste0(archive_dir, "ao_apt_ranking_traffic.json"))
 
 ### Airport pair ----
 #### day ----
@@ -1223,3 +1303,725 @@ ao_apt_pair_data_j <- ao_apt_pair_data %>% toJSON(., pretty = TRUE)
 write(ao_apt_pair_data_j, here(data_folder,"ao_apt_pair_ranking_traffic.json"))
 write(ao_apt_pair_data_j, paste0(archive_dir, today, "_ao_apt_pair_ranking_traffic.json"))
 write(ao_apt_pair_data_j, paste0(archive_dir, "ao_apt_pair_ranking_traffic.json"))
+
+
+# ____________________________________________________________________________________________
+#
+#    AO Group graphs  -----
+#
+# ____________________________________________________________________________________________
+
+## TRAFFIC ----
+### 7-day traffic avg ----
+ao_traffic_evo <- ao_traffic_delay_data  %>%
+  select(
+    AO_GRP_CODE,
+    AO_GRP_NAME,
+    FLIGHT_DATE,
+    RWK_AVG_TFC,
+    RWK_AVG_TFC_PREV_YEAR,
+    RWK_AVG_TFC_2020,
+    RWK_AVG_TFC_2019
+  )
+
+column_names <- c('AO_GRP_CODE', 'AO_GRP_NAME', 'FLIGHT_DATE', last_year, last_year-1, 2020, 2019)
+colnames(ao_traffic_evo) <- column_names
+
+### nest data
+ao_traffic_evo_long <- ao_traffic_evo %>%
+  pivot_longer(-c(AO_GRP_CODE, AO_GRP_NAME, FLIGHT_DATE), names_to = 'year', values_to = 'daio') %>%
+  group_by(AO_GRP_CODE, AO_GRP_NAME, FLIGHT_DATE) %>%
+  nest_legacy(.key = "statistics")
+
+
+ao_traffic_evo_j <- ao_traffic_evo_long %>% toJSON(., pretty = TRUE)
+write(ao_traffic_evo_j, here(data_folder,"ao_traffic_evo_chart_daily.json"))
+write(ao_traffic_evo_j, paste0(archive_dir, today, "_ao_traffic_chart_daily.json"))
+write(ao_traffic_evo_j, paste0(archive_dir, "ao_traffic_chart_daily.json"))
+
+## DELAY ----
+### 7-day % of delayed flights ----
+ao_delayed_flights_evo <- ao_traffic_delay_data  %>%
+  select(
+    AO_GRP_CODE,
+    AO_GRP_NAME,
+    FLIGHT_DATE,
+    RWK_DELAYED_TFC_PERC,
+    RWK_DELAYED_TFC_PERC_PREV_YEAR,
+    RWK_DELAYED_TFC_15_PERC,
+    RWK_DELAYED_TFC_15_PERC_PREV_YEAR
+    )
+
+column_names <- c('AO_GRP_CODE',
+                  'AO_GRP_NAME',
+                  'FLIGHT_DATE',
+                  paste0('% of delayed flights ', last_year),
+                  paste0('% of delayed flights ', last_year -1),
+                  paste0("% of delayed flights >15' ", last_year),
+                  paste0("% of delayed flights >15' ", last_year -1)
+)
+
+colnames(ao_delayed_flights_evo) <- column_names
+
+### nest data
+ao_delayed_flights_evo_long <- ao_delayed_flights_evo %>%
+  pivot_longer(-c(AO_GRP_CODE, AO_GRP_NAME, FLIGHT_DATE), names_to = 'year', values_to = 'daio') %>%
+  group_by(AO_GRP_CODE, AO_GRP_NAME, FLIGHT_DATE) %>%
+  nest_legacy(.key = "statistics")
+
+
+ao_delayed_flights_evo_j <- ao_delayed_flights_evo_long %>% toJSON(., pretty = TRUE)
+write(ao_delayed_flights_evo_j, here(data_folder,"ao_delayed_flights_evo_chart_daily.json"))
+write(ao_delayed_flights_evo_j, paste0(archive_dir, today, "_ao_delayed_flights_chart_daily.json"))
+write(ao_delayed_flights_evo_j, paste0(archive_dir, "ao_delayed_flights_chart_daily.json"))
+
+
+## PUNCTUALITY ----
+### 7-day punctuality avg ----
+ao_punct_evo <- ao_punct_raw %>%
+  filter(DAY_DATE >= as.Date(paste0("01-01-", last_year-2), format = "%d-%m-%Y")) %>%
+  arrange(AO_GRP_CODE, DAY_DATE) %>%
+  mutate(
+    DEP_PUN_WK = rollsum(DEP_PUNCTUAL_FLIGHTS, 7, fill = NA, align = "right") /
+      rollsum(DEP_SCHEDULE_FLIGHT,7, fill = NA, align = "right") * 100,
+    ARR_PUN_WK = rollsum(ARR_PUNCTUAL_FLIGHTS, 7, fill = NA, align = "right") /
+      rollsum(ARR_SCHEDULE_FLIGHT,7, fill = NA, align = "right") * 100,
+    OP_FLT_WK = 100 - rollsum(MISSING_SCHED_FLIGHTS, 7, fill = NA, align = "right") /
+      rollsum((MISSING_SCHED_FLIGHTS+DEP_FLIGHTS_NO_OVERFLIGHTS),7, fill = NA, align = "right")*100
+  ) %>%
+  filter(DAY_DATE >= as.Date(paste0("01-01-", last_year-1), format = "%d-%m-%Y")) |>
+  select(-AO_GRP_NAME) |>
+  right_join(ao_grp_icao, by ="AO_GRP_CODE") %>%
+  select(
+    AO_GRP_CODE,
+    AO_GRP_NAME,
+    DAY_DATE,
+    DEP_PUN_WK,
+    ARR_PUN_WK,
+    OP_FLT_WK
+  )
+
+column_names <- c('AO_GRP_CODE',
+                  'AO_GRP_NAME',
+                  'FLIGHT_DATE',
+                  "Departure punct.",
+                  "Arrival punct.",
+                  "Operated schedules")
+
+colnames(ao_punct_evo) <- column_names
+
+### nest data
+ao_punct_evo_long <- ao_punct_evo %>%
+  pivot_longer(-c(AO_GRP_CODE, AO_GRP_NAME, FLIGHT_DATE), names_to = 'metric', values_to = 'value') %>%
+  group_by(AO_GRP_CODE, AO_GRP_NAME, FLIGHT_DATE) %>%
+  nest_legacy(.key = "statistics")
+
+
+ao_punct_evo_j <- ao_punct_evo_long %>% toJSON(., pretty = TRUE)
+write(ao_punct_evo_j, here(data_folder,"ao_punct_evo_chart.json"))
+write(ao_punct_evo_j, paste0(archive_dir, today, "_ao_punct_evo_chart.json"))
+write(ao_punct_evo_j, paste0(archive_dir, "ao_punct_evo_chart.json"))
+
+
+#####################################
+# ## DELAY ----
+# ### Delay category ----
+# st_delay_data <-  read_xlsx(
+#   path  = fs::path_abs(
+#     str_glue(base_file),
+#     start = base_dir),
+#   sheet = "state_delay",
+#   range = cell_limits(c(1, 1), c(NA, NA))) %>%
+#   as_tibble() %>%
+#   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+#
+# st_delay_cause_data <-  read_xlsx(
+#   path  = fs::path_abs(
+#     str_glue(base_file),
+#     start = base_dir),
+#   sheet = "state_delay_cause",
+#   range = cell_limits(c(1, 1), c(NA, NA))) %>%
+#   as_tibble() %>%
+#   mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
+#   mutate(
+#     TDM_G = TDM_ARP_G + TDM_ERT_G,
+#     TDM_CS = TDM_ARP_CS + TDM_ERT_CS,
+#     TDM_IT = TDM_ARP_IT + TDM_ERT_IT,
+#     TDM_WD = TDM_ARP_WD + TDM_ERT_WD,
+#     TDM_NOCSGITWD = TDM - TDM_G - TDM_CS - TDM_IT - TDM_WD,
+#   ) %>%                             # create 7day average for y2d graph
+#   mutate(
+#     RWK_TDM_G = rollsum(TDM_G, 7, fill = NA, align = "right") / 7,
+#     RWK_TDM_CS = rollsum(TDM_CS, 7, fill = NA, align = "right") / 7,
+#     RWK_TDM_IT = rollsum(TDM_IT, 7, fill = NA, align = "right") / 7,
+#     RWK_TDM_WD = rollsum(TDM_WD, 7, fill = NA, align = "right") / 7,
+#     RWK_TDM_NOCSGITWD = rollsum(TDM_NOCSGITWD, 7, fill = NA, align = "right") / 7,
+#     RWK_TDM_PREV_YEAR = rollsum(TDM_PREV_YEAR, 7, fill = NA, align = "right") / 7
+#   ) %>%
+#   filter(YEAR >= last_year) %>%
+#   mutate(daio_zone_lc = tolower(COUNTRY_NAME)) %>%
+#   right_join(state_daio, by = "daio_zone_lc", relationship = "many-to-many") %>%
+#   filter(is.na(YEAR) == FALSE)
+#
+# #### day ----
+# st_delay_cause_day <- st_delay_cause_data %>%
+#   filter(FLIGHT_DATE == max(FLIGHT_DATE)) %>%
+#   mutate(
+#     SHARE_TDM_G = if_else(TDM == 0, 0, TDM_G / TDM),
+#     SHARE_TDM_CS = if_else(TDM == 0, 0, TDM_CS / TDM),
+#     SHARE_TDM_IT = if_else(TDM == 0, 0, TDM_IT / TDM),
+#     SHARE_TDM_WD = if_else(TDM == 0, 0, TDM_WD / TDM),
+#     SHARE_TDM_NOCSGITWD = if_else(TDM == 0, 0, TDM_NOCSGITWD / TDM)
+#   ) %>%
+#   select(iso_2letter,
+#          daio_zone,
+#          FLIGHT_DATE,
+#          TDM_G,
+#          TDM_CS,
+#          TDM_IT,
+#          TDM_WD,
+#          TDM_NOCSGITWD,
+#          TDM_PREV_YEAR,
+#          SHARE_TDM_G,
+#          SHARE_TDM_CS,
+#          SHARE_TDM_IT,
+#          SHARE_TDM_WD,
+#          SHARE_TDM_NOCSGITWD
+#   )
+#
+# column_names <- c(
+#   "iso_2letter",
+#   "daio_zone",
+#   "FLIGHT_DATE",
+#   "Aerodrome capacity",
+#   "Capacity/Staffing (ATC)",
+#   "Disruptions (ATC)",
+#   "Weather",
+#   "Other",
+#   paste0("Total delay ", last_year - 1),
+#   "share_aerodrome_capacity",
+#   "share_capacity_staffing_atc",
+#   "share_disruptions_atc",
+#   "share_weather",
+#   "share_other"
+# )
+#
+# colnames(st_delay_cause_day) <- column_names
+#
+# ### nest data
+# st_delay_value_day_long <- st_delay_cause_day %>%
+#   select(-c(share_aerodrome_capacity,
+#             share_capacity_staffing_atc,
+#             share_disruptions_atc,
+#             share_weather,
+#             share_other)
+#   ) %>%
+#   pivot_longer(-c(iso_2letter, daio_zone, FLIGHT_DATE), names_to = 'metric', values_to = 'value')
+#
+# st_delay_share_day_long <- st_delay_cause_day %>%
+#   select(-c("Aerodrome capacity",
+#             "Capacity/Staffing (ATC)",
+#             "Disruptions (ATC)",
+#             "Weather",
+#             "Other",
+#             paste0("Total delay ", last_year - 1)
+#   )
+#   )  %>%
+#   mutate(share_delay_prev_year = NA) %>%
+#   pivot_longer(-c(iso_2letter, daio_zone, FLIGHT_DATE), names_to = 'name', values_to = 'share') %>%
+#   select(name, share)
+#
+# st_delay_cause_day_long <- cbind(st_delay_value_day_long, st_delay_share_day_long) %>%
+#   select(-name) %>%
+#   group_by(iso_2letter, daio_zone, FLIGHT_DATE) %>%
+#   nest_legacy(.key = "statistics")
+#
+# # for consistency with v1 we use the word category in the name files... should have been cause
+# st_delay_cause_evo_dy_j <- st_delay_cause_day_long %>% toJSON(., pretty = TRUE)
+# write(st_delay_cause_evo_dy_j, here(data_folder,"st_delay_category_evo_chart_dy.json"))
+# write(st_delay_cause_evo_dy_j, paste0(archive_dir, today, "_st_delay_category_chart_evo_dy.json"))
+# write(st_delay_cause_evo_dy_j, paste0(archive_dir, "st_delay_category_evo_chart_dy.json"))
+#
+# #### week ----
+# st_delay_cause_wk <- st_delay_cause_data %>%
+#   filter(FLIGHT_DATE >= max(FLIGHT_DATE) + lubridate::days(-6)) %>%
+#   group_by(iso_2letter) %>%
+#   reframe(
+#     iso_2letter,
+#     daio_zone,
+#     FLIGHT_DATE,
+#     TDM_G,
+#     TDM_CS,
+#     TDM_IT,
+#     TDM_WD,
+#     TDM_NOCSGITWD,
+#     TDM_PREV_YEAR,
+#     WK_TDM_G = sum(TDM_G),
+#     WK_TDM_CS = sum(TDM_CS),
+#     WK_TDM_IT = sum(TDM_IT),
+#     WK_TDM_WD = sum(TDM_WD),
+#     WK_TDM_NOCSGITWD = sum(TDM_NOCSGITWD),
+#     WK_TDM = sum(TDM)
+#   ) %>%
+#   ungroup() %>%
+#   mutate(
+#     WK_SHARE_TDM_G = if_else(WK_TDM == 0, 0, WK_TDM_G / WK_TDM),
+#     WK_SHARE_TDM_CS = if_else(WK_TDM == 0, 0, WK_TDM_CS / WK_TDM),
+#     WK_SHARE_TDM_IT = if_else(WK_TDM == 0, 0, WK_TDM_IT / WK_TDM),
+#     WK_SHARE_TDM_WD = if_else(WK_TDM == 0, 0, WK_TDM_WD / WK_TDM),
+#     WK_SHARE_TDM_NOCSGITWD = if_else(WK_TDM == 0, 0, WK_TDM_NOCSGITWD / WK_TDM)
+#   ) %>%
+#   select(iso_2letter,
+#          daio_zone,
+#          FLIGHT_DATE,
+#          TDM_G,
+#          TDM_CS,
+#          TDM_IT,
+#          TDM_WD,
+#          TDM_NOCSGITWD,
+#          TDM_PREV_YEAR,
+#          WK_SHARE_TDM_G,
+#          WK_SHARE_TDM_CS,
+#          WK_SHARE_TDM_IT,
+#          WK_SHARE_TDM_WD,
+#          WK_SHARE_TDM_NOCSGITWD
+#   )
+#
+# colnames(st_delay_cause_wk) <- column_names
+#
+# ### nest data
+# st_delay_value_wk_long <- st_delay_cause_wk %>%
+#   select(-c(share_aerodrome_capacity,
+#             share_capacity_staffing_atc,
+#             share_disruptions_atc,
+#             share_weather,
+#             share_other)
+#   ) %>%
+#   pivot_longer(-c(iso_2letter, daio_zone, FLIGHT_DATE), names_to = 'metric', values_to = 'value')
+#
+# st_delay_share_wk_long <- st_delay_cause_wk %>%
+#   select(-c("Aerodrome capacity",
+#             "Capacity/Staffing (ATC)",
+#             "Disruptions (ATC)",
+#             "Weather",
+#             "Other",
+#             paste0("Total delay ", last_year - 1)
+#   )
+#   )  %>%
+#   mutate(share_delay_prev_year = NA) %>%
+#   pivot_longer(-c(iso_2letter, daio_zone, FLIGHT_DATE), names_to = 'name', values_to = 'share') %>%
+#   select(name, share)
+#
+# st_delay_cause_wk_long <- cbind(st_delay_value_wk_long, st_delay_share_wk_long) %>%
+#   select(-name) %>%
+#   group_by(iso_2letter, daio_zone, FLIGHT_DATE) %>%
+#   nest_legacy(.key = "statistics")
+#
+#
+# # for consistency with v1 we use the word category in the name files... should have been cause
+# st_delay_cause_evo_wk_j <- st_delay_cause_wk_long %>% toJSON(., pretty = TRUE)
+# write(st_delay_cause_evo_wk_j, here(data_folder,"st_delay_category_evo_chart_wk.json"))
+# write(st_delay_cause_evo_wk_j, paste0(archive_dir, today, "_st_delay_category_evo_chart_wk.json"))
+# write(st_delay_cause_evo_wk_j, paste0(archive_dir, "st_delay_category_evo_chart_wk.json"))
+#
+# #### y2d ----
+# st_delay_cause_y2d <- st_delay_cause_data %>%
+#   group_by(iso_2letter) %>%
+#   reframe(
+#     iso_2letter,
+#     daio_zone,
+#     FLIGHT_DATE,
+#     RWK_TDM_G,
+#     RWK_TDM_CS,
+#     RWK_TDM_IT,
+#     RWK_TDM_WD,
+#     RWK_TDM_NOCSGITWD,
+#     RWK_TDM_PREV_YEAR,
+#     Y2D_TDM_G = sum(TDM_G),
+#     Y2D_TDM_CS = sum(TDM_CS),
+#     Y2D_TDM_IT = sum(TDM_IT),
+#     Y2D_TDM_WD = sum(TDM_WD),
+#     Y2D_TDM_NOCSGITWD = sum(TDM_NOCSGITWD),
+#     Y2D_TDM = sum(TDM)
+#   ) %>%
+#   ungroup() %>%
+#   mutate(
+#     Y2D_SHARE_TDM_G = if_else(Y2D_TDM == 0, 0, Y2D_TDM_G / Y2D_TDM),
+#     Y2D_SHARE_TDM_CS = if_else(Y2D_TDM == 0, 0, Y2D_TDM_CS / Y2D_TDM),
+#     Y2D_SHARE_TDM_IT = if_else(Y2D_TDM == 0, 0, Y2D_TDM_IT / Y2D_TDM),
+#     Y2D_SHARE_TDM_WD = if_else(Y2D_TDM == 0, 0, Y2D_TDM_WD / Y2D_TDM),
+#     Y2D_SHARE_TDM_NOCSGITWD = if_else(Y2D_TDM == 0, 0, Y2D_TDM_NOCSGITWD / Y2D_TDM)
+#   ) %>%
+#   select(iso_2letter,
+#          daio_zone,
+#          FLIGHT_DATE,
+#          RWK_TDM_G,
+#          RWK_TDM_CS,
+#          RWK_TDM_IT,
+#          RWK_TDM_WD,
+#          RWK_TDM_NOCSGITWD,
+#          RWK_TDM_PREV_YEAR,
+#          Y2D_SHARE_TDM_G,
+#          Y2D_SHARE_TDM_CS,
+#          Y2D_SHARE_TDM_IT,
+#          Y2D_SHARE_TDM_WD,
+#          Y2D_SHARE_TDM_NOCSGITWD
+#   )
+#
+# colnames(st_delay_cause_y2d) <- column_names
+#
+# ### nest data
+# st_delay_value_y2d_long <- st_delay_cause_y2d %>%
+#   select(-c(share_aerodrome_capacity,
+#             share_capacity_staffing_atc,
+#             share_disruptions_atc,
+#             share_weather,
+#             share_other)
+#   ) %>%
+#   pivot_longer(-c(iso_2letter, daio_zone, FLIGHT_DATE), names_to = 'metric', values_to = 'value')
+#
+# st_delay_share_y2d_long <- st_delay_cause_y2d %>%
+#   select(-c("Aerodrome capacity",
+#             "Capacity/Staffing (ATC)",
+#             "Disruptions (ATC)",
+#             "Weather",
+#             "Other",
+#             paste0("Total delay ", last_year - 1)
+#   )
+#   )  %>%
+#   mutate(share_delay_prev_year = NA) %>%
+#   pivot_longer(-c(iso_2letter, daio_zone, FLIGHT_DATE), names_to = 'name', values_to = 'share') %>%
+#   select(name, share)
+#
+# st_delay_cause_y2d_long <- cbind(st_delay_value_y2d_long, st_delay_share_y2d_long) %>%
+#   select(-name) %>%
+#   group_by(iso_2letter, daio_zone, FLIGHT_DATE) %>%
+#   nest_legacy(.key = "statistics")
+#
+#
+# # for consistency with v1 we use the word category in the name files... should have been cause
+# st_delay_cause_evo_y2d_j <- st_delay_cause_y2d_long %>% toJSON(., pretty = TRUE)
+# write(st_delay_cause_evo_y2d_j, here(data_folder,"st_delay_category_evo_chart_y2d.json"))
+# write(st_delay_cause_evo_y2d_j, paste0(archive_dir, today, "_st_delay_category_evo_chart_y2d.json"))
+# write(st_delay_cause_evo_y2d_j, paste0(archive_dir, "st_delay_category_evo_chart_y2d.json"))
+#
+# ### Delay type ----
+# st_delay_type_data <- st_delay_data %>%
+#   mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
+#   group_by(COUNTRY_NAME) %>%
+#   arrange(COUNTRY_NAME, FLIGHT_DATE) %>%
+#   mutate(
+#     DY_DLY_FLT = if_else(DAY_TFC == 0, 0, DAY_DLY/DAY_TFC),
+#     DY_DLY_FLT_ERT = if_else(DAY_TFC == 0, 0, DAY_ERT_DLY/DAY_TFC),
+#     DY_DLY_FLT_APT = if_else(DAY_TFC == 0, 0, DAY_ARP_DLY/DAY_TFC),
+#     DY_DLY_FLT_PREV_YEAR = if_else(DAY_TFC_PREV_YEAR == 0, 0, DAY_DLY_PREV_YEAR/DAY_TFC_PREV_YEAR),
+#
+#     DY_SHARE_DLY_FLT_ERT = if_else(DY_DLY_FLT == 0, 0, DY_DLY_FLT_ERT/DY_DLY_FLT),
+#     DY_SHARE_DLY_FLT_APT = if_else(DY_DLY_FLT == 0, 0, DY_DLY_FLT_APT/DY_DLY_FLT),
+#
+#     RWK_DLY_FLT = if_else(AVG_TFC_ROLLING_WEEK == 0, 0, AVG_DLY_ROLLING_WEEK/AVG_TFC_ROLLING_WEEK),
+#     RWK_DLY_FLT_ERT = if_else(AVG_TFC_ROLLING_WEEK == 0, 0, AVG_ERT_DLY_ROLLING_WEEK/AVG_TFC_ROLLING_WEEK),
+#     RWK_DLY_FLT_APT = if_else(AVG_TFC_ROLLING_WEEK == 0, 0, AVG_ARP_DLY_ROLLING_WEEK/AVG_TFC_ROLLING_WEEK),
+#     RWK_DLY_FLT_PREV_YEAR = if_else(AVG_TFC_ROLLING_WEEK_PREV_YEAR == 0, 0, AVG_DLY_ROLLING_PREV_WEEK / AVG_TFC_ROLLING_WEEK_PREV_YEAR),
+#
+#     Y2D_DLY_FLT = if_else(Y2D_TFC_YEAR == 0, 0, Y2D_DLY_YEAR/Y2D_TFC_YEAR),
+#     Y2D_DLY_FLT_ERT = if_else(Y2D_TFC_YEAR == 0, 0, Y2D_ERT_DLY_YEAR/Y2D_TFC_YEAR),
+#     Y2D_DLY_FLT_APT = if_else(Y2D_TFC_YEAR == 0, 0, Y2D_ARP_DLY_YEAR/Y2D_TFC_YEAR),
+#     Y2D_DLY_FLT_PREV_YEAR = if_else(Y2D_TFC_PREV_YEAR == 0, 0, Y2D_DLY_PREV_YEAR / Y2D_TFC_PREV_YEAR)
+#   ) %>%
+#   ungroup() %>%
+#   filter(YEAR >= last_year) %>%
+#   mutate(daio_zone_lc = tolower(COUNTRY_NAME)) %>%
+#   right_join(state_daio, by = "daio_zone_lc", relationship = "many-to-many") %>%
+#   filter(is.na(YEAR) == FALSE) %>%
+#   arrange(iso_2letter, FLIGHT_DATE)
+#
+# #### day ----
+# st_delay_type_day <- st_delay_type_data %>%
+#   filter(FLIGHT_DATE == last_day) %>%
+#   select(iso_2letter,
+#          daio_zone,
+#          FLIGHT_DATE,
+#          DY_DLY_FLT_ERT,
+#          DY_DLY_FLT_APT,
+#          DY_DLY_FLT_PREV_YEAR,
+#          DY_SHARE_DLY_FLT_ERT,
+#          DY_SHARE_DLY_FLT_APT
+#   )
+#
+# column_names <- c(
+#   "iso_2letter",
+#   "daio_zone",
+#   "FLIGHT_DATE",
+#   "En-route ATFM delay/flight",
+#   "Airport ATFM delay/flight",
+#   paste0("Total ATFM delay/flight ", last_year - 1),
+#   "share_en_route",
+#   "share_airport"
+# )
+#
+# colnames(st_delay_type_day) <- column_names
+#
+# ### nest data
+# st_delay_type_value_day_long <- st_delay_type_day %>%
+#   select(-c(share_en_route,
+#             share_airport)
+#   ) %>%
+#   pivot_longer(-c(iso_2letter, daio_zone, FLIGHT_DATE), names_to = 'metric', values_to = 'value')
+#
+# st_delay_type_share_day_long <- st_delay_type_day %>%
+#   select(-c("En-route ATFM delay/flight",
+#             "Airport ATFM delay/flight",
+#             paste0("Total ATFM delay/flight ", last_year - 1)
+#   )
+#   )  %>%
+#   mutate(share_delay_prev_year = NA) %>%
+#   pivot_longer(-c(iso_2letter, daio_zone, FLIGHT_DATE), names_to = 'name', values_to = 'share') %>%
+#   select(name, share)
+#
+# st_delay_type_day_long <- cbind(st_delay_type_value_day_long, st_delay_type_share_day_long) %>%
+#   select(-name) %>%
+#   group_by(iso_2letter, daio_zone, FLIGHT_DATE) %>%
+#   nest_legacy(.key = "statistics")
+#
+# st_delay_type_evo_dy_j <- st_delay_type_day_long %>% toJSON(., pretty = TRUE)
+# write(st_delay_type_evo_dy_j, here(data_folder,"st_delay_flt_type_evo_chart_dy.json"))
+# write(st_delay_type_evo_dy_j, paste0(archive_dir, today, "_st_delay_flt_type_chart_evo_dy.json"))
+# write(st_delay_type_evo_dy_j, paste0(archive_dir, "st_delay_flt_type_evo_chart_dy.json"))
+#
+# #### week ----
+# st_delay_type_wk <- st_delay_type_data %>%
+#   filter(FLIGHT_DATE >= last_day + lubridate::days(-6) & FLIGHT_DATE <= last_day) %>%
+#   select(iso_2letter,
+#          daio_zone,
+#          FLIGHT_DATE,
+#          DY_DLY_FLT_ERT,
+#          DY_DLY_FLT_APT,
+#          DY_DLY_FLT_PREV_YEAR,
+#
+#          DAY_TFC,
+#          DAY_DLY,
+#          DAY_ERT_DLY,
+#          DAY_ARP_DLY
+#   ) %>%
+#   group_by(iso_2letter) %>%
+#   reframe(
+#     iso_2letter,
+#     daio_zone,
+#     FLIGHT_DATE,
+#     DY_DLY_FLT_ERT,
+#     DY_DLY_FLT_APT,
+#     DY_DLY_FLT_PREV_YEAR,
+#
+#     WK_TFC = sum(DAY_TFC),
+#     WK_DLY = sum(DAY_DLY),
+#     WK_DLY_ERT = sum(DAY_ERT_DLY),
+#     WK_DLY_APT = sum(DAY_ARP_DLY),
+#
+#     WK_DLY_FLT = if_else(WK_TFC == 0, 0, WK_DLY/WK_TFC),
+#     WK_DLY_FLT_ERT = if_else(WK_TFC == 0, 0, WK_DLY_ERT/WK_TFC),
+#     WK_DLY_FLT_APT = if_else(WK_TFC == 0, 0, WK_DLY_APT/WK_TFC),
+#
+#     WK_SHARE_DLY_FLT_ERT = if_else(WK_DLY_FLT == 0, 0, WK_DLY_FLT_ERT/WK_DLY_FLT),
+#     WK_SHARE_DLY_FLT_APT = if_else(WK_DLY_FLT == 0, 0, WK_DLY_FLT_APT/WK_DLY_FLT)
+#   ) %>%
+#   select(
+#     iso_2letter,
+#     daio_zone,
+#     FLIGHT_DATE,
+#     DY_DLY_FLT_ERT,
+#     DY_DLY_FLT_APT,
+#     DY_DLY_FLT_PREV_YEAR,
+#
+#     WK_SHARE_DLY_FLT_ERT,
+#     WK_SHARE_DLY_FLT_APT
+#   )
+#
+# colnames(st_delay_type_wk) <- column_names
+#
+# ### nest data
+# st_delay_type_value_wk_long <- st_delay_type_wk %>%
+#   select(-c(share_en_route,
+#             share_airport)
+#   ) %>%
+#   pivot_longer(-c(iso_2letter, daio_zone, FLIGHT_DATE), names_to = 'metric', values_to = 'value')
+#
+# st_delay_type_share_wk_long <- st_delay_type_wk %>%
+#   select(-c("En-route ATFM delay/flight",
+#             "Airport ATFM delay/flight",
+#             paste0("Total ATFM delay/flight ", last_year - 1)
+#   )
+#   )  %>%
+#   mutate(share_delay_prev_year = NA) %>%
+#   pivot_longer(-c(iso_2letter, daio_zone, FLIGHT_DATE), names_to = 'name', values_to = 'share') %>%
+#   select(name, share)
+#
+# st_delay_type_wk_long <- cbind(st_delay_type_value_wk_long, st_delay_type_share_wk_long) %>%
+#   select(-name) %>%
+#   group_by(iso_2letter, daio_zone, FLIGHT_DATE) %>%
+#   nest_legacy(.key = "statistics")
+#
+# st_delay_type_evo_wk_j <- st_delay_type_wk_long %>% toJSON(., pretty = TRUE)
+# write(st_delay_type_evo_wk_j, here(data_folder,"st_delay_flt_type_evo_chart_wk.json"))
+# write(st_delay_type_evo_wk_j, paste0(archive_dir, today, "_st_delay_flt_type_chart_evo_wk.json"))
+# write(st_delay_type_evo_wk_j, paste0(archive_dir, "st_delay_flt_type_evo_chart_wk.json"))
+#
+# #### y2d ----
+# st_delay_type_y2d <- st_delay_type_data %>%
+#   filter(FLIGHT_DATE <= last_day) %>%
+#   group_by(iso_2letter) %>%
+#   reframe(
+#     iso_2letter,
+#     daio_zone,
+#     FLIGHT_DATE,
+#     RWK_DLY_FLT_ERT,
+#     RWK_DLY_FLT_APT,
+#     RWK_DLY_FLT_PREV_YEAR,
+#     Y2D_TFC = sum(DAY_TFC),
+#     Y2D_DLY_FLT = if_else(Y2D_TFC == 0, 0, sum(DAY_DLY)/Y2D_TFC),
+#     Y2D_DLY_FLT_ERT = if_else(Y2D_TFC == 0, 0, sum(DAY_ERT_DLY)/Y2D_TFC),
+#     Y2D_DLY_FLT_APT = if_else(Y2D_TFC == 0, 0, sum(DAY_ARP_DLY)/Y2D_TFC),
+#   ) %>%
+#   mutate(
+#     Y2D_SHARE_DLY_FLT_ERT = if_else(Y2D_DLY_FLT == 0, 0, Y2D_DLY_FLT_ERT / Y2D_DLY_FLT),
+#     Y2D_SHARE_DLY_FLT_APT = if_else(Y2D_DLY_FLT == 0, 0, Y2D_DLY_FLT_APT / Y2D_DLY_FLT)
+#   ) %>%
+#   select(iso_2letter,
+#          daio_zone,
+#          FLIGHT_DATE,
+#          RWK_DLY_FLT_ERT,
+#          RWK_DLY_FLT_APT,
+#          RWK_DLY_FLT_PREV_YEAR,
+#          Y2D_SHARE_DLY_FLT_ERT,
+#          Y2D_SHARE_DLY_FLT_APT
+#   )
+#
+# colnames(st_delay_type_y2d) <- column_names
+#
+# ### nest data
+# st_delay_type_value_y2d_long <- st_delay_type_y2d %>%
+#   select(-c(share_en_route,
+#             share_airport)
+#   ) %>%
+#   pivot_longer(-c(iso_2letter, daio_zone, FLIGHT_DATE), names_to = 'metric', values_to = 'value')
+#
+# st_delay_type_share_y2d_long <- st_delay_type_y2d %>%
+#   select(-c("En-route ATFM delay/flight",
+#             "Airport ATFM delay/flight",
+#             paste0("Total ATFM delay/flight ", last_year - 1)
+#   )
+#   )  %>%
+#   mutate(share_delay_prev_year = NA) %>%
+#   pivot_longer(-c(iso_2letter, daio_zone, FLIGHT_DATE), names_to = 'name', values_to = 'share') %>%
+#   select(name, share)
+#
+# st_delay_type_y2d_long <- cbind(st_delay_type_value_y2d_long, st_delay_type_share_y2d_long) %>%
+#   select(-name) %>%
+#   group_by(iso_2letter, daio_zone, FLIGHT_DATE) %>%
+#   nest_legacy(.key = "statistics")
+#
+# st_delay_type_evo_y2d_j <- st_delay_type_y2d_long %>% toJSON(., pretty = TRUE)
+# write(st_delay_type_evo_y2d_j, here(data_folder,"st_delay_flt_type_evo_chart_y2d.json"))
+# write(st_delay_type_evo_y2d_j, paste0(archive_dir, today, "_st_delay_flt_type_chart_evo_y2d.json"))
+# write(st_delay_type_evo_y2d_j, paste0(archive_dir, "st_delay_flt_type_evo_chart_y2d.json"))
+#
+#
+#
+# ## BILLING ----
+# st_billing_evo <- st_billing %>%
+#   arrange(iso_2letter, year, month) %>%
+#   mutate(
+#     total_billing = total_billing/10^6,
+#     total_billing_py = lag(total_billing, 12),
+#     total_billing_dif_mm_perc = total_billing / total_billing_py -1
+#   ) %>%
+#   group_by(iso_2letter, corrected_cz, year) %>%
+#   mutate(
+#     total_billing_y2d = cumsum(total_billing)
+#   ) %>%
+#   ungroup() %>%
+#   mutate(
+#     total_billing_y2d_py = lag(total_billing_y2d, 12),
+#     total_billing_dif_y2d_perc = total_billing_y2d / total_billing_y2d_py -1
+#   ) %>%
+#   filter(year == last_billing_year) %>%
+#   select(
+#     iso_2letter,
+#     cz_proper,
+#     month,
+#     total_billing,
+#     total_billing_py,
+#     total_billing_dif_mm_perc,
+#     total_billing_dif_y2d_perc
+#   ) %>%
+#   mutate(
+#     month = month.name[month],
+#     min_right_axis = -0.2,
+#     max_right_axis = 1.3
+#   )
+#
+# column_names <- c(
+#   'iso_2letter',
+#   'charging_zone',
+#   "month",
+#   last_billing_year,
+#   last_billing_year - 1,
+#   paste0("Monthly variation vs ", last_billing_year - 1),
+#   paste0 ("Year-to-date variation vs ", last_billing_year - 1),
+#   "min_right_axis",
+#   "max_right_axis"
+# )
+#
+# colnames(st_billing_evo) <- column_names
+#
+# ### nest data
+# st_billing_evo_long <- st_billing_evo %>%
+#   pivot_longer(-c(iso_2letter, charging_zone, month), names_to = 'metric', values_to = 'value') %>%
+#   group_by(iso_2letter, charging_zone, month) %>%
+#   nest_legacy(.key = "statistics")
+#
+#
+# st_billing_evo_j <- st_billing_evo_long %>% toJSON(., pretty = TRUE)
+# write(st_billing_evo_j, here(data_folder,"st_billing_evo.json"))
+# write(st_billing_evo_j, paste0(archive_dir, today, "_st_billing_evo.json"))
+# write(st_billing_evo_j, paste0(archive_dir, "st_billing_evo.json"))
+#
+## CO2 ----
+ao_co2_evo <- ao_co2_data |>
+  filter(YEAR >= 2019) |>
+  group_by(AO_GRP_CODE, AO_GRP_NAME)%>%
+  arrange(AO_GRP_CODE, FLIGHT_MONTH) %>%
+  mutate(
+    DEP_IDX = MM_DEP / first(MM_DEP) * 100,
+    CO2_IDX = MM_CO2 / first(MM_CO2) * 100
+  ) %>%
+  select(
+    AO_GRP_CODE, AO_GRP_NAME,
+    FLIGHT_MONTH,
+    CO2_IDX,
+    DEP_IDX
+  )
+
+
+column_names <- c(
+  "AO_GRP_CODE",
+  "AO_GRP_NAME",
+  "month",
+  "CO2 index",
+  "Departures index"
+)
+
+colnames(ao_co2_evo) <- column_names
+
+### nest data
+ao_co2_evo_long <- ao_co2_evo %>%
+  pivot_longer(-c(AO_GRP_CODE, AO_GRP_NAME, month), names_to = 'metric', values_to = 'value') %>%
+  group_by(AO_GRP_CODE, AO_GRP_NAME, month) %>%
+  nest_legacy(.key = "statistics")
+
+ao_co2_evo_j <- ao_co2_evo_long %>% toJSON(., pretty = TRUE)
+write(ao_co2_evo_j, here(data_folder,"ao_co2_evo.json"))
+write(ao_co2_evo_j, paste0(archive_dir, "ao_co2_evo.json"))
+write(ao_co2_evo_j, paste0(archive_dir, today, "_ao_co2_evo.json"))
+
+
