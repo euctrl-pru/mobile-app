@@ -536,13 +536,15 @@ get_billing_data <- function() {
   query_bill <- "SELECT *,
                   iif(
 	            [Billing Zone Number] = '33', 'Bosnia and Herzegovina',
-	            iif ([Billing Zone Number] = '10' OR [Billing Zone Number] = '11', 'Spain' ,
             	iif ([Billing Zone Number] = '08' OR [Billing Zone Number] = '12', 'Portugal',
 	            iif ([Billing Zone Number] = '32' OR [Billing Zone Number] = '41', 'Ukraine',
 	[Billing Zone Name]
-)))) as corrected_cz
+))) as corrected_cz
     FROM V_CRCO_BILL_PER_CZ
   "
+  # iif ([Billing Zone Number] = '10' OR [Billing Zone Number] = '11', 'Spain' ,
+
+
 
   ## Load data into R dataframe
   billed_raw <- sqlQuery(channel,
@@ -568,4 +570,32 @@ get_co2_data <- function() {
     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
   return(co2_data_raw)
+}
+
+get_ao_billing_data <- function() {
+
+  ## https://leowong.ca/blog/connect-to-microsoft-access-database-via-r/
+  ## Set up driver info and database path
+  DRIVERINFO <- "Driver={Microsoft Access Driver (*.mdb, *.accdb)};"
+  MDBPATH <- "G:/HQ/dgof-pru/Data/DataProcessing/Crco - Billing/CRCO_BILL.accdb"
+  PATH <- paste0(DRIVERINFO, "DBQ=", MDBPATH)
+
+  channel <- odbcDriverConnect(PATH)
+
+  query_bill <- paste0("SELECT AO_GRP_LAST_NAME, Billing_period_start_date, FLAG_YTD,
+    [Billing Zone Name], [Route Charges], Year, Month
+    FROM V_CRCO_BILL_PER_AO_CZ_GRP_ACTUAL
+    where (Year = ", last_year, " or Year = ", last_year-1," or Year = ", 2019,") and FLAG_YTD = 'Y'
+  ")
+
+  ## Load data into R dataframe
+  billed_ao_raw <- sqlQuery(channel,
+                         query_bill,
+                         stringsAsFactors = FALSE)
+
+  ## Close and remove channel
+  close(channel)
+  rm(channel)
+
+  return(billed_ao_raw)
 }
