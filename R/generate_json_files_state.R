@@ -1903,6 +1903,14 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
 
     # calc
     st_apt_punct_calc <- st_apt_punct_raw %>%
+      mutate(ISO_COUNTRY_CODE = if_else(substr(APT_CODE, 1,2) == 'GC',
+                                        'IC',
+                                        ISO_COUNTRY_CODE ),
+             EC_ISO_CT_NAME = case_when (
+               substr(APT_CODE, 1,2) == 'GC' ~ 'Spain Canaries',
+               substr(APT_CODE, 1,2) == 'LE' ~ 'Spain Continental',
+               .default = EC_ISO_CT_NAME )
+             ) |>
       # select(DAY_DATE, APT_NAME, DAY_ARR_PUNCT, RANK)
       group_by(APT_NAME) %>%
       arrange(DAY_DATE) %>%
