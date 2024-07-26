@@ -513,7 +513,30 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
     last_day_punct <-  max(st_punct_raw$DAY_DATE)
     last_year_punct <- as.numeric(format(last_day_punct,'%Y'))
 
-    st_punct_data <- st_punct_raw %>%
+    # we separate continental and canarias until the flight table is created
+    punct_data_spain_raw <- get_punct_data_spain()
+
+    punct_data_spain <- punct_data_spain_raw |>
+      rename(ISO_2LETTER = ISO_CT_CODE) |>
+      group_by(ISO_2LETTER, YEAR, DAY_DATE) |>
+      summarise(ARR_PUNCTUAL_FLIGHTS = sum(ARR_PUNCTUAL_FLIGHTS, na.rm = TRUE),
+                ARR_SCHEDULE_FLIGHT = sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE),
+                DEP_PUNCTUAL_FLIGHTS = sum(DEP_PUNCTUAL_FLIGHTS, na.rm = TRUE),
+                DEP_SCHEDULE_FLIGHT = sum(DEP_SCHEDULE_FLIGHT, na.rm = TRUE)
+                )
+
+    st_punct_data_joined <- st_punct_raw |>
+      filter(ISO_2LETTER != 'ES') |>
+      select(ISO_2LETTER,
+             YEAR,
+             DAY_DATE,
+             ARR_PUNCTUAL_FLIGHTS,
+             ARR_SCHEDULE_FLIGHT,
+             DEP_PUNCTUAL_FLIGHTS,
+             DEP_SCHEDULE_FLIGHT) |>
+      rbind(punct_data_spain)
+
+    st_punct_data <- st_punct_data_joined |>
       arrange(ISO_2LETTER, DAY_DATE) %>%
       mutate(
              DAY_ARR_PUNCT = case_when(
@@ -595,7 +618,7 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
         WK_DEP_PUN_DIF_2019 = WEEK_DEP_PUNCT_DIF_2019
       )
 
-    st_punct_y2d <- st_punct_raw %>%
+    st_punct_y2d <- st_punct_data_joined %>%
       arrange(ISO_2LETTER, DAY_DATE) %>%
       mutate(MONTH_DAY = as.numeric(format(DAY_DATE, format="%m%d"))) %>%
       filter(MONTH_DAY <= as.numeric(format(last_day_punct, format="%m%d"))) %>%
