@@ -516,14 +516,28 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
     # we separate continental and canarias until the flight table is created
     punct_data_spain_raw <- get_punct_data_spain()
 
+
+    # a bit of cheating until we fix the overall table
+    st_punct_miss_sched_spain <- st_punct_raw |>
+      filter(ISO_2LETTER == 'ES') |>
+      select(DAY_DATE,
+             MISSING_SCHED_FLIGHTS,
+             DEP_FLIGHTS_NO_OVERFLIGHTS)
+
     punct_data_spain <- punct_data_spain_raw |>
-      rename(ISO_2LETTER = ISO_CT_CODE) |>
-      group_by(ISO_2LETTER, YEAR, DAY_DATE) |>
-      summarise(ARR_PUNCTUAL_FLIGHTS = sum(ARR_PUNCTUAL_FLIGHTS, na.rm = TRUE),
-                ARR_SCHEDULE_FLIGHT = sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE),
-                DEP_PUNCTUAL_FLIGHTS = sum(DEP_PUNCTUAL_FLIGHTS, na.rm = TRUE),
-                DEP_SCHEDULE_FLIGHT = sum(DEP_SCHEDULE_FLIGHT, na.rm = TRUE)
-                )
+      left_join(st_punct_miss_sched_spain, by = "DAY_DATE") |>
+      mutate(YEAR = as.numeric(format(DAY_DATE, "%Y"))) |>
+      select(ISO_2LETTER,
+             YEAR,
+             DAY_DATE,
+             ARR_PUNCTUAL_FLIGHTS,
+             ARR_SCHEDULE_FLIGHT,
+             DEP_PUNCTUAL_FLIGHTS,
+             DEP_SCHEDULE_FLIGHT,
+             MISSING_SCHED_FLIGHTS,
+             DEP_FLIGHTS_NO_OVERFLIGHTS)
+
+    # end of cheating
 
     st_punct_data_joined <- st_punct_raw |>
       filter(ISO_2LETTER != 'ES') |>
@@ -533,7 +547,9 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
              ARR_PUNCTUAL_FLIGHTS,
              ARR_SCHEDULE_FLIGHT,
              DEP_PUNCTUAL_FLIGHTS,
-             DEP_SCHEDULE_FLIGHT) |>
+             DEP_SCHEDULE_FLIGHT,
+             MISSING_SCHED_FLIGHTS,
+             DEP_FLIGHTS_NO_OVERFLIGHTS) |>
       rbind(punct_data_spain)
 
     st_punct_data <- st_punct_data_joined |>
@@ -2188,7 +2204,7 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
 
   ## PUNCTUALITY ----
     ### 7-day punctuality avg ----
-    st_punct_evo_app <- st_punct_raw %>%
+    st_punct_evo_app <- st_punct_data_joined %>%
       filter(DAY_DATE >= as.Date(paste0("01-01-", last_year-2), format = "%d-%m-%Y")) %>%
       arrange(ISO_2LETTER, DAY_DATE) %>%
       mutate(
@@ -2199,7 +2215,7 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
         OP_FLT_WK = 100 - rollsum(MISSING_SCHED_FLIGHTS, 7, fill = NA, align = "right") /
                rollsum((MISSING_SCHED_FLIGHTS+DEP_FLIGHTS_NO_OVERFLIGHTS),7, fill = NA, align = "right")*100
              ) %>%
-      filter(DATE >= as.Date(paste0("01-01-", last_year-1), format = "%d-%m-%Y")) %>%
+      filter(DAY_DATE >= as.Date(paste0("01-01-", last_year-1), format = "%d-%m-%Y")) %>%
       mutate(iso_2letter = ISO_2LETTER) %>%
       right_join(state_iso, by ="iso_2letter") %>%
       select(

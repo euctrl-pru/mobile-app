@@ -601,116 +601,95 @@ get_ao_billing_data <- function() {
 }
 
 get_punct_data_spain <- function() {
-  query <- str_glue("
-with
-
-LIST_AIRPORT_SPAIN as
-(
-SELECT
-       a.code as airport_code,
-       a.dashboard_name as airport_name,
-       case when substr(code, 1,2) = 'GC' then 'IC'
-            when substr(code, 1,2) = 'LE' then 'ES'
-            when substr(code, 1,2) = 'GE' then 'ES'
-        end iso_ct_code
-FROM prudev.pru_airport a
-inner join LDW_VDM.V_DELAY_TRACKER_ARCHIVE_TURN b on b.ADEP = a.code or b.ades = a.code
-where substr(a.code, 1,2) in ('GC', 'GE', 'LE')
-)
-,
-
- APT_DAY_REF AS (
-SELECT a.airport_code,
-       a.airport_name,
-       a.iso_ct_code,
-        t.year,
-        t.month,
-        t.week,
-        t.week_nb_year,
-        t.day_type,
-        t.day_of_week_nb AS day_of_week,
-        t.day_date
-FROM LIST_AIRPORT_SPAIN a, pru_time_references t
-WHERE
-   t.day_date >= to_date('24-12-2018','DD-MM-YYYY')
-   and t.day_date < trunc(sysdate)
-       ),
-
-
-DATA_DATE as (
+  query1 <- str_glue("
 select
       a.*,
       trunc(a.ACTUAL_DEP_TIME - 3 / 24) as dep_date,
-      trunc(a.ACTUAL_DEP_TIME - 3 / 24) as arr_date
+      trunc(a.ACTUAL_ARR_TIME - 3 / 24) as arr_date,
+      case when substr(ADES, 1,2) = 'GC' then 'IC'
+            when substr(ADES, 1,2) = 'LE' then 'ES'
+            when substr(ADES, 1,2) = 'GE' then 'ES'
+        end iso_ct_code_des,
+     case when substr(ADEP, 1,2) = 'GC' then 'IC'
+            when substr(ADEP, 1,2) = 'LE' then 'ES'
+            when substr(ADEP, 1,2) = 'GE' then 'ES'
+        end iso_ct_code_dep
 
 from LDW_VDM.V_DELAY_TRACKER_ARCHIVE_TURN a
-where substr(ADEP, 1,2) in ('GC', 'GE', 'LE') or substr(ADES, 1,2) in ('GC', 'GE', 'LE')
-),
+where (substr(ADEP, 1,2) in ('GC', 'GE', 'LE') or substr(ADES, 1,2) in ('GC', 'GE', 'LE'))
+   and (
+        trunc(a.ACTUAL_DEP_TIME - 3 / 24) >= to_date('24-12-2018','DD-MM-YYYY')
+        or
+        trunc(a.ACTUAL_ARR_TIME - 3 / 24) >= to_date('24-12-2018','DD-MM-YYYY')
+        )
+"
+  )
 
-DATA_ARRIVALS as (
-select
-      arr_date,
-      ADES,
-       sum(case when b.SLOT_TIME_ADES is not NULL and b.ACTUAL_ARR_TIME-b.SLOT_TIME_ADES > 0
-            then b.ACTUAL_ARR_TIME-b.SLOT_TIME_ADES
-            else 0
-            end)*24*60 ARR_SCHED_DELAY,
-        sum(case when b.SLOT_TIME_ADES is not NULL and b.ACTUAL_ARR_TIME < b.SLOT_TIME_ADES + (16 / (24*60))
-            then 1
-            else 0
-            end) ARR_PUNCTUAL_FLIGHTS,
-        sum(case when b.SLOT_TIME_ADES is not NULL
-            then 1
-            else 0
-            end) ARR_SCHEDULE_FLIGHT,
-        count(ID) as ARR_FLIGHTS
+  punct_data_raw_raw <- export_query(query1)
 
-from DATA_DATE b
-group by arr_date, ADES
-),
+  punct_data_raw_calc <- punct_data_raw_raw |>
+    # mutate(across(.cols = where(is.instant), ~ as.POSIXct(.x, format="%Y-%m-%d %H:%M:%S")))  |>
+    mutate(
+      ARR_DATE = as.Date(ARR_DATE),
+      ARR_PUNCTUAL_FLIGHTS = case_when(
+        is.na(SLOT_TIME_ADES) == FALSE & ACTUAL_ARR_TIME < SLOT_TIME_ADES + lubridate::minutes(16) ~ 1,
+        .default = 0
+      ),
+      ARR_SCHEDULE_FLIGHT = case_when (
+        is.na(SLOT_TIME_ADES) == FALSE ~ 1,
+        .default =0
+      ),
+      DEP_DATE = as.Date(DEP_DATE),
+      DEP_PUNCTUAL_FLIGHTS = case_when(
+        is.na(SLOT_TIME_ADEP) == FALSE & ACTUAL_DEP_TIME < (SLOT_TIME_ADEP + lubridate::minutes(16)) ~ 1,
+        .default = 0
+      ),
+      DEP_SCHEDULE_FLIGHT = case_when (
+        is.na(SLOT_TIME_ADEP) == FALSE ~ 1,
+        .default =0
+      )
+    )
 
-DATA_DEPARTURES as (
-select
-      dep_date,
-      ADEP,
-       sum(case when b.SLOT_TIME_ADEP is not NULL and b.ACTUAL_DEP_TIME-b.SLOT_TIME_ADEP > 0
-            then b.ACTUAL_DEP_TIME-b.SLOT_TIME_ADEP
-            else 0
-            end)*24*60 DEP_SCHED_DELAY,
-        sum(case when b.SLOT_TIME_ADEP is not NULL and b.ACTUAL_DEP_TIME < b.SLOT_TIME_ADEP + (16 / (24*60))
-            then 1
-            else 0
-            end) DEP_PUNCTUAL_FLIGHTS,
-        sum(case when b.SLOT_TIME_ADEP is not NULL
-            then 1
-            else 0
-            end) DEP_SCHEDULE_FLIGHT,
-        count(ID) as DEP_FLIGHTS
 
-from DATA_DATE b
-group by dep_date, ADEP
-)
+  punct_data_arr <- punct_data_raw_calc |>
+    group_by(ISO_CT_CODE_DES, ARR_DATE) |>
+    summarise(ARR_PUNCTUAL_FLIGHTS = sum(ARR_PUNCTUAL_FLIGHTS, na.rm = TRUE),
+              ARR_SCHEDULE_FLIGHT = sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE),
+              ARR_FLIGHTS = n())
 
-SELECT a.airport_code,
-       a.airport_name,
-       a.iso_ct_code,
-        a.year,
-        a.month,
-        a.day_date,
-       nvl(b.ARR_PUNCTUAL_FLIGHTS,0) ARR_PUNCTUAL_FLIGHTS,
-       nvl(b.ARR_SCHEDULE_FLIGHT, 0) ARR_SCHEDULE_FLIGHT,
-       nvl(b.ARR_FLIGHTS, 0) ARR_FLIGHTS,
-       nvl(c.DEP_PUNCTUAL_FLIGHTS,0) DEP_PUNCTUAL_FLIGHTS,
-       nvl(c.DEP_SCHEDULE_FLIGHT,0) DEP_SCHEDULE_FLIGHT,
-       nvl(c.DEP_FLIGHTS,0) DEP_FLIGHTS
+  punct_data_dep <- punct_data_raw_calc |>
+    group_by(ISO_CT_CODE_DEP, DEP_DATE) |>
+    summarise(DEP_PUNCTUAL_FLIGHTS = sum(DEP_PUNCTUAL_FLIGHTS, na.rm = TRUE),
+              DEP_SCHEDULE_FLIGHT = sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE),
+              DEP_FLIGHTS = n())
 
-from APT_DAY_REF a
-left join DATA_ARRIVALS b on a.airport_code = b.ades and a.day_date = b.arr_date
-left join DATA_DEPARTURES c on a.airport_code = c.adep and a.day_date = c.dep_date
-       ")
+  start_date <- as.Date("2018-12-24")
+  end_date <- lubridate::today() + days(-1)
 
-  punct_data_spain_raw <- export_query(query) %>%
-    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+  date_seq <- seq(from = start_date, to = end_date, by = "day")
+  my_codes <- c('IC', 'ES')
+  repeated_dates <- rep(date_seq, times = length(my_codes))
+  repeated_values <- rep(my_codes, each = length(date_seq))
+  country_day <- data.frame(DAY_DATE = repeated_dates, ISO_2LETTER = repeated_values) |>
+    arrange(ISO_2LETTER, DAY_DATE)
+
+  punct_data_spain_raw <- country_day |>
+    left_join(punct_data_arr, by = c("DAY_DATE" = "ARR_DATE", "ISO_2LETTER" = "ISO_CT_CODE_DES")) |>
+    left_join(punct_data_dep, by = c("DAY_DATE" = "DEP_DATE", "ISO_2LETTER" = "ISO_CT_CODE_DEP"))
+
+  # checktable <- punct_data_spain_raw |>
+  #   group_by(DAY_DATE) |>
+  #   summarise(DEP_PUNCTUAL_FLIGHTS = sum(DEP_PUNCTUAL_FLIGHTS, na.rm = TRUE),
+  #             DEP_SCHEDULE_FLIGHT = sum(DEP_SCHEDULE_FLIGHT, na.rm = TRUE),
+  #             ARR_PUNCTUAL_FLIGHTS = sum(ARR_PUNCTUAL_FLIGHTS, na.rm = TRUE),
+  #             ARR_SCHEDULE_FLIGHT = sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE)
+  #   ) |>
+  #   filter(DAY_DATE >= as.Date("2022-01-01"))
+  rm(punct_data_raw_raw, punct_data_raw_calc)
 
   return(punct_data_spain_raw)
 }
+
+
+
+
