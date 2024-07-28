@@ -38,7 +38,8 @@ destination_dir <- '//ihx-vdm05/LIVE_var_www_performance$/briefing/'
 
 ## copy v1 files ----
 if (nw_file_status == "OK") {
-  copyDirectory(here::here("data"), paste0(destination_dir,"data"), overwrite = TRUE)
+  copyDirectory(here("..", "mobile-app", "data"), paste0(destination_dir,"data"), overwrite = TRUE)
+  # copyDirectory(here::here("data"), paste0(destination_dir,"data"), overwrite = TRUE)
 
   ### set email status parameters
   sbj = "Only App v1 dataset copied successfully"
@@ -47,7 +48,7 @@ if (nw_file_status == "OK") {
 
 ## copy v2 files ----
 if (nw_file_status == "OK" & st_file_status == "OK") {
-  copyDirectory(here::here("data", "V2"), paste0(destination_dir,"data/V2"), overwrite = TRUE)
+  copyDirectory(here("..", "mobile-app", "data", "V2"), paste0(destination_dir,"data/V2"), overwrite = TRUE)
 
   ### set email status parameters
   sbj = "App v1 & v2 datasets copied successfully to folder"
