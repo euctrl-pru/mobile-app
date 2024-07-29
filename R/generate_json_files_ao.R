@@ -790,10 +790,14 @@ ao_st_des_main_traffic <- ao_st_des_data_day_int %>%
       CURRENT_DAY,
       NA
     ),
-    ############ we need to add the iso code so the flag can be shown
+    MAIN_TFC_ST_DES_CODE = if_else(
+      R_RANK <= 4,
+      ISO_CT_CODE_ARR,
+      NA
+    ),
     AO_GRP_RANK = paste0(tolower(AO_GRP_NAME), R_RANK)
   ) %>%
-  select(AO_GRP_RANK, MAIN_TFC_ST_DES_NAME, MAIN_TFC_ST_DES_FLT)
+  select(AO_GRP_RANK, MAIN_TFC_ST_DES_NAME, MAIN_TFC_ST_DES_FLT, MAIN_TFC_ST_DES_CODE)
 
 ao_st_des_main_traffic_dif <- ao_st_des_data_day_int %>%
   arrange(AO_GRP_NAME, desc(abs(AO_GRP_TFC_ST_DES_DIF)), R_RANK) %>%
@@ -811,7 +815,12 @@ ao_st_des_main_traffic_dif <- ao_st_des_data_day_int %>%
       RANK_DIF_ST_DES_TFC <= 4,
       AO_GRP_TFC_ST_DES_DIF,
       NA
-    )
+    ),
+    MAIN_TFC_DIF_ST_DES_CODE = if_else(
+      RANK_DIF_ST_DES_TFC <= 4,
+      ISO_CT_CODE_ARR,
+      NA
+    ),
   ) %>%
   arrange(AO_GRP_NAME, desc(MAIN_TFC_DIF_ST_DES_FLT_DIF)) %>%
   group_by(AO_GRP_NAME) %>%
@@ -820,7 +829,7 @@ ao_st_des_main_traffic_dif <- ao_st_des_data_day_int %>%
     AO_GRP_RANK = paste0(tolower(AO_GRP_NAME), RANK_MAIN_DIF)
   ) %>%
   ungroup() %>%
-  select(AO_GRP_RANK, MAIN_TFC_DIF_ST_DES_NAME, MAIN_TFC_DIF_ST_DES_FLT_DIF)
+  select(AO_GRP_RANK, MAIN_TFC_DIF_ST_DES_NAME, MAIN_TFC_DIF_ST_DES_FLT_DIF, MAIN_TFC_DIF_ST_DES_CODE)
 
 #### join tables ----
 # create list of ao_grp/rankings for left join
@@ -1304,6 +1313,128 @@ write(ao_apt_pair_data_j, here(data_folder,"ao_apt_pair_ranking_traffic.json"))
 write(ao_apt_pair_data_j, paste0(archive_dir, today, "_ao_apt_pair_ranking_traffic.json"))
 write(ao_apt_pair_data_j, paste0(archive_dir, "ao_apt_pair_ranking_traffic.json"))
 
+## DELAY ----
+### Arrival airport ----
+#### day ----
+ao_apt_arr_delay_day_raw <- read_xlsx(
+  path  = fs::path_abs(
+    str_glue(base_file),
+    start = base_dir),
+  sheet = "ao_apt_arr_delay_day",
+  range = cell_limits(c(1, 1), c(NA, NA))) %>%
+  mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+ao_apt_arr_delay_day <- ao_apt_arr_delay_day_raw |>
+  filter(FLAG_DAY == "CURRENT_DAY") |>
+  mutate(AO_GRP_RANK = paste0(AO_GRP_CODE, R_RANK)) |>
+  select(
+    AO_GRP_RANK,
+    DY_RANK = R_RANK,
+    DY_APT_NAME = ADES_NAME,
+    DY_APT_ARR_DLY_FLT = AVG_ARR_DLY_PER_FLT,
+    DY_APT_ARR_FLT = AVG_DAILY_ARR_TFC,
+    DY_TO_DATE = TO_DATE)
+
+#### week ----
+ao_apt_arr_delay_week_raw <- read_xlsx(
+  path  = fs::path_abs(
+    str_glue(base_file),
+    start = base_dir),
+  sheet = "ao_apt_arr_delay_week",
+  range = cell_limits(c(1, 1), c(NA, NA))) %>%
+  mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+ao_apt_arr_delay_week <- ao_apt_arr_delay_week_raw |>
+  filter(FLAG_ROLLING_WEEK == "CURRENT_ROLLING_WEEK") |>
+  mutate(AO_GRP_RANK = paste0(AO_GRP_CODE, R_RANK)) |>
+  select(
+    AO_GRP_RANK,
+    WK_RANK = R_RANK,
+    WK_APT_NAME = ADES_NAME,
+    WK_APT_ARR_DLY_FLT = AVG_ARR_DLY_PER_FLT,
+    WK_APT_ARR_FLT = AVG_DAILY_ARR_TFC,
+    WK_TO_DATE = TO_DATE)
+
+#### y2d ----
+ao_apt_arr_delay_y2d_raw <- read_xlsx(
+  path  = fs::path_abs(
+    str_glue(base_file),
+    start = base_dir),
+  sheet = "ao_apt_arr_delay_y2d",
+  range = cell_limits(c(1, 1), c(NA, NA))) %>%
+  mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+ao_apt_arr_delay_y2d <- ao_apt_arr_delay_y2d_raw |>
+  filter(YEAR== last_year) |>
+  mutate(AO_GRP_RANK = paste0(AO_GRP_CODE, R_RANK)) |>
+  select(
+    AO_GRP_RANK,
+    Y2D_RANK = R_RANK,
+    Y2D_APT_NAME = ADES_NAME,
+    Y2D_APT_ARR_DLY_FLT = AVG_ARR_DLY_PER_FLT,
+    Y2D_APT_ARR_FLT = AVG_DAILY_ARR_TFC,
+    Y2D_TO_DATE = TO_DATE)
+
+#### main card ----
+ao_apt_arr_delay_main <- ao_apt_arr_delay_day %>%
+  mutate(
+    MAIN_DLY_APT_NAME = DY_APT_NAME,
+    MAIN_DLY_APT_DLY_FLT = DY_APT_ARR_DLY_FLT
+  ) %>%
+  filter(DY_RANK < 5) %>%
+  ungroup() %>%
+  select(AO_GRP_RANK, MAIN_DLY_APT_NAME, MAIN_DLY_APT_DLY_FLT)
+
+ao_apt_arr_delay_dif_main <- ao_apt_arr_delay_day_raw %>%
+  filter(FLAG_DAY %in% c("CURRENT_DAY", "DAY_PREV_WEEK")) |>
+  mutate(PREV_WEEK_NEGATIVE = if_else(FLAG_DAY == "DAY_PREV_WEEK", -AVG_ARR_DLY_PER_FLT, AVG_ARR_DLY_PER_FLT)) |>
+  group_by(AO_GRP_CODE, ADES_NAME) |>
+  summarise(MAIN_DLY_FLT_DIF_APT = sum(PREV_WEEK_NEGATIVE, na.rm = TRUE)) |>
+  ungroup() |>
+  group_by(AO_GRP_CODE) |>
+  arrange(desc(abs(MAIN_DLY_FLT_DIF_APT)), ADES_NAME) |>
+  mutate(MAIN_DLY_FLT_DIF_APT_RANK = row_number()) |>
+  filter(MAIN_DLY_FLT_DIF_APT_RANK < 5) |>
+  arrange(AO_GRP_CODE, desc(MAIN_DLY_FLT_DIF_APT)) |>
+  mutate(AO_GRP_RANK = paste0(AO_GRP_CODE, row_number())) |>
+  ungroup() |>
+  select (AO_GRP_RANK, MAIN_DLY_FLT_DIF_APT_NAME = ADES_NAME, MAIN_DLY_FLT_DIF_APT)
+
+#### join tables ----
+# create list of ao_grp/rankings for left join
+ao_grp_icao_ranking <- list()
+i = 0
+for (i in 1:10) {
+  i = i + 1
+  ao_grp_icao_ranking <- ao_grp_icao_ranking %>%
+    bind_rows(ao_grp_icao, .)
+}
+
+ao_grp_icao_ranking <- ao_grp_icao_ranking %>%
+  arrange(AO_GRP_NAME) %>%
+  group_by(AO_GRP_NAME) %>%
+  mutate(
+    RANK = row_number(),
+    AO_GRP_RANK = paste0(AO_GRP_CODE, RANK)
+  )
+
+# join and reorder tables
+ao_apt_arr_delay_data <- ao_grp_icao_ranking %>%
+  left_join(ao_apt_arr_delay_main, by = "AO_GRP_RANK") %>%
+  left_join(ao_apt_arr_delay_dif_main, by = "AO_GRP_RANK") %>%
+  left_join(ao_apt_arr_delay_day, by = "AO_GRP_RANK") %>%
+  left_join(ao_apt_arr_delay_week, by = "AO_GRP_RANK") %>%
+  left_join(ao_apt_arr_delay_y2d, by = "AO_GRP_RANK") %>%
+  ungroup() %>%
+  select(-AO_GRP_RANK) %>%
+  arrange (AO_GRP_CODE, RANK)
+
+# covert to json and save in app data folder and archive
+ao_apt_arr_delay_data_j <- ao_apt_arr_delay_data %>% toJSON(., pretty = TRUE)
+write(ao_apt_arr_delay_data_j, here(data_folder,"ao_apt_arr_ranking_delay.json"))
+write(ao_apt_arr_delay_data_j, paste0(archive_dir, today, "_ao_apt_arr_ranking_delay.json"))
+write(ao_apt_arr_delay_data_j, paste0(archive_dir, "ao_apt_arr_ranking_delay.json"))
+
 
 # ____________________________________________________________________________________________
 #
@@ -1340,6 +1471,38 @@ write(ao_traffic_evo_j, paste0(archive_dir, today, "_ao_traffic_chart_daily.json
 write(ao_traffic_evo_j, paste0(archive_dir, "ao_traffic_chart_daily.json"))
 
 ## DELAY ----
+### 7-day % of delay per flight ----
+ao_delay_flt_evo <- ao_traffic_delay_data  %>%
+  filter(FLIGHT_DATE <= max(LAST_DATA_DAY, na.rm = TRUE)) %>%
+  select(
+    AO_GRP_CODE,
+    AO_GRP_NAME,
+    FLIGHT_DATE,
+    RWK_DLY_FLT,
+    RWK_DLY_FLT_PREV_YEAR
+    )
+
+column_names <- c('AO_GRP_CODE',
+                  'AO_GRP_NAME',
+                  'FLIGHT_DATE',
+                  paste0('Total ATFM delay/flight ', last_year),
+                  paste0('Total ATFM delay/flight ', last_year -1)
+)
+
+colnames(ao_delay_flt_evo) <- column_names
+
+### nest data
+ao_delay_flt_evo_evo_long <- ao_delay_flt_evo %>%
+  pivot_longer(-c(AO_GRP_CODE, AO_GRP_NAME, FLIGHT_DATE), names_to = 'year', values_to = 'daio') %>%
+  group_by(AO_GRP_CODE, AO_GRP_NAME, FLIGHT_DATE) %>%
+  nest_legacy(.key = "statistics")
+
+###convert to json and save
+ao_delay_flt_evo_j <- ao_delayed_flights_evo_long %>% toJSON(., pretty = TRUE)
+write(ao_delay_flt_evo_j, here(data_folder,"ao_delay_per_flight_evo_chart_daily.json"))
+write(ao_delay_flt_evo_j, paste0(archive_dir, today, "_ao_delay_per_flight_chart_daily.json"))
+write(ao_delay_flt_evo_j, paste0(archive_dir, "ao_delay_per_flight_chart_daily.json"))
+
 ### 7-day % of delayed flights ----
 ao_delayed_flights_evo <- ao_traffic_delay_data  %>%
   select(
