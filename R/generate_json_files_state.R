@@ -252,6 +252,17 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
       select(-state) %>%
       arrange(iso_2letter)
 
+    ### in case there are more DAI than DAIO
+    temp_check <- st_daio_for_json |>
+      left_join(st_dai_for_json, by ="iso_2letter") |>
+      mutate (MODIFIED_DAIO = if_else(DY_DAI>DY_DAIO, DY_DAI, DY_DAIO)) |>
+      select(iso_2letter, MODIFIED_DAIO)
+
+    st_daio_for_json <- st_daio_for_json |>
+      left_join(temp_check, by ="iso_2letter") |>
+      mutate(DY_DAIO = MODIFIED_DAIO) |>
+      select(-MODIFIED_DAIO)
+
   #### Traffic overflight data ----
     st_dai_data_zone_p <- st_dai_data_zone %>%
       mutate(flight_type = 'dai') %>%
@@ -349,6 +360,7 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
       str_replace_all('TFC', 'OVF')
 
     st_overflight_for_json <- st_overflight_last_day %>%
+      mutate(DAY_TFC =  if_else(DAY_TFC<0, 0, DAY_TFC)) |>    #temporary correction
       select(
         iso_2letter,
         FLIGHT_DATE,
