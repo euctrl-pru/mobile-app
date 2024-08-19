@@ -590,20 +590,20 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
       substr(., 2, nchar(.))
 
   ## join data strings and save ----
-    # app v1 json
-    nw_json_app <- paste0(
-      "{",
-      '"nw_traffic":', nw_traffic_json,
-      ', "nw_delay":', nw_delay_json,
-      ', "nw_punct":', nw_punct_json,
-      ', "nw_co2":', nw_co2_json,
-      ', "nw_billed":', nw_billed_json,
-      ', "app_update":', update_day_json,
-      "}"
-    )
-
-    write(nw_json_app, here(data_folder, "nw_json_app.json"))
-    write(nw_json_app, paste0(archive_dir, today, "_nw_json_app.json"))
+    # app v1 json (not needed any more since v2 release)
+    # nw_json_app <- paste0(
+    #   "{",
+    #   '"nw_traffic":', nw_traffic_json,
+    #   ', "nw_delay":', nw_delay_json,
+    #   ', "nw_punct":', nw_punct_json,
+    #   ', "nw_co2":', nw_co2_json,
+    #   ', "nw_billed":', nw_billed_json,
+    #   ', "app_update":', update_day_json,
+    #   "}"
+    # )
+    #
+    # write(nw_json_app, here(data_folder, "nw_json_app.json"))
+    # write(nw_json_app, paste0(archive_dir, today, "_nw_json_app.json"))
 
     # app v2 json
     nw_json_app_v2 <- paste0(
@@ -634,15 +634,13 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
     column_names <- c("FLIGHT_DATE", last_year, last_year - 1, 2020, 2019)
     colnames(nw_traffic_evo_app) <- column_names
 
-    nw_traffic_evo_app_j <- nw_traffic_evo_app %>% toJSON(., pretty = TRUE)
-    write(nw_traffic_evo_app_j, here(data_folder, "nw_traffic_evo_chart_daily.json"))
+    # (not needed any more since v2 release)
+    # nw_traffic_evo_app_j <- nw_traffic_evo_app %>% toJSON(., pretty = TRUE)
+    # write(nw_traffic_evo_app_j, here(data_folder, "nw_traffic_evo_chart_daily.json"))
     # write(nw_traffic_evo_app_j, paste0(archive_dir, today, "_nw_traffic_evo_chart_daily.json"))
 
     #### app v2
     nw_traffic_evo_v2 <- nw_traffic_evo_app
-    # %>%
-    #   mutate(iso_2letter = 'XX', daio_zone = 'Network') %>%
-    #   relocate(iso_2letter:daio_zone, .before = 'FLIGHT_DATE')
 
     ### nest data
     nw_traffic_evo_v2_long <- nw_traffic_evo_v2 %>%
@@ -698,29 +696,30 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
       # mutate(FLIGHT_YEAR = as.character(format(FLIGHT_DATE,'%Y')))%>%
       mutate(FLIGHT_DATE = as.Date(FLIGHT_DATE))
 
-    nw_delay_evo_app <- nw_delay_evo %>%
-      select(
-        FLIGHT_DATE,
-        ROLL_WK_AVG_DLY_CAP_STAF,
-        ROLL_WK_AVG_DLY_DISR,
-        ROLL_WK_AVG_DLY_WTH,
-        ROLL_WK_AVG_DLY_OTH,
-        ROLL_WK_AVG_DLY_PREV_YEAR
-      )
-
-    column_names <- c(
-      "FLIGHT_DATE",
-      "Capacity/Staffing",
-      "Disruptions (ATC)",
-      "Weather",
-      "Other",
-      paste0("Total delay ", last_year - 1)
-    )
-
-    colnames(nw_delay_evo_app) <- column_names
-
-    nw_delay_evo_app_j <- nw_delay_evo_app %>% toJSON(., pretty = TRUE)
-    write(nw_delay_evo_app_j, here(data_folder, "nw_delay_category_evo_chart.json"))
+    # (not needed any more since v2 release)
+    # nw_delay_evo_app <- nw_delay_evo %>%
+    #   select(
+    #     FLIGHT_DATE,
+    #     ROLL_WK_AVG_DLY_CAP_STAF,
+    #     ROLL_WK_AVG_DLY_DISR,
+    #     ROLL_WK_AVG_DLY_WTH,
+    #     ROLL_WK_AVG_DLY_OTH,
+    #     ROLL_WK_AVG_DLY_PREV_YEAR
+    #   )
+    #
+    # column_names <- c(
+    #   "FLIGHT_DATE",
+    #   "Capacity/Staffing",
+    #   "Disruptions (ATC)",
+    #   "Weather",
+    #   "Other",
+    #   paste0("Total delay ", last_year - 1)
+    # )
+    #
+    # colnames(nw_delay_evo_app) <- column_names
+    #
+    # nw_delay_evo_app_j <- nw_delay_evo_app %>% toJSON(., pretty = TRUE)
+    # write(nw_delay_evo_app_j, here(data_folder, "nw_delay_category_evo_chart.json"))
     # write(nw_delay_evo_app_j, here(data_folder, "v2", "nw_delay_category_evo_chart.json"))
     # write(nw_delay_evo_app_j, paste0(archive_dir, today, "_nw_delay_category_evo_chart.json"))
 
@@ -1188,20 +1187,16 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
   )
   colnames(nw_punct_evo_app) <- column_names
 
-  nw_punct_evo_app_j <- nw_punct_evo_app %>% toJSON(., pretty = TRUE)
-  write(nw_punct_evo_app_j, here(data_folder, "nw_punct_evo_chart.json"))
+  # (not needed any more since v2 release)
+  # nw_punct_evo_app_j <- nw_punct_evo_app %>% toJSON(., pretty = TRUE)
+  # write(nw_punct_evo_app_j, here(data_folder, "nw_punct_evo_chart.json"))
   # write(nw_punct_evo_app_j, paste0(archive_dir, today, "_nw_punct_evo_chart.json"))
 
   ### app v2
   nw_punct_evo_app_v2 <- nw_punct_evo_app
-  # %>%
-  #   mutate(iso_2letter = 'XX', state = 'Network') %>%
-  #   relocate(iso_2letter:state, .before = 'FLIGHT_DATE')
 
   ### nest data
   nw_punct_evo_app_v2_long <- nw_punct_evo_app_v2 %>%
-    # pivot_longer(-c(iso_2letter, state, FLIGHT_DATE), names_to = 'metric', values_to = 'value') %>%
-    # group_by(iso_2letter, state, FLIGHT_DATE) %>%
     pivot_longer(-c(FLIGHT_DATE), names_to = 'metric', values_to = 'value') %>%
     group_by(FLIGHT_DATE) %>%
     nest_legacy(.key = "statistics")
@@ -1255,21 +1250,17 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
 
   colnames(nw_billing_evo) <- column_names
 
-  nw_billing_evo_j <- nw_billing_evo %>% toJSON(., pretty = TRUE)
-  write(nw_billing_evo_j, here(data_folder, "nw_billing_evo_chart.json"))
+  # (not needed any more since v2 release)
+  # nw_billing_evo_j <- nw_billing_evo %>% toJSON(., pretty = TRUE)
+  # write(nw_billing_evo_j, here(data_folder, "nw_billing_evo_chart.json"))
   # write(nw_billing_evo_j, paste0(archive_dir, today, "_nw_billing_evo_chart.json"))
 
   ### app v2
   nw_billing_evo_v2 <- nw_billing_evo %>%
     rename(month = Month)
-  # %>%
-  #   mutate(iso_2letter = 'XX', state = 'Network') %>%
-  #   relocate(iso_2letter:state, .before = 'month')
 
   ### nest data
   nw_billing_evo_v2_long <- nw_billing_evo_v2 %>%
-    # pivot_longer(-c(iso_2letter, state, month), names_to = 'metric', values_to = 'value') %>%
-    # group_by(iso_2letter, state, month) %>%
     pivot_longer(-c(month), names_to = 'metric', values_to = 'value') %>%
     group_by(month) %>%
     nest_legacy(.key = "statistics")
@@ -1314,25 +1305,18 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
   )
 
   colnames(nw_co2_evo) <- column_names
-  nw_co2_evo_j <- nw_co2_evo %>% toJSON(., pretty = TRUE)
-  write(nw_co2_evo_j, here(data_folder, "nw_co2_evo_chart.json"))
-  # write(nw_co2_evo_j, paste0(archive_dir, today, "_nw_co2_evo_chart.json"))
 
-  nw_co2_evo_j <- nw_co2_evo %>% toJSON(., pretty = TRUE)
+  # (not needed any more since v2 release)
+  # nw_co2_evo_j <- nw_co2_evo %>% toJSON(., pretty = TRUE)
+  # write(nw_co2_evo_j, here(data_folder, "nw_co2_evo_chart.json"))
+  # write(nw_co2_evo_j, paste0(archive_dir, today, "_nw_co2_evo_chart.json"))
 
   ### app v2
   nw_co2_evo_v2 <- nw_co2_evo %>%
     rename(month = Month)
 
-  # %>%
-  #   mutate(iso_2letter = 'XX', state = 'Network') %>%
-  #   rename(month = Month) %>%
-  #   relocate(iso_2letter:state, .before = 'month')
-
   ### nest data
   nw_co2_evo_v2_long <- nw_co2_evo_v2 %>%
-    # pivot_longer(-c(iso_2letter, state, month), names_to = 'metric', values_to = 'value') %>%
-    # group_by(iso_2letter, state, month) %>%
     pivot_longer(-c(month), names_to = 'metric', values_to = 'value') %>%
     group_by(month) %>%
     nest_legacy(.key = "statistics")
@@ -1450,8 +1434,10 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
 
     ### covert to json and save in app data folder and archive
     ao_data_j <- ao_data %>% toJSON(., pretty = TRUE)
-    write(ao_data_j, here(data_folder, "ao_ranking_traffic.json"))
+    # (not needed anymore since the release of v2)
+    # write(ao_data_j, here(data_folder, "ao_ranking_traffic.json"))
     write(ao_data_j, here(data_folder, "v2", "ao_ranking_traffic.json"))
+    write(ao_data_j, paste0(archive_dir, "ao_ranking_traffic.json"))
     write(ao_data_j, paste0(archive_dir, today, "_ao_ranking_traffic.json"))
 
   ## Airport traffic ----
@@ -1557,8 +1543,10 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
 
     ### covert to json and save in app data folder and archive
     apt_data_j <- apt_data %>% toJSON(., pretty = TRUE)
-    write(apt_data_j, here(data_folder, "apt_ranking_traffic.json"))
+    # (not needed anymore since the release of v2)
+    # write(apt_data_j, here(data_folder, "apt_ranking_traffic.json"))
     write(apt_data_j, here(data_folder, "v2", "apt_ranking_traffic.json"))
+    write(apt_data_j, paste0(archive_dir, "apt_ranking_traffic.json"))
     write(apt_data_j, paste0(archive_dir, today, "_apt_ranking_traffic.json"))
 
   ## Country traffic DAI ----
@@ -1670,9 +1658,11 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
 
     ### covert to json and save in app data folder and archive
     ct_dai_data_j <- ct_dai_data %>% toJSON(., pretty = TRUE)
-    write(ct_dai_data_j, here(data_folder, "ctry_ranking_traffic_DAI.json"))
+    # (not needed anymore since the release of v2)
+    # write(ct_dai_data_j, here(data_folder, "ctry_ranking_traffic_DAI.json"))
     write(ct_dai_data_j, here(data_folder, "v2", "ctry_ranking_traffic_DAI.json"))
     write(ct_dai_data_j, paste0(archive_dir, today, "_ctry_ranking_traffic_DAI.json"))
+    write(ct_dai_data_j, paste0(archive_dir, "ctry_ranking_traffic_DAI.json"))
 
   ## Airport delay -----
 
@@ -1799,9 +1789,11 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
 
     ### covert to json and save in app data folder and archive
     apt_rank_data_j <- apt_rank_data %>% toJSON(., pretty = TRUE)
-    write(apt_rank_data_j, here(data_folder, "apt_ranking_delay.json"))
+    # (not needed anymore since the release of v2)
+    # write(apt_rank_data_j, here(data_folder, "apt_ranking_delay.json"))
     write(apt_rank_data_j, here(data_folder, "v2", "apt_ranking_delay.json"))
     write(apt_rank_data_j, paste0(archive_dir, today, "_apt_ranking_delay.json"))
+    write(apt_rank_data_j, paste0(archive_dir, "apt_ranking_delay.json"))
 
 
   ## ACC delay ----
@@ -1950,9 +1942,11 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
 
     ### covert to json and save in app data folder and archive
     acc_rank_data_j <- acc_rank_data %>% toJSON(., pretty = TRUE)
-    write(acc_rank_data_j, here(data_folder, "acc_ranking_delay.json"))
+    # (not needed anymore since the release of v2)
+    # write(acc_rank_data_j, here(data_folder, "acc_ranking_delay.json"))
     write(acc_rank_data_j, here(data_folder, "v2", "acc_ranking_delay.json"))
     write(acc_rank_data_j, paste0(archive_dir, today, "_acc_ranking_delay.json"))
+    write(acc_rank_data_j, paste0(archive_dir, "acc_ranking_delay.json"))
 
 
   ## Country delay ----
@@ -2103,9 +2097,11 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
 
     ### covert to json and save in app data folder and archive
     ct_rank_data_j <- ct_rank_data %>% toJSON(., pretty = TRUE)
-    write(ct_rank_data_j, here(data_folder, "ctry_ranking_delay.json"))
+    # (not needed anymore since the release of v2)
+    # write(ct_rank_data_j, here(data_folder, "ctry_ranking_delay.json"))
     write(ct_rank_data_j, here(data_folder, "v2", "ctry_ranking_delay.json"))
     write(ct_rank_data_j, paste0(archive_dir, today, "_ctry_ranking_delay.json"))
+    write(ct_rank_data_j, paste0(archive_dir, "ctry_ranking_delay.json"))
 
 
   ## Airport punctuality ----
@@ -2349,9 +2345,11 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
 
     ### covert to json and save in app data folder and archive
     apt_punct_data_j <- apt_punct_data %>% toJSON(., pretty = TRUE)
-    write(apt_punct_data_j, here(data_folder, "apt_ranking_punctuality.json"))
+    # (not needed anymore since the release of v2)
+    # write(apt_punct_data_j, here(data_folder, "apt_ranking_punctuality.json"))
     write(apt_punct_data_j, here(data_folder, "v2", "apt_ranking_punctuality.json"))
     write(apt_punct_data_j, paste0(archive_dir, today, "_apt_ranking_punctuality.json"))
+    write(apt_punct_data_j, paste0(archive_dir, "apt_ranking_punctuality.json"))
 
   ## Country punctuality ----
   ##### NOte: the time series for each country is not full. At some point it needs to be fixed either here or in the initial query so the lag functions yield the right result
@@ -2588,6 +2586,8 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
 
     ### covert to json and save in app data folder and archive
     ct_punct_data_j <- ct_punct_data %>% toJSON(., pretty = TRUE)
-    write(ct_punct_data_j, here(data_folder, "ctry_ranking_punctuality.json"))
+    # (not needed anymore since the release of v2)
+    # write(ct_punct_data_j, here(data_folder, "ctry_ranking_punctuality.json"))
     write(ct_punct_data_j, here(data_folder, "v2", "ctry_ranking_punctuality.json"))
     write(ct_punct_data_j, paste0(archive_dir, today, "_ctry_ranking_punctuality.json"))
+    write(ct_punct_data_j, paste0(archive_dir, "ctry_ranking_punctuality.json"))
