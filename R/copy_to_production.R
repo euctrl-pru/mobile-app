@@ -38,12 +38,12 @@ destination_dir <- '//ihx-vdm05/LIVE_var_www_performance$/briefing/'
 
 ## copy v1 files ----
 if (nw_file_status == "OK") {
-  copyDirectory(here("..", "mobile-app", "data"), paste0(destination_dir,"data"), overwrite = TRUE)
+  # copyDirectory(here("..", "mobile-app", "data"), paste0(destination_dir,"data"), overwrite = TRUE)
   # copyDirectory(here::here("data"), paste0(destination_dir,"data"), overwrite = TRUE)
 
   ### set email status parameters
-  sbj = "Only App v1 dataset copied successfully"
-  msg = "Some tables of the v2 dataset were not updated"
+  sbj = "Only nw files updated. App update halted"
+  msg = "Some tables of the state dataset were not updated. App datasets not copied"
 }
 
 ## copy v2 files ----
