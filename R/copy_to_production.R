@@ -51,13 +51,13 @@ if (nw_file_status == "OK" & st_file_status == "OK") {
   copyDirectory(here("..", "mobile-app", "data", "V2"), paste0(destination_dir,"data/V2"), overwrite = TRUE)
 
   ### set email status parameters
-  sbj = "App v1 & v2 datasets copied successfully to folder"
+  sbj = "App network and state datasets copied successfully to folder"
   msg = "All good, relax!"
 
 } else if (nw_file_status != "OK" & st_file_status != "OK") {
   ### set email status parameters
   sbj = "App datasets not copied - some tables not updated"
-  msg = "Some tables of both v1 and v2 datasets were not updated."
+  msg = "Some tables of both nw and state datasets were not updated."
 
 }
 
