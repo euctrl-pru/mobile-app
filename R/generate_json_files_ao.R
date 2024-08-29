@@ -179,7 +179,7 @@ ao_delay_for_json <- ao_traffic_delay_last_day %>%
     WK_DLY_FLT_DIF_PREV_YEAR_PERC = RWK_DLY_FLT_DIF_PREV_YEAR_PERC,
     WK_DLY_FLT_DIF_2019_PERC = RWK_DLY_FLT_DIF_2019_PERC,
 
-    Y2D_DLY_FLT_YEAR,
+    Y2D_DLY_FLT = Y2D_DLY_FLT_YEAR,
     Y2D_DLY_FLT_DIF_PREV_YEAR_PERC,
     Y2D_DLY_FLT_DIF_2019_PERC,
 
@@ -2090,7 +2090,7 @@ write(ao_punct_evo_j, paste0(archive_dir, "ao_punct_evo_chart.json"))
 #
 #
 #
-# ## BILLING ----
+## BILLING ----
 # st_billing_evo <- st_billing %>%
 #   arrange(iso_2letter, year, month) %>%
 #   mutate(
