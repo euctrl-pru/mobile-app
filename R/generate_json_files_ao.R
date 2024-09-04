@@ -2128,65 +2128,65 @@ write(ao_punct_evo_j, paste0(archive_dir, "ao_punct_evo_chart.json"))
 #
 #
 #
-## BILLING ----
-# st_billing_evo <- st_billing %>%
-#   arrange(iso_2letter, year, month) %>%
-#   mutate(
-#     total_billing = total_billing/10^6,
-#     total_billing_py = lag(total_billing, 12),
-#     total_billing_dif_mm_perc = total_billing / total_billing_py -1
-#   ) %>%
-#   group_by(iso_2letter, corrected_cz, year) %>%
-#   mutate(
-#     total_billing_y2d = cumsum(total_billing)
-#   ) %>%
-#   ungroup() %>%
-#   mutate(
-#     total_billing_y2d_py = lag(total_billing_y2d, 12),
-#     total_billing_dif_y2d_perc = total_billing_y2d / total_billing_y2d_py -1
-#   ) %>%
-#   filter(year == last_billing_year) %>%
-#   select(
-#     iso_2letter,
-#     cz_proper,
-#     month,
-#     total_billing,
-#     total_billing_py,
-#     total_billing_dif_mm_perc,
-#     total_billing_dif_y2d_perc
-#   ) %>%
-#   mutate(
-#     month = month.name[month],
-#     min_right_axis = -0.2,
-#     max_right_axis = 1.3
-#   )
-#
-# column_names <- c(
-#   'iso_2letter',
-#   'charging_zone',
-#   "month",
-#   last_billing_year,
-#   last_billing_year - 1,
-#   paste0("Monthly variation vs ", last_billing_year - 1),
-#   paste0 ("Year-to-date variation vs ", last_billing_year - 1),
-#   "min_right_axis",
-#   "max_right_axis"
-# )
-#
-# colnames(st_billing_evo) <- column_names
-#
-# ### nest data
-# st_billing_evo_long <- st_billing_evo %>%
-#   pivot_longer(-c(iso_2letter, charging_zone, month), names_to = 'metric', values_to = 'value') %>%
-#   group_by(iso_2letter, charging_zone, month) %>%
-#   nest_legacy(.key = "statistics")
-#
-#
-# st_billing_evo_j <- st_billing_evo_long %>% toJSON(., pretty = TRUE)
-# write(st_billing_evo_j, here(data_folder,"st_billing_evo.json"))
-# write(st_billing_evo_j, paste0(archive_dir, today, "_st_billing_evo.json"))
-# write(st_billing_evo_j, paste0(archive_dir, "st_billing_evo.json"))
-#
+# BILLING ----
+ao_billing_evo <- ao_billing %>%
+  arrange(AO_GRP_CODE, year, month) %>%
+  mutate(
+    total_billing = total_billing/10^6,
+    total_billing_py = lag(total_billing, 12),
+    total_billing_dif_mm_perc = total_billing / total_billing_py -1
+  ) %>%
+  group_by(AO_GRP_CODE, AO_GRP_NAME, year) %>%
+  mutate(
+    total_billing_y2d = cumsum(total_billing)
+  ) %>%
+  ungroup() %>%
+  mutate(
+    total_billing_y2d_py = lag(total_billing_y2d, 12),
+    total_billing_dif_y2d_perc = total_billing_y2d / total_billing_y2d_py -1
+  ) %>%
+  filter(year == last_billing_year) %>%
+  select(
+    AO_GRP_CODE,
+    AO_GRP_NAME,
+    month,
+    total_billing,
+    total_billing_py,
+    total_billing_dif_mm_perc,
+    total_billing_dif_y2d_perc
+  ) %>%
+  mutate(
+    month = month.name[month],
+    min_right_axis = -0.2,
+    max_right_axis = 1.3
+  )
+
+column_names <- c(
+  'AO_GRP_CODE',
+  'AO_GRP_NAME',
+  "month",
+  last_billing_year,
+  last_billing_year - 1,
+  paste0("Monthly variation vs ", last_billing_year - 1),
+  paste0 ("Year-to-date variation vs ", last_billing_year - 1),
+  "min_right_axis",
+  "max_right_axis"
+)
+
+colnames(ao_billing_evo) <- column_names
+
+### nest data
+ao_billing_evo_long <- ao_billing_evo %>%
+  pivot_longer(-c(AO_GRP_CODE, AO_GRP_NAME, month), names_to = 'metric', values_to = 'value') %>%
+  group_by(AO_GRP_CODE, AO_GRP_NAME, month) %>%
+  nest_legacy(.key = "statistics")
+
+
+ao_billing_evo_j <- ao_billing_evo_long %>% toJSON(., pretty = TRUE)
+write(ao_billing_evo_j, here(data_folder,"ao_billing_evo.json"))
+write(ao_billing_evo_j, paste0(archive_dir, today, "_ao_billing_evo.json"))
+write(ao_billing_evo_j, paste0(archive_dir, "ao_billing_evo.json"))
+
 ## CO2 ----
 ao_co2_evo <- ao_co2_data |>
   filter(YEAR >= 2019) |>
