@@ -1337,7 +1337,7 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
         start = base_dir
       ),
       sheet = "AO_DAY",
-      range = cell_limits(c(3, 2), c(NA, 10))
+      range = cell_limits(c(3, 2), c(NA, 11))
     ) %>%
       mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
       filter(WK_R_RANK_BY_DAY <= 10) %>%
@@ -1376,13 +1376,18 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
           DY_AO_GRP_NAME,
           NA
         ),
+        MAIN_TFC_AO_GRP_CODE = if_else(
+          WK_R_RANK_BY_DAY <= 4,
+          DY_AO_GRP_CODE,
+          NA
+        ),
         MAIN_TFC_AO_GRP_FLIGHT = if_else(
           WK_R_RANK_BY_DAY <= 4,
           DY_FLIGHT,
           NA
         )
       ) %>%
-      select(WK_R_RANK_BY_DAY, MAIN_TFC_AO_GRP_NAME, MAIN_TFC_AO_GRP_FLIGHT)
+      select(WK_R_RANK_BY_DAY, MAIN_TFC_AO_GRP_NAME, MAIN_TFC_AO_GRP_CODE, MAIN_TFC_AO_GRP_FLIGHT)
 
     ao_main_traffic_dif <- read_xlsx(
       path = fs::path_abs(
@@ -1390,7 +1395,7 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
         start = base_dir
       ),
       sheet = "AO_DAY_MAIN",
-      range = cell_limits(c(3, 2), c(NA, 4))
+      range = cell_limits(c(3, 2), c(NA, 5))
       )
 
     ### merge and reorder tables
