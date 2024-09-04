@@ -574,29 +574,42 @@ get_co2_data <- function() {
 
 get_ao_billing_data <- function() {
 
-  ## https://leowong.ca/blog/connect-to-microsoft-access-database-via-r/
-  ## Set up driver info and database path
-  DRIVERINFO <- "Driver={Microsoft Access Driver (*.mdb, *.accdb)};"
-  MDBPATH <- "G:/HQ/dgof-pru/Data/DataProcessing/Crco - Billing/CRCO_BILL.accdb"
-  PATH <- paste0(DRIVERINFO, "DBQ=", MDBPATH)
+  # ## https://leowong.ca/blog/connect-to-microsoft-access-database-via-r/
+  # ## Set up driver info and database path
+  # DRIVERINFO <- "Driver={Microsoft Access Driver (*.mdb, *.accdb)};"
+  # MDBPATH <- "G:/HQ/dgof-pru/Data/DataProcessing/Crco - Billing/CRCO_BILL.accdb"
+  # PATH <- paste0(DRIVERINFO, "DBQ=", MDBPATH)
+  #
+  # channel <- odbcDriverConnect(PATH)
+  #
+  # query_bill <- paste0("SELECT AO_GRP_LAST_NAME, Billing_period_start_date, FLAG_YTD,
+  #   [Billing Zone Name], [Route Charges], Year, Month
+  #   FROM V_CRCO_BILL_PER_AO_CZ_GRP_ACTUAL
+  #   where (Year = ", last_year, " or Year = ", last_year-1," or Year = ", 2019,") and FLAG_YTD = 'Y'
+  # ")
+  #
+  # ## Load data into R dataframe
+  # billed_ao_raw <- sqlQuery(channel,
+  #                        query_bill,
+  #                        stringsAsFactors = FALSE)
+  #
+  # ## Close and remove channel
+  # close(channel)
+  # rm(channel)
 
-  channel <- odbcDriverConnect(PATH)
+  billed_ao_raw <-  read_xlsx(
+    path  = fs::path_abs(
+      str_glue("billing per cz_ao_app.xlsx"),
+      start = "G:/HQ/dgof-pru/Data/DataProcessing/Covid19/Oscar/Develop"),
+    sheet = "cz",
+    range = cell_limits(c(4, 1), c(NA, NA))) %>%
+    as_tibble() %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x))) |>
+    clean_names()
 
-  query_bill <- paste0("SELECT AO_GRP_LAST_NAME, Billing_period_start_date, FLAG_YTD,
-    [Billing Zone Name], [Route Charges], Year, Month
-    FROM V_CRCO_BILL_PER_AO_CZ_GRP_ACTUAL
-    where (Year = ", last_year, " or Year = ", last_year-1," or Year = ", 2019,") and FLAG_YTD = 'Y'
-  ")
-
-  ## Load data into R dataframe
-  billed_ao_raw <- sqlQuery(channel,
-                         query_bill,
-                         stringsAsFactors = FALSE)
-
-  ## Close and remove channel
-  close(channel)
-  rm(channel)
-
+  billed_ao_raw <- billed_ao_raw |>
+    mutate(month = as.numeric(month)) |>
+    rename(route_charges = total)
   return(billed_ao_raw)
 }
 

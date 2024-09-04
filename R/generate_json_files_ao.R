@@ -56,9 +56,7 @@ ao_grp_icao <-  read_xlsx(
 billed_ao_raw <- get_ao_billing_data()
 
 ## process billing data
-ao_billed_clean <- billed_ao_raw %>%
-  janitor::clean_names() %>%
-  as_tibble() |>
+ao_billed_clean <- billed_ao_raw  |>
   right_join(ao_grp_icao, by = c("ao_grp_last_name" = "AO_GRP_NAME")) |>
   mutate(billing_period_start_date = as.Date(billing_period_start_date, format = "%d-%m-%Y")) |>
   rename(AO_GRP_NAME = ao_grp_last_name)
