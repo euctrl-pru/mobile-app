@@ -217,7 +217,47 @@ query <- "
       AO_LIST AS (
       SELECT ao_code,ao_name,ao_grp_code,ao_grp_name
       FROM prudev.v_covid_dim_ao
-      WHERE  LIST_DSH = 'Y'
+      where ao_grp_code in ('RYR_GRP',
+                      'EZY_GRP',
+                      'THY_GRP',
+                      'DLH_GRP',
+                      'AFR_GRP',
+                      'WZZ_GRP',
+                      'KLM_GRP',
+                      'BAW_GRP',
+                      'SAS_GRP',
+                      'VLG',
+                      'PGT',
+                      'EWG_GRP',
+                      'SWR_GRP',
+                      'NAX_GRP',
+                      'IBE_GRP',
+                      'ITY',
+                      'TUI_GRP',
+                      'AEE_GRP',
+                      'TAP_GRP',
+                      'WIF',
+                      'AUA',
+                      'LOT',
+                      'EXS',
+                      'FIN',
+                      'BCS_GRP',
+                      'SXS',
+                      'QTR',
+                      'ANE',
+                      'UAE',
+                      'EIN_GRP',
+                      'VOE',
+                      'AEA',
+                      'RAM',
+                      'BEL',
+                      'NJE',
+                      'UAL',
+                      'LOG',
+                      'SEH',
+                      'DAL',
+                      'ASL'
+                      )
        )
       , AO_DAY AS (
       SELECT
@@ -1490,13 +1530,13 @@ column_names <- c('AO_GRP_CODE',
 colnames(ao_delay_flt_evo) <- column_names
 
 ### nest data
-ao_delay_flt_evo_evo_long <- ao_delay_flt_evo %>%
+ao_delay_flt_evo_long <- ao_delay_flt_evo %>%
   pivot_longer(-c(AO_GRP_CODE, AO_GRP_NAME, FLIGHT_DATE), names_to = 'year', values_to = 'daio') %>%
   group_by(AO_GRP_CODE, AO_GRP_NAME, FLIGHT_DATE) %>%
   nest_legacy(.key = "statistics")
 
 ###convert to json and save
-ao_delay_flt_evo_j <- ao_delayed_flights_evo_long %>% toJSON(., pretty = TRUE)
+ao_delay_flt_evo_j <- ao_delay_flt_evo_long %>% toJSON(., pretty = TRUE)
 write(ao_delay_flt_evo_j, here(data_folder,"ao_delay_per_flight_evo_chart_daily.json"))
 write(ao_delay_flt_evo_j, paste0(archive_dir, today, "_ao_delay_per_flight_chart_daily.json"))
 write(ao_delay_flt_evo_j, paste0(archive_dir, "ao_delay_per_flight_chart_daily.json"))
