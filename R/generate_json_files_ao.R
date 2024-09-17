@@ -118,7 +118,7 @@ ao_traffic_delay_data <-  read_xlsx(
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
 ao_traffic_delay_last_day <- ao_traffic_delay_data %>%
-  filter(FLIGHT_DATE == last_day) %>%
+  filter(FLIGHT_DATE == max(LAST_DATA_DAY, na.rm = TRUE)) %>%
   arrange(AO_GRP_NAME, FLIGHT_DATE)
 
 ao_traffic_for_json <- ao_traffic_delay_last_day %>%
@@ -1512,6 +1512,7 @@ write(ao_traffic_evo_j, paste0(archive_dir, "ao_traffic_chart_daily.json"))
 ### 7-day % of delay per flight ----
 ao_delay_flt_evo <- ao_traffic_delay_data  %>%
   filter(FLIGHT_DATE <= max(LAST_DATA_DAY, na.rm = TRUE)) %>%
+
   select(
     AO_GRP_CODE,
     AO_GRP_NAME,
@@ -1543,6 +1544,14 @@ write(ao_delay_flt_evo_j, paste0(archive_dir, "ao_delay_per_flight_chart_daily.j
 
 ### 7-day % of delayed flights ----
 ao_delayed_flights_evo <- ao_traffic_delay_data  %>%
+  mutate(
+    RWK_DELAYED_TFC_PERC = case_when(
+      FLIGHT_DATE > max(LAST_DATA_DAY, na.rm = TRUE) ~ NA,
+      .default = RWK_DELAYED_TFC_PERC),
+    RWK_DELAYED_TFC_15_PERC = case_when(
+      FLIGHT_DATE > max(LAST_DATA_DAY, na.rm = TRUE) ~ NA,
+      .default = RWK_DELAYED_TFC_15_PERC),
+    ) |>
   select(
     AO_GRP_CODE,
     AO_GRP_NAME,
@@ -2126,9 +2135,9 @@ write(ao_punct_evo_j, paste0(archive_dir, "ao_punct_evo_chart.json"))
 # write(st_delay_type_evo_y2d_j, paste0(archive_dir, today, "_st_delay_flt_type_chart_evo_y2d.json"))
 # write(st_delay_type_evo_y2d_j, paste0(archive_dir, "st_delay_flt_type_evo_chart_y2d.json"))
 #
-#
-#
-# BILLING ----
+
+
+## BILLING ----
 ao_billing_evo <- ao_billing %>%
   arrange(AO_GRP_CODE, year, month) %>%
   mutate(
