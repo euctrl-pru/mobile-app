@@ -1445,6 +1445,12 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
     write(ao_data_j, paste0(archive_dir, "ao_ranking_traffic.json"))
     write(ao_data_j, paste0(archive_dir, today, "_ao_ranking_traffic.json"))
 
+    # we duplicate the files while the app is being remapped
+    write(ao_data_j, here(data_folder, "v2", "nw_ao_ranking_traffic.json"))
+    write(ao_data_j, paste0(archive_dir, "nw_ao_ranking_traffic.json"))
+    write(ao_data_j, paste0(archive_dir, today, "_nw_ao_ranking_traffic.json"))
+
+
   ## Airport traffic ----
 
     ### day
@@ -1553,6 +1559,12 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
     write(apt_data_j, here(data_folder, "v2", "apt_ranking_traffic.json"))
     write(apt_data_j, paste0(archive_dir, "apt_ranking_traffic.json"))
     write(apt_data_j, paste0(archive_dir, today, "_apt_ranking_traffic.json"))
+
+    # we duplicate the files while the app is being remapped
+    write(apt_data_j, here(data_folder, "v2", "nw_apt_ranking_traffic.json"))
+    write(apt_data_j, paste0(archive_dir, "nw_apt_ranking_traffic.json"))
+    write(apt_data_j, paste0(archive_dir, today, "_nw_apt_ranking_traffic.json"))
+
 
   ## Country traffic DAI ----
 
@@ -1668,6 +1680,12 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
     write(ct_dai_data_j, here(data_folder, "v2", "ctry_ranking_traffic_DAI.json"))
     write(ct_dai_data_j, paste0(archive_dir, today, "_ctry_ranking_traffic_DAI.json"))
     write(ct_dai_data_j, paste0(archive_dir, "ctry_ranking_traffic_DAI.json"))
+
+    # we duplicate the files while the app is being remapped
+    write(ct_dai_data_j, here(data_folder, "v2", "nw_ctry_ranking_traffic_DAI.json"))
+    write(ct_dai_data_j, paste0(archive_dir, today, "_nw_ctry_ranking_traffic_DAI.json"))
+    write(ct_dai_data_j, paste0(archive_dir, "nw_ctry_ranking_traffic_DAI.json"))
+
 
   ## Airport delay -----
 
@@ -1799,6 +1817,11 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
     write(apt_rank_data_j, here(data_folder, "v2", "apt_ranking_delay.json"))
     write(apt_rank_data_j, paste0(archive_dir, today, "_apt_ranking_delay.json"))
     write(apt_rank_data_j, paste0(archive_dir, "apt_ranking_delay.json"))
+
+    # we duplicate the files while the app is being remapped
+    write(apt_rank_data_j, here(data_folder, "v2", "nw_apt_ranking_delay.json"))
+    write(apt_rank_data_j, paste0(archive_dir, today, "_nw_apt_ranking_delay.json"))
+    write(apt_rank_data_j, paste0(archive_dir, "nw_apt_ranking_delay.json"))
 
 
   ## ACC delay ----
@@ -1952,6 +1975,11 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
     write(acc_rank_data_j, here(data_folder, "v2", "acc_ranking_delay.json"))
     write(acc_rank_data_j, paste0(archive_dir, today, "_acc_ranking_delay.json"))
     write(acc_rank_data_j, paste0(archive_dir, "acc_ranking_delay.json"))
+
+    # we duplicate the file while the app is being remapped
+    write(acc_rank_data_j, here(data_folder, "v2", "nw_acc_ranking_delay.json"))
+    write(acc_rank_data_j, paste0(archive_dir, today, "_nw_acc_ranking_delay.json"))
+    write(acc_rank_data_j, paste0(archive_dir, "nw_acc_ranking_delay.json"))
 
 
   ## Country delay ----
@@ -2107,6 +2135,11 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
     write(ct_rank_data_j, here(data_folder, "v2", "ctry_ranking_delay.json"))
     write(ct_rank_data_j, paste0(archive_dir, today, "_ctry_ranking_delay.json"))
     write(ct_rank_data_j, paste0(archive_dir, "ctry_ranking_delay.json"))
+
+    # we duplicate the files while the app is being remapped
+    write(ct_rank_data_j, here(data_folder, "v2", "nw_ctry_ranking_delay.json"))
+    write(ct_rank_data_j, paste0(archive_dir, today, "_nw_ctry_ranking_delay.json"))
+    write(ct_rank_data_j, paste0(archive_dir, "nw_ctry_ranking_delay.json"))
 
 
   ## Airport punctuality ----
@@ -2356,6 +2389,12 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
     write(apt_punct_data_j, paste0(archive_dir, today, "_apt_ranking_punctuality.json"))
     write(apt_punct_data_j, paste0(archive_dir, "apt_ranking_punctuality.json"))
 
+    # we duplicate the files while the app is being remapped
+    write(apt_punct_data_j, here(data_folder, "v2", "nw_apt_ranking_punctuality.json"))
+    write(apt_punct_data_j, paste0(archive_dir, today, "_nw_apt_ranking_punctuality.json"))
+    write(apt_punct_data_j, paste0(archive_dir, "nw_apt_ranking_punctuality.json"))
+
+
   ## Country punctuality ----
   ##### NOte: the time series for each country is not full. At some point it needs to be fixed either here or in the initial query so the lag functions yield the right result
 
@@ -2596,3 +2635,8 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
     write(ct_punct_data_j, here(data_folder, "v2", "ctry_ranking_punctuality.json"))
     write(ct_punct_data_j, paste0(archive_dir, today, "_ctry_ranking_punctuality.json"))
     write(ct_punct_data_j, paste0(archive_dir, "ctry_ranking_punctuality.json"))
+
+    # we duplicate the files while the app is being remapped
+    write(ct_punct_data_j, here(data_folder, "v2", "nw_ctry_ranking_punctuality.json"))
+    write(ct_punct_data_j, paste0(archive_dir, today, "_nw_ctry_ranking_punctuality.json"))
+    write(ct_punct_data_j, paste0(archive_dir, "nw_ctry_ranking_punctuality.json"))
