@@ -1364,7 +1364,11 @@ ao_apt_arr_delay_day_raw <- read_xlsx(
 
 ao_apt_arr_delay_day <- ao_apt_arr_delay_day_raw |>
   filter(FLAG_DAY == "CURRENT_DAY") |>
-  mutate(AO_GRP_RANK = paste0(AO_GRP_CODE, R_RANK)) |>
+  group_by(AO_GRP_CODE) |>
+  arrange(AO_GRP_CODE, desc(AVG_DAILY_ARR_DLY)) |>
+  mutate(R_RANK = row_number(),
+         AO_GRP_RANK = paste0(AO_GRP_CODE, R_RANK)) |>
+  ungroup() |>
   select(
     AO_GRP_RANK,
     DY_RANK = R_RANK,
