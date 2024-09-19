@@ -1369,8 +1369,8 @@ ao_apt_arr_delay_day <- ao_apt_arr_delay_day_raw |>
     AO_GRP_RANK,
     DY_RANK = R_RANK,
     DY_APT_NAME = ADES_NAME,
+    DY_APT_ARR_DLY = AVG_DAILY_ARR_DLY,
     DY_APT_ARR_DLY_FLT = AVG_ARR_DLY_PER_FLT,
-    DY_APT_ARR_FLT = AVG_DAILY_ARR_TFC,
     DY_TO_DATE = TO_DATE)
 
 #### week ----
@@ -1389,8 +1389,9 @@ ao_apt_arr_delay_week <- ao_apt_arr_delay_week_raw |>
     AO_GRP_RANK,
     WK_RANK = R_RANK,
     WK_APT_NAME = ADES_NAME,
+    WK_APT_ARR_DLY = AVG_DAILY_ARR_DLY,
     WK_APT_ARR_DLY_FLT = AVG_ARR_DLY_PER_FLT,
-    WK_APT_ARR_FLT = AVG_DAILY_ARR_TFC,
+    # WK_APT_ARR_FLT = AVG_DAILY_ARR_TFC,
     WK_TO_DATE = TO_DATE)
 
 #### y2d ----
@@ -1409,8 +1410,9 @@ ao_apt_arr_delay_y2d <- ao_apt_arr_delay_y2d_raw |>
     AO_GRP_RANK,
     Y2D_RANK = R_RANK,
     Y2D_APT_NAME = ADES_NAME,
+    Y2D_APT_ARR_DLY = AVG_DAILY_ARR_DLY,
     Y2D_APT_ARR_DLY_FLT = AVG_ARR_DLY_PER_FLT,
-    Y2D_APT_ARR_FLT = AVG_DAILY_ARR_TFC,
+    # Y2D_APT_ARR_FLT = AVG_DAILY_ARR_TFC,
     Y2D_TO_DATE = TO_DATE)
 
 #### main card ----
@@ -1512,7 +1514,6 @@ write(ao_traffic_evo_j, paste0(archive_dir, "ao_traffic_chart_daily.json"))
 ### 7-day % of delay per flight ----
 ao_delay_flt_evo <- ao_traffic_delay_data  %>%
   filter(FLIGHT_DATE <= max(LAST_DATA_DAY, na.rm = TRUE)) %>%
-
   select(
     AO_GRP_CODE,
     AO_GRP_NAME,
