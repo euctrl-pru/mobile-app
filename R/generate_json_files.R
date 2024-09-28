@@ -2425,7 +2425,8 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
         ISO_CT_CODE != "SJ",
         ISO_CT_CODE != "MC",
         ISO_CT_CODE != "PM",
-        ISO_CT_CODE != "UA"
+        ISO_CT_CODE != "UA",
+        ISO_CT_CODE != "SM"
       ) %>%
       mutate_at("EC_ISO_CT_NAME", ~ if_else(. == "Turkiye", "Türkiye", .))
 
@@ -2447,8 +2448,9 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
       ) %>%
       ungroup()
 
-    ### day
-    ct_punct_dy_calc <- ct_punct_calc %>%
+    ### day ----
+    ####top
+    ct_punct_dy_calc_top <- ct_punct_calc %>%
       filter(DATE == last_punctuality_day, RANK < 11) %>%
       mutate(
         DY_CTRY_NAME = EC_ISO_CT_NAME,
@@ -2456,18 +2458,41 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
         DY_TO_DATE = round_date(DATE, "day")
       )
 
-    ct_punct_dy <-ct_punct_dy_calc |>
+    ct_punct_dy_top <- ct_punct_dy_calc_top |>
       select(
         RANK,
-        DY_TO_DATE,
         DY_RANK_DIF_PREV_WEEK,
         DY_CTRY_NAME,
+        DY_TO_DATE,
         DY_CTRY_ARR_PUNCT,
         DY_PUNCT_DIF_PREV_WEEK_PERC,
         DY_PUNCT_DIF_PREV_YEAR_PERC
       )
 
-    ### week
+    ####bottom
+    ct_punct_dy_calc_bottom <- ct_punct_calc %>%
+      filter(DATE == last_punctuality_day,
+             RANK > max(RANK) - 11) %>%
+      arrange(ARR_PUNCTUALITY_PERCENTAGE) |>
+      mutate(
+        RANK = max(RANK) + 1 - RANK,
+        DY_CTRY_NAME_BOTTOM = EC_ISO_CT_NAME,
+        DY_CTRY_ARR_PUNCT_BOTTOM = ARR_PUNCTUALITY_PERCENTAGE / 100,
+        DY_TO_DATE_BOTTOM = round_date(DATE, "day")
+      )
+
+    ct_punct_dy_bottom <-ct_punct_dy_calc_bottom |>
+      select(
+        RANK,
+        DY_RANK_DIF_PREV_WEEK_BOTTOM = DY_RANK_DIF_PREV_WEEK,
+        DY_CTRY_NAME_BOTTOM,
+        DY_TO_DATE_BOTTOM,
+        DY_CTRY_ARR_PUNCT_BOTTOM,
+        DY_PUNCT_DIF_PREV_WEEK_PERC_BOTTOM = DY_PUNCT_DIF_PREV_WEEK_PERC,
+        DY_PUNCT_DIF_PREV_YEAR_PERC_BOTTOM = DY_PUNCT_DIF_PREV_YEAR_PERC
+      )
+
+    ### week ----
     ct_punct_wk <- ct_punct_calc %>%
       group_by(DATE) %>%
       arrange(desc(WK_CTRY_ARR_PUNCT), EC_ISO_CT_NAME) %>%
@@ -2483,7 +2508,10 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
         WK_PUNCT_DIF_PREV_WEEK_PERC = (WK_CTRY_ARR_PUNCT - lag(WK_CTRY_ARR_PUNCT, 7)),
         WK_PUNCT_DIF_PREV_YEAR_PERC = (WK_CTRY_ARR_PUNCT - lag(WK_CTRY_ARR_PUNCT, 364))
       ) %>%
-      ungroup() %>%
+      ungroup()
+
+    #### top
+    ct_punct_wk_top <- ct_punct_wk |>
       filter(DATE == last_punctuality_day, RANK < 11) %>%
       mutate(
         WK_CTRY_NAME = EC_ISO_CT_NAME,
@@ -2492,16 +2520,38 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
       ) %>%
       select(
         RANK,
-        WK_FROM_DATE,
-        WK_TO_DATE,
         WK_RANK_DIF_PREV_WEEK,
         WK_CTRY_NAME,
+        WK_FROM_DATE,
+        WK_TO_DATE,
         WK_CTRY_ARR_PUNCT,
         WK_PUNCT_DIF_PREV_WEEK_PERC,
         WK_PUNCT_DIF_PREV_YEAR_PERC
       )
 
-    ### y2d
+    #### bottom
+    ct_punct_wk_bottom <- ct_punct_wk |>
+      filter(DATE == last_punctuality_day,
+             RANK > max(RANK) - 11) %>%
+      arrange(WK_CTRY_ARR_PUNCT, EC_ISO_CT_NAME) |>
+      mutate(
+        RANK = max(RANK) + 1 - RANK,
+        WK_CTRY_NAME_BOTTOM = EC_ISO_CT_NAME,
+        WK_FROM_DATE_BOTTOM = round_date(DATE, "day") + lubridate::days(-6),
+        WK_TO_DATE_BOTTOM = round_date(DATE, "day")
+      ) %>%
+      select(
+        RANK,
+        WK_RANK_DIF_PREV_WEEK_BOTTOM = WK_RANK_DIF_PREV_WEEK,
+        WK_CTRY_NAME_BOTTOM,
+        WK_FROM_DATE_BOTTOM,
+        WK_TO_DATE_BOTTOM,
+        WK_CTRY_ARR_PUNCT_BOTTOM = WK_CTRY_ARR_PUNCT,
+        WK_PUNCT_DIF_PREV_WEEK_PERC_BOTTOM = WK_PUNCT_DIF_PREV_WEEK_PERC,
+        WK_PUNCT_DIF_PREV_YEAR_PERC_BOTTOM = WK_PUNCT_DIF_PREV_YEAR_PERC
+      )
+
+    ### y2d ----
     ct_punct_y2d <- ct_punct_calc %>%
       mutate(MONTH_DAY = as.numeric(format(DATE, format = "%m%d"))) %>%
       filter(MONTH_DAY <= as.numeric(format(last_punctuality_day, format = "%m%d"))) %>%
@@ -2523,7 +2573,10 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
         Y2D_PUNCT_DIF_PREV_YEAR_PERC = (Y2D_CTRY_ARR_PUNCT - lag(Y2D_CTRY_ARR_PUNCT, 1)),
         Y2D_PUNCT_DIF_2019_PERC = (Y2D_CTRY_ARR_PUNCT - lag(Y2D_CTRY_ARR_PUNCT, max(YEAR) - 2019))
       ) %>%
-      ungroup() %>%
+      ungroup()
+
+    #### top
+    ct_punct_y2d_top <- ct_punct_y2d |>
       filter(YEAR == max(YEAR), RANK < 11) %>%
       mutate(Y2D_CTRY_NAME = EC_ISO_CT_NAME) %>%
       select(
@@ -2535,8 +2588,26 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
         Y2D_PUNCT_DIF_2019_PERC
       )
 
-    ### main card
-    ct_main_punct_top <- ct_punct_dy_calc %>%
+    #### bottom
+    ct_punct_y2d_bottom <- ct_punct_y2d |>
+      filter(YEAR == max(YEAR),
+             RANK > max(RANK) - 11) %>%
+      arrange(Y2D_CTRY_ARR_PUNCT, EC_ISO_CT_NAME) |>
+      mutate(
+        RANK = max(RANK) + 1 - RANK,
+        Y2D_CTRY_NAME_BOTTOM = EC_ISO_CT_NAME
+        ) %>%
+      select(
+        RANK,
+        Y2D_RANK_DIF_PREV_YEAR_BOTTOM = Y2D_RANK_DIF_PREV_YEAR,
+        Y2D_CTRY_NAME_BOTTOM,
+        Y2D_CTRY_ARR_PUNCT_BOTTOM = Y2D_CTRY_ARR_PUNCT,
+        Y2D_PUNCT_DIF_PREV_YEAR_PERC_BOTTOM = Y2D_PUNCT_DIF_PREV_YEAR_PERC,
+        Y2D_PUNCT_DIF_2019_PERC_BOTTOM = Y2D_PUNCT_DIF_2019_PERC
+      )
+
+    ### main card ----
+    ct_main_punct_top <- ct_punct_dy_calc_top %>%
       mutate(
         MAIN_PUNCT_CTRY_NAME = if_else(
           RANK <= 4,
@@ -2592,14 +2663,14 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
 
 
     ### merge and reorder tables
-    ct_punct_data <- merge(x = ct_punct_dy, y = ct_punct_wk, by = "RANK")
-    ct_punct_data <- merge(x = ct_punct_data, y = ct_punct_y2d, by = "RANK")
+    ct_punct_data <- merge(x = ct_punct_dy_top, y = ct_punct_wk_top, by = "RANK")
+    ct_punct_data <- merge(x = ct_punct_data, y = ct_punct_y2d_top, by = "RANK")
     ct_punct_data <- merge(x = ct_punct_data, y = ct_main_punct_top, by = "RANK")
     ct_punct_data <- merge(x = ct_punct_data, y = ct_main_punct_bottom, by = "RANK")
 
     ct_punct_data <- ct_punct_data %>%
       mutate(Y2D_TO_DATE = DY_TO_DATE) %>%
-      relocate(c(
+      select(
         RANK,
         MAIN_PUNCT_CTRY_NAME,
         MAIN_PUNCT_CTRY_ARR_PUNCT,
@@ -2626,12 +2697,18 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
         Y2D_CTRY_ARR_PUNCT,
         Y2D_PUNCT_DIF_PREV_YEAR_PERC,
         Y2D_PUNCT_DIF_2019_PERC
-      ))
+      )
+
+    ct_punct_data <- merge(x = ct_punct_data, y = ct_punct_dy_bottom, by = "RANK")
+    ct_punct_data <- merge(x = ct_punct_data, y = ct_punct_wk_bottom, by = "RANK")
+    ct_punct_data <- merge(x = ct_punct_data, y = ct_punct_y2d_bottom, by = "RANK")
+
+    ct_punct_data <- ct_punct_data |>
+      mutate(Y2D_TO_DATE_BOTTOM = Y2D_TO_DATE) |>
+      relocate (Y2D_TO_DATE_BOTTOM, .before = Y2D_CTRY_ARR_PUNCT_BOTTOM)
 
     ### covert to json and save in app data folder and archive
     ct_punct_data_j <- ct_punct_data %>% toJSON(., pretty = TRUE)
-    # (not needed anymore since the release of v2)
-    # write(ct_punct_data_j, here(data_folder, "ctry_ranking_punctuality.json"))
     write(ct_punct_data_j, here(data_folder, "v2", "ctry_ranking_punctuality.json"))
     write(ct_punct_data_j, paste0(archive_dir, today, "_ctry_ranking_punctuality.json"))
     write(ct_punct_data_j, paste0(archive_dir, "ctry_ranking_punctuality.json"))
