@@ -44,8 +44,6 @@ if (st_file_status == "OK") {
 
 ## copy v1 files ----
 if (nw_file_status == "OK") {
-  # copyDirectory(here("..", "mobile-app", "data"), paste0(destination_dir,"data"), overwrite = TRUE)
-  # copyDirectory(here::here("data"), paste0(destination_dir,"data"), overwrite = TRUE)
 
   ### set email status parameters
   sbj = "Only nw files updated. App update halted"
@@ -76,12 +74,6 @@ if (nw_file_status == "OK" & st_file_status == "OK") {
   msg = "Some tables of both nw and state datasets were not updated."
 
 }
-
-# file.copy(file.path(base_dir,list.files(base_dir)), destination_dir, overwrite = TRUE)
-# copyDirectory(here::here("iframes"), paste0(destination_dir,"iframes"), overwrite = TRUE)
-# copyDirectory(here::here("images"), paste0(destination_dir,"images"), overwrite = TRUE)
-# copyDirectory(here::here("traffic"), paste0(destination_dir,"traffic"), overwrite = TRUE)
-
 
 # send email ----
 from    <- "oscar.alfaro@eurocontrol.int"
