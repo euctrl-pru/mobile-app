@@ -5,11 +5,20 @@ library(dplyr)
 library(stringr)
 library(readxl)
 
-# check data status ----
+# parameters ----
+yesterday <- (lubridate::now() +  lubridate::days(-2)) %>% format("%Y-%m-%d")
+
 data_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/LastVersion/'
 nw_file <- "099_Traffic_Landing_Page_dataset_new.xlsx"
 st_file <- '099a_app_state_dataset.xlsx'
 
+base_dir <- here("..", "mobile-app")
+destination_dir <- '//ihx-vdm05/LIVE_var_www_performance$/briefing'
+local_data_folder <- here("..", "mobile-app", "data", "V2")
+network_data_folder_v2 <- here(destination_dir, "data", "v2")
+network_data_folder_v3 <- here(destination_dir, "data", "v3", yesterday)
+
+# check data status ----
 nw_file_status <- read_xlsx(path = fs::path_abs(str_glue(nw_file),start = data_dir),
   sheet = "Checks",
   range = cell_limits(c(1, 5), c(2, 5))) %>% pull()
@@ -32,9 +41,6 @@ if (st_file_status == "OK") {
 }
 
 # copy files to performance folder ----
-base_dir <- here("..", "mobile-app")
-# base_dir <- here()
-destination_dir <- '//ihx-vdm05/LIVE_var_www_performance$/briefing/'
 
 ## copy v1 files ----
 if (nw_file_status == "OK") {
@@ -46,9 +52,19 @@ if (nw_file_status == "OK") {
   msg = "Some tables of the state dataset were not updated. App datasets not copied"
 }
 
-## copy v2 files ----
+## copy v2, v3 files ----
 if (nw_file_status == "OK" & st_file_status == "OK") {
-  copyDirectory(here("..", "mobile-app", "data", "V2"), paste0(destination_dir,"data/V2"), overwrite = TRUE)
+
+  ### copy that data directory to the V2 network folder
+  copyDirectory(local_data_folder, network_data_folder_v2, overwrite = TRUE)
+
+  ### check if v3 date folder already exists
+  if (!dir.exists(network_data_folder_v3)) {
+    dir.create(network_data_folder_v3)
+  }
+
+  ### copy that data directory to the V3 network folder
+  copyDirectory(local_data_folder, network_data_folder_v3, overwrite = TRUE)
 
   ### set email status parameters
   sbj = "App network and state datasets copied successfully to folder"
