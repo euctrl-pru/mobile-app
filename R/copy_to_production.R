@@ -6,7 +6,7 @@ library(stringr)
 library(readxl)
 
 # parameters ----
-yesterday <- (lubridate::now() +  lubridate::days(-2)) %>% format("%Y-%m-%d")
+yesterday <- (lubridate::now() +  lubridate::days(-1)) %>% format("%Y-%m-%d")
 
 data_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/LastVersion/'
 nw_file <- "099_Traffic_Landing_Page_dataset_new.xlsx"
@@ -15,6 +15,9 @@ st_file <- '099a_app_state_dataset.xlsx'
 base_dir <- here("..", "mobile-app")
 destination_dir <- '//ihx-vdm05/LIVE_var_www_performance$/briefing'
 local_data_folder <- here("..", "mobile-app", "data", "V2")
+# temporary folder for testing new v3 files
+test_local_data_folder <- here("..", "mobile-app", "data", "V3")
+
 network_data_folder_v2 <- here(destination_dir, "data", "v2")
 network_data_folder_v3 <- here(destination_dir, "data", "v3", yesterday)
 
@@ -63,6 +66,10 @@ if (nw_file_status == "OK" & st_file_status == "OK") {
 
   ### copy that data directory to the V3 network folder
   copyDirectory(local_data_folder, network_data_folder_v3, overwrite = TRUE)
+
+  ### copy the v3 test files
+  v3_files_to_copy <- list.files(test_local_data_folder, full.names = TRUE)
+  file.copy(from = v3_files_to_copy, to = network_data_folder_v3, overwrite = FALSE)
 
   ### set email status parameters
   sbj = "App network and state datasets copied successfully to folder"
