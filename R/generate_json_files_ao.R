@@ -21,16 +21,28 @@ data_folder <- here::here("..", "mobile-app", "data", "v3")
 # base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/'
 base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Oscar/Develop/'
 base_file <- '099b_app_ao_dataset.xlsx'
+
 nw_base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/LastVersion/'
 nw_base_file <- '099_Traffic_Landing_Page_dataset_new.xlsx'
-# archive_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/web_daily_json_files/app/'
+
 archive_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Oscar/old/'
 archive_dir_raw <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Project/DDP/AIU app/data_archive'
 
-today <- (lubridate::now() +  days(-1)) %>% format("%Y%m%d")
-last_day <-  trunc((lubridate::now() +  days(-1)), "day")
-last_year <- as.numeric(format(last_day,'%Y'))
+# archive mode for past dates
+archive_mode <- FALSE
+
+if (archive_mode) {
+  data_day_date <- ymd("2024-01-05")
+  data_day_text <- data_day_date %>% format("%Y%m%d")
+  data_day_year <- as.numeric(format(data_day_date,'%Y'))
+}
+
+data_day_date <- lubridate::today(tzone = "") +  days(-1)
+data_day_text <- data_day_date %>% format("%Y%m%d")
+data_day_year <- as.numeric(format(data_day_date,'%Y'))
+
 st_json_app <-""
+
 # DB params
 usr <- Sys.getenv("PRU_DEV_USR")
 pwd <- Sys.getenv("PRU_DEV_PWD")
@@ -63,9 +75,10 @@ ao_billed_clean <- billed_ao_raw  %>%
   mutate(billing_period_start_date = as.Date(billing_period_start_date, format = "%d-%m-%Y")) %>%
   rename(AO_GRP_NAME = ao_grp_last_name)
 
-last_billing_date <- max(ao_billed_clean$billing_period_start_date)
-last_billing_year <- max(ao_billed_clean$year)
-last_billing_month <- max(ao_billed_clean$month)
+last_billing_date <- min(max(ao_billed_clean$billing_period_start_date),
+                         floor_date(data_day_date + months(-1), 'month)'))
+last_billing_year <- year(last_billing_date)
+last_billing_month <- month(last_billing_date)
 
 ao_billing <- ao_billed_clean %>%
   group_by(AO_GRP_CODE, AO_GRP_NAME, year, month, billing_period_start_date) %>%
@@ -120,7 +133,10 @@ ao_traffic_delay_data <-  read_xlsx(
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
 ao_traffic_delay_last_day <- ao_traffic_delay_data %>%
-  filter(FLIGHT_DATE == max(LAST_DATA_DAY, na.rm = TRUE)) %>%
+  filter(FLIGHT_DATE == min(data_day_date,
+                            max(LAST_DATA_DAY, na.rm = TRUE),
+                            na.rm = TRUE)
+         ) %>%
   arrange(AO_GRP_NAME, FLIGHT_DATE)
 
 ao_traffic_for_json <- ao_traffic_delay_last_day %>%
@@ -290,7 +306,8 @@ ao_punct_raw <- export_query(query) %>%
   as_tibble() %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-last_day_punct <-  max(ao_punct_raw$DAY_DATE)
+last_day_punct <-  min(max(ao_punct_raw$DAY_DATE),
+                       data_day_date, na.rm = TRUE)
 last_year_punct <- as.numeric(format(last_day_punct,'%Y'))
 
 ao_punct_data <- ao_punct_raw %>%
@@ -566,10 +583,12 @@ ao_co2_data <- ao_co2_raw %>%
   ) %>%
   mutate(FLIGHT_MONTH = ceiling_date(as_date(FLIGHT_MONTH), unit = 'month')-1)
 
-ao_co2_last_date <- max(ao_co2_data$FLIGHT_MONTH, na.rm=TRUE)
+ao_co2_last_date <- min(max(ao_co2_data$FLIGHT_MONTH, na.rm=TRUE),
+                        floor_date(data_day_date, 'month') -1,
+                        na.rm = TRUE)
 ao_co2_last_month <- format(ao_co2_last_date,'%B')
 ao_co2_last_month_num <- as.numeric(format(ao_co2_last_date,'%m'))
-ao_co2_last_year <- max(ao_co2_data$YEAR, na.rm=TRUE)
+ao_co2_last_year <- lubridate::year(ao_co2_last_date)
 
 #check last month number of flights
 check_flights <- ao_co2_data %>% ungroup() %>%
@@ -664,7 +683,7 @@ ao_json_app <- ao_json_app_j %>%
 
 write(ao_json_app, here(data_folder,"ao_json_app.json"))
 write(ao_json_app, paste0(archive_dir, "ao_json_app.json"))
-write(ao_json_app, paste0(archive_dir, today, "_ao_json_app.json"))
+write(ao_json_app, paste0(archive_dir, data_day_text, "_ao_json_app.json"))
 
 # ____________________________________________________________________________________________
 #
@@ -675,6 +694,11 @@ write(ao_json_app, paste0(archive_dir, today, "_ao_json_app.json"))
 ## TRAFFIC ----
 ### Destination country ----
 #### day ----
+if (archive_mode) {
+  myarchivefile <- "_ao_st_des_data_day_raw.csv"
+  ao_st_des_data_day_raw <-  read.csv(here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile)))
+
+} else {
 ao_st_des_data_day_raw <- read_xlsx(
   path  = fs::path_abs(
     str_glue(base_file),
@@ -683,11 +707,12 @@ ao_st_des_data_day_raw <- read_xlsx(
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-# save pre-processed file in archive for generation of past json files
-myarchivefile <- "_ao_st_des_data_day_raw.csv"
-write.csv(ao_st_des_data_day_raw,
-          here(archive_dir_raw, "ao", paste0(today, myarchivefile)),
-          row.names = FALSE)
+  # save pre-processed file in archive for generation of past json files
+  myarchivefile <- "_ao_st_des_data_day_raw.csv"
+  write.csv(ao_st_des_data_day_raw,
+            here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile)),
+            row.names = FALSE)
+}
 
 # process data
 ao_st_des_data_day_int <- ao_st_des_data_day_raw %>%
@@ -728,7 +753,12 @@ ao_st_des_data_day <- ao_st_des_data_day_int %>%
   )
 
 #### week ----
-ao_st_des_data_week_raw <- read_xlsx(
+if (archive_mode) {
+  myarchivefile <- "_ao_st_des_data_week_raw.csv"
+  ao_st_des_data_week_raw <-  read.csv(here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile)))
+
+} else {
+  ao_st_des_data_week_raw <- read_xlsx(
   path  = fs::path_abs(
     str_glue(base_file),
     start = base_dir),
@@ -736,12 +766,12 @@ ao_st_des_data_week_raw <- read_xlsx(
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-# save pre-processed file in archive for generation of past json files
-myarchivefile <- "_ao_st_des_data_week_raw.csv"
-write.csv(ao_st_des_data_week_raw,
-          here(archive_dir_raw, "ao", paste0(today, myarchivefile)),
-          row.names = FALSE)
-
+  # save pre-processed file in archive for generation of past json files
+  myarchivefile <- "_ao_st_des_data_week_raw.csv"
+  write.csv(ao_st_des_data_week_raw,
+            here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile)),
+            row.names = FALSE)
+}
 # process data
 ao_st_des_data_wk <- ao_st_des_data_week_raw %>%
   mutate(FLIGHT = FLIGHT / 7) %>%
@@ -780,7 +810,12 @@ ao_st_des_data_wk <- ao_st_des_data_week_raw %>%
   )
 
 #### y2d ----
-ao_st_des_data_y2d_raw <- read_xlsx(
+if (archive_mode) {
+  myarchivefile <- "_ao_st_des_data_y2d_raw.csv"
+  ao_st_des_data_y2d_raw <-  read.csv(here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile)))
+
+} else {
+  ao_st_des_data_y2d_raw <- read_xlsx(
   path  = fs::path_abs(
     str_glue(base_file),
     start = base_dir),
@@ -788,11 +823,12 @@ ao_st_des_data_y2d_raw <- read_xlsx(
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-# save pre-processed file in archive for generation of past json files
-myarchivefile <- "_ao_st_des_data_y2d_raw.csv"
-write.csv(ao_st_des_data_y2d_raw,
-          here(archive_dir_raw, "ao", paste0(today, myarchivefile)),
-          row.names = FALSE)
+  # save pre-processed file in archive for generation of past json files
+  myarchivefile <- "_ao_st_des_data_y2d_raw.csv"
+  write.csv(ao_st_des_data_y2d_raw,
+            here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile)),
+            row.names = FALSE)
+}
 
 # process data
 ao_st_des_data_y2d <- ao_st_des_data_y2d_raw %>%
@@ -924,12 +960,17 @@ ao_st_des_data <- ao_grp_icao_ranking %>%
 # covert to json and save in app data folder and archive
 ao_st_des_data_j <- ao_st_des_data %>% toJSON(., pretty = TRUE)
 write(ao_st_des_data_j, here(data_folder,"ao_st_ranking_traffic.json"))
-write(ao_st_des_data_j, paste0(archive_dir, today, "_ao_st_ranking_traffic.json"))
+write(ao_st_des_data_j, paste0(archive_dir, data_day_text, "_ao_st_ranking_traffic.json"))
 write(ao_st_des_data_j, paste0(archive_dir, "ao_st_ranking_traffic.json"))
 
 ### Departure airport ----
 #### day ----
-ao_apt_dep_data_day_raw <- read_xlsx(
+if (archive_mode) {
+  myarchivefile <- "_ao_apt_dep_data_day_raw.csv"
+  ao_apt_dep_data_day_raw <-  read.csv(here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile)))
+
+} else {
+  ao_apt_dep_data_day_raw <- read_xlsx(
   path  = fs::path_abs(
     str_glue(base_file),
     start = base_dir),
@@ -937,11 +978,12 @@ ao_apt_dep_data_day_raw <- read_xlsx(
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-# save pre-processed file in archive for generation of past json files
-myarchivefile <- "_ao_apt_dep_data_day_raw.csv"
-write.csv(ao_apt_dep_data_day_raw,
-          here(archive_dir_raw, "ao", paste0(today, myarchivefile)),
-          row.names = FALSE)
+  # save pre-processed file in archive for generation of past json files
+  myarchivefile <- "_ao_apt_dep_data_day_raw.csv"
+  write.csv(ao_apt_dep_data_day_raw,
+            here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile)),
+            row.names = FALSE)
+}
 
 # process data
 ao_apt_dep_data_day_int <- ao_apt_dep_data_day_raw %>%
@@ -982,7 +1024,12 @@ ao_apt_dep_data_day <- ao_apt_dep_data_day_int %>%
   )
 
 #### week ----
-ao_apt_dep_data_week_raw <- read_xlsx(
+if (archive_mode) {
+  myarchivefile <- "_ao_apt_dep_data_week_raw.csv"
+  ao_apt_dep_data_week_raw <-  read.csv(here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile)))
+
+} else {
+  ao_apt_dep_data_week_raw <- read_xlsx(
   path  = fs::path_abs(
     str_glue(base_file),
     start = base_dir),
@@ -990,11 +1037,12 @@ ao_apt_dep_data_week_raw <- read_xlsx(
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-# save pre-processed file in archive for generation of past json files
-myarchivefile <- "_ao_apt_dep_data_week_raw.csv"
-write.csv(ao_apt_dep_data_week_raw,
-          here(archive_dir_raw, "ao", paste0(today, myarchivefile)),
-          row.names = FALSE)
+  # save pre-processed file in archive for generation of past json files
+  myarchivefile <- "_ao_apt_dep_data_week_raw.csv"
+  write.csv(ao_apt_dep_data_week_raw,
+            here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile)),
+            row.names = FALSE)
+}
 
 # process data
 ao_apt_dep_data_wk <- ao_apt_dep_data_week_raw %>%
@@ -1034,7 +1082,12 @@ ao_apt_dep_data_wk <- ao_apt_dep_data_week_raw %>%
   )
 
 #### y2d ----
-ao_apt_dep_data_y2d_raw <- read_xlsx(
+if (archive_mode) {
+  myarchivefile <- "_ao_apt_dep_data_y2d_raw.csv"
+  ao_apt_dep_data_y2d_raw <-  read.csv(here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile)))
+
+} else {
+  ao_apt_dep_data_y2d_raw <- read_xlsx(
   path  = fs::path_abs(
     str_glue(base_file),
     start = base_dir),
@@ -1042,11 +1095,12 @@ ao_apt_dep_data_y2d_raw <- read_xlsx(
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-# save pre-processed file in archive for generation of past json files
-myarchivefile <- "_ao_apt_dep_data_y2d_raw.csv"
-write.csv(ao_apt_dep_data_y2d_raw,
-          here(archive_dir_raw, "ao", paste0(today, myarchivefile)),
-          row.names = FALSE)
+  # save pre-processed file in archive for generation of past json files
+  myarchivefile <- "_ao_apt_dep_data_y2d_raw.csv"
+  write.csv(ao_apt_dep_data_y2d_raw,
+            here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile)),
+            row.names = FALSE)
+}
 
 # process data
 ao_apt_dep_data_y2d <- ao_apt_dep_data_y2d_raw %>%
@@ -1168,12 +1222,17 @@ ao_apt_dep_data <- ao_grp_icao_ranking %>%
 # covert to json and save in app data folder and archive
 ao_apt_dep_data_j <- ao_apt_dep_data %>% toJSON(., pretty = TRUE)
 write(ao_apt_dep_data_j, here(data_folder,"ao_apt_ranking_traffic.json"))
-write(ao_apt_dep_data_j, paste0(archive_dir, today, "_ao_apt_ranking_traffic.json"))
+write(ao_apt_dep_data_j, paste0(archive_dir, data_day_text, "_ao_apt_ranking_traffic.json"))
 write(ao_apt_dep_data_j, paste0(archive_dir, "ao_apt_ranking_traffic.json"))
 
 ### Airport pair ----
 #### day ----
-ao_apt_pair_data_day_raw <- read_xlsx(
+if (archive_mode) {
+  myarchivefile <- "_ao_apt_pair_data_day_raw.csv"
+  ao_apt_pair_data_day_raw <-  read.csv(here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile)))
+
+} else {
+  ao_apt_pair_data_day_raw <- read_xlsx(
   path  = fs::path_abs(
     str_glue(base_file),
     start = base_dir),
@@ -1181,11 +1240,12 @@ ao_apt_pair_data_day_raw <- read_xlsx(
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-# save pre-processed file in archive for generation of past json files
-myarchivefile <- "_ao_apt_pair_data_day_raw.csv"
-write.csv(ao_apt_pair_data_day_raw,
-          here(archive_dir_raw, "ao", paste0(today, myarchivefile)),
-          row.names = FALSE)
+  # save pre-processed file in archive for generation of past json files
+  myarchivefile <- "_ao_apt_pair_data_day_raw.csv"
+  write.csv(ao_apt_pair_data_day_raw,
+            here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile)),
+            row.names = FALSE)
+}
 
 # process data
 ao_apt_pair_data_day_int <- ao_apt_pair_data_day_raw %>%
@@ -1226,7 +1286,12 @@ ao_apt_pair_data_day <- ao_apt_pair_data_day_int %>%
   )
 
 #### week ----
-ao_apt_pair_data_week_raw <- read_xlsx(
+if (archive_mode) {
+  myarchivefile <- "_ao_apt_pair_data_week_raw.csv"
+  ao_apt_pair_data_week_raw <-  read.csv(here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile)))
+
+} else {
+  ao_apt_pair_data_week_raw <- read_xlsx(
   path  = fs::path_abs(
     str_glue(base_file),
     start = base_dir),
@@ -1234,11 +1299,12 @@ ao_apt_pair_data_week_raw <- read_xlsx(
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-# save pre-processed file in archive for generation of past json files
-myarchivefile <- "_ao_apt_pair_data_week_raw.csv"
-write.csv(ao_apt_pair_data_week_raw,
-          here(archive_dir_raw, "ao", paste0(today, myarchivefile)),
-          row.names = FALSE)
+  # save pre-processed file in archive for generation of past json files
+  myarchivefile <- "_ao_apt_pair_data_week_raw.csv"
+  write.csv(ao_apt_pair_data_week_raw,
+            here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile)),
+            row.names = FALSE)
+}
 
 # process data
 ao_apt_pair_data_wk <- ao_apt_pair_data_week_raw %>%
@@ -1278,7 +1344,12 @@ ao_apt_pair_data_wk <- ao_apt_pair_data_week_raw %>%
   )
 
 #### y2d ----
-ao_apt_pair_data_y2d_raw <- read_xlsx(
+if (archive_mode) {
+  myarchivefile <- "_ao_apt_pair_data_y2d_raw.csv"
+  ao_apt_pair_data_y2d_raw <-  read.csv(here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile)))
+
+} else {
+  ao_apt_pair_data_y2d_raw <- read_xlsx(
   path  = fs::path_abs(
     str_glue(base_file),
     start = base_dir),
@@ -1286,11 +1357,12 @@ ao_apt_pair_data_y2d_raw <- read_xlsx(
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-# save pre-processed file in archive for generation of past json files
-myarchivefile <- "_ao_apt_pair_data_y2d_raw.csv"
-write.csv(ao_apt_pair_data_y2d_raw,
-          here(archive_dir_raw, "ao", paste0(today, myarchivefile)),
-          row.names = FALSE)
+  # save pre-processed file in archive for generation of past json files
+  myarchivefile <- "_ao_apt_pair_data_y2d_raw.csv"
+  write.csv(ao_apt_pair_data_y2d_raw,
+            here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile)),
+            row.names = FALSE)
+}
 
 # process data
 ao_apt_pair_data_y2d <- ao_apt_pair_data_y2d_raw %>%
@@ -1413,19 +1485,28 @@ ao_apt_pair_data <- ao_grp_icao_ranking %>%
 # covert to json and save in app data folder and archive
 ao_apt_pair_data_j <- ao_apt_pair_data %>% toJSON(., pretty = TRUE)
 write(ao_apt_pair_data_j, here(data_folder,"ao_apt_pair_ranking_traffic.json"))
-write(ao_apt_pair_data_j, paste0(archive_dir, today, "_ao_apt_pair_ranking_traffic.json"))
+write(ao_apt_pair_data_j, paste0(archive_dir, data_day_text, "_ao_apt_pair_ranking_traffic.json"))
 write(ao_apt_pair_data_j, paste0(archive_dir, "ao_apt_pair_ranking_traffic.json"))
 
 ## DELAY ----
 ### Arrival airport ----
 #### day ----
-ao_apt_arr_delay_day_raw <- read_xlsx(
+if (archive_mode) {
+  # myarchivefile <- "_ao_apt_arr_delay_day_raw.csv"
+  # ao_apt_arr_delay_day_raw <-  read.csv(here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile)))
+
+} else {
+  ao_apt_arr_delay_day_raw <- read_xlsx(
   path  = fs::path_abs(
     str_glue(base_file),
     start = base_dir),
   sheet = "ao_apt_arr_delay_day",
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+  ####place holder for archive code
+}
+
 
 ao_apt_arr_delay_day <- ao_apt_arr_delay_day_raw %>%
   filter(FLAG_DAY == "CURRENT_DAY") %>%
@@ -1443,13 +1524,22 @@ ao_apt_arr_delay_day <- ao_apt_arr_delay_day_raw %>%
     DY_TO_DATE = TO_DATE)
 
 #### week ----
-ao_apt_arr_delay_week_raw <- read_xlsx(
+if (archive_mode) {
+  # myarchivefile <- "_ao_apt_arr_delay_week_raw.csv"
+  # ao_apt_arr_delay_week_raw <-  read.csv(here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile)))
+
+} else {
+  ao_apt_arr_delay_week_raw <- read_xlsx(
   path  = fs::path_abs(
     str_glue(base_file),
     start = base_dir),
   sheet = "ao_apt_arr_delay_week",
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+  ### placehoder for archive code
+
+  }
 
 ao_apt_arr_delay_week <- ao_apt_arr_delay_week_raw %>%
   filter(FLAG_ROLLING_WEEK == "CURRENT_ROLLING_WEEK") %>%
@@ -1464,7 +1554,12 @@ ao_apt_arr_delay_week <- ao_apt_arr_delay_week_raw %>%
     WK_TO_DATE = TO_DATE)
 
 #### y2d ----
-ao_apt_arr_delay_y2d_raw <- read_xlsx(
+if (archive_mode) {
+  # myarchivefile <- "_ao_apt_arr_delay_y2d_raw.csv"
+  # ao_apt_arr_delay_y2d_raw <-  read.csv(here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile)))
+
+} else {
+  ao_apt_arr_delay_y2d_raw <- read_xlsx(
   path  = fs::path_abs(
     str_glue(base_file),
     start = base_dir),
@@ -1472,8 +1567,11 @@ ao_apt_arr_delay_y2d_raw <- read_xlsx(
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
+  ## placeholder for archive code
+  }
+
 ao_apt_arr_delay_y2d <- ao_apt_arr_delay_y2d_raw %>%
-  filter(YEAR== last_year) %>%
+  filter(YEAR== data_day_year) %>%
   mutate(AO_GRP_RANK = paste0(AO_GRP_CODE, R_RANK)) %>%
   select(
     AO_GRP_RANK,
@@ -1541,7 +1639,7 @@ ao_apt_arr_delay_data <- ao_grp_icao_ranking %>%
 # covert to json and save in app data folder and archive
 ao_apt_arr_delay_data_j <- ao_apt_arr_delay_data %>% toJSON(., pretty = TRUE)
 write(ao_apt_arr_delay_data_j, here(data_folder,"ao_apt_arr_ranking_delay.json"))
-write(ao_apt_arr_delay_data_j, paste0(archive_dir, today, "_ao_apt_arr_ranking_delay.json"))
+write(ao_apt_arr_delay_data_j, paste0(archive_dir, data_day_text, "_ao_apt_arr_ranking_delay.json"))
 write(ao_apt_arr_delay_data_j, paste0(archive_dir, "ao_apt_arr_ranking_delay.json"))
 
 
@@ -1554,6 +1652,8 @@ write(ao_apt_arr_delay_data_j, paste0(archive_dir, "ao_apt_arr_ranking_delay.jso
 ## TRAFFIC ----
 ### 7-day traffic avg ----
 ao_traffic_evo <- ao_traffic_delay_data  %>%
+  mutate(RWK_AVG_TFC = if_else(FLIGHT_DATE > min(data_day_date,
+                                                 max(LAST_DATA_DAY, na.rm = TRUE),na.rm = TRUE), NA, RWK_AVG_TFC)) %>%
   select(
     AO_GRP_CODE,
     AO_GRP_NAME,
@@ -1564,7 +1664,7 @@ ao_traffic_evo <- ao_traffic_delay_data  %>%
     RWK_AVG_TFC_2019
   )
 
-column_names <- c('AO_GRP_CODE', 'AO_GRP_NAME', 'FLIGHT_DATE', last_year, last_year-1, 2020, 2019)
+column_names <- c('AO_GRP_CODE', 'AO_GRP_NAME', 'FLIGHT_DATE', data_day_year, data_day_year-1, 2020, 2019)
 colnames(ao_traffic_evo) <- column_names
 
 ### nest data
@@ -1576,13 +1676,16 @@ ao_traffic_evo_long <- ao_traffic_evo %>%
 
 ao_traffic_evo_j <- ao_traffic_evo_long %>% toJSON(., pretty = TRUE)
 write(ao_traffic_evo_j, here(data_folder,"ao_traffic_evo_chart_daily.json"))
-write(ao_traffic_evo_j, paste0(archive_dir, today, "_ao_traffic_chart_daily.json"))
+write(ao_traffic_evo_j, paste0(archive_dir, data_day_text, "_ao_traffic_chart_daily.json"))
 write(ao_traffic_evo_j, paste0(archive_dir, "ao_traffic_chart_daily.json"))
 
 ## DELAY ----
 ### 7-day % of delay per flight ----
 ao_delay_flt_evo <- ao_traffic_delay_data  %>%
-  filter(FLIGHT_DATE <= max(LAST_DATA_DAY, na.rm = TRUE)) %>%
+  filter(FLIGHT_DATE <= min(data_day_date,
+                            max(LAST_DATA_DAY, na.rm = TRUE),
+                            na.rm = TRUE)
+         ) %>%
   select(
     AO_GRP_CODE,
     AO_GRP_NAME,
@@ -1594,8 +1697,8 @@ ao_delay_flt_evo <- ao_traffic_delay_data  %>%
 column_names <- c('AO_GRP_CODE',
                   'AO_GRP_NAME',
                   'FLIGHT_DATE',
-                  paste0('Total ATFM delay/flight ', last_year),
-                  paste0('Total ATFM delay/flight ', last_year -1)
+                  paste0('Total ATFM delay/flight ', data_day_year),
+                  paste0('Total ATFM delay/flight ', data_day_year -1)
 )
 
 colnames(ao_delay_flt_evo) <- column_names
@@ -1609,17 +1712,21 @@ ao_delay_flt_evo_long <- ao_delay_flt_evo %>%
 ###convert to json and save
 ao_delay_flt_evo_j <- ao_delay_flt_evo_long %>% toJSON(., pretty = TRUE)
 write(ao_delay_flt_evo_j, here(data_folder,"ao_delay_per_flight_evo_chart_daily.json"))
-write(ao_delay_flt_evo_j, paste0(archive_dir, today, "_ao_delay_per_flight_chart_daily.json"))
+write(ao_delay_flt_evo_j, paste0(archive_dir, data_day_text, "_ao_delay_per_flight_chart_daily.json"))
 write(ao_delay_flt_evo_j, paste0(archive_dir, "ao_delay_per_flight_chart_daily.json"))
 
 ### 7-day % of delayed flights ----
 ao_delayed_flights_evo <- ao_traffic_delay_data  %>%
   mutate(
     RWK_DELAYED_TFC_PERC = case_when(
-      FLIGHT_DATE > max(LAST_DATA_DAY, na.rm = TRUE) ~ NA,
+      FLIGHT_DATE > min(data_day_date,
+                        max(LAST_DATA_DAY, na.rm = TRUE),
+                        na.rm = TRUE) ~ NA,
       .default = RWK_DELAYED_TFC_PERC),
     RWK_DELAYED_TFC_15_PERC = case_when(
-      FLIGHT_DATE > max(LAST_DATA_DAY, na.rm = TRUE) ~ NA,
+      FLIGHT_DATE > min(data_day_date,
+                        max(LAST_DATA_DAY, na.rm = TRUE),
+                        na.rm = TRUE) ~ NA,
       .default = RWK_DELAYED_TFC_15_PERC),
     ) %>%
   select(
@@ -1635,10 +1742,10 @@ ao_delayed_flights_evo <- ao_traffic_delay_data  %>%
 column_names <- c('AO_GRP_CODE',
                   'AO_GRP_NAME',
                   'FLIGHT_DATE',
-                  paste0('% of delayed flights ', last_year),
-                  paste0('% of delayed flights ', last_year -1),
-                  paste0("% of delayed flights >15' ", last_year),
-                  paste0("% of delayed flights >15' ", last_year -1)
+                  paste0('% of delayed flights ', data_day_year),
+                  paste0('% of delayed flights ', data_day_year -1),
+                  paste0("% of delayed flights >15' ", data_day_year),
+                  paste0("% of delayed flights >15' ", data_day_year -1)
 )
 
 colnames(ao_delayed_flights_evo) <- column_names
@@ -1652,14 +1759,14 @@ ao_delayed_flights_evo_long <- ao_delayed_flights_evo %>%
 
 ao_delayed_flights_evo_j <- ao_delayed_flights_evo_long %>% toJSON(., pretty = TRUE)
 write(ao_delayed_flights_evo_j, here(data_folder,"ao_delayed_flights_evo_chart_daily.json"))
-write(ao_delayed_flights_evo_j, paste0(archive_dir, today, "_ao_delayed_flights_chart_daily.json"))
+write(ao_delayed_flights_evo_j, paste0(archive_dir, data_day_text, "_ao_delayed_flights_chart_daily.json"))
 write(ao_delayed_flights_evo_j, paste0(archive_dir, "ao_delayed_flights_chart_daily.json"))
 
 
 ## PUNCTUALITY ----
 ### 7-day punctuality avg ----
 ao_punct_evo <- ao_punct_raw %>%
-  filter(DAY_DATE >= as.Date(paste0("01-01-", last_year-2), format = "%d-%m-%Y")) %>%
+  filter(DAY_DATE >= as.Date(paste0("01-01-", data_day_year-2), format = "%d-%m-%Y")) %>%
   arrange(AO_GRP_CODE, DAY_DATE) %>%
   mutate(
     DEP_PUN_WK = rollsum(DEP_PUNCTUAL_FLIGHTS, 7, fill = NA, align = "right") /
@@ -1669,7 +1776,8 @@ ao_punct_evo <- ao_punct_raw %>%
     OP_FLT_WK = 100 - rollsum(MISSING_SCHED_FLIGHTS, 7, fill = NA, align = "right") /
       rollsum((MISSING_SCHED_FLIGHTS+DEP_FLIGHTS_NO_OVERFLIGHTS),7, fill = NA, align = "right")*100
   ) %>%
-  filter(DAY_DATE >= as.Date(paste0("01-01-", last_year-1), format = "%d-%m-%Y")) %>%
+  filter(DAY_DATE >= as.Date(paste0("01-01-", data_day_year-1), format = "%d-%m-%Y"),
+         DAY_DATE <= last_day_punct) %>%
   select(-AO_GRP_NAME) %>%
   right_join(ao_grp_icao, by ="AO_GRP_CODE") %>%
   select(
@@ -1699,7 +1807,7 @@ ao_punct_evo_long <- ao_punct_evo %>%
 
 ao_punct_evo_j <- ao_punct_evo_long %>% toJSON(., pretty = TRUE)
 write(ao_punct_evo_j, here(data_folder,"ao_punct_evo_chart.json"))
-write(ao_punct_evo_j, paste0(archive_dir, today, "_ao_punct_evo_chart.json"))
+write(ao_punct_evo_j, paste0(archive_dir, data_day_text, "_ao_punct_evo_chart.json"))
 write(ao_punct_evo_j, paste0(archive_dir, "ao_punct_evo_chart.json"))
 
 
@@ -1738,7 +1846,7 @@ write(ao_punct_evo_j, paste0(archive_dir, "ao_punct_evo_chart.json"))
 #     RWK_TDM_NOCSGITWD = rollsum(TDM_NOCSGITWD, 7, fill = NA, align = "right") / 7,
 #     RWK_TDM_PREV_YEAR = rollsum(TDM_PREV_YEAR, 7, fill = NA, align = "right") / 7
 #   ) %>%
-#   filter(YEAR >= last_year) %>%
+#   filter(YEAR >= data_day_year) %>%
 #   mutate(daio_zone_lc = tolower(COUNTRY_NAME)) %>%
 #   right_join(state_daio, by = "daio_zone_lc", relationship = "many-to-many") %>%
 #   filter(is.na(YEAR) == FALSE)
@@ -1778,7 +1886,7 @@ write(ao_punct_evo_j, paste0(archive_dir, "ao_punct_evo_chart.json"))
 #   "Disruptions (ATC)",
 #   "Weather",
 #   "Other",
-#   paste0("Total delay ", last_year - 1),
+#   paste0("Total delay ", data_day_year - 1),
 #   "share_aerodrome_capacity",
 #   "share_capacity_staffing_atc",
 #   "share_disruptions_atc",
@@ -1804,7 +1912,7 @@ write(ao_punct_evo_j, paste0(archive_dir, "ao_punct_evo_chart.json"))
 #             "Disruptions (ATC)",
 #             "Weather",
 #             "Other",
-#             paste0("Total delay ", last_year - 1)
+#             paste0("Total delay ", data_day_year - 1)
 #   )
 #   )  %>%
 #   mutate(share_delay_prev_year = NA) %>%
@@ -1819,7 +1927,7 @@ write(ao_punct_evo_j, paste0(archive_dir, "ao_punct_evo_chart.json"))
 # # for consistency with v1 we use the word category in the name files... should have been cause
 # st_delay_cause_evo_dy_j <- st_delay_cause_day_long %>% toJSON(., pretty = TRUE)
 # write(st_delay_cause_evo_dy_j, here(data_folder,"st_delay_category_evo_chart_dy.json"))
-# write(st_delay_cause_evo_dy_j, paste0(archive_dir, today, "_st_delay_category_chart_evo_dy.json"))
+# write(st_delay_cause_evo_dy_j, paste0(archive_dir, data_day_text, "_st_delay_category_chart_evo_dy.json"))
 # write(st_delay_cause_evo_dy_j, paste0(archive_dir, "st_delay_category_evo_chart_dy.json"))
 #
 # #### week ----
@@ -1885,7 +1993,7 @@ write(ao_punct_evo_j, paste0(archive_dir, "ao_punct_evo_chart.json"))
 #             "Disruptions (ATC)",
 #             "Weather",
 #             "Other",
-#             paste0("Total delay ", last_year - 1)
+#             paste0("Total delay ", data_day_year - 1)
 #   )
 #   )  %>%
 #   mutate(share_delay_prev_year = NA) %>%
@@ -1901,7 +2009,7 @@ write(ao_punct_evo_j, paste0(archive_dir, "ao_punct_evo_chart.json"))
 # # for consistency with v1 we use the word category in the name files... should have been cause
 # st_delay_cause_evo_wk_j <- st_delay_cause_wk_long %>% toJSON(., pretty = TRUE)
 # write(st_delay_cause_evo_wk_j, here(data_folder,"st_delay_category_evo_chart_wk.json"))
-# write(st_delay_cause_evo_wk_j, paste0(archive_dir, today, "_st_delay_category_evo_chart_wk.json"))
+# write(st_delay_cause_evo_wk_j, paste0(archive_dir, data_day_text, "_st_delay_category_evo_chart_wk.json"))
 # write(st_delay_cause_evo_wk_j, paste0(archive_dir, "st_delay_category_evo_chart_wk.json"))
 #
 # #### y2d ----
@@ -1966,7 +2074,7 @@ write(ao_punct_evo_j, paste0(archive_dir, "ao_punct_evo_chart.json"))
 #             "Disruptions (ATC)",
 #             "Weather",
 #             "Other",
-#             paste0("Total delay ", last_year - 1)
+#             paste0("Total delay ", data_day_year - 1)
 #   )
 #   )  %>%
 #   mutate(share_delay_prev_year = NA) %>%
@@ -1982,7 +2090,7 @@ write(ao_punct_evo_j, paste0(archive_dir, "ao_punct_evo_chart.json"))
 # # for consistency with v1 we use the word category in the name files... should have been cause
 # st_delay_cause_evo_y2d_j <- st_delay_cause_y2d_long %>% toJSON(., pretty = TRUE)
 # write(st_delay_cause_evo_y2d_j, here(data_folder,"st_delay_category_evo_chart_y2d.json"))
-# write(st_delay_cause_evo_y2d_j, paste0(archive_dir, today, "_st_delay_category_evo_chart_y2d.json"))
+# write(st_delay_cause_evo_y2d_j, paste0(archive_dir, data_day_text, "_st_delay_category_evo_chart_y2d.json"))
 # write(st_delay_cause_evo_y2d_j, paste0(archive_dir, "st_delay_category_evo_chart_y2d.json"))
 #
 # ### Delay type ----
@@ -2010,7 +2118,7 @@ write(ao_punct_evo_j, paste0(archive_dir, "ao_punct_evo_chart.json"))
 #     Y2D_DLY_FLT_PREV_YEAR = if_else(Y2D_TFC_PREV_YEAR == 0, 0, Y2D_DLY_PREV_YEAR / Y2D_TFC_PREV_YEAR)
 #   ) %>%
 #   ungroup() %>%
-#   filter(YEAR >= last_year) %>%
+#   filter(YEAR >= data_day_year) %>%
 #   mutate(daio_zone_lc = tolower(COUNTRY_NAME)) %>%
 #   right_join(state_daio, by = "daio_zone_lc", relationship = "many-to-many") %>%
 #   filter(is.na(YEAR) == FALSE) %>%
@@ -2035,7 +2143,7 @@ write(ao_punct_evo_j, paste0(archive_dir, "ao_punct_evo_chart.json"))
 #   "FLIGHT_DATE",
 #   "En-route ATFM delay/flight",
 #   "Airport ATFM delay/flight",
-#   paste0("Total ATFM delay/flight ", last_year - 1),
+#   paste0("Total ATFM delay/flight ", data_day_year - 1),
 #   "share_en_route",
 #   "share_airport"
 # )
@@ -2052,7 +2160,7 @@ write(ao_punct_evo_j, paste0(archive_dir, "ao_punct_evo_chart.json"))
 # st_delay_type_share_day_long <- st_delay_type_day %>%
 #   select(-c("En-route ATFM delay/flight",
 #             "Airport ATFM delay/flight",
-#             paste0("Total ATFM delay/flight ", last_year - 1)
+#             paste0("Total ATFM delay/flight ", data_day_year - 1)
 #   )
 #   )  %>%
 #   mutate(share_delay_prev_year = NA) %>%
@@ -2066,7 +2174,7 @@ write(ao_punct_evo_j, paste0(archive_dir, "ao_punct_evo_chart.json"))
 #
 # st_delay_type_evo_dy_j <- st_delay_type_day_long %>% toJSON(., pretty = TRUE)
 # write(st_delay_type_evo_dy_j, here(data_folder,"st_delay_flt_type_evo_chart_dy.json"))
-# write(st_delay_type_evo_dy_j, paste0(archive_dir, today, "_st_delay_flt_type_chart_evo_dy.json"))
+# write(st_delay_type_evo_dy_j, paste0(archive_dir, data_day_text, "_st_delay_flt_type_chart_evo_dy.json"))
 # write(st_delay_type_evo_dy_j, paste0(archive_dir, "st_delay_flt_type_evo_chart_dy.json"))
 #
 # #### week ----
@@ -2129,7 +2237,7 @@ write(ao_punct_evo_j, paste0(archive_dir, "ao_punct_evo_chart.json"))
 # st_delay_type_share_wk_long <- st_delay_type_wk %>%
 #   select(-c("En-route ATFM delay/flight",
 #             "Airport ATFM delay/flight",
-#             paste0("Total ATFM delay/flight ", last_year - 1)
+#             paste0("Total ATFM delay/flight ", data_day_year - 1)
 #   )
 #   )  %>%
 #   mutate(share_delay_prev_year = NA) %>%
@@ -2143,7 +2251,7 @@ write(ao_punct_evo_j, paste0(archive_dir, "ao_punct_evo_chart.json"))
 #
 # st_delay_type_evo_wk_j <- st_delay_type_wk_long %>% toJSON(., pretty = TRUE)
 # write(st_delay_type_evo_wk_j, here(data_folder,"st_delay_flt_type_evo_chart_wk.json"))
-# write(st_delay_type_evo_wk_j, paste0(archive_dir, today, "_st_delay_flt_type_chart_evo_wk.json"))
+# write(st_delay_type_evo_wk_j, paste0(archive_dir, data_day_text, "_st_delay_flt_type_chart_evo_wk.json"))
 # write(st_delay_type_evo_wk_j, paste0(archive_dir, "st_delay_flt_type_evo_chart_wk.json"))
 #
 # #### y2d ----
@@ -2188,7 +2296,7 @@ write(ao_punct_evo_j, paste0(archive_dir, "ao_punct_evo_chart.json"))
 # st_delay_type_share_y2d_long <- st_delay_type_y2d %>%
 #   select(-c("En-route ATFM delay/flight",
 #             "Airport ATFM delay/flight",
-#             paste0("Total ATFM delay/flight ", last_year - 1)
+#             paste0("Total ATFM delay/flight ", data_day_year - 1)
 #   )
 #   )  %>%
 #   mutate(share_delay_prev_year = NA) %>%
@@ -2202,7 +2310,7 @@ write(ao_punct_evo_j, paste0(archive_dir, "ao_punct_evo_chart.json"))
 #
 # st_delay_type_evo_y2d_j <- st_delay_type_y2d_long %>% toJSON(., pretty = TRUE)
 # write(st_delay_type_evo_y2d_j, here(data_folder,"st_delay_flt_type_evo_chart_y2d.json"))
-# write(st_delay_type_evo_y2d_j, paste0(archive_dir, today, "_st_delay_flt_type_chart_evo_y2d.json"))
+# write(st_delay_type_evo_y2d_j, paste0(archive_dir, data_day_text, "_st_delay_flt_type_chart_evo_y2d.json"))
 # write(st_delay_type_evo_y2d_j, paste0(archive_dir, "st_delay_flt_type_evo_chart_y2d.json"))
 #
 
@@ -2224,7 +2332,8 @@ ao_billing_evo <- ao_billing %>%
     total_billing_y2d_py = lag(total_billing_y2d, 12),
     total_billing_dif_y2d_perc = total_billing_y2d / total_billing_y2d_py -1
   ) %>%
-  filter(year == last_billing_year) %>%
+  filter(year == last_billing_year,
+         month <= last_billing_month) %>%
   select(
     AO_GRP_CODE,
     AO_GRP_NAME,
@@ -2263,12 +2372,14 @@ ao_billing_evo_long <- ao_billing_evo %>%
 
 ao_billing_evo_j <- ao_billing_evo_long %>% toJSON(., pretty = TRUE)
 write(ao_billing_evo_j, here(data_folder,"ao_billing_evo.json"))
-write(ao_billing_evo_j, paste0(archive_dir, today, "_ao_billing_evo.json"))
+write(ao_billing_evo_j, paste0(archive_dir, data_day_text, "_ao_billing_evo.json"))
 write(ao_billing_evo_j, paste0(archive_dir, "ao_billing_evo.json"))
 
 ## CO2 ----
 ao_co2_evo <- ao_co2_data %>%
-  filter(YEAR >= 2019) %>%
+  filter(YEAR >= 2019,
+         YEAR <= ao_co2_last_year,
+         MONTH <= ao_co2_last_month_num) %>%
   group_by(AO_GRP_CODE, AO_GRP_NAME)%>%
   arrange(AO_GRP_CODE, FLIGHT_MONTH) %>%
   mutate(
@@ -2302,6 +2413,6 @@ ao_co2_evo_long <- ao_co2_evo %>%
 ao_co2_evo_j <- ao_co2_evo_long %>% toJSON(., pretty = TRUE)
 write(ao_co2_evo_j, here(data_folder,"ao_co2_evo.json"))
 write(ao_co2_evo_j, paste0(archive_dir, "ao_co2_evo.json"))
-write(ao_co2_evo_j, paste0(archive_dir, today, "_ao_co2_evo.json"))
+write(ao_co2_evo_j, paste0(archive_dir, data_day_text, "_ao_co2_evo.json"))
 
 
