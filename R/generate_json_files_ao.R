@@ -25,6 +25,8 @@ nw_base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataP
 nw_base_file <- '099_Traffic_Landing_Page_dataset_new.xlsx'
 # archive_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/web_daily_json_files/app/'
 archive_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Oscar/old/'
+archive_dir_raw <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Project/DDP/AIU app/data_archive'
+
 today <- (lubridate::now() +  days(-1)) %>% format("%Y%m%d")
 last_day <-  trunc((lubridate::now() +  days(-1)), "day")
 last_year <- as.numeric(format(last_day,'%Y'))
@@ -681,6 +683,13 @@ ao_st_des_data_day_raw <- read_xlsx(
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
+# save pre-processed file in archive for generation of past json files
+myarchivefile <- "_ao_st_des_data_day_raw.csv"
+write.csv(ao_st_des_data_day_raw,
+          here(archive_dir_raw, "ao", paste0(today, myarchivefile)),
+          row.names = FALSE)
+
+# process data
 ao_st_des_data_day_int <- ao_st_des_data_day_raw %>%
   mutate(TO_DATE = max(TO_DATE)) %>%
   spread(., key = FLAG_DAY, value = FLIGHT) %>%
@@ -719,7 +728,7 @@ ao_st_des_data_day <- ao_st_des_data_day_int %>%
   )
 
 #### week ----
-ao_st_des_data_wk_raw <- read_xlsx(
+ao_st_des_data_week_raw <- read_xlsx(
   path  = fs::path_abs(
     str_glue(base_file),
     start = base_dir),
@@ -727,7 +736,14 @@ ao_st_des_data_wk_raw <- read_xlsx(
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-ao_st_des_data_wk <- ao_st_des_data_wk_raw %>%
+# save pre-processed file in archive for generation of past json files
+myarchivefile <- "_ao_st_des_data_week_raw.csv"
+write.csv(ao_st_des_data_week_raw,
+          here(archive_dir_raw, "ao", paste0(today, myarchivefile)),
+          row.names = FALSE)
+
+# process data
+ao_st_des_data_wk <- ao_st_des_data_week_raw %>%
   mutate(FLIGHT = FLIGHT / 7) %>%
   spread(., key = FLAG_ROLLING_WEEK, value = FLIGHT) %>%
   arrange(AO_GRP_NAME, R_RANK) %>%
@@ -772,6 +788,13 @@ ao_st_des_data_y2d_raw <- read_xlsx(
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
+# save pre-processed file in archive for generation of past json files
+myarchivefile <- "_ao_st_des_data_y2d_raw.csv"
+write.csv(ao_st_des_data_y2d_raw,
+          here(archive_dir_raw, "ao", paste0(today, myarchivefile)),
+          row.names = FALSE)
+
+# process data
 ao_st_des_data_y2d <- ao_st_des_data_y2d_raw %>%
   mutate(
     FROM_DATE = max(FROM_DATE),
@@ -914,6 +937,13 @@ ao_apt_dep_data_day_raw <- read_xlsx(
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
+# save pre-processed file in archive for generation of past json files
+myarchivefile <- "_ao_apt_dep_data_day_raw.csv"
+write.csv(ao_apt_dep_data_day_raw,
+          here(archive_dir_raw, "ao", paste0(today, myarchivefile)),
+          row.names = FALSE)
+
+# process data
 ao_apt_dep_data_day_int <- ao_apt_dep_data_day_raw %>%
   mutate(TO_DATE = max(TO_DATE)) %>%
   spread(., key = FLAG_DAY, value = FLIGHT) %>%
@@ -952,7 +982,7 @@ ao_apt_dep_data_day <- ao_apt_dep_data_day_int %>%
   )
 
 #### week ----
-ao_apt_dep_data_wk_raw <- read_xlsx(
+ao_apt_dep_data_week_raw <- read_xlsx(
   path  = fs::path_abs(
     str_glue(base_file),
     start = base_dir),
@@ -960,7 +990,14 @@ ao_apt_dep_data_wk_raw <- read_xlsx(
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-ao_apt_dep_data_wk <- ao_apt_dep_data_wk_raw %>%
+# save pre-processed file in archive for generation of past json files
+myarchivefile <- "_ao_apt_dep_data_week_raw.csv"
+write.csv(ao_apt_dep_data_week_raw,
+          here(archive_dir_raw, "ao", paste0(today, myarchivefile)),
+          row.names = FALSE)
+
+# process data
+ao_apt_dep_data_wk <- ao_apt_dep_data_week_raw %>%
   mutate(FLIGHT = FLIGHT / 7) %>%
   spread(., key = FLAG_ROLLING_WEEK, value = FLIGHT) %>%
   arrange(AO_GRP_NAME, R_RANK) %>%
@@ -1005,6 +1042,13 @@ ao_apt_dep_data_y2d_raw <- read_xlsx(
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
+# save pre-processed file in archive for generation of past json files
+myarchivefile <- "_ao_apt_dep_data_y2d_raw.csv"
+write.csv(ao_apt_dep_data_y2d_raw,
+          here(archive_dir_raw, "ao", paste0(today, myarchivefile)),
+          row.names = FALSE)
+
+# process data
 ao_apt_dep_data_y2d <- ao_apt_dep_data_y2d_raw %>%
   mutate(
     FROM_DATE = max(FROM_DATE),
@@ -1137,6 +1181,13 @@ ao_apt_pair_data_day_raw <- read_xlsx(
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
+# save pre-processed file in archive for generation of past json files
+myarchivefile <- "_ao_apt_pair_data_day_raw.csv"
+write.csv(ao_apt_pair_data_day_raw,
+          here(archive_dir_raw, "ao", paste0(today, myarchivefile)),
+          row.names = FALSE)
+
+# process data
 ao_apt_pair_data_day_int <- ao_apt_pair_data_day_raw %>%
   mutate(TO_DATE = max(TO_DATE)) %>%
   spread(., key = FLAG_DAY, value = FLIGHT) %>%
@@ -1175,7 +1226,7 @@ ao_apt_pair_data_day <- ao_apt_pair_data_day_int %>%
   )
 
 #### week ----
-ao_apt_pair_data_wk_raw <- read_xlsx(
+ao_apt_pair_data_week_raw <- read_xlsx(
   path  = fs::path_abs(
     str_glue(base_file),
     start = base_dir),
@@ -1183,7 +1234,14 @@ ao_apt_pair_data_wk_raw <- read_xlsx(
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-ao_apt_pair_data_wk <- ao_apt_pair_data_wk_raw %>%
+# save pre-processed file in archive for generation of past json files
+myarchivefile <- "_ao_apt_pair_data_week_raw.csv"
+write.csv(ao_apt_pair_data_week_raw,
+          here(archive_dir_raw, "ao", paste0(today, myarchivefile)),
+          row.names = FALSE)
+
+# process data
+ao_apt_pair_data_wk <- ao_apt_pair_data_week_raw %>%
   mutate(FLIGHT = FLIGHT / 7) %>%
   spread(., key = FLAG_ROLLING_WEEK, value = FLIGHT) %>%
   arrange(AO_GRP_NAME, R_RANK) %>%
@@ -1228,6 +1286,13 @@ ao_apt_pair_data_y2d_raw <- read_xlsx(
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
+# save pre-processed file in archive for generation of past json files
+myarchivefile <- "_ao_apt_pair_data_y2d_raw.csv"
+write.csv(ao_apt_pair_data_y2d_raw,
+          here(archive_dir_raw, "ao", paste0(today, myarchivefile)),
+          row.names = FALSE)
+
+# process data
 ao_apt_pair_data_y2d <- ao_apt_pair_data_y2d_raw %>%
   mutate(
     FROM_DATE = max(FROM_DATE),
