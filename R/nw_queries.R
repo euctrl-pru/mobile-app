@@ -812,8 +812,10 @@ STAT_AUA_CALC as(
       FROM STAT_AUA_DATA
       where entry_date < ", mydate, "
 --      order by UNIT_NAME, entry_date
-)
+),
 
+STAT_AUA_y2d as
+(
 Select
       UNIT_NAME,
       unit_code,
@@ -834,6 +836,10 @@ Select
         else '-'
     end flag_last_day
 from STAT_AUA_CALC
+)
+
+Select *
+from STAT_AUA_y2d
 where flag_last_day = 'yes'
 ")
 }
