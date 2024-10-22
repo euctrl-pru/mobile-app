@@ -696,7 +696,8 @@ write(ao_json_app, paste0(archive_dir, data_day_text, "_ao_json_app.json"))
 #### day ----
 if (archive_mode) {
   myarchivefile <- "_ao_st_des_data_day_raw.csv"
-  ao_st_des_data_day_raw <-  read_csv(here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile)))
+  stakeholder <- str_sub(myarchivefile, 2,3)
+  ao_st_des_data_day_raw <-  read_csv(here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile)))
 
 } else {
 ao_st_des_data_day_raw <- read_xlsx(
@@ -709,8 +710,9 @@ ao_st_des_data_day_raw <- read_xlsx(
 
   # save pre-processed file in archive for generation of past json files
   myarchivefile <- "_ao_st_des_data_day_raw.csv"
+  stakeholder <- str_sub(myarchivefile, 2,3)
   write_csv(ao_st_des_data_day_raw,
-            here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile))
+            here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile))
             )
 }
 
@@ -755,7 +757,8 @@ ao_st_des_data_day <- ao_st_des_data_day_int %>%
 #### week ----
 if (archive_mode) {
   myarchivefile <- "_ao_st_des_data_week_raw.csv"
-  ao_st_des_data_week_raw <-  read_csv(here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile)))
+  stakeholder <- str_sub(myarchivefile, 2,3)
+  ao_st_des_data_week_raw <-  read_csv(here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile)))
 
 } else {
   ao_st_des_data_week_raw <- read_xlsx(
@@ -768,8 +771,9 @@ if (archive_mode) {
 
   # save pre-processed file in archive for generation of past json files
   myarchivefile <- "_ao_st_des_data_week_raw.csv"
+  stakeholder <- str_sub(myarchivefile, 2,3)
   write_csv(ao_st_des_data_week_raw,
-            here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile))
+            here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile))
             )
 }
 # process data
@@ -812,7 +816,8 @@ ao_st_des_data_wk <- ao_st_des_data_week_raw %>%
 #### y2d ----
 if (archive_mode) {
   myarchivefile <- "_ao_st_des_data_y2d_raw.csv"
-  ao_st_des_data_y2d_raw <-  read_csv(here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile)))
+  stakeholder <- str_sub(myarchivefile, 2,3)
+  ao_st_des_data_y2d_raw <-  read_csv(here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile)))
 
 } else {
   ao_st_des_data_y2d_raw <- read_xlsx(
@@ -825,8 +830,9 @@ if (archive_mode) {
 
   # save pre-processed file in archive for generation of past json files
   myarchivefile <- "_ao_st_des_data_y2d_raw.csv"
+  stakeholder <- str_sub(myarchivefile, 2,3)
   write_csv(ao_st_des_data_y2d_raw,
-            here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile))
+            here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile))
             )
 }
 
@@ -967,7 +973,8 @@ write(ao_st_des_data_j, paste0(archive_dir, "ao_st_ranking_traffic.json"))
 #### day ----
 if (archive_mode) {
   myarchivefile <- "_ao_apt_dep_data_day_raw.csv"
-  ao_apt_dep_data_day_raw <-  read_csv(here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile)))
+  stakeholder <- str_sub(myarchivefile, 2,3)
+  ao_apt_dep_data_day_raw <-  read_csv(here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile)))
 
 } else {
   ao_apt_dep_data_day_raw <- read_xlsx(
@@ -980,8 +987,9 @@ if (archive_mode) {
 
   # save pre-processed file in archive for generation of past json files
   myarchivefile <- "_ao_apt_dep_data_day_raw.csv"
+  stakeholder <- str_sub(myarchivefile, 2,3)
   write_csv(ao_apt_dep_data_day_raw,
-            here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile))
+            here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile))
             )
 }
 
@@ -1026,7 +1034,8 @@ ao_apt_dep_data_day <- ao_apt_dep_data_day_int %>%
 #### week ----
 if (archive_mode) {
   myarchivefile <- "_ao_apt_dep_data_week_raw.csv"
-  ao_apt_dep_data_week_raw <-  read_csv(here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile)))
+  stakeholder <- str_sub(myarchivefile, 2,3)
+  ao_apt_dep_data_week_raw <-  read_csv(here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile)))
 
 } else {
   ao_apt_dep_data_week_raw <- read_xlsx(
@@ -1039,8 +1048,9 @@ if (archive_mode) {
 
   # save pre-processed file in archive for generation of past json files
   myarchivefile <- "_ao_apt_dep_data_week_raw.csv"
+  stakeholder <- str_sub(myarchivefile, 2,3)
   write_csv(ao_apt_dep_data_week_raw,
-            here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile))
+            here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile))
             )
 }
 
@@ -1084,7 +1094,8 @@ ao_apt_dep_data_wk <- ao_apt_dep_data_week_raw %>%
 #### y2d ----
 if (archive_mode) {
   myarchivefile <- "_ao_apt_dep_data_y2d_raw.csv"
-  ao_apt_dep_data_y2d_raw <-  read_csv(here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile)))
+  stakeholder <- str_sub(myarchivefile, 2,3)
+  ao_apt_dep_data_y2d_raw <-  read_csv(here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile)))
 
 } else {
   ao_apt_dep_data_y2d_raw <- read_xlsx(
@@ -1097,8 +1108,9 @@ if (archive_mode) {
 
   # save pre-processed file in archive for generation of past json files
   myarchivefile <- "_ao_apt_dep_data_y2d_raw.csv"
+  stakeholder <- str_sub(myarchivefile, 2,3)
   write_csv(ao_apt_dep_data_y2d_raw,
-            here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile))
+            here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile))
             )
 }
 
@@ -1229,7 +1241,8 @@ write(ao_apt_dep_data_j, paste0(archive_dir, "ao_apt_ranking_traffic.json"))
 #### day ----
 if (archive_mode) {
   myarchivefile <- "_ao_apt_pair_data_day_raw.csv"
-  ao_apt_pair_data_day_raw <-  read_csv(here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile)))
+  stakeholder <- str_sub(myarchivefile, 2,3)
+  ao_apt_pair_data_day_raw <-  read_csv(here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile)))
 
 } else {
   ao_apt_pair_data_day_raw <- read_xlsx(
@@ -1242,8 +1255,9 @@ if (archive_mode) {
 
   # save pre-processed file in archive for generation of past json files
   myarchivefile <- "_ao_apt_pair_data_day_raw.csv"
+  stakeholder <- str_sub(myarchivefile, 2,3)
   write_csv(ao_apt_pair_data_day_raw,
-            here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile))
+            here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile))
             )
 }
 
@@ -1288,7 +1302,8 @@ ao_apt_pair_data_day <- ao_apt_pair_data_day_int %>%
 #### week ----
 if (archive_mode) {
   myarchivefile <- "_ao_apt_pair_data_week_raw.csv"
-  ao_apt_pair_data_week_raw <-  read_csv(here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile)))
+  stakeholder <- str_sub(myarchivefile, 2,3)
+  ao_apt_pair_data_week_raw <-  read_csv(here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile)))
 
 } else {
   ao_apt_pair_data_week_raw <- read_xlsx(
@@ -1301,8 +1316,9 @@ if (archive_mode) {
 
   # save pre-processed file in archive for generation of past json files
   myarchivefile <- "_ao_apt_pair_data_week_raw.csv"
+  stakeholder <- str_sub(myarchivefile, 2,3)
   write_csv(ao_apt_pair_data_week_raw,
-            here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile))
+            here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile))
             )
 }
 
@@ -1346,7 +1362,8 @@ ao_apt_pair_data_wk <- ao_apt_pair_data_week_raw %>%
 #### y2d ----
 if (archive_mode) {
   myarchivefile <- "_ao_apt_pair_data_y2d_raw.csv"
-  ao_apt_pair_data_y2d_raw <-  read_csv(here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile)))
+  stakeholder <- str_sub(myarchivefile, 2,3)
+  ao_apt_pair_data_y2d_raw <-  read_csv(here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile)))
 
 } else {
   ao_apt_pair_data_y2d_raw <- read_xlsx(
@@ -1359,8 +1376,9 @@ if (archive_mode) {
 
   # save pre-processed file in archive for generation of past json files
   myarchivefile <- "_ao_apt_pair_data_y2d_raw.csv"
+  stakeholder <- str_sub(myarchivefile, 2,3)
   write_csv(ao_apt_pair_data_y2d_raw,
-            here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile))
+            here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile))
             )
 }
 
@@ -1493,7 +1511,8 @@ write(ao_apt_pair_data_j, paste0(archive_dir, "ao_apt_pair_ranking_traffic.json"
 #### day ----
 if (archive_mode) {
   # myarchivefile <- "_ao_apt_arr_delay_day_raw.csv"
-  # ao_apt_arr_delay_day_raw <-  read_csv(here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile)))
+  # stakeholder <- str_sub(myarchivefile, 2,3)
+  # ao_apt_arr_delay_day_raw <-  read_csv(here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile)))
 
 } else {
   ao_apt_arr_delay_day_raw <- read_xlsx(
@@ -1526,7 +1545,8 @@ ao_apt_arr_delay_day <- ao_apt_arr_delay_day_raw %>%
 #### week ----
 if (archive_mode) {
   # myarchivefile <- "_ao_apt_arr_delay_week_raw.csv"
-  # ao_apt_arr_delay_week_raw <-  read_csv(here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile)))
+  # stakeholder <- str_sub(myarchivefile, 2,3)
+  # ao_apt_arr_delay_week_raw <-  read_csv(here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile)))
 
 } else {
   ao_apt_arr_delay_week_raw <- read_xlsx(
@@ -1556,7 +1576,8 @@ ao_apt_arr_delay_week <- ao_apt_arr_delay_week_raw %>%
 #### y2d ----
 if (archive_mode) {
   # myarchivefile <- "_ao_apt_arr_delay_y2d_raw.csv"
-  # ao_apt_arr_delay_y2d_raw <-  read_csv(here(archive_dir_raw, "ao", paste0(data_day_text, myarchivefile)))
+  # stakeholder <- str_sub(myarchivefile, 2,3)
+  # ao_apt_arr_delay_y2d_raw <-  read_csv(here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile)))
 
 } else {
   ao_apt_arr_delay_y2d_raw <- read_xlsx(
