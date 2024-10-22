@@ -3091,8 +3091,8 @@ st_co2_data_filtered <- co2_data_raw %>%
 
 st_co2_evo <- st_co2_data_filtered %>%
   filter(YEAR >= 2019,
-         YEAR <= ao_co2_last_year,
-         MONTH <= ao_co2_last_month_num
+         YEAR <= st_co2_last_year,
+         MONTH <= st_co2_last_month_num
          ) %>%
   group_by(iso_2letter, state, FLIGHT_MONTH)%>%
   summarise(TTF = sum(TF), TCO2 = sum(CO2_QTY_TONNES)) %>%
