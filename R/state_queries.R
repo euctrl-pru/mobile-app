@@ -1125,7 +1125,7 @@ select
 
 # state ao ----
 ## day ----
-query_state_ao_day <- function(mydate_string) {
+query_st_ao_data_day_raw <- function(mydate_string) {
   mydate <- date_sql_string(mydate_string)
 paste0("
 with
@@ -1312,7 +1312,7 @@ order by country_name,  a.flag_day, r_rank
 }
 
 ## week ----
-query_state_ao_week <- function(mydate_string) {
+query_st_ao_data_week_raw <- function(mydate_string) {
   mydate <- date_sql_string(mydate_string)
   paste0(
 "
@@ -1501,7 +1501,7 @@ order by country_name,  a.flag_rolling_week, r_rank
 }
 
 ## year to date ----
-query_state_ao_y2d <- function(mydate_string) {
+query_st_ao_data_y2d_raw <- function(mydate_string) {
   mydate <- date_sql_string(mydate_string)
   paste0(
 "
@@ -1681,7 +1681,7 @@ ORDER by a.ctry_name, a.year DESC, r_rank
 
 # state apt ----
 ## day ----
-query_state_apt_day <- function(mydate_string) {
+query_st_apt_data_day_raw <- function(mydate_string) {
   mydate <- date_sql_string(mydate_string)
   paste0("
 with
@@ -1845,7 +1845,7 @@ order by country_name,  a.flag_day, r_rank
 }
 
 ## week ----
-query_state_apt_week <- function(mydate_string) {
+query_st_apt_data_week_raw <- function(mydate_string) {
   mydate <- date_sql_string(mydate_string)
   paste0("
 with
@@ -2012,7 +2012,7 @@ order by country_name,  a.flag_rolling_week, r_rank
 }
 
 ## year to date ----
-query_state_apt_y2d <- function(mydate_string) {
+query_st_apt_data_y2d_raw <- function(mydate_string) {
   mydate <- date_sql_string(mydate_string)
   paste0("
 with
@@ -2146,7 +2146,7 @@ order by country_name, year DESC, airport_name
 
 # state pair ----
 ## day ----
-query_state_st_day <- function(mydate_string) {
+query_st_st_data_day_raw <- function(mydate_string) {
   mydate <- date_sql_string(mydate_string)
   paste0("
 with
@@ -2357,7 +2357,7 @@ order by country_name,   flag_day, r_rank
 }
 
 ## week ----
-query_state_st_week <- function(mydate_string) {
+query_st_st_data_week_raw <- function(mydate_string) {
   mydate <- date_sql_string(mydate_string)
   paste0("
 with
@@ -2568,7 +2568,7 @@ order by country_name,   flag_rolling_week, r_rank
 }
 
 ## year to date ----
-query_state_st_y2d <- function(mydate_string) {
+query_st_st_data_y2d_raw <- function(mydate_string) {
   mydate <- date_sql_string(mydate_string)
   paste0("
 with

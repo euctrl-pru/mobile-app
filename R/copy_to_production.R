@@ -44,7 +44,6 @@ if (st_file_status == "OK") {
 }
 
 # copy files to performance folder ----
-
 ## copy v1 files ----
 if (nw_file_status == "OK") {
 
