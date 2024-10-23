@@ -163,7 +163,9 @@ DATA_GRP_AO_2 as
       ELSE NULL
       END  FLIGHT_7DAY_DIFF_PERC
         FROM DATA_GRP_AO_2
-  )
+  ),
+
+  DATA_GRP_AO_4 as (
   select YEAR,
        MONTH,
        WEEK,
@@ -226,6 +228,10 @@ DATA_GRP_AO_2 as
        ,ROW_NUMBER() OVER (PARTITION BY entry_date ORDER BY (FLIGHT - FLIGHT_7DAY) asc)  r_rank_by_day_diff_7DAY_asc
       FROM DATA_GRP_AO_3
       WHERE entry_date = ", mydate, "-1
+  )
+
+  select * from DATA_GRP_AO_4
+  WHERE r_rank_by_day <= 100
 "
   )
 }
