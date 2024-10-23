@@ -1328,876 +1328,911 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
 
 # jsons for ranking tables ----
 
-  ## Aircraft operators traffic ----
+## Aircraft operators traffic ----
+### day
+nw_ao_day_raw <- read_xlsx(
+    path = fs::path_abs(
+      str_glue(base_file),
+      start = base_dir
+    ),
+    sheet = "AO_DAY_DATA",
+    range = cell_limits(c(5, 2), c(NA, NA))
+  ) %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-    ### day
-    ao_data_dy <- read_xlsx(
-      path = fs::path_abs(
-        str_glue(base_file),
-        start = base_dir
-      ),
-      sheet = "AO_DAY",
-      range = cell_limits(c(3, 2), c(NA, 11))
+ao_data_dy <- nw_ao_day_raw %>%
+  filter(R_RANK_BY_DAY <= 10) %>%
+  mutate(DY_RANK_DIFF_7DAY = RANK_BY_DAY_7DAY - RANK_BY_DAY) %>%
+  select(
+    WK_R_RANK_BY_DAY = R_RANK_BY_DAY,
+    DY_AO_GRP_NAME = AO_GRP_NAME,
+    DY_ENTRY_DATE = ENTRY_DATE,
+    DY_FLIGHT = FLIGHT,
+    DY_FLIGHT_DIFF_7DAY_PERC =  FLIGHT_DIFF_7DAY_PERC,
+    DY_FLIGHT_DIFF_PERC = FLIGHT_DIFF_PERC,
+    DY_RANK_DIFF_7DAY,
+    DY_AO_GRP_CODE = AO_GRP_CODE)
+
+### week
+nw_ao_data_week_raw <- read_xlsx(
+  path = fs::path_abs(
+    str_glue(base_file),
+    start = base_dir
+  ),
+  sheet = "AO_WEEK_DATA",
+  range = cell_limits(c(5, 2), c(NA, NA))
+) %>%
+  mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+ao_data_wk <- new_nw_ao_data_week_raw %>%
+  filter(R_RANK_BY_DAY <= 10) %>%
+  mutate(WK_RANK_DIFF_7DAY =   RANK_BY_DAY_7DAY -  RANK_BY_DAY) %>%
+  select(WK_R_RANK_BY_DAY = R_RANK_BY_DAY,
+         WK_AO_GRP_NAME = AO_GRP_NAME,
+         WK_MAX_ENTRY_DATE = MAX_ENTRY_DATE,
+         WK_DAILY_FLIGHT = DAILY_FLIGHT,
+         WK_FLIGHT_DIFF_PERC =  FLIGHT_DIFF_PREV_YEAR_PERC,
+         WK_FLIGHT_DIFF_7DAY_PERC = FLIGHT_DIFF_7DAY_PERC,
+         WK_RANK_DIFF_7DAY)
+
+### y2d
+nw_ao_data_y2d_raw <- read_xlsx(
+  path = fs::path_abs(
+    str_glue(base_file),
+    start = base_dir
+  ),
+  sheet = "TOP40_AO_Y2D",
+  range = cell_limits(c(6, 2), c(NA, NA))
+  )
+
+ao_data_y2d <- new_nw_ao_data_y2d_raw %>%
+  clean_names() %>%
+  filter(rank <= 10) %>%
+  mutate(
+    Y2D_DIF_PREV_YEAR_PERC = if_else(x2_y2d_prev_year_4 == 0 , 0, (x1_y2d_current_year_3 / x2_y2d_prev_year_4) -1),
+    Y2D_DIF_2019_PERC = if_else(y2d_2019_5 == 0 , 0, (x1_y2d_current_year_3 / y2d_2019_5) -1),
+    Y2D_RANK_DIF_PREV_YEAR = x2_y2d_prev_year_16 - rank
     ) %>%
-      mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
-      filter(WK_R_RANK_BY_DAY <= 10) %>%
-      select(-DY_FLIGHT_DIFF_2019_PERC, -DY_R_RANK_BY_DAY)
-
-    ### week
-    ao_data_wk <- read_xlsx(
-      path = fs::path_abs(
-        str_glue(base_file),
-        start = base_dir
-      ),
-      sheet = "AO_WEEK",
-      range = cell_limits(c(3, 2), c(NA, 9))
-    ) %>%
-      mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
-      filter(WK_R_RANK_BY_DAY <= 10) %>%
-      select(-WK_FLIGHT_DIFF_2019_PERC)
-
-    ### y2d
-    ao_data_y2d <- read_xlsx(
-      path = fs::path_abs(
-        str_glue(base_file),
-        start = base_dir
-      ),
-      sheet = "TOP40_AO_ALL",
-      range = cell_limits(c(5, 2), c(NA, 8))
-    ) %>%
-      mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
-      filter(WK_R_RANK_BY_DAY <= 10)
-
-    ### main card
-    ao_main_traffic <- ao_data_dy %>%
-      mutate(
-        MAIN_TFC_AO_GRP_NAME = if_else(
-          WK_R_RANK_BY_DAY <= 4,
-          DY_AO_GRP_NAME,
-          NA
-        ),
-        MAIN_TFC_AO_GRP_CODE = if_else(
-          WK_R_RANK_BY_DAY <= 4,
-          DY_AO_GRP_CODE,
-          NA
-        ),
-        MAIN_TFC_AO_GRP_FLIGHT = if_else(
-          WK_R_RANK_BY_DAY <= 4,
-          DY_FLIGHT,
-          NA
-        )
-      ) %>%
-      select(WK_R_RANK_BY_DAY, MAIN_TFC_AO_GRP_NAME, MAIN_TFC_AO_GRP_CODE, MAIN_TFC_AO_GRP_FLIGHT)
-
-    ao_main_traffic_dif <- read_xlsx(
-      path = fs::path_abs(
-        str_glue(base_file),
-        start = base_dir
-      ),
-      sheet = "AO_DAY_MAIN",
-      range = cell_limits(c(3, 2), c(NA, 5))
-      )
-
-    ### merge and reorder tables
-    ao_data <- merge(x = ao_data_wk, y = ao_data_dy, by = "WK_R_RANK_BY_DAY")
-    ao_data <- merge(x = ao_data, y = ao_data_y2d, by = "WK_R_RANK_BY_DAY")
-    ao_data <- merge(x = ao_data, y = ao_main_traffic, by = "WK_R_RANK_BY_DAY")
-    ao_data <- merge(x = ao_data, y = ao_main_traffic_dif, by = "WK_R_RANK_BY_DAY")
-
-    ao_data <- ao_data %>%
-      mutate(WK_MIN_ENTRY_DATE = WK_MAX_ENTRY_DATE - 6)
-
-    ao_data <- ao_data %>%
-      relocate(c(
-        RANK = WK_R_RANK_BY_DAY,
-        MAIN_TFC_AO_GRP_NAME,
-        MAIN_TFC_AO_GRP_FLIGHT,
-        MAIN_TFC_DIF_AO_GRP_NAME,
-        MAIN_TFC_AO_GRP_DIF,
-        DY_RANK_DIF_PREV_WEEK = DY_RANK_DIFF_7DAY,
-        DY_AO_GRP_NAME,
-        DY_TO_DATE = DY_ENTRY_DATE,
-        DY_FLIGHT,
-        DY_DIF_PREV_WEEK_PERC = DY_FLIGHT_DIFF_7DAY_PERC,
-        DY_DIF_PREV_YEAR_PERC = DY_FLIGHT_DIFF_PERC,
-        WK_RANK_DIF_PREV_WEEK = WK_RANK_DIFF_7DAY,
-        WK_AO_GRP_NAME,
-        WK_FROM_DATE = WK_MIN_ENTRY_DATE,
-        WK_TO_DATE = WK_MAX_ENTRY_DATE,
-        # WK_FLIGHT = WK_DAILY_FLIGHT,
-        WK_DAILY_FLIGHT,
-        WK_DIF_PREV_WEEK_PERC = WK_FLIGHT_DIFF_7DAY_PERC,
-        WK_DIF_PREV_YEAR_PERC = WK_FLIGHT_DIFF_PERC,
-        Y2D_RANK_DIF_PREV_YEAR,
-        Y2D_AO_GRP_NAME,
-        Y2D_TO_DATE = last_data_day,
-        # Y2D_FLIGHT = "1_Y2D_CURRENT_YEAR",
-        Y2D_DAILY_FLIGHT = "1_Y2D_CURRENT_YEAR",
-        Y2D_DIF_PREV_YEAR_PERC = Dif_prev_year,
-        Y2D_DIF_2019_PERC = Dif_2019
-      ))
-
-    ### covert to json and save in app data folder and archive
-    ao_data_j <- ao_data %>% toJSON(., pretty = TRUE)
-    # (not needed anymore since the release of v2)
-    # write(ao_data_j, here(data_folder, "ao_ranking_traffic.json"))
-    write(ao_data_j, here(data_folder, "v2", "ao_ranking_traffic.json"))
-    write(ao_data_j, paste0(archive_dir, "ao_ranking_traffic.json"))
-    write(ao_data_j, paste0(archive_dir, today, "_ao_ranking_traffic.json"))
-
-    # we duplicate the files while the app is being remapped
-    write(ao_data_j, here(data_folder, "v2", "nw_ao_ranking_traffic.json"))
-    write(ao_data_j, paste0(archive_dir, "nw_ao_ranking_traffic.json"))
-    write(ao_data_j, paste0(archive_dir, today, "_nw_ao_ranking_traffic.json"))
-
-
-  ## Airport traffic ----
-
-    ### day
-    apt_data_dy <- read_xlsx(
-      path = fs::path_abs(
-        str_glue(base_file),
-        start = base_dir
-      ),
-      sheet = "APT_DAY",
-      range = cell_limits(c(3, 2), c(NA, 10))
-    ) %>%
-      mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
-      filter(DY_R_RANK_BY_DAY <= 10) %>%
-      select(-DY_AIRPORT_CODE, -DY_DEP_ARR_2019_PERC)
-
-    ### week
-    apt_data_wk <- read_xlsx(
-      path = fs::path_abs(
-        str_glue(base_file),
-        start = base_dir
-      ),
-      sheet = "APT_WEEK",
-      range = cell_limits(c(3, 2), c(NA, 10))
-    ) %>%
-      mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
-      filter(DY_R_RANK_BY_DAY <= 10) %>%
-      select(-WK_AIRPORT_CODE, -WK_2019_DIFF_PERC)
-
-    ### y2d
-    apt_data_y2d <- read_xlsx(
-      path = fs::path_abs(
-        str_glue(base_file),
-        start = base_dir
-      ),
-      sheet = "TOP40_APT_ALL",
-      range = cell_limits(c(5, 2), c(NA, 11))
-    ) %>%
-      mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
-      filter(DY_R_RANK_BY_DAY <= 10) %>%
-      select(-Y2D_ARP_CODE, -Y2D_DEP_ARR_2019, -Y2D_DEP_ARR_PREV_YEAR)
-
-    ### main card
-    apt_main_traffic <- apt_data_dy %>%
-      mutate(
-        MAIN_TFC_AIRPORT_NAME = if_else(
-          DY_R_RANK_BY_DAY <= 4,
-          DY_AIRPORT_NAME,
-          NA
-        ),
-        MAIN_TFC_AIRPORT_DEP_ARR = if_else(
-          DY_R_RANK_BY_DAY <= 4,
-          DY_DEP_ARR,
-          NA
-        )
-      ) %>%
-      select(DY_R_RANK_BY_DAY, MAIN_TFC_AIRPORT_NAME, MAIN_TFC_AIRPORT_DEP_ARR)
-
-    apt_main_traffic_dif <- read_xlsx(
-      path = fs::path_abs(
-        str_glue(base_file),
-        start = base_dir
-      ),
-      sheet = "APT_DAY_MAIN",
-      range = cell_limits(c(3, 2), c(NA, 4))
+  select(
+    WK_R_RANK_BY_DAY = rank,
+    Y2D_AO_GRP_NAME = ao_grp_name,
+    Y2D_TO_DATE = x1_y2d_current_year_9,
+    Y2D_DAILY_FLIGHT = x1_y2d_current_year_3,
+    Y2D_DIF_PREV_YEAR_PERC,
+    Y2D_DIF_2019_PERC,
+    Y2D_RANK_DIF_PREV_YEAR
     )
 
-    ### merge and reorder tables
-    apt_data <- merge(x = apt_data_dy, y = apt_data_wk, by = "DY_R_RANK_BY_DAY")
-    apt_data <- merge(x = apt_data, y = apt_data_y2d, by = "DY_R_RANK_BY_DAY")
-    apt_data <- merge(x = apt_data, y = apt_main_traffic, by = "DY_R_RANK_BY_DAY")
-    apt_data <- merge(x = apt_data, y = apt_main_traffic_dif, by = "DY_R_RANK_BY_DAY")
+### main card
+ao_main_traffic <- ao_data_dy %>%
+  mutate(
+    MAIN_TFC_AO_GRP_NAME = if_else(
+      WK_R_RANK_BY_DAY <= 4,
+      DY_AO_GRP_NAME,
+      NA
+    ),
+    MAIN_TFC_AO_GRP_CODE = if_else(
+      WK_R_RANK_BY_DAY <= 4,
+      DY_AO_GRP_CODE,
+      NA
+    ),
+    MAIN_TFC_AO_GRP_FLIGHT = if_else(
+      WK_R_RANK_BY_DAY <= 4,
+      DY_FLIGHT,
+      NA
+    )
+  ) %>%
+  select(WK_R_RANK_BY_DAY, MAIN_TFC_AO_GRP_NAME, MAIN_TFC_AO_GRP_CODE, MAIN_TFC_AO_GRP_FLIGHT)
 
-    apt_data <- apt_data %>%
-      mutate(WK_TO_DATE = CURRENT_WEEK_FIRST_DAY + 6) %>%
-      relocate(c(
-        RANK = DY_R_RANK_BY_DAY,
-        MAIN_TFC_AIRPORT_NAME,
-        MAIN_TFC_AIRPORT_DEP_ARR,
-        MAIN_TFC_DIF_AIRPORT_NAME,
-        MAIN_TFC_AIRPORT_DIF,
-        DY_RANK_DIF_PREV_WEEK,
+ao_main_traffic_dif <- read_xlsx(
+  path = fs::path_abs(
+    str_glue(base_file),
+    start = base_dir
+  ),
+  sheet = "AO_DAY_MAIN",
+  range = cell_limits(c(3, 2), c(NA, 5))
+  )
+
+### merge and reorder tables
+ao_data <- merge(x = ao_data_wk, y = ao_data_dy, by = "WK_R_RANK_BY_DAY")
+ao_data <- merge(x = ao_data, y = ao_data_y2d, by = "WK_R_RANK_BY_DAY")
+ao_data <- merge(x = ao_data, y = ao_main_traffic, by = "WK_R_RANK_BY_DAY")
+ao_data <- merge(x = ao_data, y = ao_main_traffic_dif, by = "WK_R_RANK_BY_DAY")
+
+ao_data <- ao_data %>%
+  mutate(WK_MIN_ENTRY_DATE = WK_MAX_ENTRY_DATE - 6)
+
+ao_data <- ao_data %>%
+  relocate(c(
+    RANK = WK_R_RANK_BY_DAY,
+    MAIN_TFC_AO_GRP_NAME,
+    MAIN_TFC_AO_GRP_FLIGHT,
+    MAIN_TFC_DIF_AO_GRP_NAME,
+    MAIN_TFC_AO_GRP_DIF,
+    DY_RANK_DIF_PREV_WEEK = DY_RANK_DIFF_7DAY,
+    DY_AO_GRP_NAME,
+    DY_TO_DATE = DY_ENTRY_DATE,
+    DY_FLIGHT,
+    DY_DIF_PREV_WEEK_PERC = DY_FLIGHT_DIFF_7DAY_PERC,
+    DY_DIF_PREV_YEAR_PERC = DY_FLIGHT_DIFF_PERC,
+    WK_RANK_DIF_PREV_WEEK = WK_RANK_DIFF_7DAY,
+    WK_AO_GRP_NAME,
+    WK_FROM_DATE = WK_MIN_ENTRY_DATE,
+    WK_TO_DATE = WK_MAX_ENTRY_DATE,
+    # WK_FLIGHT = WK_DAILY_FLIGHT,
+    WK_DAILY_FLIGHT,
+    WK_DIF_PREV_WEEK_PERC = WK_FLIGHT_DIFF_7DAY_PERC,
+    WK_DIF_PREV_YEAR_PERC = WK_FLIGHT_DIFF_PERC,
+    Y2D_RANK_DIF_PREV_YEAR,
+    Y2D_AO_GRP_NAME,
+    Y2D_TO_DATE,
+    # Y2D_FLIGHT = "1_Y2D_CURRENT_YEAR",
+    Y2D_DAILY_FLIGHT,
+    Y2D_DIF_PREV_YEAR_PERC,
+    Y2D_DIF_2019_PERC
+  ))
+
+### covert to json and save in app data folder and archive
+ao_data_j <- ao_data %>% toJSON(., pretty = TRUE)
+# (not needed anymore since the release of v2)
+# write(ao_data_j, here(data_folder, "ao_ranking_traffic.json"))
+write(ao_data_j, here(data_folder, "v2", "ao_ranking_traffic.json"))
+write(ao_data_j, paste0(archive_dir, "ao_ranking_traffic.json"))
+write(ao_data_j, paste0(archive_dir, today, "_ao_ranking_traffic.json"))
+
+# we duplicate the files while the app is being remapped
+write(ao_data_j, here(data_folder, "v2", "nw_ao_ranking_traffic.json"))
+write(ao_data_j, paste0(archive_dir, "nw_ao_ranking_traffic.json"))
+write(ao_data_j, paste0(archive_dir, today, "_nw_ao_ranking_traffic.json"))
+
+
+## Airport traffic ----
+
+  ### day
+  apt_data_dy <- read_xlsx(
+    path = fs::path_abs(
+      str_glue(base_file),
+      start = base_dir
+    ),
+    sheet = "APT_DAY",
+    range = cell_limits(c(3, 2), c(NA, 10))
+  ) %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
+    filter(DY_R_RANK_BY_DAY <= 10) %>%
+    select(-DY_AIRPORT_CODE, -DY_DEP_ARR_2019_PERC)
+
+  ### week
+  apt_data_wk <- read_xlsx(
+    path = fs::path_abs(
+      str_glue(base_file),
+      start = base_dir
+    ),
+    sheet = "APT_WEEK",
+    range = cell_limits(c(3, 2), c(NA, 10))
+  ) %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
+    filter(DY_R_RANK_BY_DAY <= 10) %>%
+    select(-WK_AIRPORT_CODE, -WK_2019_DIFF_PERC)
+
+  ### y2d
+  apt_data_y2d <- read_xlsx(
+    path = fs::path_abs(
+      str_glue(base_file),
+      start = base_dir
+    ),
+    sheet = "TOP40_APT_ALL",
+    range = cell_limits(c(5, 2), c(NA, 11))
+  ) %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
+    filter(DY_R_RANK_BY_DAY <= 10) %>%
+    select(-Y2D_ARP_CODE, -Y2D_DEP_ARR_2019, -Y2D_DEP_ARR_PREV_YEAR)
+
+  ### main card
+  apt_main_traffic <- apt_data_dy %>%
+    mutate(
+      MAIN_TFC_AIRPORT_NAME = if_else(
+        DY_R_RANK_BY_DAY <= 4,
         DY_AIRPORT_NAME,
-        DY_TO_DATE = DY_ENTRY_DATE,
+        NA
+      ),
+      MAIN_TFC_AIRPORT_DEP_ARR = if_else(
+        DY_R_RANK_BY_DAY <= 4,
         DY_DEP_ARR,
-        DY_DIF_PREV_WEEK_PERC = DY_DEP_ARR_7DAY_PERC,
-        DY_DIF_PREV_YEAR_PERC = DY_DEP_ARR_PREV_YEAR_PERC,
-        WK_RANK_DIF_PREV_WEEK,
-        WK_AIRPORT_NAME,
-        WK_FROM_DATE = CURRENT_WEEK_FIRST_DAY,
-        WK_TO_DATE,
-        WK_DAILY_DEP_ARR,
-        WK_DIF_PREV_WEEK_PERC = WK_PREV_WEEK_DIFF_PERC,
-        WK_DIF_PREV_YEAR_PERC = WK_PREV_YEAR_DIFF_PERC,
-        Y2D_RANK_DIF_PREV_YEAR,
-        Y2D_AIRPORT_NAME = Y2D_ARP_NAME,
-        Y2D_TO_DATE,
-        Y2D_DEP_ARR = Y2D_DEP_ARR_CURRENT_YEAR,
-        Y2D_DIF_PREV_YEAR_PERC,
-        Y2D_DIF_2019_PERC
-      ))
-
-    ### covert to json and save in app data folder and archive
-    apt_data_j <- apt_data %>% toJSON(., pretty = TRUE)
-    # (not needed anymore since the release of v2)
-    # write(apt_data_j, here(data_folder, "apt_ranking_traffic.json"))
-    write(apt_data_j, here(data_folder, "v2", "apt_ranking_traffic.json"))
-    write(apt_data_j, paste0(archive_dir, "apt_ranking_traffic.json"))
-    write(apt_data_j, paste0(archive_dir, today, "_apt_ranking_traffic.json"))
-
-    # we duplicate the files while the app is being remapped
-    write(apt_data_j, here(data_folder, "v2", "nw_apt_ranking_traffic.json"))
-    write(apt_data_j, paste0(archive_dir, "nw_apt_ranking_traffic.json"))
-    write(apt_data_j, paste0(archive_dir, today, "_nw_apt_ranking_traffic.json"))
-
-
-  ## Country traffic DAI ----
-
-    ### day
-    ct_dai_data_dy_raw <- read_xlsx(
-      path = fs::path_abs(
-        str_glue(base_file),
-        start = base_dir
-      ),
-      sheet = "CTRY_DAI_DAY",
-      range = cell_limits(c(3, 2), c(NA, 10))
+        NA
+      )
     ) %>%
-      mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
-      filter(DY_R_RANK_BY_DAY <= 10)
+    select(DY_R_RANK_BY_DAY, MAIN_TFC_AIRPORT_NAME, MAIN_TFC_AIRPORT_DEP_ARR)
 
-    ct_dai_data_dy <- ct_dai_data_dy_raw %>%
-      select(1:8)
+  apt_main_traffic_dif <- read_xlsx(
+    path = fs::path_abs(
+      str_glue(base_file),
+      start = base_dir
+    ),
+    sheet = "APT_DAY_MAIN",
+    range = cell_limits(c(3, 2), c(NA, 4))
+  )
 
-    ### week
-    ct_dai_data_wk <- read_xlsx(
-      path = fs::path_abs(
-        str_glue(base_file),
-        start = base_dir
+  ### merge and reorder tables
+  apt_data <- merge(x = apt_data_dy, y = apt_data_wk, by = "DY_R_RANK_BY_DAY")
+  apt_data <- merge(x = apt_data, y = apt_data_y2d, by = "DY_R_RANK_BY_DAY")
+  apt_data <- merge(x = apt_data, y = apt_main_traffic, by = "DY_R_RANK_BY_DAY")
+  apt_data <- merge(x = apt_data, y = apt_main_traffic_dif, by = "DY_R_RANK_BY_DAY")
+
+  apt_data <- apt_data %>%
+    mutate(WK_TO_DATE = CURRENT_WEEK_FIRST_DAY + 6) %>%
+    relocate(c(
+      RANK = DY_R_RANK_BY_DAY,
+      MAIN_TFC_AIRPORT_NAME,
+      MAIN_TFC_AIRPORT_DEP_ARR,
+      MAIN_TFC_DIF_AIRPORT_NAME,
+      MAIN_TFC_AIRPORT_DIF,
+      DY_RANK_DIF_PREV_WEEK,
+      DY_AIRPORT_NAME,
+      DY_TO_DATE = DY_ENTRY_DATE,
+      DY_DEP_ARR,
+      DY_DIF_PREV_WEEK_PERC = DY_DEP_ARR_7DAY_PERC,
+      DY_DIF_PREV_YEAR_PERC = DY_DEP_ARR_PREV_YEAR_PERC,
+      WK_RANK_DIF_PREV_WEEK,
+      WK_AIRPORT_NAME,
+      WK_FROM_DATE = CURRENT_WEEK_FIRST_DAY,
+      WK_TO_DATE,
+      WK_DAILY_DEP_ARR,
+      WK_DIF_PREV_WEEK_PERC = WK_PREV_WEEK_DIFF_PERC,
+      WK_DIF_PREV_YEAR_PERC = WK_PREV_YEAR_DIFF_PERC,
+      Y2D_RANK_DIF_PREV_YEAR,
+      Y2D_AIRPORT_NAME = Y2D_ARP_NAME,
+      Y2D_TO_DATE,
+      Y2D_DEP_ARR = Y2D_DEP_ARR_CURRENT_YEAR,
+      Y2D_DIF_PREV_YEAR_PERC,
+      Y2D_DIF_2019_PERC
+    ))
+
+  ### covert to json and save in app data folder and archive
+  apt_data_j <- apt_data %>% toJSON(., pretty = TRUE)
+  # (not needed anymore since the release of v2)
+  # write(apt_data_j, here(data_folder, "apt_ranking_traffic.json"))
+  write(apt_data_j, here(data_folder, "v2", "apt_ranking_traffic.json"))
+  write(apt_data_j, paste0(archive_dir, "apt_ranking_traffic.json"))
+  write(apt_data_j, paste0(archive_dir, today, "_apt_ranking_traffic.json"))
+
+  # we duplicate the files while the app is being remapped
+  write(apt_data_j, here(data_folder, "v2", "nw_apt_ranking_traffic.json"))
+  write(apt_data_j, paste0(archive_dir, "nw_apt_ranking_traffic.json"))
+  write(apt_data_j, paste0(archive_dir, today, "_nw_apt_ranking_traffic.json"))
+
+
+## Country traffic DAI ----
+
+  ### day
+  ct_dai_data_dy_raw <- read_xlsx(
+    path = fs::path_abs(
+      str_glue(base_file),
+      start = base_dir
+    ),
+    sheet = "CTRY_DAI_DAY",
+    range = cell_limits(c(3, 2), c(NA, 10))
+  ) %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
+    filter(DY_R_RANK_BY_DAY <= 10)
+
+  ct_dai_data_dy <- ct_dai_data_dy_raw %>%
+    select(1:8)
+
+  ### week
+  ct_dai_data_wk <- read_xlsx(
+    path = fs::path_abs(
+      str_glue(base_file),
+      start = base_dir
+    ),
+    sheet = "CTRY_DAI_WK",
+    range = cell_limits(c(3, 2), c(NA, 9))
+  ) %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
+    filter(DY_R_RANK_BY_DAY <= 10)
+
+  ### y2d
+  ct_dai_data_y2d <- read_xlsx(
+    path = fs::path_abs(
+      str_glue(base_file),
+      start = base_dir
+    ),
+    sheet = "CTRY_DAI_Y2D",
+    range = cell_limits(c(3, 2), c(NA, 8))
+  ) %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
+    filter(DY_R_RANK_BY_DAY <= 10)
+
+  ### main card
+  ct_main_traffic <- ct_dai_data_dy_raw %>%
+    mutate(
+      MAIN_TFC_CTRY_NAME = if_else(
+        DY_R_RANK_BY_DAY <= 4,
+        DY_COUNTRY_NAME,
+        NA
       ),
-      sheet = "CTRY_DAI_WK",
-      range = cell_limits(c(3, 2), c(NA, 9))
+      MAIN_TFC_CTRY_DAI = if_else(
+        DY_R_RANK_BY_DAY <= 4,
+        DY_CTRY_DAI,
+        NA
+      ),
+      MAIN_TFC_CTRY_CODE = if_else(
+        DY_R_RANK_BY_DAY <= 4,
+        ISO_CODE,
+        NA
+      )
     ) %>%
-      mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
-      filter(DY_R_RANK_BY_DAY <= 10)
+    select(DY_R_RANK_BY_DAY, MAIN_TFC_CTRY_NAME, MAIN_TFC_CTRY_DAI, MAIN_TFC_CTRY_CODE)
 
-    ### y2d
-    ct_dai_data_y2d <- read_xlsx(
-      path = fs::path_abs(
-        str_glue(base_file),
-        start = base_dir
-      ),
-      sheet = "CTRY_DAI_Y2D",
-      range = cell_limits(c(3, 2), c(NA, 8))
+  ct_main_traffic_dif <- read_xlsx(
+    path = fs::path_abs(
+      str_glue(base_file),
+      start = base_dir
+    ),
+    sheet = "CTRY_DAI_MAIN",
+    range = cell_limits(c(3, 2), c(NA, 5))
+  )
+
+  ### merge and reorder tables
+  ct_dai_data <- merge(x = ct_dai_data_dy, y = ct_dai_data_wk, by = "DY_R_RANK_BY_DAY")
+  ct_dai_data <- merge(x = ct_dai_data, y = ct_dai_data_y2d, by = "DY_R_RANK_BY_DAY")
+  ct_dai_data <- merge(x = ct_dai_data, y = ct_main_traffic, by = "DY_R_RANK_BY_DAY")
+  ct_dai_data <- merge(x = ct_dai_data, y = ct_main_traffic_dif, by = "DY_R_RANK_BY_DAY")
+
+  ct_dai_data <- ct_dai_data %>%
+    relocate(c(
+      RANK = DY_R_RANK_BY_DAY,
+      MAIN_TFC_CTRY_NAME,
+      MAIN_TFC_CTRY_DAI,
+      MAIN_TFC_CTRY_CODE,
+      MAIN_TFC_DIF_CTRY_NAME,
+      MAIN_TFC_CTRY_DIF,
+      MAIN_TFC_DIF_CTRY_CODE,
+      DY_RANK_DIF_PREV_WEEK,
+      DY_COUNTRY_NAME,
+      DY_TO_DATE = DY_ENTRY_DATE,
+      DY_CTRY_DAI,
+      DY_DIF_PREV_WEEK_PERC = DY_CTRY_DAI_7DAY_PERC,
+      DY_DIF_PREV_YEAR_PERC = DY_CTRY_DAI_PREV_YEAR_PERC,
+      WK_RANK_DIF_PREV_WEEK,
+      WK_COUNTRY_NAME,
+      WK_FROM_DATE,
+      WK_TO_DATE,
+      WK_CTRY_DAI,
+      WK_DIF_PREV_WEEK_PERC = WK_CTRY_DAI_7DAY_PERC,
+      WK_DIF_PREV_YEAR_PERC = WK_CTRY_DAI_PREV_YEAR_PERC,
+      Y2D_RANK_DIF_PREV_YEAR,
+      Y2D_COUNTRY_NAME,
+      Y2D_TO_DATE,
+      Y2D_CTRY_DAI,
+      Y2D_CTRY_DAI_PREV_YEAR_PERC,
+      Y2D_RANK_DIF_PREV_YEAR
+    ))
+
+  ### covert to json and save in app data folder and archive
+  ct_dai_data_j <- ct_dai_data %>% toJSON(., pretty = TRUE)
+  # (not needed anymore since the release of v2)
+  # write(ct_dai_data_j, here(data_folder, "ctry_ranking_traffic_DAI.json"))
+  write(ct_dai_data_j, here(data_folder, "v2", "ctry_ranking_traffic_DAI.json"))
+  write(ct_dai_data_j, paste0(archive_dir, today, "_ctry_ranking_traffic_DAI.json"))
+  write(ct_dai_data_j, paste0(archive_dir, "ctry_ranking_traffic_DAI.json"))
+
+  # we duplicate the files while the app is being remapped
+  write(ct_dai_data_j, here(data_folder, "v2", "nw_ctry_ranking_traffic_DAI.json"))
+  write(ct_dai_data_j, paste0(archive_dir, today, "_nw_ctry_ranking_traffic_DAI.json"))
+  write(ct_dai_data_j, paste0(archive_dir, "nw_ctry_ranking_traffic_DAI.json"))
+
+
+## Airport delay -----
+
+  ### raw data
+  apt_rank_data_raw <- read_xlsx(
+    path = fs::path_abs(
+      str_glue(base_file),
+      start = base_dir
+    ),
+    sheet = "APT_DELAY",
+    range = cell_limits(c(5, 2), c(NA, 50))
+  ) %>%
+    as_tibble()
+
+  ### day data
+  apt_rank_data_day <- apt_rank_data_raw %>%
+    arrange(desc(DLY_ARR), ARP_NAME) %>%
+    mutate(
+      R_RANK_DLY_DAY = row_number(),
+      ARP_NAME_DAY = ARP_NAME,
+      DLY_PER_FLT = ifelse(FLT_ARR == 0, 0, round(DLY_ARR / FLT_ARR, 2))
     ) %>%
-      mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
-      filter(DY_R_RANK_BY_DAY <= 10)
+    select(R_RANK_DLY_DAY, ARP_NAME_DAY, FLIGHT_DATE, DLY_ARR, DLY_PER_FLT) %>%
+    as.data.frame() %>%
+    filter(R_RANK_DLY_DAY <= 10)
 
-    ### main card
-    ct_main_traffic <- ct_dai_data_dy_raw %>%
-      mutate(
-        MAIN_TFC_CTRY_NAME = if_else(
-          DY_R_RANK_BY_DAY <= 4,
-          DY_COUNTRY_NAME,
-          NA
-        ),
-        MAIN_TFC_CTRY_DAI = if_else(
-          DY_R_RANK_BY_DAY <= 4,
-          DY_CTRY_DAI,
-          NA
-        ),
-        MAIN_TFC_CTRY_CODE = if_else(
-          DY_R_RANK_BY_DAY <= 4,
-          ISO_CODE,
-          NA
-        )
-      ) %>%
-      select(DY_R_RANK_BY_DAY, MAIN_TFC_CTRY_NAME, MAIN_TFC_CTRY_DAI, MAIN_TFC_CTRY_CODE)
+  ### week
+  apt_rank_data_week <- apt_rank_data_raw %>%
+    arrange(desc(ROLL_WEEK_DLY_ARR), ARP_NAME) %>%
+    mutate(
+      R_RANK_DLY_DAY = row_number(),
+      WK_RANK = R_RANK_DLY_DAY,
+      ARP_NAME_WK = ARP_NAME,
+      DLY_PER_FLT_WEEK = ifelse(ROLL_WEEK_ARR == 0, 0, round(ROLL_WEEK_DLY_ARR / ROLL_WEEK_ARR, 2)),
+      WK_FROM_DATE = FLIGHT_DATE + days(-6),
+      WK_TO_DATE = FLIGHT_DATE
+    ) %>%
+    select(
+      R_RANK_DLY_DAY, WK_RANK, ARP_NAME_WK, WK_FROM_DATE, WK_TO_DATE,
+      ROLL_WEEK_DLY_ARR, DLY_PER_FLT_WEEK
+    ) %>%
+    as.data.frame() %>%
+    filter(R_RANK_DLY_DAY <= 10)
 
-    ct_main_traffic_dif <- read_xlsx(
-      path = fs::path_abs(
-        str_glue(base_file),
-        start = base_dir
+  ### y2d
+  apt_rank_data_y2d <- apt_rank_data_raw %>%
+    arrange(desc(Y2D_AVG_DLY_ARR), ARP_NAME) %>%
+    mutate(
+      R_RANK_DLY_DAY = row_number(),
+      Y2D_RANK = R_RANK_DLY_DAY,
+      ARP_NAME_Y2D = ARP_NAME,
+      DLY_PER_FLT_Y2D = ifelse(Y2D_AVG_FLT == 0,
+        0,
+        round(Y2D_AVG_DLY / Y2D_AVG_ARR, 2)
       ),
-      sheet = "CTRY_DAI_MAIN",
-      range = cell_limits(c(3, 2), c(NA, 5))
+      Y2D_TO_DATE = FLIGHT_DATE
+    ) %>%
+    select(R_RANK_DLY_DAY, Y2D_RANK, ARP_NAME_Y2D, Y2D_TO_DATE, Y2D_AVG_DLY_ARR, DLY_PER_FLT_Y2D) %>%
+    as.data.frame()
+
+  ### main card
+  apt_main_delay <- apt_rank_data_day %>%
+    mutate(
+      MAIN_DLY_APT_NAME = if_else(
+        R_RANK_DLY_DAY <= 4,
+        ARP_NAME_DAY,
+        NA
+      ),
+      MAIN_DLY_APT_DLY = if_else(
+        R_RANK_DLY_DAY <= 4,
+        DLY_ARR,
+        NA
+      )
+    ) %>%
+    select(R_RANK_DLY_DAY, MAIN_DLY_APT_NAME, MAIN_DLY_APT_DLY)
+
+  apt_main_delay_flt <- apt_rank_data_day %>%
+    arrange(desc(DLY_PER_FLT), ARP_NAME_DAY) %>%
+    mutate(
+      R_RANK_DLY_DAY = row_number(),
+      MAIN_DLY_FLT_APT_NAME = if_else(
+        R_RANK_DLY_DAY <= 4,
+        ARP_NAME_DAY,
+        NA
+      ),
+      MAIN_DLY_FLT_APT_DLY_FLT = if_else(
+        R_RANK_DLY_DAY <= 4,
+        DLY_PER_FLT,
+        NA
+      )
+    ) %>%
+    select(R_RANK_DLY_DAY, MAIN_DLY_FLT_APT_NAME, MAIN_DLY_FLT_APT_DLY_FLT)
+
+  ### merge and reorder tables
+  apt_rank_data <- merge(x = apt_rank_data_day, y = apt_rank_data_week, by = "R_RANK_DLY_DAY")
+  apt_rank_data <- merge(x = apt_rank_data, y = apt_rank_data_y2d, by = "R_RANK_DLY_DAY")
+  apt_rank_data <- merge(x = apt_rank_data, y = apt_main_delay, by = "R_RANK_DLY_DAY")
+  apt_rank_data <- merge(x = apt_rank_data, y = apt_main_delay_flt, by = "R_RANK_DLY_DAY")
+
+  apt_rank_data <- apt_rank_data %>%
+    relocate(c(
+      RANK = R_RANK_DLY_DAY,
+      MAIN_DLY_APT_NAME,
+      MAIN_DLY_APT_DLY,
+      MAIN_DLY_FLT_APT_NAME,
+      MAIN_DLY_FLT_APT_DLY_FLT,
+      DY_RANK = R_RANK_DLY_DAY,
+      DY_AIRPORT_NAME = ARP_NAME_DAY,
+      DY_TO_DATE = FLIGHT_DATE,
+      DY_AIRPORT_DLY = DLY_ARR,
+      DY_AIRPORT_DLY_PER_FLT = DLY_PER_FLT,
+      WK_RANK,
+      WK_AIRPORT_NAME = ARP_NAME_WK,
+      WK_FROM_DATE,
+      WK_TO_DATE,
+      WK_AIRPORT_DLY = ROLL_WEEK_DLY_ARR,
+      WK_AIRPORT_DLY_PER_FLT = DLY_PER_FLT_WEEK,
+      Y2D_RANK,
+      Y2D_AIRPORT_NAME = ARP_NAME_Y2D,
+      Y2D_TO_DATE,
+      Y2D_AIRPORT_DLY = Y2D_AVG_DLY_ARR,
+      Y2D_AIRPORT_DLY_PER_FLT = DLY_PER_FLT_Y2D
+    ))
+
+  ### covert to json and save in app data folder and archive
+  apt_rank_data_j <- apt_rank_data %>% toJSON(., pretty = TRUE)
+  # (not needed anymore since the release of v2)
+  # write(apt_rank_data_j, here(data_folder, "apt_ranking_delay.json"))
+  write(apt_rank_data_j, here(data_folder, "v2", "apt_ranking_delay.json"))
+  write(apt_rank_data_j, paste0(archive_dir, today, "_apt_ranking_delay.json"))
+  write(apt_rank_data_j, paste0(archive_dir, "apt_ranking_delay.json"))
+
+  # we duplicate the files while the app is being remapped
+  write(apt_rank_data_j, here(data_folder, "v2", "nw_apt_ranking_delay.json"))
+  write(apt_rank_data_j, paste0(archive_dir, today, "_nw_apt_ranking_delay.json"))
+  write(apt_rank_data_j, paste0(archive_dir, "nw_apt_ranking_delay.json"))
+
+
+## ACC delay ----
+
+  ### day data
+  acc_rank_data_day_raw <- read_xlsx(
+    path = fs::path_abs(
+      str_glue(base_file),
+      start = base_dir
+    ),
+    sheet = "ACC_DAY_DELAY",
+    range = cell_limits(c(5, 1), c(NA, 20))
+  ) %>%
+    as_tibble() %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
+    arrange(desc(DLY_ER), NAME) %>%
+    mutate(
+      DY_RANK = row_number(),
+      DY_ACC_NAME = NAME,
+      DY_ACC_DLY = DLY_ER,
+      DY_ACC_DLY_PER_FLT = DLY_ER / FLIGHT,
+      DY_TO_DATE = ENTRY_DATE
     )
 
-    ### merge and reorder tables
-    ct_dai_data <- merge(x = ct_dai_data_dy, y = ct_dai_data_wk, by = "DY_R_RANK_BY_DAY")
-    ct_dai_data <- merge(x = ct_dai_data, y = ct_dai_data_y2d, by = "DY_R_RANK_BY_DAY")
-    ct_dai_data <- merge(x = ct_dai_data, y = ct_main_traffic, by = "DY_R_RANK_BY_DAY")
-    ct_dai_data <- merge(x = ct_dai_data, y = ct_main_traffic_dif, by = "DY_R_RANK_BY_DAY")
+  acc_rank_data_day <- acc_rank_data_day_raw %>%
+    select(DY_RANK, R_RANK_DLY_DAY, DY_ACC_NAME, DY_TO_DATE, DY_ACC_DLY, DY_ACC_DLY_PER_FLT) %>%
+    filter(DY_RANK <= 10)
 
-    ct_dai_data <- ct_dai_data %>%
-      relocate(c(
-        RANK = DY_R_RANK_BY_DAY,
-        MAIN_TFC_CTRY_NAME,
-        MAIN_TFC_CTRY_DAI,
-        MAIN_TFC_CTRY_CODE,
-        MAIN_TFC_DIF_CTRY_NAME,
-        MAIN_TFC_CTRY_DIF,
-        MAIN_TFC_DIF_CTRY_CODE,
-        DY_RANK_DIF_PREV_WEEK,
-        DY_COUNTRY_NAME,
-        DY_TO_DATE = DY_ENTRY_DATE,
-        DY_CTRY_DAI,
-        DY_DIF_PREV_WEEK_PERC = DY_CTRY_DAI_7DAY_PERC,
-        DY_DIF_PREV_YEAR_PERC = DY_CTRY_DAI_PREV_YEAR_PERC,
-        WK_RANK_DIF_PREV_WEEK,
-        WK_COUNTRY_NAME,
-        WK_FROM_DATE,
-        WK_TO_DATE,
-        WK_CTRY_DAI,
-        WK_DIF_PREV_WEEK_PERC = WK_CTRY_DAI_7DAY_PERC,
-        WK_DIF_PREV_YEAR_PERC = WK_CTRY_DAI_PREV_YEAR_PERC,
-        Y2D_RANK_DIF_PREV_YEAR,
-        Y2D_COUNTRY_NAME,
-        Y2D_TO_DATE,
-        Y2D_CTRY_DAI,
-        Y2D_CTRY_DAI_PREV_YEAR_PERC,
-        Y2D_RANK_DIF_PREV_YEAR
-      ))
+  ### week
 
-    ### covert to json and save in app data folder and archive
-    ct_dai_data_j <- ct_dai_data %>% toJSON(., pretty = TRUE)
-    # (not needed anymore since the release of v2)
-    # write(ct_dai_data_j, here(data_folder, "ctry_ranking_traffic_DAI.json"))
-    write(ct_dai_data_j, here(data_folder, "v2", "ctry_ranking_traffic_DAI.json"))
-    write(ct_dai_data_j, paste0(archive_dir, today, "_ctry_ranking_traffic_DAI.json"))
-    write(ct_dai_data_j, paste0(archive_dir, "ctry_ranking_traffic_DAI.json"))
+  acc_rank_data_week_raw <- read_xlsx(
+    path = fs::path_abs(
+      str_glue(base_file),
+      start = base_dir
+    ),
+    sheet = "ACC_WEEK_DELAY",
+    range = cell_limits(c(5, 1), c(NA, 16))
+  ) %>%
+    as_tibble() %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-    # we duplicate the files while the app is being remapped
-    write(ct_dai_data_j, here(data_folder, "v2", "nw_ctry_ranking_traffic_DAI.json"))
-    write(ct_dai_data_j, paste0(archive_dir, today, "_nw_ctry_ranking_traffic_DAI.json"))
-    write(ct_dai_data_j, paste0(archive_dir, "nw_ctry_ranking_traffic_DAI.json"))
-
-
-  ## Airport delay -----
-
-    ### raw data
-    apt_rank_data_raw <- read_xlsx(
-      path = fs::path_abs(
-        str_glue(base_file),
-        start = base_dir
-      ),
-      sheet = "APT_DELAY",
-      range = cell_limits(c(5, 2), c(NA, 50))
+  acc_rank_data_week <- acc_rank_data_week_raw %>%
+    arrange(desc(DAILY_DLY_ER), NAME) %>%
+    mutate(
+      DY_RANK = row_number(),
+      WK_RANK = row_number(),
+      WK_ACC_NAME = NAME,
+      WK_ACC_DLY = DAILY_DLY_ER,
+      WK_ACC_DLY_PER_FLT = DAILY_DLY_ER / DAILY_FLIGHT,
+      WK_FROM_DATE = MIN_ENTRY_DATE,
+      WK_TO_DATE = MAX_ENTRY_DATE
     ) %>%
-      as_tibble()
+    select(DY_RANK, WK_RANK, WK_ACC_NAME, WK_FROM_DATE, WK_TO_DATE, WK_ACC_DLY, WK_ACC_DLY_PER_FLT) %>%
+    filter(DY_RANK <= 10)
 
-    ### day data
-    apt_rank_data_day <- apt_rank_data_raw %>%
-      arrange(desc(DLY_ARR), ARP_NAME) %>%
-      mutate(
-        R_RANK_DLY_DAY = row_number(),
-        ARP_NAME_DAY = ARP_NAME,
-        DLY_PER_FLT = ifelse(FLT_ARR == 0, 0, round(DLY_ARR / FLT_ARR, 2))
-      ) %>%
-      select(R_RANK_DLY_DAY, ARP_NAME_DAY, FLIGHT_DATE, DLY_ARR, DLY_PER_FLT) %>%
-      as.data.frame() %>%
-      filter(R_RANK_DLY_DAY <= 10)
+  ### y2d
 
-    ### week
-    apt_rank_data_week <- apt_rank_data_raw %>%
-      arrange(desc(ROLL_WEEK_DLY_ARR), ARP_NAME) %>%
-      mutate(
-        R_RANK_DLY_DAY = row_number(),
-        WK_RANK = R_RANK_DLY_DAY,
-        ARP_NAME_WK = ARP_NAME,
-        DLY_PER_FLT_WEEK = ifelse(ROLL_WEEK_ARR == 0, 0, round(ROLL_WEEK_DLY_ARR / ROLL_WEEK_ARR, 2)),
-        WK_FROM_DATE = FLIGHT_DATE + days(-6),
-        WK_TO_DATE = FLIGHT_DATE
-      ) %>%
-      select(
-        R_RANK_DLY_DAY, WK_RANK, ARP_NAME_WK, WK_FROM_DATE, WK_TO_DATE,
-        ROLL_WEEK_DLY_ARR, DLY_PER_FLT_WEEK
-      ) %>%
-      as.data.frame() %>%
-      filter(R_RANK_DLY_DAY <= 10)
+  acc_rank_data_y2d_raw <- read_xlsx(
+    path = fs::path_abs(
+      str_glue(base_file),
+      start = base_dir
+    ),
+    sheet = "ACC_Y2D_DELAY",
+    range = cell_limits(c(7, 1), c(NA, 12))
+  ) %>%
+    as_tibble() %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-    ### y2d
-    apt_rank_data_y2d <- apt_rank_data_raw %>%
-      arrange(desc(Y2D_AVG_DLY_ARR), ARP_NAME) %>%
-      mutate(
-        R_RANK_DLY_DAY = row_number(),
-        Y2D_RANK = R_RANK_DLY_DAY,
-        ARP_NAME_Y2D = ARP_NAME,
-        DLY_PER_FLT_Y2D = ifelse(Y2D_AVG_FLT == 0,
-          0,
-          round(Y2D_AVG_DLY / Y2D_AVG_ARR, 2)
-        ),
-        Y2D_TO_DATE = FLIGHT_DATE
-      ) %>%
-      select(R_RANK_DLY_DAY, Y2D_RANK, ARP_NAME_Y2D, Y2D_TO_DATE, Y2D_AVG_DLY_ARR, DLY_PER_FLT_Y2D) %>%
-      as.data.frame()
-
-    ### main card
-    apt_main_delay <- apt_rank_data_day %>%
-      mutate(
-        MAIN_DLY_APT_NAME = if_else(
-          R_RANK_DLY_DAY <= 4,
-          ARP_NAME_DAY,
-          NA
-        ),
-        MAIN_DLY_APT_DLY = if_else(
-          R_RANK_DLY_DAY <= 4,
-          DLY_ARR,
-          NA
-        )
-      ) %>%
-      select(R_RANK_DLY_DAY, MAIN_DLY_APT_NAME, MAIN_DLY_APT_DLY)
-
-    apt_main_delay_flt <- apt_rank_data_day %>%
-      arrange(desc(DLY_PER_FLT), ARP_NAME_DAY) %>%
-      mutate(
-        R_RANK_DLY_DAY = row_number(),
-        MAIN_DLY_FLT_APT_NAME = if_else(
-          R_RANK_DLY_DAY <= 4,
-          ARP_NAME_DAY,
-          NA
-        ),
-        MAIN_DLY_FLT_APT_DLY_FLT = if_else(
-          R_RANK_DLY_DAY <= 4,
-          DLY_PER_FLT,
-          NA
-        )
-      ) %>%
-      select(R_RANK_DLY_DAY, MAIN_DLY_FLT_APT_NAME, MAIN_DLY_FLT_APT_DLY_FLT)
-
-    ### merge and reorder tables
-    apt_rank_data <- merge(x = apt_rank_data_day, y = apt_rank_data_week, by = "R_RANK_DLY_DAY")
-    apt_rank_data <- merge(x = apt_rank_data, y = apt_rank_data_y2d, by = "R_RANK_DLY_DAY")
-    apt_rank_data <- merge(x = apt_rank_data, y = apt_main_delay, by = "R_RANK_DLY_DAY")
-    apt_rank_data <- merge(x = apt_rank_data, y = apt_main_delay_flt, by = "R_RANK_DLY_DAY")
-
-    apt_rank_data <- apt_rank_data %>%
-      relocate(c(
-        RANK = R_RANK_DLY_DAY,
-        MAIN_DLY_APT_NAME,
-        MAIN_DLY_APT_DLY,
-        MAIN_DLY_FLT_APT_NAME,
-        MAIN_DLY_FLT_APT_DLY_FLT,
-        DY_RANK = R_RANK_DLY_DAY,
-        DY_AIRPORT_NAME = ARP_NAME_DAY,
-        DY_TO_DATE = FLIGHT_DATE,
-        DY_AIRPORT_DLY = DLY_ARR,
-        DY_AIRPORT_DLY_PER_FLT = DLY_PER_FLT,
-        WK_RANK,
-        WK_AIRPORT_NAME = ARP_NAME_WK,
-        WK_FROM_DATE,
-        WK_TO_DATE,
-        WK_AIRPORT_DLY = ROLL_WEEK_DLY_ARR,
-        WK_AIRPORT_DLY_PER_FLT = DLY_PER_FLT_WEEK,
-        Y2D_RANK,
-        Y2D_AIRPORT_NAME = ARP_NAME_Y2D,
-        Y2D_TO_DATE,
-        Y2D_AIRPORT_DLY = Y2D_AVG_DLY_ARR,
-        Y2D_AIRPORT_DLY_PER_FLT = DLY_PER_FLT_Y2D
-      ))
-
-    ### covert to json and save in app data folder and archive
-    apt_rank_data_j <- apt_rank_data %>% toJSON(., pretty = TRUE)
-    # (not needed anymore since the release of v2)
-    # write(apt_rank_data_j, here(data_folder, "apt_ranking_delay.json"))
-    write(apt_rank_data_j, here(data_folder, "v2", "apt_ranking_delay.json"))
-    write(apt_rank_data_j, paste0(archive_dir, today, "_apt_ranking_delay.json"))
-    write(apt_rank_data_j, paste0(archive_dir, "apt_ranking_delay.json"))
-
-    # we duplicate the files while the app is being remapped
-    write(apt_rank_data_j, here(data_folder, "v2", "nw_apt_ranking_delay.json"))
-    write(apt_rank_data_j, paste0(archive_dir, today, "_nw_apt_ranking_delay.json"))
-    write(apt_rank_data_j, paste0(archive_dir, "nw_apt_ranking_delay.json"))
-
-
-  ## ACC delay ----
-
-    ### day data
-    acc_rank_data_day_raw <- read_xlsx(
-      path = fs::path_abs(
-        str_glue(base_file),
-        start = base_dir
-      ),
-      sheet = "ACC_DAY_DELAY",
-      range = cell_limits(c(5, 1), c(NA, 20))
+  acc_rank_data_y2d <- acc_rank_data_y2d_raw %>%
+    arrange(desc(Y2D_AVG_DLY_ER), NAME) %>%
+    mutate(
+      DY_RANK = row_number(),
+      Y2D_RANK = row_number(),
+      Y2D_ACC_NAME = NAME,
+      Y2D_ACC_DLY = Y2D_AVG_DLY_ER,
+      Y2D_ACC_DLY_PER_FLT = Y2D_AVG_DLY_ER / Y2D_AVG_FLIGHT,
+      Y2D_TO_DATE = ENTRY_DATE
     ) %>%
-      as_tibble() %>%
-      mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
-      arrange(desc(DLY_ER), NAME) %>%
-      mutate(
-        DY_RANK = row_number(),
-        DY_ACC_NAME = NAME,
-        DY_ACC_DLY = DLY_ER,
-        DY_ACC_DLY_PER_FLT = DLY_ER / FLIGHT,
-        DY_TO_DATE = ENTRY_DATE
-      )
+    select(DY_RANK, Y2D_RANK, Y2D_ACC_NAME, Y2D_TO_DATE, Y2D_ACC_DLY, Y2D_ACC_DLY_PER_FLT) %>%
+    filter(DY_RANK <= 10)
 
-    acc_rank_data_day <- acc_rank_data_day_raw %>%
-      select(DY_RANK, R_RANK_DLY_DAY, DY_ACC_NAME, DY_TO_DATE, DY_ACC_DLY, DY_ACC_DLY_PER_FLT) %>%
-      filter(DY_RANK <= 10)
-
-    ### week
-
-    acc_rank_data_week_raw <- read_xlsx(
-      path = fs::path_abs(
-        str_glue(base_file),
-        start = base_dir
-      ),
-      sheet = "ACC_WEEK_DELAY",
-      range = cell_limits(c(5, 1), c(NA, 16))
-    ) %>%
-      as_tibble() %>%
-      mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-
-    acc_rank_data_week <- acc_rank_data_week_raw %>%
-      arrange(desc(DAILY_DLY_ER), NAME) %>%
-      mutate(
-        DY_RANK = row_number(),
-        WK_RANK = row_number(),
-        WK_ACC_NAME = NAME,
-        WK_ACC_DLY = DAILY_DLY_ER,
-        WK_ACC_DLY_PER_FLT = DAILY_DLY_ER / DAILY_FLIGHT,
-        WK_FROM_DATE = MIN_ENTRY_DATE,
-        WK_TO_DATE = MAX_ENTRY_DATE
-      ) %>%
-      select(DY_RANK, WK_RANK, WK_ACC_NAME, WK_FROM_DATE, WK_TO_DATE, WK_ACC_DLY, WK_ACC_DLY_PER_FLT) %>%
-      filter(DY_RANK <= 10)
-
-    ### y2d
-
-    acc_rank_data_y2d_raw <- read_xlsx(
-      path = fs::path_abs(
-        str_glue(base_file),
-        start = base_dir
-      ),
-      sheet = "ACC_Y2D_DELAY",
-      range = cell_limits(c(7, 1), c(NA, 12))
-    ) %>%
-      as_tibble() %>%
-      mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-
-    acc_rank_data_y2d <- acc_rank_data_y2d_raw %>%
-      arrange(desc(Y2D_AVG_DLY_ER), NAME) %>%
-      mutate(
-        DY_RANK = row_number(),
-        Y2D_RANK = row_number(),
-        Y2D_ACC_NAME = NAME,
-        Y2D_ACC_DLY = Y2D_AVG_DLY_ER,
-        Y2D_ACC_DLY_PER_FLT = Y2D_AVG_DLY_ER / Y2D_AVG_FLIGHT,
-        Y2D_TO_DATE = ENTRY_DATE
-      ) %>%
-      select(DY_RANK, Y2D_RANK, Y2D_ACC_NAME, Y2D_TO_DATE, Y2D_ACC_DLY, Y2D_ACC_DLY_PER_FLT) %>%
-      filter(DY_RANK <= 10)
-
-    ### main card
-    acc_main_delay <- acc_rank_data_day %>%
-      mutate(
-        MAIN_DLY_ACC_NAME = if_else(
-          DY_RANK <= 4,
-          DY_ACC_NAME,
-          NA
-        ),
-        MAIN_DLY_ACC_DLY = if_else(
-          DY_RANK <= 4,
-          DY_ACC_DLY,
-          NA
-        )
-      ) %>%
-      select(DY_RANK, MAIN_DLY_ACC_NAME, MAIN_DLY_ACC_DLY)
-
-    acc_main_delay_flt <- acc_rank_data_day_raw %>%
-      arrange(desc(DY_ACC_DLY_PER_FLT), NAME) %>%
-      mutate(
-        DY_RANK = row_number(),
-        MAIN_DLY_FLT_ACC_NAME = if_else(
-          DY_RANK <= 4,
-          NAME,
-          NA
-        ),
-        MAIN_DLY_FLT_ACC_DLY_FLT = if_else(
-          DY_RANK <= 4,
-          DY_ACC_DLY_PER_FLT,
-          NA
-        )
-      ) %>%
-      select(DY_RANK, MAIN_DLY_FLT_ACC_NAME, MAIN_DLY_FLT_ACC_DLY_FLT) %>%
-      filter(DY_RANK <= 10)
-
-    ### merge and reorder tables
-    acc_rank_data <- merge(x = acc_rank_data_day, y = acc_rank_data_week, by = "DY_RANK")
-    acc_rank_data <- merge(x = acc_rank_data, y = acc_rank_data_y2d, by = "DY_RANK")
-    acc_rank_data <- merge(x = acc_rank_data, y = acc_main_delay, by = "DY_RANK")
-    acc_rank_data <- merge(x = acc_rank_data, y = acc_main_delay_flt, by = "DY_RANK")
-
-    acc_rank_data <- acc_rank_data %>%
-      relocate(c(
-        RANK = DY_RANK,
-        MAIN_DLY_ACC_NAME,
-        MAIN_DLY_ACC_DLY,
-        MAIN_DLY_FLT_ACC_NAME,
-        MAIN_DLY_FLT_ACC_DLY_FLT,
-        DY_RANK = DY_RANK,
+  ### main card
+  acc_main_delay <- acc_rank_data_day %>%
+    mutate(
+      MAIN_DLY_ACC_NAME = if_else(
+        DY_RANK <= 4,
         DY_ACC_NAME,
-        DY_TO_DATE,
+        NA
+      ),
+      MAIN_DLY_ACC_DLY = if_else(
+        DY_RANK <= 4,
         DY_ACC_DLY,
+        NA
+      )
+    ) %>%
+    select(DY_RANK, MAIN_DLY_ACC_NAME, MAIN_DLY_ACC_DLY)
+
+  acc_main_delay_flt <- acc_rank_data_day_raw %>%
+    arrange(desc(DY_ACC_DLY_PER_FLT), NAME) %>%
+    mutate(
+      DY_RANK = row_number(),
+      MAIN_DLY_FLT_ACC_NAME = if_else(
+        DY_RANK <= 4,
+        NAME,
+        NA
+      ),
+      MAIN_DLY_FLT_ACC_DLY_FLT = if_else(
+        DY_RANK <= 4,
         DY_ACC_DLY_PER_FLT,
-        WK_RANK,
-        WK_ACC_NAME,
-        WK_FROM_DATE,
-        WK_TO_DATE,
-        WK_ACC_DLY,
-        WK_ACC_DLY_PER_FLT,
-        Y2D_RANK,
-        Y2D_ACC_NAME,
-        Y2D_TO_DATE,
-        Y2D_ACC_DLY,
-        Y2D_ACC_DLY_PER_FLT
-      ))
-
-    ### covert to json and save in app data folder and archive
-    acc_rank_data_j <- acc_rank_data %>% toJSON(., pretty = TRUE)
-    # (not needed anymore since the release of v2)
-    # write(acc_rank_data_j, here(data_folder, "acc_ranking_delay.json"))
-    write(acc_rank_data_j, here(data_folder, "v2", "acc_ranking_delay.json"))
-    write(acc_rank_data_j, paste0(archive_dir, today, "_acc_ranking_delay.json"))
-    write(acc_rank_data_j, paste0(archive_dir, "acc_ranking_delay.json"))
-
-    # we duplicate the file while the app is being remapped
-    write(acc_rank_data_j, here(data_folder, "v2", "nw_acc_ranking_delay.json"))
-    write(acc_rank_data_j, paste0(archive_dir, today, "_nw_acc_ranking_delay.json"))
-    write(acc_rank_data_j, paste0(archive_dir, "nw_acc_ranking_delay.json"))
-
-
-  ## Country delay ----
-
-    ### day data
-    ct_rank_data_day_raw <- read_xlsx(
-      path = fs::path_abs(
-        str_glue(base_file),
-        start = base_dir
-      ),
-      sheet = "CTRY_DLY_DAY",
-      range = cell_limits(c(5, 2), c(NA, 6))
+        NA
+      )
     ) %>%
-      as_tibble() %>%
-      mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+    select(DY_RANK, MAIN_DLY_FLT_ACC_NAME, MAIN_DLY_FLT_ACC_DLY_FLT) %>%
+    filter(DY_RANK <= 10)
+
+  ### merge and reorder tables
+  acc_rank_data <- merge(x = acc_rank_data_day, y = acc_rank_data_week, by = "DY_RANK")
+  acc_rank_data <- merge(x = acc_rank_data, y = acc_rank_data_y2d, by = "DY_RANK")
+  acc_rank_data <- merge(x = acc_rank_data, y = acc_main_delay, by = "DY_RANK")
+  acc_rank_data <- merge(x = acc_rank_data, y = acc_main_delay_flt, by = "DY_RANK")
+
+  acc_rank_data <- acc_rank_data %>%
+    relocate(c(
+      RANK = DY_RANK,
+      MAIN_DLY_ACC_NAME,
+      MAIN_DLY_ACC_DLY,
+      MAIN_DLY_FLT_ACC_NAME,
+      MAIN_DLY_FLT_ACC_DLY_FLT,
+      DY_RANK = DY_RANK,
+      DY_ACC_NAME,
+      DY_TO_DATE,
+      DY_ACC_DLY,
+      DY_ACC_DLY_PER_FLT,
+      WK_RANK,
+      WK_ACC_NAME,
+      WK_FROM_DATE,
+      WK_TO_DATE,
+      WK_ACC_DLY,
+      WK_ACC_DLY_PER_FLT,
+      Y2D_RANK,
+      Y2D_ACC_NAME,
+      Y2D_TO_DATE,
+      Y2D_ACC_DLY,
+      Y2D_ACC_DLY_PER_FLT
+    ))
+
+  ### covert to json and save in app data folder and archive
+  acc_rank_data_j <- acc_rank_data %>% toJSON(., pretty = TRUE)
+  # (not needed anymore since the release of v2)
+  # write(acc_rank_data_j, here(data_folder, "acc_ranking_delay.json"))
+  write(acc_rank_data_j, here(data_folder, "v2", "acc_ranking_delay.json"))
+  write(acc_rank_data_j, paste0(archive_dir, today, "_acc_ranking_delay.json"))
+  write(acc_rank_data_j, paste0(archive_dir, "acc_ranking_delay.json"))
+
+  # we duplicate the file while the app is being remapped
+  write(acc_rank_data_j, here(data_folder, "v2", "nw_acc_ranking_delay.json"))
+  write(acc_rank_data_j, paste0(archive_dir, today, "_nw_acc_ranking_delay.json"))
+  write(acc_rank_data_j, paste0(archive_dir, "nw_acc_ranking_delay.json"))
 
 
-    ct_rank_data_day <- ct_rank_data_day_raw %>%
-      arrange(desc(DY_CTRY_DLY), DY_CTRY_DLY_NAME) %>%
-      mutate(
-        RANK = row_number(),
-        DY_RANK = RANK
-      ) %>%
-      filter(DY_RANK <= 10)
+## Country delay ----
 
-    ### week
+  ### day data
+  ct_rank_data_day_raw <- read_xlsx(
+    path = fs::path_abs(
+      str_glue(base_file),
+      start = base_dir
+    ),
+    sheet = "CTRY_DLY_DAY",
+    range = cell_limits(c(5, 2), c(NA, 6))
+  ) %>%
+    as_tibble() %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-    ct_rank_data_week_raw <- read_xlsx(
-      path = fs::path_abs(
-        str_glue(base_file),
-        start = base_dir
-      ),
-      sheet = "CTRY_DLY_WK",
-      range = cell_limits(c(3, 2), c(NA, 6))
+
+  ct_rank_data_day <- ct_rank_data_day_raw %>%
+    arrange(desc(DY_CTRY_DLY), DY_CTRY_DLY_NAME) %>%
+    mutate(
+      RANK = row_number(),
+      DY_RANK = RANK
     ) %>%
-      as_tibble() %>%
-      mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+    filter(DY_RANK <= 10)
 
-    ct_rank_data_week <- ct_rank_data_week_raw %>%
-      arrange(desc(WK_CTRY_DLY), WK_CTRY_DLY_NAME) %>%
-      mutate(
-        DY_RANK = row_number(),
-        WK_RANK = DY_RANK
-      ) %>%
-      filter(DY_RANK <= 10)
+  ### week
 
-    ### y2d
+  ct_rank_data_week_raw <- read_xlsx(
+    path = fs::path_abs(
+      str_glue(base_file),
+      start = base_dir
+    ),
+    sheet = "CTRY_DLY_WK",
+    range = cell_limits(c(3, 2), c(NA, 6))
+  ) %>%
+    as_tibble() %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-    ct_rank_data_y2d_raw <- read_xlsx(
-      path = fs::path_abs(
-        str_glue(base_file),
-        start = base_dir
-      ),
-      sheet = "CTRY_DLY_Y2D",
-      range = cell_limits(c(3, 2), c(NA, 6))
+  ct_rank_data_week <- ct_rank_data_week_raw %>%
+    arrange(desc(WK_CTRY_DLY), WK_CTRY_DLY_NAME) %>%
+    mutate(
+      DY_RANK = row_number(),
+      WK_RANK = DY_RANK
     ) %>%
-      as_tibble() %>%
-      mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+    filter(DY_RANK <= 10)
 
-    ct_rank_data_y2d <- ct_rank_data_y2d_raw %>%
-      arrange(desc(Y2D_CTRY_DLY), Y2D_CTRY_DLY_NAME) %>%
-      mutate(
-        DY_RANK = row_number(),
-        Y2D_RANK = DY_RANK
-      ) %>%
-      filter(DY_RANK <= 10)
+  ### y2d
 
-    ### main card
-    ct_main_delay <- ct_rank_data_day_raw %>%
-      mutate(
-        DY_RANK = row_number(),
-        MAIN_DLY_CTRY_NAME = if_else(
-          DY_RANK <= 4,
-          DY_CTRY_DLY_NAME,
-          NA
-        ),
-        MAIN_DLY_CTRY_DLY = if_else(
-          DY_RANK <= 4,
-          DY_CTRY_DLY,
-          NA
-        ),
-        MAIN_DLY_CTRY_CODE = if_else(
-          DY_RANK <= 4,
-          DY_CTRY_DLY_CODE,
-          NA
-        )
-      ) %>%
-      select(DY_RANK, MAIN_DLY_CTRY_NAME, MAIN_DLY_CTRY_DLY, MAIN_DLY_CTRY_CODE) %>%
-      filter(DY_RANK <= 10)
+  ct_rank_data_y2d_raw <- read_xlsx(
+    path = fs::path_abs(
+      str_glue(base_file),
+      start = base_dir
+    ),
+    sheet = "CTRY_DLY_Y2D",
+    range = cell_limits(c(3, 2), c(NA, 6))
+  ) %>%
+    as_tibble() %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-    ct_main_delay_flt <- ct_rank_data_day_raw %>%
-      arrange(desc(DY_CTRY_DLY_PER_FLT), DY_CTRY_DLY_NAME) %>%
-      mutate(
-        DY_RANK = row_number(),
-        MAIN_DLY_FLT_CTRY_NAME = if_else(
-          DY_RANK <= 4,
-          DY_CTRY_DLY_NAME,
-          NA
-        ),
-        MAIN_DLY_FLT_CTRY_DLY_FLT = if_else(
-          DY_RANK <= 4,
-          DY_CTRY_DLY_PER_FLT,
-          NA
-        ),
-        MAIN_DLY_FLT_CTRY_CODE = if_else(
-          DY_RANK <= 4,
-          DY_CTRY_DLY_CODE,
-          NA)
-      ) %>%
-      select(DY_RANK,
-             MAIN_DLY_FLT_CTRY_NAME,
-             MAIN_DLY_FLT_CTRY_DLY_FLT,
-             MAIN_DLY_FLT_CTRY_CODE) %>%
-      filter(DY_RANK <= 10)
+  ct_rank_data_y2d <- ct_rank_data_y2d_raw %>%
+    arrange(desc(Y2D_CTRY_DLY), Y2D_CTRY_DLY_NAME) %>%
+    mutate(
+      DY_RANK = row_number(),
+      Y2D_RANK = DY_RANK
+    ) %>%
+    filter(DY_RANK <= 10)
 
-    ### merge and reorder tables
-    ct_rank_data <- merge(x = ct_rank_data_day, y = ct_rank_data_week, by = "DY_RANK")
-    ct_rank_data <- merge(x = ct_rank_data, y = ct_rank_data_y2d, by = "DY_RANK")
-    ct_rank_data <- merge(x = ct_rank_data, y = ct_main_delay, by = "DY_RANK")
-    ct_rank_data <- merge(x = ct_rank_data, y = ct_main_delay_flt, by = "DY_RANK")
-
-    ct_rank_data <- ct_rank_data %>%
-      relocate(c(
-        RANK,
-        MAIN_DLY_CTRY_NAME,
-        MAIN_DLY_CTRY_DLY,
-        MAIN_DLY_CTRY_CODE,
-        MAIN_DLY_FLT_CTRY_NAME,
-        MAIN_DLY_FLT_CTRY_DLY_FLT,
-        MAIN_DLY_FLT_CTRY_CODE,
-        DY_RANK,
+  ### main card
+  ct_main_delay <- ct_rank_data_day_raw %>%
+    mutate(
+      DY_RANK = row_number(),
+      MAIN_DLY_CTRY_NAME = if_else(
+        DY_RANK <= 4,
         DY_CTRY_DLY_NAME,
-        DY_TO_DATE,
+        NA
+      ),
+      MAIN_DLY_CTRY_DLY = if_else(
+        DY_RANK <= 4,
         DY_CTRY_DLY,
+        NA
+      ),
+      MAIN_DLY_CTRY_CODE = if_else(
+        DY_RANK <= 4,
+        DY_CTRY_DLY_CODE,
+        NA
+      )
+    ) %>%
+    select(DY_RANK, MAIN_DLY_CTRY_NAME, MAIN_DLY_CTRY_DLY, MAIN_DLY_CTRY_CODE) %>%
+    filter(DY_RANK <= 10)
+
+  ct_main_delay_flt <- ct_rank_data_day_raw %>%
+    arrange(desc(DY_CTRY_DLY_PER_FLT), DY_CTRY_DLY_NAME) %>%
+    mutate(
+      DY_RANK = row_number(),
+      MAIN_DLY_FLT_CTRY_NAME = if_else(
+        DY_RANK <= 4,
+        DY_CTRY_DLY_NAME,
+        NA
+      ),
+      MAIN_DLY_FLT_CTRY_DLY_FLT = if_else(
+        DY_RANK <= 4,
         DY_CTRY_DLY_PER_FLT,
-        WK_RANK,
-        WK_CTRY_DLY_NAME,
-        WK_FROM_DATE,
-        WK_TO_DATE,
-        WK_CTRY_DLY,
-        WK_CTRY_DLY_PER_FLT,
-        Y2D_RANK,
-        Y2D_CTRY_DLY_NAME,
-        Y2D_TO_DATE,
-        Y2D_CTRY_DLY,
-        Y2D_CTRY_DLY_PER_FLT
-      ))
+        NA
+      ),
+      MAIN_DLY_FLT_CTRY_CODE = if_else(
+        DY_RANK <= 4,
+        DY_CTRY_DLY_CODE,
+        NA)
+    ) %>%
+    select(DY_RANK,
+           MAIN_DLY_FLT_CTRY_NAME,
+           MAIN_DLY_FLT_CTRY_DLY_FLT,
+           MAIN_DLY_FLT_CTRY_CODE) %>%
+    filter(DY_RANK <= 10)
 
-    ### covert to json and save in app data folder and archive
-    ct_rank_data_j <- ct_rank_data %>% toJSON(., pretty = TRUE)
-    # (not needed anymore since the release of v2)
-    # write(ct_rank_data_j, here(data_folder, "ctry_ranking_delay.json"))
-    write(ct_rank_data_j, here(data_folder, "v2", "ctry_ranking_delay.json"))
-    write(ct_rank_data_j, paste0(archive_dir, today, "_ctry_ranking_delay.json"))
-    write(ct_rank_data_j, paste0(archive_dir, "ctry_ranking_delay.json"))
+  ### merge and reorder tables
+  ct_rank_data <- merge(x = ct_rank_data_day, y = ct_rank_data_week, by = "DY_RANK")
+  ct_rank_data <- merge(x = ct_rank_data, y = ct_rank_data_y2d, by = "DY_RANK")
+  ct_rank_data <- merge(x = ct_rank_data, y = ct_main_delay, by = "DY_RANK")
+  ct_rank_data <- merge(x = ct_rank_data, y = ct_main_delay_flt, by = "DY_RANK")
 
-    # we duplicate the files while the app is being remapped
-    write(ct_rank_data_j, here(data_folder, "v2", "nw_ctry_ranking_delay.json"))
-    write(ct_rank_data_j, paste0(archive_dir, today, "_nw_ctry_ranking_delay.json"))
-    write(ct_rank_data_j, paste0(archive_dir, "nw_ctry_ranking_delay.json"))
+  ct_rank_data <- ct_rank_data %>%
+    relocate(c(
+      RANK,
+      MAIN_DLY_CTRY_NAME,
+      MAIN_DLY_CTRY_DLY,
+      MAIN_DLY_CTRY_CODE,
+      MAIN_DLY_FLT_CTRY_NAME,
+      MAIN_DLY_FLT_CTRY_DLY_FLT,
+      MAIN_DLY_FLT_CTRY_CODE,
+      DY_RANK,
+      DY_CTRY_DLY_NAME,
+      DY_TO_DATE,
+      DY_CTRY_DLY,
+      DY_CTRY_DLY_PER_FLT,
+      WK_RANK,
+      WK_CTRY_DLY_NAME,
+      WK_FROM_DATE,
+      WK_TO_DATE,
+      WK_CTRY_DLY,
+      WK_CTRY_DLY_PER_FLT,
+      Y2D_RANK,
+      Y2D_CTRY_DLY_NAME,
+      Y2D_TO_DATE,
+      Y2D_CTRY_DLY,
+      Y2D_CTRY_DLY_PER_FLT
+    ))
+
+  ### covert to json and save in app data folder and archive
+  ct_rank_data_j <- ct_rank_data %>% toJSON(., pretty = TRUE)
+  # (not needed anymore since the release of v2)
+  # write(ct_rank_data_j, here(data_folder, "ctry_ranking_delay.json"))
+  write(ct_rank_data_j, here(data_folder, "v2", "ctry_ranking_delay.json"))
+  write(ct_rank_data_j, paste0(archive_dir, today, "_ctry_ranking_delay.json"))
+  write(ct_rank_data_j, paste0(archive_dir, "ctry_ranking_delay.json"))
+
+  # we duplicate the files while the app is being remapped
+  write(ct_rank_data_j, here(data_folder, "v2", "nw_ctry_ranking_delay.json"))
+  write(ct_rank_data_j, paste0(archive_dir, today, "_nw_ctry_ranking_delay.json"))
+  write(ct_rank_data_j, paste0(archive_dir, "nw_ctry_ranking_delay.json"))
 
 
 ## Airport punctuality ----
 ### we need data from 2019 so I'm using the source view instead of the excel file
 
 query <- "
-     WITH
-        DIM_AIRPORT as (
-          SELECT
-            a.code as arp_code, a.id as arp_id, a.dashboard_name as arp_name,
-            a.ISO_COUNTRY_CODE
-          FROM prudev.pru_airport a
+   WITH
+      DIM_AIRPORT as (
+        SELECT
+          a.code as arp_code, a.id as arp_id, a.dashboard_name as arp_name,
+          a.ISO_COUNTRY_CODE
+        FROM prudev.pru_airport a
+      )
+
+    , LIST_AIRPORT as (
+          select distinct
+              a.ICAO_CODE as arp_code,
+              b.arp_name,
+              b.iso_country_code
+          from LDW_VDM.VIEW_FAC_PUNCTUALITY_AP_DAY a
+          left join DIM_AIRPORT b on a.icao_code = b.arp_code
+          order by 1
+
+      ),
+
+      LIST_STATE as (
+        SELECT distinct
+          AIU_ISO_COUNTRY_NAME as EC_ISO_CT_NAME,
+          AIU_ISO_COUNTRY_CODE AS EC_ISO_CT_CODE
+        FROM prudev.pru_country_iso
+        WHERE till > TRUNC(SYSDATE)-1
+      ),
+
+      APT_DAY AS (
+        SELECT
+                a.arp_code,
+                a.arp_name,
+                a.ISO_COUNTRY_CODE,
+                t.year,
+                t.month,
+                t.week,
+                t.week_nb_year,
+                t.day_type,
+                t.day_of_week_nb AS day_of_week,
+                t.day_date
+        FROM LIST_AIRPORT a, pru_time_references t
+        WHERE
+           t.day_date >= to_date('24-12-2018','DD-MM-YYYY')
+           AND t.day_date < trunc(sysdate)
         )
 
-      , LIST_AIRPORT as (
-            select distinct
-                a.ICAO_CODE as arp_code,
-                b.arp_name,
-                b.iso_country_code
-            from LDW_VDM.VIEW_FAC_PUNCTUALITY_AP_DAY a
-            left join DIM_AIRPORT b on a.icao_code = b.arp_code
-            order by 1
-
-        ),
-
-        LIST_STATE as (
-          SELECT distinct
-            AIU_ISO_COUNTRY_NAME as EC_ISO_CT_NAME,
-            AIU_ISO_COUNTRY_CODE AS EC_ISO_CT_CODE
-          FROM prudev.pru_country_iso
-          WHERE till > TRUNC(SYSDATE)-1
-        ),
-
-        APT_DAY AS (
-          SELECT
-                  a.arp_code,
-                  a.arp_name,
-                  a.ISO_COUNTRY_CODE,
-                  t.year,
-                  t.month,
-                  t.week,
-                  t.week_nb_year,
-                  t.day_type,
-                  t.day_of_week_nb AS day_of_week,
-                  t.day_date
-          FROM LIST_AIRPORT a, pru_time_references t
-          WHERE
-             t.day_date >= to_date('24-12-2018','DD-MM-YYYY')
-             AND t.day_date < trunc(sysdate)
-          )
-
-          SELECT
-            a.* , b.*
-          FROM APT_DAY a
-          left join LDW_VDM.VIEW_FAC_PUNCTUALITY_AP_DAY b on a.day_date = b.\"DATE\" and a.arp_code = b.icao_code
-          where a.arp_code not in ('LTBA', 'UKBB')
-          order by a.ARP_CODE, b.\"DATE\"
-   "
+        SELECT
+          a.* , b.*
+        FROM APT_DAY a
+        left join LDW_VDM.VIEW_FAC_PUNCTUALITY_AP_DAY b on a.day_date = b.\"DATE\" and a.arp_code = b.icao_code
+        where a.arp_code not in ('LTBA', 'UKBB')
+        order by a.ARP_CODE, b.\"DATE\"
+ "
 
 apt_punct_raw <- export_query(query)
 
@@ -2205,210 +2240,210 @@ last_punctuality_day <- max(apt_punct_raw$DAY_DATE)
 
 ### calc
 apt_punct_calc <- apt_punct_raw %>%
-  group_by(DAY_DATE) %>%
-  arrange(desc(ARR_PUNCTUALITY_PERCENTAGE), ARP_NAME) %>%
-  mutate(RANK = row_number()) %>%
-  ungroup() %>%
-  # select(DAY_DATE, ARP_NAME, ARR_PUNCTUALITY_PERCENTAGE, RANK)
-  group_by(ARP_NAME) %>%
-  arrange(DAY_DATE) %>%
-  mutate(
-    DY_RANK_DIF_PREV_WEEK = lag(RANK, 7) - RANK,
-    DY_PUNCT_DIF_PREV_WEEK_PERC = (ARR_PUNCTUALITY_PERCENTAGE - lag(ARR_PUNCTUALITY_PERCENTAGE, 7)) / 100,
-    DY_PUNCT_DIF_PREV_YEAR_PERC = (ARR_PUNCTUALITY_PERCENTAGE - lag(ARR_PUNCTUALITY_PERCENTAGE, 364)) / 100,
-    WK_APT_ARR_PUNCT = rollsum(ARR_PUNCTUAL_FLIGHTS, 7, fill = NA, align = "right") / rollsum(ARR_SCHEDULE_FLIGHT, 7, fill = NA, align = "right")
-  ) %>%
-  ungroup()
+group_by(DAY_DATE) %>%
+arrange(desc(ARR_PUNCTUALITY_PERCENTAGE), ARP_NAME) %>%
+mutate(RANK = row_number()) %>%
+ungroup() %>%
+# select(DAY_DATE, ARP_NAME, ARR_PUNCTUALITY_PERCENTAGE, RANK)
+group_by(ARP_NAME) %>%
+arrange(DAY_DATE) %>%
+mutate(
+  DY_RANK_DIF_PREV_WEEK = lag(RANK, 7) - RANK,
+  DY_PUNCT_DIF_PREV_WEEK_PERC = (ARR_PUNCTUALITY_PERCENTAGE - lag(ARR_PUNCTUALITY_PERCENTAGE, 7)) / 100,
+  DY_PUNCT_DIF_PREV_YEAR_PERC = (ARR_PUNCTUALITY_PERCENTAGE - lag(ARR_PUNCTUALITY_PERCENTAGE, 364)) / 100,
+  WK_APT_ARR_PUNCT = rollsum(ARR_PUNCTUAL_FLIGHTS, 7, fill = NA, align = "right") / rollsum(ARR_SCHEDULE_FLIGHT, 7, fill = NA, align = "right")
+) %>%
+ungroup()
 
 ### day ----
 #### top
 apt_punct_dy_top <- apt_punct_calc %>%
-  filter(DAY_DATE == last_punctuality_day, RANK < 11) %>%
-  mutate(
-    DY_APT_NAME = ARP_NAME,
-    DY_APT_ARR_PUNCT = ARR_PUNCTUALITY_PERCENTAGE / 100,
-    DY_TO_DATE = round_date(DAY_DATE, "day")
-  ) %>%
-  select(
-    RANK,
-    DY_RANK_DIF_PREV_WEEK,
-    DY_APT_NAME,
-    DY_TO_DATE,
-    DY_APT_ARR_PUNCT,
-    DY_PUNCT_DIF_PREV_WEEK_PERC,
-    DY_PUNCT_DIF_PREV_YEAR_PERC
-  )
+filter(DAY_DATE == last_punctuality_day, RANK < 11) %>%
+mutate(
+  DY_APT_NAME = ARP_NAME,
+  DY_APT_ARR_PUNCT = ARR_PUNCTUALITY_PERCENTAGE / 100,
+  DY_TO_DATE = round_date(DAY_DATE, "day")
+) %>%
+select(
+  RANK,
+  DY_RANK_DIF_PREV_WEEK,
+  DY_APT_NAME,
+  DY_TO_DATE,
+  DY_APT_ARR_PUNCT,
+  DY_PUNCT_DIF_PREV_WEEK_PERC,
+  DY_PUNCT_DIF_PREV_YEAR_PERC
+)
 
 #### bottom
 apt_punct_dy_bottom <- apt_punct_calc %>%
-  filter(DAY_DATE == last_punctuality_day) %>%
-  arrange(ARR_PUNCTUALITY_PERCENTAGE, ARP_NAME) %>%
-  mutate(
-    RANK = max(RANK) + 1 - RANK,
-    DY_APT_NAME_BOTTOM = ARP_NAME,
-    DY_APT_ARR_PUNCT_BOTTOM = ARR_PUNCTUALITY_PERCENTAGE / 100,
-    DY_TO_DATE_BOTTOM = round_date(DAY_DATE, "day")
-  ) %>%
-  filter(RANK < 11) %>%
-  select(
-    RANK,
-    DY_RANK_DIF_PREV_WEEK_BOTTOM = DY_RANK_DIF_PREV_WEEK,
-    DY_APT_NAME_BOTTOM,
-    DY_TO_DATE_BOTTOM,
-    DY_APT_ARR_PUNCT_BOTTOM,
-    DY_PUNCT_DIF_PREV_WEEK_PERC_BOTTOM = DY_PUNCT_DIF_PREV_WEEK_PERC,
-    DY_PUNCT_DIF_PREV_YEAR_PERC_BOTTOM = DY_PUNCT_DIF_PREV_YEAR_PERC
-  )
+filter(DAY_DATE == last_punctuality_day) %>%
+arrange(ARR_PUNCTUALITY_PERCENTAGE, ARP_NAME) %>%
+mutate(
+  RANK = max(RANK) + 1 - RANK,
+  DY_APT_NAME_BOTTOM = ARP_NAME,
+  DY_APT_ARR_PUNCT_BOTTOM = ARR_PUNCTUALITY_PERCENTAGE / 100,
+  DY_TO_DATE_BOTTOM = round_date(DAY_DATE, "day")
+) %>%
+filter(RANK < 11) %>%
+select(
+  RANK,
+  DY_RANK_DIF_PREV_WEEK_BOTTOM = DY_RANK_DIF_PREV_WEEK,
+  DY_APT_NAME_BOTTOM,
+  DY_TO_DATE_BOTTOM,
+  DY_APT_ARR_PUNCT_BOTTOM,
+  DY_PUNCT_DIF_PREV_WEEK_PERC_BOTTOM = DY_PUNCT_DIF_PREV_WEEK_PERC,
+  DY_PUNCT_DIF_PREV_YEAR_PERC_BOTTOM = DY_PUNCT_DIF_PREV_YEAR_PERC
+)
 
 ### week ----
 apt_punct_wk <- apt_punct_calc %>%
-  group_by(DAY_DATE) %>%
-  arrange(desc(WK_APT_ARR_PUNCT), ARP_NAME) %>%
-  mutate(
-    RANK = row_number(),
-    WK_RANK = RANK
-  ) %>%
-  ungroup() %>%
-  group_by(ARP_NAME) %>%
-  arrange(DAY_DATE) %>%
-  mutate(
-    WK_RANK_DIF_PREV_WEEK = lag(RANK, 7) - RANK,
-    WK_PUNCT_DIF_PREV_WEEK_PERC = (WK_APT_ARR_PUNCT - lag(WK_APT_ARR_PUNCT, 7)),
-    WK_PUNCT_DIF_PREV_YEAR_PERC = (WK_APT_ARR_PUNCT - lag(WK_APT_ARR_PUNCT, 364))
-  ) %>%
-  ungroup()
+group_by(DAY_DATE) %>%
+arrange(desc(WK_APT_ARR_PUNCT), ARP_NAME) %>%
+mutate(
+  RANK = row_number(),
+  WK_RANK = RANK
+) %>%
+ungroup() %>%
+group_by(ARP_NAME) %>%
+arrange(DAY_DATE) %>%
+mutate(
+  WK_RANK_DIF_PREV_WEEK = lag(RANK, 7) - RANK,
+  WK_PUNCT_DIF_PREV_WEEK_PERC = (WK_APT_ARR_PUNCT - lag(WK_APT_ARR_PUNCT, 7)),
+  WK_PUNCT_DIF_PREV_YEAR_PERC = (WK_APT_ARR_PUNCT - lag(WK_APT_ARR_PUNCT, 364))
+) %>%
+ungroup()
 
 apt_punct_wk_top <- apt_punct_wk %>%
-  filter(DAY_DATE == last_punctuality_day,
-         RANK < 11) %>%
-  mutate(
-    WK_APT_NAME = ARP_NAME,
-    WK_FROM_DATE = round_date(DAY_DATE, "day") + lubridate::days(-6),
-    WK_TO_DATE = round_date(DAY_DATE, "day")
-  ) %>%
-  select(
-    RANK,
-    WK_RANK_DIF_PREV_WEEK,
-    WK_APT_NAME,
-    WK_FROM_DATE,
-    WK_TO_DATE,
-    WK_APT_ARR_PUNCT,
-    WK_PUNCT_DIF_PREV_WEEK_PERC,
-    WK_PUNCT_DIF_PREV_YEAR_PERC
-  )
+filter(DAY_DATE == last_punctuality_day,
+       RANK < 11) %>%
+mutate(
+  WK_APT_NAME = ARP_NAME,
+  WK_FROM_DATE = round_date(DAY_DATE, "day") + lubridate::days(-6),
+  WK_TO_DATE = round_date(DAY_DATE, "day")
+) %>%
+select(
+  RANK,
+  WK_RANK_DIF_PREV_WEEK,
+  WK_APT_NAME,
+  WK_FROM_DATE,
+  WK_TO_DATE,
+  WK_APT_ARR_PUNCT,
+  WK_PUNCT_DIF_PREV_WEEK_PERC,
+  WK_PUNCT_DIF_PREV_YEAR_PERC
+)
 
 #### bottom
 apt_punct_wk_bottom <- apt_punct_wk %>%
-  filter(DAY_DATE == last_punctuality_day) %>%
-  mutate(
-    RANK = max(RANK) + 1 - RANK,
-    WK_APT_NAME_BOTTOM = ARP_NAME,
-    WK_FROM_DATE_BOTTOM = round_date(DAY_DATE, "day") + lubridate::days(-6),
-    WK_TO_DATE_BOTTOM = round_date(DAY_DATE, "day")
-  ) %>%
-  filter(RANK < 11) %>%
-  arrange(RANK) %>%
-  select(
-    RANK,
-    WK_RANK_DIF_PREV_WEEK_BOTTOM = WK_RANK_DIF_PREV_WEEK,
-    WK_APT_NAME_BOTTOM,
-    WK_FROM_DATE_BOTTOM,
-    WK_TO_DATE_BOTTOM,
-    WK_APT_ARR_PUNCT_BOTTOM = WK_APT_ARR_PUNCT,
-    WK_PUNCT_DIF_PREV_WEEK_PERC_BOTTOM = WK_PUNCT_DIF_PREV_WEEK_PERC,
-    WK_PUNCT_DIF_PREV_YEAR_PERC_BOTTOM = WK_PUNCT_DIF_PREV_YEAR_PERC
-  )
+filter(DAY_DATE == last_punctuality_day) %>%
+mutate(
+  RANK = max(RANK) + 1 - RANK,
+  WK_APT_NAME_BOTTOM = ARP_NAME,
+  WK_FROM_DATE_BOTTOM = round_date(DAY_DATE, "day") + lubridate::days(-6),
+  WK_TO_DATE_BOTTOM = round_date(DAY_DATE, "day")
+) %>%
+filter(RANK < 11) %>%
+arrange(RANK) %>%
+select(
+  RANK,
+  WK_RANK_DIF_PREV_WEEK_BOTTOM = WK_RANK_DIF_PREV_WEEK,
+  WK_APT_NAME_BOTTOM,
+  WK_FROM_DATE_BOTTOM,
+  WK_TO_DATE_BOTTOM,
+  WK_APT_ARR_PUNCT_BOTTOM = WK_APT_ARR_PUNCT,
+  WK_PUNCT_DIF_PREV_WEEK_PERC_BOTTOM = WK_PUNCT_DIF_PREV_WEEK_PERC,
+  WK_PUNCT_DIF_PREV_YEAR_PERC_BOTTOM = WK_PUNCT_DIF_PREV_YEAR_PERC
+)
 
 ### y2d ----
 apt_punct_y2d <- apt_punct_calc %>%
-  mutate(MONTH_DAY = as.numeric(format(DAY_DATE, format = "%m%d"))) %>%
-  filter(MONTH_DAY <= as.numeric(format(last_punctuality_day, format = "%m%d"))) %>%
-  mutate(YEAR = as.numeric(format(DAY_DATE, format = "%Y"))) %>%
-  group_by(ARP_NAME, ARP_CODE, YEAR) %>%
-  summarise(Y2D_APT_ARR_PUNCT = sum(ARR_PUNCTUAL_FLIGHTS, na.rm = TRUE) / sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE)) %>%
-  ungroup() %>%
-  group_by(YEAR) %>%
-  arrange(desc(Y2D_APT_ARR_PUNCT), ARP_NAME) %>%
-  mutate(
-    RANK = row_number(),
-    Y2D_RANK = RANK
-  ) %>%
-  ungroup() %>%
-  group_by(ARP_NAME, ARP_CODE) %>%
-  arrange(YEAR) %>%
-  mutate(
-    Y2D_RANK_DIF_PREV_YEAR = lag(RANK, 1) - RANK,
-    Y2D_PUNCT_DIF_PREV_YEAR_PERC = (Y2D_APT_ARR_PUNCT - lag(Y2D_APT_ARR_PUNCT, 1)),
-    Y2D_PUNCT_DIF_2019_PERC = (Y2D_APT_ARR_PUNCT - lag(Y2D_APT_ARR_PUNCT, max(YEAR) - 2019))
-  ) %>%
-  ungroup()
+mutate(MONTH_DAY = as.numeric(format(DAY_DATE, format = "%m%d"))) %>%
+filter(MONTH_DAY <= as.numeric(format(last_punctuality_day, format = "%m%d"))) %>%
+mutate(YEAR = as.numeric(format(DAY_DATE, format = "%Y"))) %>%
+group_by(ARP_NAME, ARP_CODE, YEAR) %>%
+summarise(Y2D_APT_ARR_PUNCT = sum(ARR_PUNCTUAL_FLIGHTS, na.rm = TRUE) / sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE)) %>%
+ungroup() %>%
+group_by(YEAR) %>%
+arrange(desc(Y2D_APT_ARR_PUNCT), ARP_NAME) %>%
+mutate(
+  RANK = row_number(),
+  Y2D_RANK = RANK
+) %>%
+ungroup() %>%
+group_by(ARP_NAME, ARP_CODE) %>%
+arrange(YEAR) %>%
+mutate(
+  Y2D_RANK_DIF_PREV_YEAR = lag(RANK, 1) - RANK,
+  Y2D_PUNCT_DIF_PREV_YEAR_PERC = (Y2D_APT_ARR_PUNCT - lag(Y2D_APT_ARR_PUNCT, 1)),
+  Y2D_PUNCT_DIF_2019_PERC = (Y2D_APT_ARR_PUNCT - lag(Y2D_APT_ARR_PUNCT, max(YEAR) - 2019))
+) %>%
+ungroup()
 
 #### top
 apt_punct_y2d_top <- apt_punct_y2d %>%
-  filter(YEAR == max(YEAR), RANK < 11) %>%
-  mutate(Y2D_APT_NAME = ARP_NAME) %>%
-  select(
-    RANK,
-    Y2D_RANK_DIF_PREV_YEAR,
-    Y2D_APT_NAME,
-    Y2D_APT_ARR_PUNCT,
-    Y2D_PUNCT_DIF_PREV_YEAR_PERC,
-    Y2D_PUNCT_DIF_2019_PERC
-  )
+filter(YEAR == max(YEAR), RANK < 11) %>%
+mutate(Y2D_APT_NAME = ARP_NAME) %>%
+select(
+  RANK,
+  Y2D_RANK_DIF_PREV_YEAR,
+  Y2D_APT_NAME,
+  Y2D_APT_ARR_PUNCT,
+  Y2D_PUNCT_DIF_PREV_YEAR_PERC,
+  Y2D_PUNCT_DIF_2019_PERC
+)
 
 #### bottom
 apt_punct_y2d_bottom <- apt_punct_y2d %>%
-  filter(YEAR == max(YEAR)) %>%
-  mutate(RANK = max(RANK) + 1 - RANK) %>%
-  filter(RANK < 11) %>%
-  arrange(RANK) %>%
-  select(
-    RANK,
-    Y2D_RANK_DIF_PREV_YEAR_BOTTOM = Y2D_RANK_DIF_PREV_YEAR,
-    Y2D_APT_NAME_BOTTOM = ARP_NAME,
-    Y2D_APT_ARR_PUNCT_BOTTOM = Y2D_APT_ARR_PUNCT,
-    Y2D_PUNCT_DIF_PREV_YEAR_PERC_BOTTOM = Y2D_PUNCT_DIF_PREV_YEAR_PERC,
-    Y2D_PUNCT_DIF_2019_PERC_BOTTOM = Y2D_PUNCT_DIF_2019_PERC
-  )
+filter(YEAR == max(YEAR)) %>%
+mutate(RANK = max(RANK) + 1 - RANK) %>%
+filter(RANK < 11) %>%
+arrange(RANK) %>%
+select(
+  RANK,
+  Y2D_RANK_DIF_PREV_YEAR_BOTTOM = Y2D_RANK_DIF_PREV_YEAR,
+  Y2D_APT_NAME_BOTTOM = ARP_NAME,
+  Y2D_APT_ARR_PUNCT_BOTTOM = Y2D_APT_ARR_PUNCT,
+  Y2D_PUNCT_DIF_PREV_YEAR_PERC_BOTTOM = Y2D_PUNCT_DIF_PREV_YEAR_PERC,
+  Y2D_PUNCT_DIF_2019_PERC_BOTTOM = Y2D_PUNCT_DIF_2019_PERC
+)
 
 ### main card ----
 apt_main_punct_top <- apt_punct_dy_top %>%
-  mutate(
-    MAIN_PUNCT_APT_NAME = if_else(
-      RANK <= 4,
-      DY_APT_NAME,
-      NA
-    ),
-    MAIN_PUNCT_APT_ARR_PUNCT = if_else(
-      RANK <= 4,
-      DY_APT_ARR_PUNCT,
-      NA
-    )
-  ) %>%
-  select(RANK, MAIN_PUNCT_APT_NAME, MAIN_PUNCT_APT_ARR_PUNCT)
+mutate(
+  MAIN_PUNCT_APT_NAME = if_else(
+    RANK <= 4,
+    DY_APT_NAME,
+    NA
+  ),
+  MAIN_PUNCT_APT_ARR_PUNCT = if_else(
+    RANK <= 4,
+    DY_APT_ARR_PUNCT,
+    NA
+  )
+) %>%
+select(RANK, MAIN_PUNCT_APT_NAME, MAIN_PUNCT_APT_ARR_PUNCT)
 
 apt_main_punct_bottom <- apt_punct_calc %>%
-  filter(DAY_DATE == last_punctuality_day) %>%
-  mutate(
-    RANK = max(RANK) + 1 - RANK,
-    DY_APT_NAME = ARP_NAME,
-    DY_APT_ARR_PUNCT = ARR_PUNCTUALITY_PERCENTAGE / 100
-  ) %>%
-  mutate(
-    MAIN_PUNCT_APT_NAME_BOTTOM = if_else(
-      RANK <= 4,
-      DY_APT_NAME,
-      NA
-    ),
-    MAIN_PUNCT_APT_ARR_PUNCT_BOTTOM = if_else(
-      RANK <= 4,
-      DY_APT_ARR_PUNCT,
-      NA
-    )
-  ) %>%
-  filter(RANK < 11) %>%
-  arrange(RANK) %>%
-  select(RANK, MAIN_PUNCT_APT_NAME_BOTTOM, MAIN_PUNCT_APT_ARR_PUNCT_BOTTOM)
+filter(DAY_DATE == last_punctuality_day) %>%
+mutate(
+  RANK = max(RANK) + 1 - RANK,
+  DY_APT_NAME = ARP_NAME,
+  DY_APT_ARR_PUNCT = ARR_PUNCTUALITY_PERCENTAGE / 100
+) %>%
+mutate(
+  MAIN_PUNCT_APT_NAME_BOTTOM = if_else(
+    RANK <= 4,
+    DY_APT_NAME,
+    NA
+  ),
+  MAIN_PUNCT_APT_ARR_PUNCT_BOTTOM = if_else(
+    RANK <= 4,
+    DY_APT_ARR_PUNCT,
+    NA
+  )
+) %>%
+filter(RANK < 11) %>%
+arrange(RANK) %>%
+select(RANK, MAIN_PUNCT_APT_NAME_BOTTOM, MAIN_PUNCT_APT_ARR_PUNCT_BOTTOM)
 
 
 ### merge and reorder tables ----
@@ -2418,33 +2453,33 @@ apt_punct_data <- merge(x = apt_punct_data, y = apt_main_punct_top, by = "RANK")
 apt_punct_data <- merge(x = apt_punct_data, y = apt_main_punct_bottom, by = "RANK")
 
 apt_punct_data <- apt_punct_data %>%
-  mutate(Y2D_TO_DATE = DY_TO_DATE) %>%
-  select(
-    RANK,
-    MAIN_PUNCT_APT_NAME,
-    MAIN_PUNCT_APT_ARR_PUNCT,
-    MAIN_PUNCT_APT_NAME_BOTTOM,
-    MAIN_PUNCT_APT_ARR_PUNCT_BOTTOM,
-    DY_RANK_DIF_PREV_WEEK,
-    DY_APT_NAME,
-    DY_TO_DATE,
-    DY_APT_ARR_PUNCT,
-    DY_PUNCT_DIF_PREV_WEEK_PERC,
-    DY_PUNCT_DIF_PREV_YEAR_PERC,
-    WK_RANK_DIF_PREV_WEEK,
-    WK_APT_NAME,
-    WK_FROM_DATE,
-    WK_TO_DATE,
-    WK_APT_ARR_PUNCT,
-    WK_PUNCT_DIF_PREV_WEEK_PERC,
-    WK_PUNCT_DIF_PREV_YEAR_PERC,
-    Y2D_RANK_DIF_PREV_YEAR,
-    Y2D_APT_NAME,
-    Y2D_TO_DATE,
-    Y2D_APT_ARR_PUNCT,
-    Y2D_PUNCT_DIF_PREV_YEAR_PERC,
-    Y2D_PUNCT_DIF_2019_PERC
-  )
+mutate(Y2D_TO_DATE = DY_TO_DATE) %>%
+select(
+  RANK,
+  MAIN_PUNCT_APT_NAME,
+  MAIN_PUNCT_APT_ARR_PUNCT,
+  MAIN_PUNCT_APT_NAME_BOTTOM,
+  MAIN_PUNCT_APT_ARR_PUNCT_BOTTOM,
+  DY_RANK_DIF_PREV_WEEK,
+  DY_APT_NAME,
+  DY_TO_DATE,
+  DY_APT_ARR_PUNCT,
+  DY_PUNCT_DIF_PREV_WEEK_PERC,
+  DY_PUNCT_DIF_PREV_YEAR_PERC,
+  WK_RANK_DIF_PREV_WEEK,
+  WK_APT_NAME,
+  WK_FROM_DATE,
+  WK_TO_DATE,
+  WK_APT_ARR_PUNCT,
+  WK_PUNCT_DIF_PREV_WEEK_PERC,
+  WK_PUNCT_DIF_PREV_YEAR_PERC,
+  Y2D_RANK_DIF_PREV_YEAR,
+  Y2D_APT_NAME,
+  Y2D_TO_DATE,
+  Y2D_APT_ARR_PUNCT,
+  Y2D_PUNCT_DIF_PREV_YEAR_PERC,
+  Y2D_PUNCT_DIF_2019_PERC
+)
 
 ### add bottom ranking at the end of the df
 apt_punct_data <- merge(x = apt_punct_data, y = apt_punct_dy_bottom, by = "RANK")
@@ -2452,8 +2487,8 @@ apt_punct_data <- merge(x = apt_punct_data, y = apt_punct_wk_bottom, by = "RANK"
 apt_punct_data <- merge(x = apt_punct_data, y = apt_punct_y2d_bottom, by = "RANK")
 
 apt_punct_data <- apt_punct_data %>%
-  mutate(Y2D_TO_DATE_BOTTOM = Y2D_TO_DATE) %>%
-  relocate (Y2D_TO_DATE_BOTTOM, .before = Y2D_APT_ARR_PUNCT_BOTTOM)
+mutate(Y2D_TO_DATE_BOTTOM = Y2D_TO_DATE) %>%
+relocate (Y2D_TO_DATE_BOTTOM, .before = Y2D_APT_ARR_PUNCT_BOTTOM)
 
 ### covert to json and save in app data folder and archive ----
 apt_punct_data_j <- apt_punct_data %>% toJSON(., pretty = TRUE)
@@ -2474,264 +2509,264 @@ write(apt_punct_data_j, paste0(archive_dir, "nw_apt_ranking_punctuality.json"))
 
 query <- "
 WITH
-  LIST_STATE as (
-    SELECT distinct
-      AIU_ISO_COUNTRY_NAME as EC_ISO_CT_NAME,
-      AIU_ISO_COUNTRY_CODE AS EC_ISO_CT_CODE
-    FROM prudev.pru_country_iso
-    WHERE till > TRUNC(SYSDATE)-1
-  )
+LIST_STATE as (
+  SELECT distinct
+    AIU_ISO_COUNTRY_NAME as EC_ISO_CT_NAME,
+    AIU_ISO_COUNTRY_CODE AS EC_ISO_CT_CODE
+  FROM prudev.pru_country_iso
+  WHERE till > TRUNC(SYSDATE)-1
+)
 
-  SELECT
-    a.*,
-    b.EC_ISO_CT_NAME
-  FROM LDW_VDM.VIEW_FAC_PUNCTUALITY_CT_DAY a
-  LEFT JOIN LIST_STATE b on a.ISO_CT_CODE = b.EC_ISO_CT_CODE
-  ORDER BY b.EC_ISO_CT_NAME
-   "
+SELECT
+  a.*,
+  b.EC_ISO_CT_NAME
+FROM LDW_VDM.VIEW_FAC_PUNCTUALITY_CT_DAY a
+LEFT JOIN LIST_STATE b on a.ISO_CT_CODE = b.EC_ISO_CT_CODE
+ORDER BY b.EC_ISO_CT_NAME
+ "
 
 ct_punct_raw <- export_query(query) %>%
-  filter(
-    ISO_CT_CODE != "GI",
-    ISO_CT_CODE != "FO",
-    ISO_CT_CODE != "SJ",
-    ISO_CT_CODE != "MC",
-    ISO_CT_CODE != "PM",
-    ISO_CT_CODE != "UA",
-    ISO_CT_CODE != "SM"
-  ) %>%
-  mutate_at("EC_ISO_CT_NAME", ~ if_else(. == "Turkiye", "Türkiye", .))
+filter(
+  ISO_CT_CODE != "GI",
+  ISO_CT_CODE != "FO",
+  ISO_CT_CODE != "SJ",
+  ISO_CT_CODE != "MC",
+  ISO_CT_CODE != "PM",
+  ISO_CT_CODE != "UA",
+  ISO_CT_CODE != "SM"
+) %>%
+mutate_at("EC_ISO_CT_NAME", ~ if_else(. == "Turkiye", "Türkiye", .))
 
 last_punctuality_day <- max(ct_punct_raw$DATE)
 
 ### calc
 ct_punct_calc <- ct_punct_raw %>%
-  group_by(DATE) %>%
-  arrange(desc(ARR_PUNCTUALITY_PERCENTAGE), EC_ISO_CT_NAME) %>%
-  mutate(RANK = row_number()) %>%
-  ungroup() %>%
-  group_by(EC_ISO_CT_NAME) %>%
-  arrange(DATE) %>%
-  mutate(
-    DY_RANK_DIF_PREV_WEEK = lag(RANK, 7) - RANK,
-    DY_PUNCT_DIF_PREV_WEEK_PERC = (ARR_PUNCTUALITY_PERCENTAGE - lag(ARR_PUNCTUALITY_PERCENTAGE, 7)) / 100,
-    DY_PUNCT_DIF_PREV_YEAR_PERC = (ARR_PUNCTUALITY_PERCENTAGE - lag(ARR_PUNCTUALITY_PERCENTAGE, 364)) / 100,
-    WK_CTRY_ARR_PUNCT = rollsum(ARR_PUNCTUAL_FLIGHTS, 7, fill = NA, align = "right") / rollsum(ARR_SCHEDULE_FLIGHT, 7, fill = NA, align = "right")
-  ) %>%
-  ungroup()
+group_by(DATE) %>%
+arrange(desc(ARR_PUNCTUALITY_PERCENTAGE), EC_ISO_CT_NAME) %>%
+mutate(RANK = row_number()) %>%
+ungroup() %>%
+group_by(EC_ISO_CT_NAME) %>%
+arrange(DATE) %>%
+mutate(
+  DY_RANK_DIF_PREV_WEEK = lag(RANK, 7) - RANK,
+  DY_PUNCT_DIF_PREV_WEEK_PERC = (ARR_PUNCTUALITY_PERCENTAGE - lag(ARR_PUNCTUALITY_PERCENTAGE, 7)) / 100,
+  DY_PUNCT_DIF_PREV_YEAR_PERC = (ARR_PUNCTUALITY_PERCENTAGE - lag(ARR_PUNCTUALITY_PERCENTAGE, 364)) / 100,
+  WK_CTRY_ARR_PUNCT = rollsum(ARR_PUNCTUAL_FLIGHTS, 7, fill = NA, align = "right") / rollsum(ARR_SCHEDULE_FLIGHT, 7, fill = NA, align = "right")
+) %>%
+ungroup()
 
 ### day ----
 ####top
 ct_punct_dy_calc_top <- ct_punct_calc %>%
-  filter(DATE == last_punctuality_day, RANK < 11) %>%
-  mutate(
-    DY_CTRY_NAME = EC_ISO_CT_NAME,
-    DY_CTRY_ARR_PUNCT = ARR_PUNCTUALITY_PERCENTAGE / 100,
-    DY_TO_DATE = round_date(DATE, "day")
-  )
+filter(DATE == last_punctuality_day, RANK < 11) %>%
+mutate(
+  DY_CTRY_NAME = EC_ISO_CT_NAME,
+  DY_CTRY_ARR_PUNCT = ARR_PUNCTUALITY_PERCENTAGE / 100,
+  DY_TO_DATE = round_date(DATE, "day")
+)
 
 ct_punct_dy_top <- ct_punct_dy_calc_top %>%
-  select(
-    RANK,
-    DY_RANK_DIF_PREV_WEEK,
-    DY_CTRY_NAME,
-    DY_TO_DATE,
-    DY_CTRY_ARR_PUNCT,
-    DY_PUNCT_DIF_PREV_WEEK_PERC,
-    DY_PUNCT_DIF_PREV_YEAR_PERC
-  )
+select(
+  RANK,
+  DY_RANK_DIF_PREV_WEEK,
+  DY_CTRY_NAME,
+  DY_TO_DATE,
+  DY_CTRY_ARR_PUNCT,
+  DY_PUNCT_DIF_PREV_WEEK_PERC,
+  DY_PUNCT_DIF_PREV_YEAR_PERC
+)
 
 ####bottom
 ct_punct_dy_calc_bottom <- ct_punct_calc %>%
-  filter(DATE == last_punctuality_day,
-         RANK > max(RANK) - 11) %>%
-  arrange(ARR_PUNCTUALITY_PERCENTAGE) %>%
-  mutate(
-    RANK = max(RANK) + 1 - RANK,
-    DY_CTRY_NAME_BOTTOM = EC_ISO_CT_NAME,
-    DY_CTRY_ARR_PUNCT_BOTTOM = ARR_PUNCTUALITY_PERCENTAGE / 100,
-    DY_TO_DATE_BOTTOM = round_date(DATE, "day")
-  )
+filter(DATE == last_punctuality_day,
+       RANK > max(RANK) - 11) %>%
+arrange(ARR_PUNCTUALITY_PERCENTAGE) %>%
+mutate(
+  RANK = max(RANK) + 1 - RANK,
+  DY_CTRY_NAME_BOTTOM = EC_ISO_CT_NAME,
+  DY_CTRY_ARR_PUNCT_BOTTOM = ARR_PUNCTUALITY_PERCENTAGE / 100,
+  DY_TO_DATE_BOTTOM = round_date(DATE, "day")
+)
 
 ct_punct_dy_bottom <-ct_punct_dy_calc_bottom %>%
-  select(
-    RANK,
-    DY_RANK_DIF_PREV_WEEK_BOTTOM = DY_RANK_DIF_PREV_WEEK,
-    DY_CTRY_NAME_BOTTOM,
-    DY_TO_DATE_BOTTOM,
-    DY_CTRY_ARR_PUNCT_BOTTOM,
-    DY_PUNCT_DIF_PREV_WEEK_PERC_BOTTOM = DY_PUNCT_DIF_PREV_WEEK_PERC,
-    DY_PUNCT_DIF_PREV_YEAR_PERC_BOTTOM = DY_PUNCT_DIF_PREV_YEAR_PERC
-  )
+select(
+  RANK,
+  DY_RANK_DIF_PREV_WEEK_BOTTOM = DY_RANK_DIF_PREV_WEEK,
+  DY_CTRY_NAME_BOTTOM,
+  DY_TO_DATE_BOTTOM,
+  DY_CTRY_ARR_PUNCT_BOTTOM,
+  DY_PUNCT_DIF_PREV_WEEK_PERC_BOTTOM = DY_PUNCT_DIF_PREV_WEEK_PERC,
+  DY_PUNCT_DIF_PREV_YEAR_PERC_BOTTOM = DY_PUNCT_DIF_PREV_YEAR_PERC
+)
 
 ### week ----
 ct_punct_wk <- ct_punct_calc %>%
-  group_by(DATE) %>%
-  arrange(desc(WK_CTRY_ARR_PUNCT), EC_ISO_CT_NAME) %>%
-  mutate(
-    RANK = row_number(),
-    WK_RANK = RANK
-  ) %>%
-  ungroup() %>%
-  group_by(EC_ISO_CT_NAME) %>%
-  arrange(DATE) %>%
-  mutate(
-    WK_RANK_DIF_PREV_WEEK = lag(RANK, 7) - RANK,
-    WK_PUNCT_DIF_PREV_WEEK_PERC = (WK_CTRY_ARR_PUNCT - lag(WK_CTRY_ARR_PUNCT, 7)),
-    WK_PUNCT_DIF_PREV_YEAR_PERC = (WK_CTRY_ARR_PUNCT - lag(WK_CTRY_ARR_PUNCT, 364))
-  ) %>%
-  ungroup()
+group_by(DATE) %>%
+arrange(desc(WK_CTRY_ARR_PUNCT), EC_ISO_CT_NAME) %>%
+mutate(
+  RANK = row_number(),
+  WK_RANK = RANK
+) %>%
+ungroup() %>%
+group_by(EC_ISO_CT_NAME) %>%
+arrange(DATE) %>%
+mutate(
+  WK_RANK_DIF_PREV_WEEK = lag(RANK, 7) - RANK,
+  WK_PUNCT_DIF_PREV_WEEK_PERC = (WK_CTRY_ARR_PUNCT - lag(WK_CTRY_ARR_PUNCT, 7)),
+  WK_PUNCT_DIF_PREV_YEAR_PERC = (WK_CTRY_ARR_PUNCT - lag(WK_CTRY_ARR_PUNCT, 364))
+) %>%
+ungroup()
 
 #### top
 ct_punct_wk_top <- ct_punct_wk %>%
-  filter(DATE == last_punctuality_day, RANK < 11) %>%
-  mutate(
-    WK_CTRY_NAME = EC_ISO_CT_NAME,
-    WK_FROM_DATE = round_date(DATE, "day") + lubridate::days(-6),
-    WK_TO_DATE = round_date(DATE, "day")
-  ) %>%
-  select(
-    RANK,
-    WK_RANK_DIF_PREV_WEEK,
-    WK_CTRY_NAME,
-    WK_FROM_DATE,
-    WK_TO_DATE,
-    WK_CTRY_ARR_PUNCT,
-    WK_PUNCT_DIF_PREV_WEEK_PERC,
-    WK_PUNCT_DIF_PREV_YEAR_PERC
-  )
+filter(DATE == last_punctuality_day, RANK < 11) %>%
+mutate(
+  WK_CTRY_NAME = EC_ISO_CT_NAME,
+  WK_FROM_DATE = round_date(DATE, "day") + lubridate::days(-6),
+  WK_TO_DATE = round_date(DATE, "day")
+) %>%
+select(
+  RANK,
+  WK_RANK_DIF_PREV_WEEK,
+  WK_CTRY_NAME,
+  WK_FROM_DATE,
+  WK_TO_DATE,
+  WK_CTRY_ARR_PUNCT,
+  WK_PUNCT_DIF_PREV_WEEK_PERC,
+  WK_PUNCT_DIF_PREV_YEAR_PERC
+)
 
 #### bottom
 ct_punct_wk_bottom <- ct_punct_wk %>%
-  filter(DATE == last_punctuality_day,
-         RANK > max(RANK) - 11) %>%
-  arrange(WK_CTRY_ARR_PUNCT, EC_ISO_CT_NAME) %>%
-  mutate(
-    RANK = max(RANK) + 1 - RANK,
-    WK_CTRY_NAME_BOTTOM = EC_ISO_CT_NAME,
-    WK_FROM_DATE_BOTTOM = round_date(DATE, "day") + lubridate::days(-6),
-    WK_TO_DATE_BOTTOM = round_date(DATE, "day")
-  ) %>%
-  select(
-    RANK,
-    WK_RANK_DIF_PREV_WEEK_BOTTOM = WK_RANK_DIF_PREV_WEEK,
-    WK_CTRY_NAME_BOTTOM,
-    WK_FROM_DATE_BOTTOM,
-    WK_TO_DATE_BOTTOM,
-    WK_CTRY_ARR_PUNCT_BOTTOM = WK_CTRY_ARR_PUNCT,
-    WK_PUNCT_DIF_PREV_WEEK_PERC_BOTTOM = WK_PUNCT_DIF_PREV_WEEK_PERC,
-    WK_PUNCT_DIF_PREV_YEAR_PERC_BOTTOM = WK_PUNCT_DIF_PREV_YEAR_PERC
-  )
+filter(DATE == last_punctuality_day,
+       RANK > max(RANK) - 11) %>%
+arrange(WK_CTRY_ARR_PUNCT, EC_ISO_CT_NAME) %>%
+mutate(
+  RANK = max(RANK) + 1 - RANK,
+  WK_CTRY_NAME_BOTTOM = EC_ISO_CT_NAME,
+  WK_FROM_DATE_BOTTOM = round_date(DATE, "day") + lubridate::days(-6),
+  WK_TO_DATE_BOTTOM = round_date(DATE, "day")
+) %>%
+select(
+  RANK,
+  WK_RANK_DIF_PREV_WEEK_BOTTOM = WK_RANK_DIF_PREV_WEEK,
+  WK_CTRY_NAME_BOTTOM,
+  WK_FROM_DATE_BOTTOM,
+  WK_TO_DATE_BOTTOM,
+  WK_CTRY_ARR_PUNCT_BOTTOM = WK_CTRY_ARR_PUNCT,
+  WK_PUNCT_DIF_PREV_WEEK_PERC_BOTTOM = WK_PUNCT_DIF_PREV_WEEK_PERC,
+  WK_PUNCT_DIF_PREV_YEAR_PERC_BOTTOM = WK_PUNCT_DIF_PREV_YEAR_PERC
+)
 
 ### y2d ----
 ct_punct_y2d <- ct_punct_calc %>%
-  mutate(MONTH_DAY = as.numeric(format(DATE, format = "%m%d"))) %>%
-  filter(MONTH_DAY <= as.numeric(format(last_punctuality_day, format = "%m%d"))) %>%
-  mutate(YEAR = as.numeric(format(DATE, format = "%Y"))) %>%
-  group_by(EC_ISO_CT_NAME, YEAR) %>%
-  summarise(Y2D_CTRY_ARR_PUNCT = sum(ARR_PUNCTUAL_FLIGHTS, na.rm = TRUE) / sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE)) %>%
-  ungroup() %>%
-  group_by(YEAR) %>%
-  arrange(desc(Y2D_CTRY_ARR_PUNCT), EC_ISO_CT_NAME) %>%
-  mutate(
-    RANK = row_number(),
-    Y2D_RANK = RANK
-  ) %>%
-  ungroup() %>%
-  group_by(EC_ISO_CT_NAME) %>%
-  arrange(YEAR) %>%
-  mutate(
-    Y2D_RANK_DIF_PREV_YEAR = lag(RANK, 1) - RANK,
-    Y2D_PUNCT_DIF_PREV_YEAR_PERC = (Y2D_CTRY_ARR_PUNCT - lag(Y2D_CTRY_ARR_PUNCT, 1)),
-    Y2D_PUNCT_DIF_2019_PERC = (Y2D_CTRY_ARR_PUNCT - lag(Y2D_CTRY_ARR_PUNCT, max(YEAR) - 2019))
-  ) %>%
-  ungroup()
+mutate(MONTH_DAY = as.numeric(format(DATE, format = "%m%d"))) %>%
+filter(MONTH_DAY <= as.numeric(format(last_punctuality_day, format = "%m%d"))) %>%
+mutate(YEAR = as.numeric(format(DATE, format = "%Y"))) %>%
+group_by(EC_ISO_CT_NAME, YEAR) %>%
+summarise(Y2D_CTRY_ARR_PUNCT = sum(ARR_PUNCTUAL_FLIGHTS, na.rm = TRUE) / sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE)) %>%
+ungroup() %>%
+group_by(YEAR) %>%
+arrange(desc(Y2D_CTRY_ARR_PUNCT), EC_ISO_CT_NAME) %>%
+mutate(
+  RANK = row_number(),
+  Y2D_RANK = RANK
+) %>%
+ungroup() %>%
+group_by(EC_ISO_CT_NAME) %>%
+arrange(YEAR) %>%
+mutate(
+  Y2D_RANK_DIF_PREV_YEAR = lag(RANK, 1) - RANK,
+  Y2D_PUNCT_DIF_PREV_YEAR_PERC = (Y2D_CTRY_ARR_PUNCT - lag(Y2D_CTRY_ARR_PUNCT, 1)),
+  Y2D_PUNCT_DIF_2019_PERC = (Y2D_CTRY_ARR_PUNCT - lag(Y2D_CTRY_ARR_PUNCT, max(YEAR) - 2019))
+) %>%
+ungroup()
 
 #### top
 ct_punct_y2d_top <- ct_punct_y2d %>%
-  filter(YEAR == max(YEAR), RANK < 11) %>%
-  mutate(Y2D_CTRY_NAME = EC_ISO_CT_NAME) %>%
-  select(
-    RANK,
-    Y2D_RANK_DIF_PREV_YEAR,
-    Y2D_CTRY_NAME,
-    Y2D_CTRY_ARR_PUNCT,
-    Y2D_PUNCT_DIF_PREV_YEAR_PERC,
-    Y2D_PUNCT_DIF_2019_PERC
-  )
+filter(YEAR == max(YEAR), RANK < 11) %>%
+mutate(Y2D_CTRY_NAME = EC_ISO_CT_NAME) %>%
+select(
+  RANK,
+  Y2D_RANK_DIF_PREV_YEAR,
+  Y2D_CTRY_NAME,
+  Y2D_CTRY_ARR_PUNCT,
+  Y2D_PUNCT_DIF_PREV_YEAR_PERC,
+  Y2D_PUNCT_DIF_2019_PERC
+)
 
 #### bottom
 ct_punct_y2d_bottom <- ct_punct_y2d %>%
-  filter(YEAR == max(YEAR),
-         RANK > max(RANK) - 11) %>%
-  arrange(Y2D_CTRY_ARR_PUNCT, EC_ISO_CT_NAME) %>%
-  mutate(
-    RANK = max(RANK) + 1 - RANK,
-    Y2D_CTRY_NAME_BOTTOM = EC_ISO_CT_NAME
-    ) %>%
-  select(
-    RANK,
-    Y2D_RANK_DIF_PREV_YEAR_BOTTOM = Y2D_RANK_DIF_PREV_YEAR,
-    Y2D_CTRY_NAME_BOTTOM,
-    Y2D_CTRY_ARR_PUNCT_BOTTOM = Y2D_CTRY_ARR_PUNCT,
-    Y2D_PUNCT_DIF_PREV_YEAR_PERC_BOTTOM = Y2D_PUNCT_DIF_PREV_YEAR_PERC,
-    Y2D_PUNCT_DIF_2019_PERC_BOTTOM = Y2D_PUNCT_DIF_2019_PERC
-  )
+filter(YEAR == max(YEAR),
+       RANK > max(RANK) - 11) %>%
+arrange(Y2D_CTRY_ARR_PUNCT, EC_ISO_CT_NAME) %>%
+mutate(
+  RANK = max(RANK) + 1 - RANK,
+  Y2D_CTRY_NAME_BOTTOM = EC_ISO_CT_NAME
+  ) %>%
+select(
+  RANK,
+  Y2D_RANK_DIF_PREV_YEAR_BOTTOM = Y2D_RANK_DIF_PREV_YEAR,
+  Y2D_CTRY_NAME_BOTTOM,
+  Y2D_CTRY_ARR_PUNCT_BOTTOM = Y2D_CTRY_ARR_PUNCT,
+  Y2D_PUNCT_DIF_PREV_YEAR_PERC_BOTTOM = Y2D_PUNCT_DIF_PREV_YEAR_PERC,
+  Y2D_PUNCT_DIF_2019_PERC_BOTTOM = Y2D_PUNCT_DIF_2019_PERC
+)
 
 ### main card ----
 ct_main_punct_top <- ct_punct_dy_calc_top %>%
-  mutate(
-    MAIN_PUNCT_CTRY_NAME = if_else(
-      RANK <= 4,
-      DY_CTRY_NAME,
-      NA
-    ),
-    MAIN_PUNCT_CTRY_ARR_PUNCT = if_else(
-      RANK <= 4,
-      DY_CTRY_ARR_PUNCT,
-      NA
-    ),
-    MAIN_PUNCT_CTRY_CODE = if_else(
-      RANK <= 4,
-      ISO_CT_CODE,
-      NA
-    )
-  ) %>%
-  select(RANK,
-         MAIN_PUNCT_CTRY_NAME,
-         MAIN_PUNCT_CTRY_ARR_PUNCT,
-         MAIN_PUNCT_CTRY_CODE)
+mutate(
+  MAIN_PUNCT_CTRY_NAME = if_else(
+    RANK <= 4,
+    DY_CTRY_NAME,
+    NA
+  ),
+  MAIN_PUNCT_CTRY_ARR_PUNCT = if_else(
+    RANK <= 4,
+    DY_CTRY_ARR_PUNCT,
+    NA
+  ),
+  MAIN_PUNCT_CTRY_CODE = if_else(
+    RANK <= 4,
+    ISO_CT_CODE,
+    NA
+  )
+) %>%
+select(RANK,
+       MAIN_PUNCT_CTRY_NAME,
+       MAIN_PUNCT_CTRY_ARR_PUNCT,
+       MAIN_PUNCT_CTRY_CODE)
 
 ct_main_punct_bottom <- ct_punct_calc %>%
-  filter(DATE == last_punctuality_day) %>%
-  mutate(
-    RANK = max(RANK) + 1 - RANK,
-    DY_CTRY_NAME = EC_ISO_CT_NAME,
-    DY_CTRY_ARR_PUNCT = ARR_PUNCTUALITY_PERCENTAGE / 100
-  ) %>%
-  mutate(
-    MAIN_PUNCT_CTRY_NAME_BOTTOM = if_else(
-      RANK <= 4,
-      DY_CTRY_NAME,
-      NA
-    ),
-    MAIN_PUNCT_CTRY_ARR_PUNCT_BOTTOM = if_else(
-      RANK <= 4,
-      DY_CTRY_ARR_PUNCT,
-      NA
-    ),
-    MAIN_PUNCT_CTRY_CODE_BOTTOM = if_else(
-      RANK <= 4,
-      ISO_CT_CODE,
-      NA
-    )
-  ) %>%
-  filter(RANK < 11) %>%
-  arrange(RANK) %>%
-  select(RANK,
-         MAIN_PUNCT_CTRY_NAME_BOTTOM,
-         MAIN_PUNCT_CTRY_ARR_PUNCT_BOTTOM,
-         MAIN_PUNCT_CTRY_CODE_BOTTOM)
+filter(DATE == last_punctuality_day) %>%
+mutate(
+  RANK = max(RANK) + 1 - RANK,
+  DY_CTRY_NAME = EC_ISO_CT_NAME,
+  DY_CTRY_ARR_PUNCT = ARR_PUNCTUALITY_PERCENTAGE / 100
+) %>%
+mutate(
+  MAIN_PUNCT_CTRY_NAME_BOTTOM = if_else(
+    RANK <= 4,
+    DY_CTRY_NAME,
+    NA
+  ),
+  MAIN_PUNCT_CTRY_ARR_PUNCT_BOTTOM = if_else(
+    RANK <= 4,
+    DY_CTRY_ARR_PUNCT,
+    NA
+  ),
+  MAIN_PUNCT_CTRY_CODE_BOTTOM = if_else(
+    RANK <= 4,
+    ISO_CT_CODE,
+    NA
+  )
+) %>%
+filter(RANK < 11) %>%
+arrange(RANK) %>%
+select(RANK,
+       MAIN_PUNCT_CTRY_NAME_BOTTOM,
+       MAIN_PUNCT_CTRY_ARR_PUNCT_BOTTOM,
+       MAIN_PUNCT_CTRY_CODE_BOTTOM)
 
 
 ### merge and reorder tables ----
@@ -2741,35 +2776,35 @@ ct_punct_data <- merge(x = ct_punct_data, y = ct_main_punct_top, by = "RANK")
 ct_punct_data <- merge(x = ct_punct_data, y = ct_main_punct_bottom, by = "RANK")
 
 ct_punct_data <- ct_punct_data %>%
-  mutate(Y2D_TO_DATE = DY_TO_DATE) %>%
-  select(
-    RANK,
-    MAIN_PUNCT_CTRY_NAME,
-    MAIN_PUNCT_CTRY_ARR_PUNCT,
-    MAIN_PUNCT_CTRY_CODE,
-    MAIN_PUNCT_CTRY_NAME_BOTTOM,
-    MAIN_PUNCT_CTRY_ARR_PUNCT_BOTTOM,
-    MAIN_PUNCT_CTRY_CODE_BOTTOM,
-    DY_RANK_DIF_PREV_WEEK,
-    DY_CTRY_NAME,
-    DY_TO_DATE,
-    DY_CTRY_ARR_PUNCT,
-    DY_PUNCT_DIF_PREV_WEEK_PERC,
-    DY_PUNCT_DIF_PREV_YEAR_PERC,
-    WK_RANK_DIF_PREV_WEEK,
-    WK_CTRY_NAME,
-    WK_FROM_DATE,
-    WK_TO_DATE,
-    WK_CTRY_ARR_PUNCT,
-    WK_PUNCT_DIF_PREV_WEEK_PERC,
-    WK_PUNCT_DIF_PREV_YEAR_PERC,
-    Y2D_RANK_DIF_PREV_YEAR,
-    Y2D_CTRY_NAME,
-    Y2D_TO_DATE,
-    Y2D_CTRY_ARR_PUNCT,
-    Y2D_PUNCT_DIF_PREV_YEAR_PERC,
-    Y2D_PUNCT_DIF_2019_PERC
-  )
+mutate(Y2D_TO_DATE = DY_TO_DATE) %>%
+select(
+  RANK,
+  MAIN_PUNCT_CTRY_NAME,
+  MAIN_PUNCT_CTRY_ARR_PUNCT,
+  MAIN_PUNCT_CTRY_CODE,
+  MAIN_PUNCT_CTRY_NAME_BOTTOM,
+  MAIN_PUNCT_CTRY_ARR_PUNCT_BOTTOM,
+  MAIN_PUNCT_CTRY_CODE_BOTTOM,
+  DY_RANK_DIF_PREV_WEEK,
+  DY_CTRY_NAME,
+  DY_TO_DATE,
+  DY_CTRY_ARR_PUNCT,
+  DY_PUNCT_DIF_PREV_WEEK_PERC,
+  DY_PUNCT_DIF_PREV_YEAR_PERC,
+  WK_RANK_DIF_PREV_WEEK,
+  WK_CTRY_NAME,
+  WK_FROM_DATE,
+  WK_TO_DATE,
+  WK_CTRY_ARR_PUNCT,
+  WK_PUNCT_DIF_PREV_WEEK_PERC,
+  WK_PUNCT_DIF_PREV_YEAR_PERC,
+  Y2D_RANK_DIF_PREV_YEAR,
+  Y2D_CTRY_NAME,
+  Y2D_TO_DATE,
+  Y2D_CTRY_ARR_PUNCT,
+  Y2D_PUNCT_DIF_PREV_YEAR_PERC,
+  Y2D_PUNCT_DIF_2019_PERC
+)
 
 ### add bottom ranking at the end of the df
 ct_punct_data <- merge(x = ct_punct_data, y = ct_punct_dy_bottom, by = "RANK")
@@ -2777,8 +2812,8 @@ ct_punct_data <- merge(x = ct_punct_data, y = ct_punct_wk_bottom, by = "RANK")
 ct_punct_data <- merge(x = ct_punct_data, y = ct_punct_y2d_bottom, by = "RANK")
 
 ct_punct_data <- ct_punct_data %>%
-  mutate(Y2D_TO_DATE_BOTTOM = Y2D_TO_DATE) %>%
-  relocate (Y2D_TO_DATE_BOTTOM, .before = Y2D_CTRY_ARR_PUNCT_BOTTOM)
+mutate(Y2D_TO_DATE_BOTTOM = Y2D_TO_DATE) %>%
+relocate (Y2D_TO_DATE_BOTTOM, .before = Y2D_CTRY_ARR_PUNCT_BOTTOM)
 
 ### covert to json and save in app data folder and archive ----
 ct_punct_data_j <- ct_punct_data %>% toJSON(., pretty = TRUE)

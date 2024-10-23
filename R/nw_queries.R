@@ -1,3 +1,485 @@
+# nw ao traffic ----
+## day ----
+query_nw_ao_day_raw <- function(mydate_string) {
+  mydate <- date_sql_string(mydate_string)
+  paste0("
+WITH
+
+
+AO_LIST AS (
+SELECT ao_code,ao_name,ao_grp_code,ao_grp_name
+FROM prudev.v_covid_dim_ao
+ ),
+
+AO_NM_GROUP  AS (
+SELECT ao_grp_code, ao_grp_name
+FROM ao_list
+GROUP BY ao_grp_code,ao_grp_name
+),
+
+AO_GRP_DAY AS (
+SELECT a.ao_grp_code,
+        a.ao_grp_name,
+        t.day_date,
+        t.month,
+        t.week,
+        t.week_nb_year,
+        t.day_type,
+        t.day_of_week_nb AS day_of_week,
+        t.year
+FROM ao_nm_group a, pru_time_references t
+WHERE
+  (t.day_date >= ", mydate, "-1  AND t.day_date < ", mydate, ")
+  or
+ (t.day_date >= ", mydate, " -1 - greatest((extract (year from (", mydate, "-1))-2019) *364+ floor((extract (year from (", mydate, "-1))-2019)/4)*7,0)
+    AND t.day_date <  ", mydate, " - greatest((extract (year from (", mydate, "-1))-2019) *364+ floor((extract (year from (", mydate, "-1))-2019)/4)*7,0)
+ )
+  or
+ (t.day_date >= ", mydate, " - 1 - 364    AND t.day_date <  ", mydate, " - 364)
+  or
+ (t.day_date >= ", mydate, " - 1 - 14    AND t.day_date <  ", mydate, " - 14)
+  or
+ (t.day_date >= ", mydate, " - 1 - 7    AND t.day_date <  ", mydate, " - 7)
+
+       ),
+
+
+DATA_SOURCE AS (
+SELECT
+        b.ao_grp_code,
+        b.ao_grp_name,
+        TRUNC(A.flt_a_asp_prof_time_entry) ENTRY_DATE,
+        COUNT(a.flt_uid) FLIGHT
+FROM v_aiu_flt a,
+     AO_LIST b
+WHERE b.ao_code = ao_icao_id  AND ao_icao_id <> 'ZZZ'
+AND ao_icao_id is not NULL
+  AND
+ (  (  A.flt_lobt >=  ", mydate, " - 1 -2
+    AND A.flt_lobt <  ", mydate, " + 2
+  )
+ OR
+ (  A.flt_lobt >=  ", mydate, "-1 - 2 -  greatest((extract (year from (", mydate, "-1))-2019) *364+ floor((extract (year from (", mydate, "-1))-2019)/4)*7,0)
+    AND A.flt_lobt <   ", mydate, " +2 - greatest((extract (year from (", mydate, "-1))-2019) *364+ floor((extract (year from (", mydate, "-1))-2019)/4)*7,0)
+
+ )
+OR
+ (  A.flt_lobt >=  ", mydate, " -364 -1 -2
+    AND A.flt_lobt <   ", mydate, " - 364 + 2
+
+  )
+OR
+ (  A.flt_lobt >=  ", mydate, " -14 -1 -2
+    AND A.flt_lobt <   ", mydate, " - 14 + 2
+
+  )
+OR
+ (  A.flt_lobt >=  ", mydate, " -7 -1 -2
+    AND A.flt_lobt <   ", mydate, " - 7 + 2
+
+  ) )
+    AND A.flt_state IN ('TE','TA','AA')
+GROUP BY b.ao_grp_code,
+         b.ao_grp_name,
+        TRUNC(A.flt_a_asp_prof_time_entry)
+),
+
+
+DATA_GRP_AO as (
+SELECT a.YEAR,
+       a.MONTH,
+       a.day_date    AS ENTRY_DATE,
+       a.WEEK,
+       a.WEEK_NB_YEAR,
+       a.day_of_week,
+       a.ao_grp_code,
+       a.ao_grp_name,
+       coalesce(b.FLIGHT,0) AS FLIGHT
+       FROM ao_grp_day  A
+       LEFT JOIN DATA_SOURCE B
+           ON a.ao_grp_code = b.ao_grp_code AND b.entry_date = a.day_date
+),
+
+DATA_GRP_AO_2 as
+(select YEAR,
+       MONTH,
+       ENTRY_DATE,
+       ao_grp_code,
+       ao_grp_name,
+       FLIGHT,
+       WEEK,
+       WEEK_NB_YEAR,
+       day_of_week,
+       sum(FLIGHT) over (PARTITION BY ao_grp_code ORDER BY ENTRY_DATE range  between NUMTODSINTERVAL(364, 'day')  PRECEDING and  NUMTODSINTERVAL( 364, 'day') PRECEDING ) FLIGHT_PREV_YEAR,
+       min(ENTRY_DATE) over (PARTITION BY ao_grp_code ORDER BY ENTRY_DATE range  between NUMTODSINTERVAL(364, 'day')  PRECEDING and  NUMTODSINTERVAL( 364, 'day') PRECEDING ) ENTRY_DATE_PREV_YEAR,
+       sum(FLIGHT) over (PARTITION BY ao_grp_code ORDER BY ENTRY_DATE range  between NUMTODSINTERVAL(greatest((extract (year from (", mydate, "-1))-2019) *364+ floor((extract (year from (", mydate, "-1))-2019)/4)*7,0),'day')  PRECEDING
+            and  NUMTODSINTERVAL(greatest((extract (year from (", mydate, "-1))-2019) *364+ floor((extract (year from (", mydate, "-1))-2019)/4)*7,0),'day') PRECEDING ) FLIGHT_2019,
+       min(ENTRY_DATE) over (PARTITION BY ao_grp_code ORDER BY ENTRY_DATE range  between NUMTODSINTERVAL(greatest((extract (year from (", mydate, "-1))-2019) *364+ floor((extract (year from (", mydate, "-1))-2019)/4)*7,0),'day')  PRECEDING
+            and  NUMTODSINTERVAL(greatest((extract (year from (", mydate, "-1))-2019) *364+ floor((extract (year from (", mydate, "-1))-2019)/4)*7,0),'day') PRECEDING ) ENTRY_DATE_2019,
+       sum(FLIGHT) over (PARTITION BY ao_grp_code ORDER BY ENTRY_DATE range  between NUMTODSINTERVAL(14, 'day')  PRECEDING and  NUMTODSINTERVAL(14, 'day') PRECEDING ) FLIGHT_14DAY,
+       min(ENTRY_DATE) over (PARTITION BY ao_grp_code ORDER BY ENTRY_DATE range  between NUMTODSINTERVAL(14, 'day')  PRECEDING and  NUMTODSINTERVAL(14, 'day') PRECEDING ) ENTRY_DATE_14DAY,
+       sum(FLIGHT) over (PARTITION BY ao_grp_code ORDER BY ENTRY_DATE range  between NUMTODSINTERVAL(7, 'day')  PRECEDING and  NUMTODSINTERVAL(7, 'day') PRECEDING ) FLIGHT_7DAY,
+       min(ENTRY_DATE) over (PARTITION BY ao_grp_code ORDER BY ENTRY_DATE range  between NUMTODSINTERVAL(7, 'day')  PRECEDING and  NUMTODSINTERVAL(7, 'day') PRECEDING ) ENTRY_DATE_7DAY
+
+      FROM DATA_GRP_AO)  ,
+
+  DATA_GRP_AO_3  as
+  (
+      select YEAR,
+       MONTH,
+       ENTRY_DATE,
+       ao_grp_code,
+       ao_grp_name,
+       FLIGHT,
+       WEEK,
+       WEEK_NB_YEAR,
+       day_of_week,
+       FLIGHT_PREV_YEAR,
+       ENTRY_DATE_PREV_YEAR,
+       FLIGHT_2019,
+       ENTRY_DATE_2019,
+       FLIGHT_14DAY,
+       ENTRY_DATE_14DAY,
+       FLIGHT_7DAY,
+       ENTRY_DATE_7DAY,
+       FLIGHT - FLIGHT_PREV_YEAR  as FLIGHT_PREV_YEAR_DIFF,
+      FLIGHT - FLIGHT_2019  as FLIGHT_2019_DIFF,
+      FLIGHT - FLIGHT_14DAY  as FLIGHT_14DAY_DIFF,
+      FLIGHT - FLIGHT_7DAY  as FLIGHT_7DAY_DIFF,
+      CASE WHEN FLIGHT_PREV_YEAR <>0
+           THEN FLIGHT/FLIGHT_PREV_YEAR -1
+      ELSE NULL
+      END  FLIGHT_PREV_YEAR_DIFF_PERC,
+      CASE WHEN FLIGHT_2019 <>0
+           THEN FLIGHT/FLIGHT_2019 -1
+      ELSE NULL
+      END  FLIGHT_2019_DIFF_PERC,
+      CASE WHEN FLIGHT_14DAY <>0
+           THEN FLIGHT/FLIGHT_14DAY -1
+      ELSE NULL
+      END  FLIGHT_14DAY_DIFF_PERC,
+      CASE WHEN FLIGHT_7DAY <>0
+           THEN FLIGHT/FLIGHT_7DAY -1
+      ELSE NULL
+      END  FLIGHT_7DAY_DIFF_PERC
+        FROM DATA_GRP_AO_2
+  )
+  select YEAR,
+       MONTH,
+       WEEK,
+       WEEK_NB_YEAR,
+       day_of_week,
+       ao_grp_code  ,
+       ao_grp_name,
+       ao_grp_code  as ao_nm_group_code,
+       ao_grp_name as ao_nm_group_name,
+       ENTRY_DATE,
+       ENTRY_DATE_PREV_YEAR,
+       ENTRY_DATE_2019,
+       ENTRY_DATE_14DAY,
+       ENTRY_DATE_7DAY,
+       FLIGHT,
+       FLIGHT_PREV_YEAR,
+       FLIGHT_2019,
+       FLIGHT_14DAY,
+       FLIGHT_7DAY,
+       CASE WHEN entry_date = ", mydate, "-1 then 'YES' ELSE '-' END as FILTER_LAST_DAY,
+
+
+      FLIGHT - FLIGHT_PREV_YEAR  as FLIGHT_DIFF,
+      FLIGHT - FLIGHT_2019  as FLIGHT_2019_DIFF,
+       FLIGHT - FLIGHT_14DAY  as FLIGHT_14DAY_DIFF,
+       FLIGHT - FLIGHT_7DAY  as FLIGHT_7DAY_DIFF,
+      CASE WHEN FLIGHT_PREV_YEAR <>0
+           THEN FLIGHT/FLIGHT_PREV_YEAR -1
+      ELSE NULL
+      END  FLIGHT_DIFF_PERC,
+      CASE WHEN FLIGHT_2019 <>0
+           THEN FLIGHT/FLIGHT_2019 -1
+      ELSE NULL
+      END  FLIGHT_DIFF_2019_PERC,
+      CASE WHEN FLIGHT_14DAY <>0
+           THEN FLIGHT/FLIGHT_14DAY -1
+      ELSE NULL
+      END  FLIGHT_DIFF_14DAY_PERC,
+      CASE WHEN FLIGHT_7DAY <>0
+           THEN FLIGHT/FLIGHT_7DAY -1
+      ELSE NULL
+      END  FLIGHT_DIFF_7DAY_PERC
+
+       ,ROW_NUMBER() OVER (PARTITION BY entry_date ORDER BY (FLIGHT) DESC)  r_rank_by_day
+       ,ROW_NUMBER() OVER (PARTITION BY entry_date ORDER BY (FLIGHT_PREV_YEAR) desc)  r_rank_by_day_PREV_YY
+       ,ROW_NUMBER() OVER (PARTITION BY entry_date ORDER BY (FLIGHT_2019) desc)  r_rank_by_day_2019
+       ,ROW_NUMBER() OVER (PARTITION BY entry_date ORDER BY (FLIGHT_14DAY) desc)  r_rank_by_day_14DAY
+       ,ROW_NUMBER() OVER (PARTITION BY entry_date ORDER BY (FLIGHT_7DAY) desc)  r_rank_by_day_7DAY
+       ,RANK() OVER (PARTITION BY entry_date ORDER BY FLIGHT DESC)  rank_by_day
+       ,RANK() OVER (PARTITION BY entry_date ORDER BY (FLIGHT_PREV_YEAR) desc)  rank_by_day_PREV_YY
+       ,RANK() OVER (PARTITION BY entry_date ORDER BY (FLIGHT_2019) desc)   rank_by_day_2019
+       ,RANK() OVER (PARTITION BY entry_date ORDER BY (FLIGHT_14DAY) desc)  rank_by_day_14DAY
+       ,RANK() OVER (PARTITION BY entry_date ORDER BY (FLIGHT_7DAY) desc)  rank_by_day_7DAY
+       ,DENSE_RANK() OVER (PARTITION BY entry_date ORDER BY FLIGHT DESC)  d_rank_by_day
+       ,DENSE_RANK() OVER (PARTITION BY entry_date ORDER BY (FLIGHT_PREV_YEAR) desc)  d_rank_by_day_PREV_YY
+       ,DENSE_RANK() OVER (PARTITION BY entry_date ORDER BY (FLIGHT_2019) desc)   d_rank_by_day_2019
+       ,DENSE_RANK() OVER (PARTITION BY entry_date ORDER BY (FLIGHT_14DAY) desc)  d_rank_by_day_14DAY
+       ,ROW_NUMBER() OVER (PARTITION BY entry_date ORDER BY (FLIGHT - FLIGHT_2019) asc)  r_rank_by_day_diff_2019_asc
+       ,ROW_NUMBER() OVER (PARTITION BY entry_date ORDER BY (FLIGHT - FLIGHT_14DAY) asc)  r_rank_by_day_diff_14DAY_asc
+       ,ROW_NUMBER() OVER (PARTITION BY entry_date ORDER BY (FLIGHT - FLIGHT_7DAY) asc)  r_rank_by_day_diff_7DAY_asc
+      FROM DATA_GRP_AO_3
+      WHERE entry_date = ", mydate, "-1
+"
+  )
+}
+
+## week ----
+query_nw_ao_week_raw <- function(mydate_string) {
+  mydate <- date_sql_string(mydate_string)
+  paste0("
+  WITH
+
+
+AO_LIST AS (
+SELECT ao_code,ao_name,ao_grp_code,ao_grp_name --,ao_group2_code, ao_group2_name,ao_group2_covid_list
+FROM prudev.v_covid_dim_ao
+where ao_code <> 'ZZZ'
+--WHERE ( AO_nm_list = 'Y' and ao_grp_code <> 'TCX' )
+--or (ao_code in ('BCS', 'QTR', 'BHL', 'TAY', 'FDX', 'UAE'))
+ ),-- OR  AO_GROUP2_COVId_LIST = 'Y'
+
+AO_NM_GROUP  AS (
+SELECT ao_grp_code, ao_grp_name
+FROM ao_list
+GROUP BY ao_grp_code,ao_grp_name
+),
+
+LIST_DAY as
+(
+SELECT  t.day_date
+FROM  pru_time_references t
+WHERE (t.day_date >= ", mydate, " - 7 - 14    AND t.day_date <  ", mydate, " )
+or    (t.day_date >= ", mydate, " - 7 - 364    AND t.day_date <  ", mydate, " - 364)
+
+UNION
+SELECT
+        t.day_date - greatest((extract (year from t.day_date)-2019) *364+ floor((extract (year from t.day_date)-2019)/4)*7,0)
+FROM  pru_time_references t
+WHERE
+  (t.day_date >= ", mydate, " - 7  AND t.day_date <  ", mydate, " )
+),
+
+DIM_DAY as
+(
+select t.day_date,
+        t.month,
+        t.week,
+        t.week_nb_year,
+        t.day_type,
+        t.day_of_week_nb,
+        t.year
+from pru_time_references t inner join list_day a on (t.day_date = a.day_date)
+),
+
+
+
+
+
+AO_GRP_DAY AS (
+SELECT a.ao_grp_code,
+        a.ao_grp_name,
+        t.day_date,
+        t.month,
+        t.week,
+        t.week_nb_year,
+        t.day_type,
+        t.day_of_week_nb AS day_of_week,
+        t.year
+FROM ao_nm_group a, DIM_DAY t
+ ),
+
+
+DATA_SOURCE AS (
+SELECT
+        b.ao_grp_code,
+        b.ao_grp_name,
+        TRUNC(A.flt_a_asp_prof_time_entry) ENTRY_DATE,
+        COUNT(a.flt_uid) FLIGHT
+FROM v_aiu_flt a,
+     AO_LIST b
+WHERE b.ao_code = ao_icao_id  and ao_icao_id is not NULL
+  AND
+ (
+         (A.flt_lobt >=  ", mydate, " - 14-7 -2  AND A.flt_lobt <  ", mydate, " + 2)
+       OR
+         (A.flt_lobt >=  ", mydate, " -364 -7 -2 AND A.flt_lobt <   ", mydate, " - 364 + 2 )
+       OR
+         (A.flt_lobt >=  ", mydate, "-1 -((extract (year from ", mydate, "-1)-2019)*364+ floor((extract (year from ", mydate, "-1)-2019)/4)*7)   -7 -2
+            AND A.flt_lobt <   ", mydate, "-1 - ((extract (year from ", mydate, "-1)-2019)*364+ floor((extract (year from ", mydate, "-1)-2019)/4)*7) + 2
+          )
+       OR
+         (A.flt_lobt >= to_date ( '23-12-2018','dd-mm-yyyy')-1 and a.flt_lobt  <   to_date ( '08-01-2019','dd-mm-yyyy'))
+       OR
+         ( A.flt_lobt >= to_date ( '23-12-2019','dd-mm-yyyy')-1 and a.flt_lobt  <   to_date ( '08-01-2020','dd-mm-yyyy') )
+    )
+
+    AND A.flt_state IN ('TE','TA','AA')
+GROUP BY b.ao_grp_code,
+         b.ao_grp_name,
+        TRUNC(A.flt_a_asp_prof_time_entry)
+),
+
+
+DATA_GRP_AO as (
+SELECT a.YEAR,
+       a.MONTH,
+       a.day_date    AS ENTRY_DATE,
+       a.WEEK,
+       a.WEEK_NB_YEAR,
+       a.day_of_week,
+       a.ao_grp_code,
+       a.ao_grp_name,
+       coalesce(b.FLIGHT,0) AS FLIGHT
+       FROM ao_grp_day  A
+       LEFT JOIN DATA_SOURCE B
+           ON a.ao_grp_code = b.ao_grp_code  AND  a.ao_grp_name = b.ao_grp_name AND b.entry_date = a.day_date
+),
+
+DATA_GRP_AO_2 as
+(
+select YEAR,
+       MONTH,
+       ENTRY_DATE,
+       ao_grp_code,
+       ao_grp_name,
+       FLIGHT,
+       WEEK,
+       WEEK_NB_YEAR,
+       day_of_week,
+       sum(FLIGHT) over (PARTITION BY ao_grp_code ORDER BY ENTRY_DATE range  between NUMTODSINTERVAL(364, 'day')  PRECEDING and  NUMTODSINTERVAL( 364, 'day') PRECEDING ) FLIGHT_PREV_YEAR,
+       min(ENTRY_DATE) over (PARTITION BY ao_grp_code ORDER BY ENTRY_DATE range  between NUMTODSINTERVAL(364, 'day')  PRECEDING and  NUMTODSINTERVAL( 364, 'day') PRECEDING ) ENTRY_DATE_PREV_YEAR,
+       sum(FLIGHT) over (PARTITION BY ao_grp_code ORDER BY ENTRY_DATE range  between  NUMTODSINTERVAL(greatest((extract (year from entry_date)-2019) *364+ floor((extract (year from entry_date)-2019)/4)*7,0),'day')  PRECEDING
+                                                                                and   NUMTODSINTERVAL(greatest((extract (year from entry_date)-2019) *364+ floor((extract (year from entry_date)-2019)/4)*7,0),'day') PRECEDING ) FLIGHT_2019,
+       min(ENTRY_DATE) over (PARTITION BY ao_grp_code ORDER BY ENTRY_DATE range  between  NUMTODSINTERVAL(greatest((extract (year from entry_date)-2019) *364+ floor((extract (year from entry_date)-2019)/4)*7,0),'day')  PRECEDING
+                                                                                    and   NUMTODSINTERVAL(greatest((extract (year from entry_date)-2019) *364+ floor((extract (year from entry_date)-2019)/4)*7,0),'day') PRECEDING ) ENTRY_DATE_2019,
+       sum(FLIGHT) over (PARTITION BY ao_grp_code ORDER BY ENTRY_DATE range  between NUMTODSINTERVAL(14, 'day')  PRECEDING and  NUMTODSINTERVAL(14, 'day') PRECEDING ) FLIGHT_14DAY,
+       min(ENTRY_DATE) over (PARTITION BY ao_grp_code ORDER BY ENTRY_DATE range  between NUMTODSINTERVAL(14, 'day')  PRECEDING and  NUMTODSINTERVAL(14, 'day') PRECEDING ) ENTRY_DATE_14DAY,
+       sum(FLIGHT) over (PARTITION BY ao_grp_code ORDER BY ENTRY_DATE range  between NUMTODSINTERVAL(7, 'day')  PRECEDING and  NUMTODSINTERVAL(7, 'day') PRECEDING ) FLIGHT_7DAY,
+       min(ENTRY_DATE) over (PARTITION BY ao_grp_code ORDER BY ENTRY_DATE range  between NUMTODSINTERVAL(7, 'day')  PRECEDING and  NUMTODSINTERVAL(7, 'day') PRECEDING ) ENTRY_DATE_7DAY
+      FROM DATA_GRP_AO
+     ),
+
+        DATA_GRP_AO_3  as
+  (
+      select
+      ao_grp_code,
+      ao_grp_name,
+      to_char(min(ENTRY_DATE), 'dd-mm-yyyy') || ' -> ' || to_char(max(entry_date),'DD-MM-YYYY') as entry_date,
+      min(ENTRY_DATE) as min_entry_date,
+      max(ENTRY_DATE) as max_entry_date,
+      sum(flight) as flight,
+      avg(flight) as daily_flight,
+      sum(flight_prev_year) as flight_prev_year,
+      avg(flight_prev_year) as daily_flight_prev_year,
+      min(ENTRY_DATE_PREV_YEAR) as min_ENTRY_DATE_PREV_YEAR,
+      max (ENTRY_DATE_PREV_YEAR) as max_ENTRY_DATE_PREV_YEAR,
+      to_char(min(entry_date_prev_year), 'dd-mm-yyyy') || ' -> ' || to_char(max(entry_date_prev_year),'DD-MM-YYYY')as entry_date_prev_year,
+      sum(flight_2019) as FLIGHT_2019,
+      avg(flight_2019) as daily_FLIGHT_2019,
+      min(ENTRY_DATE_2019) as min_ENTRY_DATE_2019,
+      max (ENTRY_DATE_2019) as max_ENTRY_DATE_2019,
+      to_char(min(entry_date_2019), 'dd-mm-yyyy') || ' -> ' || to_char(max(entry_date_2019),'DD-MM-YYYY') as entry_date_2019,
+      sum(FLIGHT_14DAY) as FLIGHT_14DAY,
+      avg(FLIGHT_14DAY) as DAILY_FLIGHT_14DAY,
+      min(ENTRY_DATE_14DAY) as MIN_ENTRY_DATE_14DAY,
+      max (ENTRY_DATE_14DAY) as max_ENTRY_DATE_14DAY,
+       to_char(min(entry_date_14DAY), 'dd-mm-yyyy') || ' -> ' || to_char(max(entry_date_14DAY),'DD-MM-YYYY') as entry_date_14DAY,
+      sum(FLIGHT_7DAY) as FLIGHT_7DAY,
+      avg(FLIGHT_7DAY) as DAILY_FLIGHT_7DAY,
+      min(ENTRY_DATE_7DAY) as MIN_ENTRY_DATE_7DAY,
+      max (ENTRY_DATE_7DAY) as max_ENTRY_DATE_7DAY,
+      to_char(min(entry_date_7DAY), 'dd-mm-yyyy') || ' -> ' || to_char(max(entry_date_7DAY),'DD-MM-YYYY') as entry_date_7DAY
+      FROM DATA_GRP_AO_2
+      where entry_date >= ", mydate, " -7 and entry_date <", mydate, "
+      group by
+      ao_grp_code,
+      ao_grp_name
+  )
+
+    select
+       ao_grp_code,
+       ao_grp_name,
+       ENTRY_DATE,
+       ENTRY_DATE_PREV_YEAR,
+       ENTRY_DATE_2019,
+       ENTRY_DATE_14DAY,
+       ENTRY_DATE_7DAY,
+       MIN_ENTRY_DATE,
+       MIN_ENTRY_DATE_PREV_YEAR,
+       MIN_ENTRY_DATE_2019,
+       MIN_ENTRY_DATE_14DAY,
+       MIN_ENTRY_DATE_7DAY,
+       MAX_ENTRY_DATE,
+       MAX_ENTRY_DATE_PREV_YEAR,
+       MAX_ENTRY_DATE_2019,
+       MAX_ENTRY_DATE_14DAY,
+       MAX_ENTRY_DATE_7DAY,
+       FLIGHT,
+       FLIGHT_PREV_YEAR,
+       FLIGHT_2019,
+       FLIGHT_14DAY,
+       FLIGHT_7DAY,
+       DAILY_FLIGHT,
+       DAILY_FLIGHT_PREV_YEAR,
+       DAILY_FLIGHT_2019,
+       DAILY_FLIGHT_14DAY,
+       DAILY_FLIGHT_7DAY,
+       FLIGHT - FLIGHT_PREV_YEAR  as FLIGHT_PREV_YEAR_DIFF,
+       FLIGHT - FLIGHT_2019  as FLIGHT_2019_DIFF,
+       FLIGHT - FLIGHT_14DAY  as FLIGHT_14DAY_DIFF,
+       FLIGHT - FLIGHT_7DAY  as FLIGHT_7DAY_DIFF,
+       DAILY_FLIGHT - DAILY_FLIGHT_PREV_YEAR  as DAILY_FLIGHT_DIFF,
+       DAILY_FLIGHT - DAILY_FLIGHT_2019  as DAILY_FLIGHT_2019_DIFF,
+       DAILY_FLIGHT - DAILY_FLIGHT_14DAY  as DAILY_FLIGHT_14DAY_DIFF,
+       DAILY_FLIGHT - DAILY_FLIGHT_7DAY  as DAILY_FLIGHT_7DAY_DIFF,
+
+      CASE WHEN FLIGHT_PREV_YEAR <>0
+           THEN FLIGHT/FLIGHT_PREV_YEAR -1
+      ELSE NULL
+      END  FLIGHT_DIFF_PREV_YEAR_PERC,
+      CASE WHEN FLIGHT_2019 <>0
+           THEN FLIGHT/FLIGHT_2019 -1
+      ELSE NULL
+      END  FLIGHT_DIFF_2019_PERC,
+      CASE WHEN FLIGHT_14DAY <>0
+           THEN FLIGHT/FLIGHT_14DAY -1
+      ELSE NULL
+      END  FLIGHT_DIFF_14DAY_PERC,
+      CASE WHEN FLIGHT_7DAY <>0
+           THEN FLIGHT/FLIGHT_7DAY -1
+      ELSE NULL
+      END  FLIGHT_DIFF_7DAY_PERC
+
+
+       ,ROW_NUMBER() OVER (PARTITION BY entry_date ORDER BY (FLIGHT) DESC)  r_rank_by_day
+       ,ROW_NUMBER() OVER (PARTITION BY entry_date ORDER BY (FLIGHT_PREV_YEAR) desc)  r_rank_by_day_PREV_YY
+       ,ROW_NUMBER() OVER (PARTITION BY entry_date ORDER BY (FLIGHT_2019) desc)  r_rank_by_day_2019
+       ,ROW_NUMBER() OVER (PARTITION BY entry_date ORDER BY (FLIGHT_14DAY) desc)  r_rank_by_day_14DAY
+       ,ROW_NUMBER() OVER (PARTITION BY entry_date ORDER BY (FLIGHT_7DAY) desc)  r_rank_by_day_7DAY
+       ,RANK() OVER (PARTITION BY entry_date ORDER BY FLIGHT DESC)  rank_by_day
+       ,RANK() OVER (PARTITION BY entry_date ORDER BY (FLIGHT_PREV_YEAR) desc)  rank_by_day_PREV_YY
+       ,RANK() OVER (PARTITION BY entry_date ORDER BY (FLIGHT_2019) desc)   rank_by_day_2019
+       ,RANK() OVER (PARTITION BY entry_date ORDER BY (FLIGHT_14DAY) desc)  rank_by_day_14DAY
+       ,RANK() OVER (PARTITION BY entry_date ORDER BY (FLIGHT_7DAY) desc)  rank_by_day_7DAY
+       ,ROW_NUMBER() OVER (PARTITION BY entry_date ORDER BY (FLIGHT - FLIGHT_2019) asc)  r_rank_by_day_diff_2019_asc
+       ,ROW_NUMBER() OVER (PARTITION BY entry_date ORDER BY (FLIGHT - FLIGHT_14DAY) asc)  r_rank_by_day_diff_14DAY_asc
+        ,ROW_NUMBER() OVER (PARTITION BY entry_date ORDER BY (FLIGHT - FLIGHT_7DAY) asc)  r_rank_by_day_diff_7DAY_asc
+        ,ao_grp_code as ao_nm_group_code,
+       ao_grp_name as ao_nm_group_name
+
+      FROM DATA_GRP_AO_3
+      where (flight <> 0 or flight_prev_year <> 0 or flight_2019 <>  0 or flight_14day <> 0 or flight_7day <>0)
+"
+  )
+}
+
 # nw acc delay ----
 ## day ----
 query_nw_acc_delay_day_raw <- function(mydate_string) {
