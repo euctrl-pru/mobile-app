@@ -242,7 +242,6 @@ query_nw_ao_week_raw <- function(mydate_string) {
   paste0("
   WITH
 
-
 AO_LIST AS (
 SELECT ao_code,ao_name,ao_grp_code,ao_grp_name --,ao_group2_code, ao_group2_name,ao_group2_covid_list
 FROM prudev.v_covid_dim_ao
@@ -284,10 +283,6 @@ select t.day_date,
 from pru_time_references t inner join list_day a on (t.day_date = a.day_date)
 ),
 
-
-
-
-
 AO_GRP_DAY AS (
 SELECT a.ao_grp_code,
         a.ao_grp_name,
@@ -300,7 +295,6 @@ SELECT a.ao_grp_code,
         t.year
 FROM ao_nm_group a, DIM_DAY t
  ),
-
 
 DATA_SOURCE AS (
 SELECT
@@ -331,7 +325,6 @@ GROUP BY b.ao_grp_code,
          b.ao_grp_name,
         TRUNC(A.flt_a_asp_prof_time_entry)
 ),
-
 
 DATA_GRP_AO as (
 SELECT a.YEAR,
@@ -407,8 +400,10 @@ select YEAR,
       group by
       ao_grp_code,
       ao_grp_name
-  )
+  ),
 
+        DATA_GRP_AO_4  as
+  (
     select
        ao_grp_code,
        ao_grp_name,
@@ -481,7 +476,12 @@ select YEAR,
        ao_grp_name as ao_nm_group_name
 
       FROM DATA_GRP_AO_3
-      where (flight <> 0 or flight_prev_year <> 0 or flight_2019 <>  0 or flight_14day <> 0 or flight_7day <>0)
+      -- where (flight <> 0 or flight_prev_year <> 0 or flight_2019 <>  0 or flight_14day <> 0 or flight_7day <>0)
+  )
+
+  select * from DATA_GRP_AO_4
+  WHERE r_rank_by_day <= 100
+
 "
   )
 }
@@ -673,6 +673,430 @@ DATA_ARP_2 as
     --    ,CASE WHEN entry_date = ", mydate, "-1 then 'YES' ELSE '-' END as FILTER_LAST_DAY
    FROM DATA_ARP_3
   WHERE DEP_ARR > 0 or DEP_ARR_PREV_YEAR > 0 or DEP_ARR_14DAY >0 or DEP_ARR_2019>0 or DEP_ARR_7DAY>0
+"
+  )
+  }
+
+## week ----
+query_nw_apt_week_raw <- function(mydate_string) {
+  mydate <- date_sql_string(mydate_string)
+  paste0("
+  WITH
+
+LIST_AIRPORT as
+(
+SELECT
+       a.code as airport_code,
+       a.code as db_airport_code ,  -- was used for grouping istanbul and ataturk airport
+       a.dashboard_name as airport_name
+FROM prudev.pru_airport a
+ ),
+
+-- not used anymore -use for linking istanbul airports
+LIST_AIRPORT2 as
+(select case when  to_number (TO_CHAR ( ", mydate, "-1, 'mmdd')) <415  and a.code = 'LTFM'
+            then  'LTFM+LTBA'
+            else a.code
+       end as airport_code,
+       a.code as db_airport_code ,
+        case when to_number (TO_CHAR ( ", mydate, "-1, 'mmdd')) <415 and a.code = 'LTFM'
+            then  'Istanbul + Ataturk'
+            else a.dashboard_name
+       end airport_name,
+       case when to_number (TO_CHAR ( ", mydate, "-1, 'mmdd')) <415 and a.code = 'LTFM'
+            then  'Istanbul + Ataturk'
+            else a.dashboard_name
+       end
+        as dashboard_name
+ from prudev.pru_airport a
+where a.code <> 'LTBA'
+UNION
+select case when  to_number (TO_CHAR ( ", mydate, "-1, 'mmdd')) <415
+            then  'LTFM+LTBA'
+            else a.code
+       end as airport_code,
+       a.code as db_airport_code ,
+      case when to_number (TO_CHAR ( ", mydate, "-1, 'mmdd')) <415
+            then  'Istanbul + Ataturk'
+            else a.dashboard_name
+       end airport_name,
+       case when to_number (TO_CHAR ( ", mydate, "-1, 'mmdd')) <415
+            then  'Istanbul + Ataturk'
+            else dashboard_name
+       end
+ from prudev.pru_airport  a
+  where a.code  = 'LTBA'
+
+ ),
+
+LIST_DAY as
+(
+SELECT  t.day_date
+FROM  pru_time_references t
+WHERE (t.day_date >= ", mydate, " - 7 - 14    AND t.day_date <  ", mydate, " )
+or    (t.day_date >= ", mydate, " - 7 - 364    AND t.day_date <  ", mydate, " - 364)
+
+UNION
+SELECT
+        t.day_date - greatest((extract (year from t.day_date)-2019) *364+ floor((extract (year from t.day_date)-2019)/4)*7,0)
+FROM  pru_time_references t
+WHERE
+  (t.day_date >= ", mydate, " - 7  AND t.day_date <  ", mydate, " )
+),
+
+DIM_DAY as
+(
+select t.day_date,
+        t.month,
+        t.week,
+        t.week_nb_year,
+        t.day_type,
+        t.day_of_week_nb,
+        t.year
+from pru_time_references t inner join list_day a on (t.day_date = a.day_date)
+),
+
+
+
+
+AIRPORT_DAY AS (
+SELECT a.airport_code,
+       a.db_airport_code,
+        a.airport_name,
+        t.day_date,
+        t.month,
+        t.week,
+        t.week_nb_year,
+        t.day_type,
+        t.day_of_week_nb AS day_of_week,
+        t.year
+FROM LIST_AIRPORT a , dim_day t
+
+)  ,
+
+ttf_dep as(
+SELECT adep_day_adep, sum(coalesce(adep_day_all_trf,0)) AS adep_day_all_trf,f.adep_DAY_FLT_DATE
+              FROM  v_aiu_agg_dep_day f
+              where f.adep_DAY_FLT_DATE in (select day_date from list_day)
+              group by  adep_day_adep ,f.adep_DAY_FLT_DATE
+   ),
+
+
+ ttf_arr as (
+                  SELECT ades_day_ades_ctfm, sum(coalesce(ades_day_all_trf,0)) AS ades_day_all_trf,ades_DAY_FLT_DATE
+              FROM  v_aiu_agg_arr_day
+              where ades_DAY_FLT_DATE in (select day_date from list_day)
+               group by ades_day_ades_ctfm,ades_DAY_FLT_DATE
+),
+
+
+ ARP_SYN_DEP_ARR
+ as (
+select c.day_date as entry_date ,c.airport_code as apt_code, c.year, c.airport_name as apt_name,c.month,
+       coalesce(SUM(coalesce(a.ades_day_all_trf,0)),0) AS ttf_arr,
+       coalesce(SUM(coalesce(d.adep_day_all_trf,0)),0) AS TTF_DEP,
+        coalesce(SUM(coalesce(a.ades_day_all_trf,0)),0) +  coalesce(SUM(coalesce(d.adep_day_all_trf,0)),0) AS TTF_DEP_ARR
+from airport_day c
+     left join ttf_dep d  on ( c.day_date= d.adep_DAY_FLT_DATE  and c.db_airport_code=d.adep_day_adep  )
+     left join ttf_arr a on (c.day_date=a.ades_DAY_FLT_DATE  and c.db_airport_code=a.ades_day_ades_ctfm )
+group by c.day_date ,c.airport_code, c.year, c.airport_name, c.WEEK_NB_YEAR,c.DAY_TYPE,c.month,c.WEEK, c.day_of_week
+) ,
+
+
+
+DATA_APT_2 as
+(
+select YEAR,
+       MONTH,
+       entry_date,
+       apt_code,
+       apt_name,
+       ttf_dep_arr,
+       sum(ttf_dep_arr) over (PARTITION BY apt_code ORDER BY entry_date range  between NUMTODSINTERVAL(364, 'day')  PRECEDING and  NUMTODSINTERVAL( 364, 'day') PRECEDING ) ttf_dep_arr_PREV_YEAR,
+       min(entry_date) over (PARTITION BY apt_code ORDER BY entry_date range  between NUMTODSINTERVAL(364, 'day')  PRECEDING and  NUMTODSINTERVAL( 364, 'day') PRECEDING ) entry_date_PREV_YEAR,
+       sum(ttf_dep_arr) over (PARTITION BY apt_code ORDER BY entry_date range  between NUMTODSINTERVAL(greatest((extract (year from entry_date)-2019) *364+ floor((extract (year from entry_date)-2019)/4)*7,0),'day')  PRECEDING
+                                                                                   and NUMTODSINTERVAL(greatest((extract (year from entry_date)-2019) *364+ floor((extract (year from entry_date)-2019)/4)*7,0),'day') PRECEDING ) ttf_dep_arr_2019,
+       min(entry_date) over (PARTITION BY apt_code ORDER BY entry_date range  between NUMTODSINTERVAL(greatest((extract (year from entry_date)-2019) *364+ floor((extract (year from entry_date)-2019)/4)*7,0),'day')  PRECEDING
+                                                                                   and NUMTODSINTERVAL(greatest((extract (year from entry_date)-2019) *364+ floor((extract (year from entry_date)-2019)/4)*7,0),'day') PRECEDING ) entry_date_2019,
+       sum(ttf_dep_arr) over (PARTITION BY apt_code ORDER BY entry_date range  between NUMTODSINTERVAL(14, 'day')  PRECEDING and  NUMTODSINTERVAL(14, 'day') PRECEDING ) ttf_dep_arr_14DAY,
+       min(entry_date) over (PARTITION BY apt_code ORDER BY entry_date range  between NUMTODSINTERVAL(14, 'day')  PRECEDING and  NUMTODSINTERVAL(14, 'day') PRECEDING ) entry_date_14DAY,
+       sum(ttf_dep_arr) over (PARTITION BY apt_code ORDER BY entry_date range  between NUMTODSINTERVAL(7, 'day')  PRECEDING and  NUMTODSINTERVAL(7, 'day') PRECEDING ) ttf_dep_arr_7DAY,
+       min(entry_date) over (PARTITION BY apt_code ORDER BY entry_date range  between NUMTODSINTERVAL(7, 'day')  PRECEDING and  NUMTODSINTERVAL(7, 'day') PRECEDING ) entry_date_7DAY
+      FROM ARP_SYN_DEP_ARR
+     ),
+
+        DATA_APT_3  as
+  (
+      select
+      apt_code,
+      apt_name,
+      to_char(min(entry_date), 'dd-mm-yyyy') || ' -> ' || to_char(max(entry_date),'DD-MM-YYYY') as entry_date,
+      min(entry_date) as min_entry_date,
+      max(entry_date) as max_entry_date,
+      sum(ttf_dep_arr) as ttf_dep_arr,
+      avg(ttf_dep_arr) as daily_ttf_dep_arr,
+      sum(ttf_dep_arr_prev_year) as ttf_dep_arr_prev_year,
+      avg(ttf_dep_arr_prev_year) as daily_ttf_dep_arr_prev_year,
+      min(entry_date_PREV_YEAR) as min_entry_date_PREV_YEAR,
+      max (entry_date_PREV_YEAR) as max_entry_date_PREV_YEAR,
+      to_char(min(entry_date_prev_year), 'dd-mm-yyyy') || ' -> ' || to_char(max(entry_date_prev_year),'DD-MM-YYYY')as entry_date_prev_year,
+      sum(ttf_dep_arr_2019) as ttf_dep_arr_2019,
+      avg(ttf_dep_arr_2019) as daily_ttf_dep_arr_2019,
+      min(entry_date_2019) as min_entry_date_2019,
+      max (entry_date_2019) as max_entry_date_2019,
+      to_char(min(entry_date_2019), 'dd-mm-yyyy') || ' -> ' || to_char(max(entry_date_2019),'DD-MM-YYYY') as entry_date_2019,
+      sum(ttf_dep_arr_14DAY) as ttf_dep_arr_14DAY,
+      avg(ttf_dep_arr_14DAY) as DAILY_ttf_dep_arr_14DAY,
+      min(entry_date_14DAY) as MIN_entry_date_14DAY,
+      max (entry_date_14DAY) as max_entry_date_14DAY,
+       to_char(min(entry_date_14DAY), 'dd-mm-yyyy') || ' -> ' || to_char(max(entry_date_14DAY),'DD-MM-YYYY') as entry_date_14DAY,
+      sum(ttf_dep_arr_7DAY) as ttf_dep_arr_7DAY,
+      avg(ttf_dep_arr_7DAY) as DAILY_ttf_dep_arr_7DAY,
+      min(entry_date_7DAY) as MIN_entry_date_7DAY,
+      max (entry_date_7DAY) as max_entry_date_7DAY,
+      to_char(min(entry_date_7DAY), 'dd-mm-yyyy') || ' -> ' || to_char(max(entry_date_7DAY),'DD-MM-YYYY') as entry_date_7DAY
+      FROM DATA_APT_2
+      where entry_date >= ", mydate, " -7 and entry_date <", mydate, "
+      group by
+      apt_code,
+      apt_name
+  )
+
+    select
+       apt_code,
+       apt_name,
+       entry_date,
+       entry_date_PREV_YEAR,
+       entry_date_2019,
+       entry_date_14DAY,
+       entry_date_7DAY,
+       MIN_entry_date,
+       MIN_entry_date_PREV_YEAR,
+       MIN_entry_date_2019,
+       MIN_entry_date_14DAY,
+       MIN_entry_date_7DAY,
+       MAX_entry_date,
+       MAX_entry_date_PREV_YEAR,
+       MAX_entry_date_2019,
+       MAX_entry_date_14DAY,
+       MAX_entry_date_7DAY,
+       ttf_dep_arr,
+       ttf_dep_arr_PREV_YEAR,
+       ttf_dep_arr_2019,
+       ttf_dep_arr_14DAY,
+       ttf_dep_arr_7DAY,
+       DAILY_ttf_dep_arr,
+       DAILY_ttf_dep_arr_PREV_YEAR,
+       DAILY_ttf_dep_arr_2019,
+       DAILY_ttf_dep_arr_14DAY,
+       DAILY_ttf_dep_arr_7DAY,
+       ttf_dep_arr - ttf_dep_arr_PREV_YEAR  as ttf_dep_arr_PREV_YEAR_DIFF,
+       ttf_dep_arr - ttf_dep_arr_2019  as ttf_dep_arr_2019_DIFF,
+       ttf_dep_arr - ttf_dep_arr_14DAY  as ttf_dep_arr_14DAY_DIFF,
+       ttf_dep_arr - ttf_dep_arr_7DAY  as ttf_dep_arr_7DAY_DIFF,
+       DAILY_ttf_dep_arr - DAILY_ttf_dep_arr_PREV_YEAR  as DAILY_ttf_dep_arr_DIFF,
+       DAILY_ttf_dep_arr - DAILY_ttf_dep_arr_2019  as DAILY_ttf_dep_arr_2019_DIFF,
+       DAILY_ttf_dep_arr - DAILY_ttf_dep_arr_14DAY  as DAILY_ttf_dep_arr_14DAY_DIFF,
+       DAILY_ttf_dep_arr - DAILY_ttf_dep_arr_7DAY  as DAILY_ttf_dep_arr_7DAY_DIFF,
+
+      CASE WHEN ttf_dep_arr_PREV_YEAR <>0
+           THEN ttf_dep_arr/ttf_dep_arr_PREV_YEAR -1
+      ELSE NULL
+      END  ttf_dep_arr_DIFF_PREV_YY_PERC,
+      CASE WHEN ttf_dep_arr_2019 <>0
+           THEN ttf_dep_arr/ttf_dep_arr_2019 -1
+      ELSE NULL
+      END  ttf_dep_arr_DIFF_2019_PERC,
+      CASE WHEN ttf_dep_arr_14DAY <>0
+           THEN ttf_dep_arr/ttf_dep_arr_14DAY -1
+      ELSE NULL
+      END  ttf_dep_arr_DIFF_14DAY_PERC,
+      CASE WHEN ttf_dep_arr_7DAY <>0
+           THEN ttf_dep_arr/ttf_dep_arr_7DAY -1
+      ELSE NULL
+      END  ttf_dep_arr_DIFF_7DAY_PERC
+
+
+       ,ROW_NUMBER() OVER (PARTITION BY entry_date ORDER BY (ttf_dep_arr) DESC)  r_rank_by_day
+       ,ROW_NUMBER() OVER (PARTITION BY entry_date ORDER BY (ttf_dep_arr_PREV_YEAR) desc)  r_rank_by_day_PREV_YY
+       ,ROW_NUMBER() OVER (PARTITION BY entry_date ORDER BY (ttf_dep_arr_2019) desc)  r_rank_by_day_2019
+       ,ROW_NUMBER() OVER (PARTITION BY entry_date ORDER BY (ttf_dep_arr_14DAY) desc)  r_rank_by_day_14DAY
+       ,ROW_NUMBER() OVER (PARTITION BY entry_date ORDER BY (ttf_dep_arr_7DAY) desc)  r_rank_by_day_7DAY
+       ,RANK() OVER (PARTITION BY entry_date ORDER BY ttf_dep_arr DESC)  rank_by_day
+       ,RANK() OVER (PARTITION BY entry_date ORDER BY (ttf_dep_arr_PREV_YEAR) desc)  rank_by_day_PREV_YY
+       ,RANK() OVER (PARTITION BY entry_date ORDER BY (ttf_dep_arr_2019) desc)   rank_by_day_2019
+       ,RANK() OVER (PARTITION BY entry_date ORDER BY (ttf_dep_arr_14DAY) desc)  rank_by_day_14DAY
+       ,RANK() OVER (PARTITION BY entry_date ORDER BY (ttf_dep_arr_7DAY) desc)  rank_by_day_7DAY
+       ,ROW_NUMBER() OVER (PARTITION BY entry_date ORDER BY (ttf_dep_arr - ttf_dep_arr_2019) asc)  r_rank_by_day_diff_2019_asc
+       ,ROW_NUMBER() OVER (PARTITION BY entry_date ORDER BY (ttf_dep_arr - ttf_dep_arr_14DAY) asc)  r_rank_by_day_diff_14DAY_asc
+        ,ROW_NUMBER() OVER (PARTITION BY entry_date ORDER BY (ttf_dep_arr - ttf_dep_arr_7DAY) asc)  r_rank_by_day_diff_7DAY_asc
+        ,apt_code,
+       apt_name
+
+      FROM DATA_APT_3
+"
+  )
+}
+
+## y2d ----
+query_nw_apt_y2d_raw <- function(mydate_string) {
+  mydate <- date_sql_string(mydate_string)
+  paste0("
+  with
+
+LIST_AIRPORT as
+(select a.code as arp_code, a.id as arp_id,
+    a.dashboard_name as arp_name
+ from prudev.pru_airport a
+),
+
+
+
+ AIRPORT_DAY
+as
+(select a.arp_id,
+       a.arp_code,
+       a.arp_name,
+       t.day_date,
+       t.year,
+       t.month,
+       t.WEEK_NB_YEAR,
+       t.DAY_TYPE,
+       t.day_name,
+       t.WEEK,
+       TO_CHAR ( t.day_date, 'd')  AS day_of_week,
+       TO_CHAR ( t.day_date, 'mmdd') AS MMDD
+ from LIST_AIRPORT a, pru_time_references t
+where
+      t.day_date >= '01-jan-2019'
+      AND TO_NUMBER (TO_CHAR (t.day_date, 'mmdd')) <=   TO_NUMBER (TO_CHAR (", mydate, "-1, 'mmdd'))
+      AND t.year <= extract (year from (", mydate, "-1))
+
+),
+
+ARP_SYN_ARR
+    AS
+(SELECT SUM (nvl(f.ades_day_all_trf,0)) AS MVT_arr,
+                 u.arp_code,
+                 u.day_date  AS FLIGHT_DATE,
+                 u.arp_id, u.arp_name,
+                 u.day_date,
+       u.year,
+       u.month,
+       u.WEEK_NB_YEAR,
+       u.DAY_TYPE,
+       u.day_name,
+       u.WEEK,
+       u.day_of_week
+ FROM AIRPORT_DAY u left join v_aiu_agg_arr_day f
+        on trunc(f.ades_DAY_FLT_DATE) = u.day_date
+       and f.ades_day_ades_ctfm = u.arp_code
+ GROUP BY
+       u.arp_code, u.day_date,u.arp_id, u.arp_name, u.day_date,
+       u.year,
+       u.month,
+       u.WEEK_NB_YEAR,
+       u.DAY_TYPE,
+       u.day_name,
+       u.WEEK,
+       u.day_of_week  ),
+
+ARP_SYN_DEP
+    AS
+        (  SELECT SUM (nvl(adep_day_all_trf,0)) AS MVT_DEP,
+                   u.ARP_CODE,
+                  u.day_date  AS FLIGHT_DATE,
+                   u.arp_id, u.arp_name,
+                     u.year,
+       u.month,
+       u.WEEK_NB_YEAR,
+       u.DAY_TYPE,
+       u.day_name,
+       u.WEEK,
+       u.day_of_week
+              FROM AIRPORT_DAY u left join v_aiu_agg_dep_day f
+               on trunc(f.adep_DAY_FLT_DATE) = u.day_date
+                  and f.adep_day_adep = u.arp_code
+             and f.adep_day_adep = u.arp_code
+            GROUP BY   u.arp_code, u.day_date,u.arp_id, u.arp_name, u.year,
+       u.month,
+       u.WEEK_NB_YEAR,
+       u.DAY_TYPE,
+       u.day_name,
+       u.WEEK,
+       u.day_of_week  ),
+
+ ARP_SYN_DEP_ARR
+ as
+ ( select d.arp_code, d.flight_date,  d.arp_id, d.arp_name, d.MVT_dep, a.MVT_arr, nvl(d.MVT_dep,0)+nvl(a.MVT_arr,0) as MVT_dep_arr,  d.month,
+       d.year,
+       d.WEEK_NB_YEAR,
+       d.DAY_TYPE,
+       d.day_name,
+       d.WEEK,
+       d.day_of_week
+ from arp_syn_dep d, arp_syn_arr a
+ where d.arp_id = a.arp_id and d.flight_date = a.flight_date
+ and    d.flight_date = a.flight_date
+          ),
+
+
+ALL_DAY_DATA_GRP as (
+select
+   a.year ,
+   a.arp_code,
+   a.arp_name,
+            MIN (a.flight_date)          FROM_DATE,
+            MAX (a.flight_date)          TO_DATE,
+   SUM (a.mvt_dep_arr) as mvt_dep_arr,
+   AVG (a.mvt_dep_arr) as daily_dep_arr
+
+  FROM ARP_SYN_DEP_ARR A
+group by    a.year, a.arp_code, a.arp_name
+   ),
+
+APT_RANK as
+(
+SELECT
+   arp_code,
+        ROW_NUMBER() OVER (PARTITION BY year
+                ORDER BY daily_dep_arr DESC, arp_name) as RANK
+FROM ALL_DAY_DATA_GRP
+where year = extract (year from ", mydate, "-1)
+),
+
+APT_RANK_PY as
+(
+SELECT
+   arp_code,
+        ROW_NUMBER() OVER (PARTITION BY year
+                ORDER BY daily_dep_arr DESC, arp_name) as RANK_PY
+FROM ALL_DAY_DATA_GRP
+where year = extract (year from ", mydate, "-1) - 1
+)
+
+select
+
+   a.arp_code,
+   a.arp_name,
+   FROM_DATE, TO_DATE,
+--  daily_dep_arr,
+--   mvt_dep_arr,
+   CASE when a.year = extract (year from ", mydate, "-1) then
+      daily_dep_arr else 0
+   END dep_arr_current_year,
+   CASE when a.year = extract (year from ", mydate, "-1)-1 then
+      daily_dep_arr else 0
+   END dep_arr_prev_year,
+   CASE when a.year = 2019 then
+      daily_dep_arr else 0
+   END dep_arr_2019,
+   RANK, RANK_PY
+
+FROM ALL_DAY_DATA_GRP a
+left join APT_RANK b on a.arp_code = b.arp_code
+left join APT_RANK_PY c on a.arp_code = c.arp_code
+where rank <= '40'
 "
   )
   }

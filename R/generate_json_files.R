@@ -18,9 +18,12 @@ source(here("..", "mobile-app", "R", "helpers.R")) # so it can be launched from 
 
 # parameters ----
 data_folder <- here::here("..", "mobile-app", "data")
+
 base_dir <- "//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/"
 base_file <- "099_Traffic_Landing_Page_dataset_new_{data_day_text}.xlsx"
+
 archive_dir <- "//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/web_daily_json_files/app/"
+archive_dir_raw <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Project/DDP/AIU app/data_archive'
 
 # archive mode for past dates
 archive_mode <- FALSE
@@ -1342,25 +1345,29 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
 
 ## Aircraft operators traffic ----
 ### day
-  if (archive_mode) {
-    myarchivefile <- "_nw_ao_day_raw.csv"
-    stakeholder <- str_sub(myarchivefile, 2,3)
-    st_ao_data_day_raw <-  read_csv(here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile)))
+mydataframe <- "nw_ao_day_raw"
+myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+stakeholder <- str_sub(mydataframe, 1, 2)
 
-  } else {
-    nw_ao_day_raw <- read_xlsx(
-    path = fs::path_abs(
-      str_glue(base_file),
-      start = base_dir
-    ),
-    sheet = "AO_DAY_DATA",
-    range = cell_limits(c(5, 2), c(NA, NA))
-  ) %>%
-    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+if (archive_mode) {
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
 
-  }
+} else {
+  df <- read_xlsx(
+  path = fs::path_abs(
+    str_glue(base_file),
+    start = base_dir
+  ),
+  sheet = "AO_DAY_DATA",
+  range = cell_limits(c(5, 2), c(NA, NA))
+) %>%
+  mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-ao_data_dy <- nw_ao_day_raw %>%
+  # save pre-processed file in archive for generation of past json files
+  write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+}
+
+ao_data_dy <- assign(mydataframe, df) %>%
   filter(R_RANK_BY_DAY <= 10) %>%
   mutate(DY_RANK_DIF_PREV_WEEK = RANK_BY_DAY_7DAY - RANK_BY_DAY) %>%
   select(
@@ -1374,17 +1381,29 @@ ao_data_dy <- nw_ao_day_raw %>%
     DY_AO_GRP_CODE = AO_GRP_CODE)
 
 ### week
-nw_ao_data_week_raw <- read_xlsx(
-  path = fs::path_abs(
-    str_glue(base_file),
-    start = base_dir
-  ),
-  sheet = "AO_WEEK_DATA",
-  range = cell_limits(c(5, 2), c(NA, NA))
-) %>%
-  mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+mydataframe <- "nw_ao_week_raw"
+myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+stakeholder <- str_sub(mydataframe, 1, 2)
 
-ao_data_wk <- nw_ao_data_week_raw %>%
+if (archive_mode) {
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+
+} else {
+  df <- read_xlsx(
+    path = fs::path_abs(
+      str_glue(base_file),
+      start = base_dir
+    ),
+    sheet = "AO_WEEK_DATA",
+    range = cell_limits(c(5, 2), c(NA, NA))
+  ) %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+  # save pre-processed file in archive for generation of past json files
+  write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+}
+
+ao_data_wk <- assign(mydataframe, df) %>%
   filter(R_RANK_BY_DAY <= 10) %>%
   mutate(WK_RANK_DIF_PREV_WEEK = RANK_BY_DAY_7DAY -  RANK_BY_DAY) %>%
   select(WK_R_RANK_BY_DAY = R_RANK_BY_DAY,
@@ -1396,16 +1415,29 @@ ao_data_wk <- nw_ao_data_week_raw %>%
          WK_RANK_DIF_PREV_WEEK)
 
 ### y2d
-nw_ao_data_y2d_raw <- read_xlsx(
+mydataframe <- "nw_ao_y2d_raw"
+myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+stakeholder <- str_sub(mydataframe, 1, 2)
+
+if (archive_mode) {
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+
+} else {
+  df <- read_xlsx(
   path = fs::path_abs(
     str_glue(base_file),
     start = base_dir
   ),
   sheet = "TOP40_AO_Y2D",
   range = cell_limits(c(6, 2), c(NA, NA))
-  )
+  ) %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-ao_data_y2d <- nw_ao_data_y2d_raw %>%
+  # save pre-processed file in archive for generation of past json files
+  # write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+}
+
+ao_data_y2d <- assign(mydataframe, df) %>%
   clean_names() %>%
   filter(rank <= 10) %>%
   mutate(
@@ -1506,7 +1538,15 @@ write(ao_data_j, paste0(archive_dir, data_day_text, "_nw_ao_ranking_traffic.json
 
 ## Airport traffic ----
 ### day
-nw_apt_day_raw <- read_xlsx(
+mydataframe <- "nw_apt_day_raw"
+myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+stakeholder <- str_sub(mydataframe, 1, 2)
+
+if (archive_mode) {
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+
+} else {
+  df <- read_xlsx(
   path = fs::path_abs(
     str_glue(base_file),
     start = base_dir
@@ -1516,7 +1556,11 @@ nw_apt_day_raw <- read_xlsx(
 ) %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-apt_data_dy <- nw_apt_day_raw %>%
+  # save pre-processed file in archive for generation of past json files
+  # write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+}
+
+apt_data_dy <- assign(mydataframe, df) %>%
   filter(R_RANK_BY_DAY <= 10) %>%
   mutate(DY_RANK_DIF_PREV_WEEK = RANK_BY_DAY_7DAY - RANK_BY_DAY) %>%
   select(
@@ -1530,7 +1574,15 @@ apt_data_dy <- nw_apt_day_raw %>%
     )
 
 ### week
-nw_apt_week_raw <- read_xlsx(
+mydataframe <- "nw_apt_week_raw"
+myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+stakeholder <- str_sub(mydataframe, 1, 2)
+
+if (archive_mode) {
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+
+} else {
+  df <- read_xlsx(
   path = fs::path_abs(
     str_glue(base_file),
     start = base_dir
@@ -1540,7 +1592,11 @@ nw_apt_week_raw <- read_xlsx(
 ) %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-apt_data_wk <- nw_apt_week_raw %>%
+  # save pre-processed file in archive for generation of past json files
+  # write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+}
+
+apt_data_wk <- assign(mydataframe, df) %>%
   filter(R_RANK_BY_DAY <= 10) %>%
   mutate(WK_RANK_DIF_PREV_WEEK = RANK_BY_DAY_7DAY - RANK_BY_DAY) %>%
   select(
@@ -1554,7 +1610,15 @@ apt_data_wk <- nw_apt_week_raw %>%
   )
 
 ### y2d
-nw_apt_y2d_raw <- read_xlsx(
+mydataframe <- "nw_apt_y2d_raw"
+myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+stakeholder <- str_sub(mydataframe, 1, 2)
+
+if (archive_mode) {
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+
+} else {
+  df <- read_xlsx(
   path = fs::path_abs(
     str_glue(base_file),
     start = base_dir
@@ -1564,7 +1628,11 @@ nw_apt_y2d_raw <- read_xlsx(
 ) %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-apt_data_y2d <- nw_apt_y2d_raw %>%
+  # save pre-processed file in archive for generation of past json files
+  # write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+}
+
+apt_data_y2d <- assign(mydataframe, df) %>%
   mutate(R_RANK = row_number(),
          Y2D_RANK_DIF_PREV_YEAR = RANK_PY - RANK,
          Y2D_DIF_PREV_YEAR_PERC = if_else(Y2D_DEP_ARR_PREV_YEAR == 0,
