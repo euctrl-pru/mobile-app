@@ -885,13 +885,15 @@ write(st_json_app, paste0(archive_dir, data_day_text, "_st_json_app.json"))
 ## TRAFFIC ----
 ### Aircraft operators ----
 #### day ----
+mydataframe <- "st_ao_data_day_raw"
+myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+stakeholder <- str_sub(mydataframe, 1, 2)
+
 if (archive_mode) {
-  myarchivefile <- "_st_ao_data_day_raw.csv"
-  stakeholder <- str_sub(myarchivefile, 2,3)
-  st_ao_data_day_raw <-  read_csv(here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile)))
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
 
 } else {
-  st_ao_data_day_raw <- read_xlsx(
+  df <- read_xlsx(
   path  = fs::path_abs(
     str_glue(base_file),
     start = base_dir),
@@ -900,15 +902,11 @@ if (archive_mode) {
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
   # save pre-processed file in archive for generation of past json files
-  myarchivefile <- "_st_ao_data_day_raw.csv"
-  stakeholder <- str_sub(myarchivefile, 2,3)
-  write_csv(st_ao_data_day_raw,
-            here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile))
-            )
+  write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
 }
 
 # process data
-st_ao_data_day_int <- st_ao_data_day_raw %>%
+st_ao_data_day_int <- assign(mydataframe, df) %>%
   mutate(TO_DATE = max(TO_DATE)) %>%
   spread(., key = FLAG_DAY, value = FLIGHT_WITHOUT_OVERFLIGHT) %>%
   arrange(COUNTRY_NAME, R_RANK) %>%
@@ -946,13 +944,15 @@ st_ao_data_day <- st_ao_data_day_int %>%
   )
 
 #### week ----
+mydataframe <- "st_ao_data_week_raw"
+myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+stakeholder <- str_sub(mydataframe, 1, 2)
+
 if (archive_mode) {
-  myarchivefile <- "_st_ao_data_week_raw.csv"
-  stakeholder <- str_sub(myarchivefile, 2,3)
-  st_ao_data_week_raw <-  read_csv(here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile)))
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
 
 } else {
-  st_ao_data_week_raw <- read_xlsx(
+  df <- read_xlsx(
   path  = fs::path_abs(
     str_glue(base_file),
     start = base_dir),
@@ -961,14 +961,10 @@ if (archive_mode) {
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
   # save pre-processed file in archive for generation of past json files
-  myarchivefile <- "_st_ao_data_week_raw.csv"
-  stakeholder <- str_sub(myarchivefile, 2,3)
-  write_csv(st_ao_data_week_raw,
-            here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile))
-            )
+  write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
 }
 # process data
-st_ao_data_wk <- st_ao_data_week_raw %>%
+st_ao_data_wk <- assign(mydataframe, df) %>%
   mutate(FLIGHT_WITHOUT_OVERFLIGHT = FLIGHT_WITHOUT_OVERFLIGHT / 7) %>%
   spread(., key = FLAG_ROLLING_WEEK, value = FLIGHT_WITHOUT_OVERFLIGHT) %>%
   arrange(COUNTRY_NAME, R_RANK) %>%
@@ -1005,13 +1001,15 @@ st_ao_data_wk <- st_ao_data_week_raw %>%
   )
 
 #### y2d ----
+mydataframe <- "st_ao_data_y2d_raw"
+myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+stakeholder <- str_sub(mydataframe, 1, 2)
+
 if (archive_mode) {
-  myarchivefile <- "_st_ao_data_y2d_raw.csv"
-  stakeholder <- str_sub(myarchivefile, 2,3)
-  st_ao_data_y2d_raw <-  read_csv(here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile)))
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
 
 } else {
-  st_ao_data_y2d_raw <- read_xlsx(
+  df <- read_xlsx(
   path  = fs::path_abs(
     str_glue(base_file),
     start = base_dir),
@@ -1020,15 +1018,11 @@ if (archive_mode) {
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
   # save pre-processed file in archive for generation of past json files
-  myarchivefile <- "_st_ao_data_y2d_raw.csv"
-  stakeholder <- str_sub(myarchivefile, 2,3)
-  write_csv(st_ao_data_y2d_raw,
-            here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile))
-            )
+  write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
 }
 
 # process data
-st_ao_data_y2d <- st_ao_data_y2d_raw %>%
+st_ao_data_y2d <- assign(mydataframe, df) %>%
   mutate(
          FROM_DATE = max(FROM_DATE),
          TO_DATE = max(TO_DATE),
@@ -1162,13 +1156,15 @@ write(st_ao_data_j, paste0(archive_dir, "st_ao_ranking_traffic.json"))
 
 ### Airports ----
 #### day ----
+mydataframe <- "st_apt_data_day_raw"
+myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+stakeholder <- str_sub(mydataframe, 1, 2)
+
 if (archive_mode) {
-  myarchivefile <- "_st_apt_data_day_raw.csv"
-  stakeholder <- str_sub(myarchivefile, 2,3)
-  st_apt_data_day_raw <-  read_csv(here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile)))
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
 
 } else {
-  st_apt_data_day_raw <- read_xlsx(
+  df <- read_xlsx(
   path  = fs::path_abs(
     str_glue(base_file),
     start = base_dir),
@@ -1177,15 +1173,11 @@ if (archive_mode) {
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
   # save pre-processed file in archive for generation of past json files
-  myarchivefile <- "_st_apt_data_day_raw.csv"
-  stakeholder <- str_sub(myarchivefile, 2,3)
-  write_csv(st_apt_data_day_raw,
-            here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile))
-            )
+  write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
 }
 
 # process data
-st_apt_data_day_int <- st_apt_data_day_raw %>%
+st_apt_data_day_int <- assign(mydataframe, df) %>%
   mutate(TO_DATE = max(TO_DATE)) %>%
   spread(., key = FLAG_DAY, value = DEP_ARR) %>%
   arrange(COUNTRY_NAME, R_RANK) %>%
@@ -1223,13 +1215,15 @@ st_apt_data_day <- st_apt_data_day_int %>%
   )
 
 #### week ----
+mydataframe <- "st_apt_data_week_raw"
+myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+stakeholder <- str_sub(mydataframe, 1, 2)
+
 if (archive_mode) {
-  myarchivefile <- "_st_apt_data_week_raw.csv"
-  stakeholder <- str_sub(myarchivefile, 2,3)
-  st_apt_data_week_raw <-  read_csv(here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile)))
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
 
 } else {
-  st_apt_data_week_raw <- read_xlsx(
+  df <- read_xlsx(
   path  = fs::path_abs(
     str_glue(base_file),
     start = base_dir),
@@ -1238,15 +1232,11 @@ if (archive_mode) {
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
   # save pre-processed file in archive for generation of past json files
-  myarchivefile <- "_st_apt_data_week_raw.csv"
-  stakeholder <- str_sub(myarchivefile, 2,3)
-  write_csv(st_apt_data_week_raw,
-            here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile))
-            )
+  write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
 }
 
 # process data
-st_apt_data_wk <- st_apt_data_week_raw %>%
+st_apt_data_wk <- assign(mydataframe, df) %>%
   mutate(DEP_ARR = DEP_ARR / 7) %>%
   spread(., key = FLAG_ROLLING_WEEK, value = DEP_ARR) %>%
   arrange(COUNTRY_NAME, R_RANK) %>%
@@ -1283,13 +1273,15 @@ st_apt_data_wk <- st_apt_data_week_raw %>%
   )
 
 #### y2d ----
+mydataframe <- "st_apt_data_y2d_raw"
+myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+stakeholder <- str_sub(mydataframe, 1, 2)
+
 if (archive_mode) {
-  myarchivefile <- "_st_apt_data_y2d_raw.csv"
-  stakeholder <- str_sub(myarchivefile, 2,3)
-  st_apt_data_y2d_raw <-  read_csv(here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile)))
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
 
 } else {
-  st_apt_data_y2d_raw <- read_xlsx(
+  df <- read_xlsx(
   path  = fs::path_abs(
     str_glue(base_file),
     start = base_dir),
@@ -1298,15 +1290,11 @@ if (archive_mode) {
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
   # save pre-processed file in archive for generation of past json files
-  myarchivefile <- "_st_apt_data_y2d_raw.csv"
-  stakeholder <- str_sub(myarchivefile, 2,3)
-  write_csv(st_apt_data_y2d_raw,
-            here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile))
-            )
+  write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
 }
 
 # process data
-st_apt_data_y2d <- st_apt_data_y2d_raw %>%
+st_apt_data_y2d <- assign(mydataframe, df) %>%
   mutate(
     FROM_DATE = max(FROM_DATE),
     TO_DATE = max(TO_DATE),
@@ -1428,13 +1416,15 @@ write(st_apt_data_j, paste0(archive_dir, "st_apt_ranking_traffic.json"))
 
 ### State pair ----
 #### day ----
+mydataframe <- "st_st_data_day_raw"
+myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+stakeholder <- str_sub(mydataframe, 1, 2)
+
 if (archive_mode) {
-  myarchivefile <- "_st_st_data_day_raw.csv"
-  stakeholder <- str_sub(myarchivefile, 2,3)
-  st_st_data_day_raw <-  read_csv(here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile)))
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
 
 } else {
-  st_st_data_day_raw <- read_xlsx(
+  df <- read_xlsx(
   path  = fs::path_abs(
     str_glue(base_file),
     start = base_dir),
@@ -1443,15 +1433,11 @@ if (archive_mode) {
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
   # save pre-processed file in archive for generation of past json files
-  myarchivefile <- "_st_st_data_day_raw.csv"
-  stakeholder <- str_sub(myarchivefile, 2,3)
-  write_csv(st_st_data_day_raw,
-            here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile))
-            )
+  write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
 }
 
 # process data
-st_st_data_day_int <- st_st_data_day_raw %>%
+st_st_data_day_int <- assign(mydataframe, df) %>%
   mutate(TO_DATE = max(TO_DATE)) %>%
   spread(., key = FLAG_DAY, value = TOT_MVT) %>%
   arrange(COUNTRY_NAME, R_RANK) %>%
@@ -1489,13 +1475,15 @@ st_st_data_day <- st_st_data_day_int %>%
   )
 
 #### week ----
+mydataframe <- "st_st_data_week_raw"
+myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+stakeholder <- str_sub(mydataframe, 1, 2)
+
 if (archive_mode) {
-  myarchivefile <- "_st_st_data_week_raw.csv"
-  stakeholder <- str_sub(myarchivefile, 2,3)
-  st_st_data_week_raw <-  read_csv(here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile)))
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
 
 } else {
-  st_st_data_week_raw <- read_xlsx(
+  df <- read_xlsx(
   path  = fs::path_abs(
     str_glue(base_file),
     start = base_dir),
@@ -1504,15 +1492,11 @@ if (archive_mode) {
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
   # save pre-processed file in archive for generation of past json files
-  myarchivefile <- "_st_st_data_week_raw.csv"
-  stakeholder <- str_sub(myarchivefile, 2,3)
-  write_csv(st_st_data_week_raw,
-            here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile))
-            )
+  write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
 }
 
 # process data
-st_st_data_wk <- st_st_data_week_raw %>%
+st_st_data_wk <- assign(mydataframe, df) %>%
   mutate(TOT_MVT = TOT_MVT / 7) %>%
   spread(., key = FLAG_ROLLING_WEEK, value = TOT_MVT) %>%
   arrange(COUNTRY_NAME, R_RANK) %>%
@@ -1549,13 +1533,15 @@ st_st_data_wk <- st_st_data_week_raw %>%
   )
 
 #### y2d ----
+mydataframe <- "st_st_data_y2d_raw"
+myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+stakeholder <- str_sub(mydataframe, 1, 2)
+
 if (archive_mode) {
-  myarchivefile <- "_st_st_data_y2d_raw.csv"
-  stakeholder <- str_sub(myarchivefile, 2,3)
-  st_st_data_y2d_raw <-  read_csv(here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile)))
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
 
 } else {
-  st_st_data_y2d_raw <- read_xlsx(
+  df <- read_xlsx(
   path  = fs::path_abs(
     str_glue(base_file),
     start = base_dir),
@@ -1564,15 +1550,11 @@ if (archive_mode) {
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
   # save pre-processed file in archive for generation of past json files
-  myarchivefile <- "_st_st_data_y2d_raw.csv"
-  stakeholder <- str_sub(myarchivefile, 2,3)
-  write_csv(st_st_data_y2d_raw,
-            here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile))
-            )
+  write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
 }
 
 # process data
-st_st_data_y2d <- st_st_data_y2d_raw %>%
+st_st_data_y2d <- assign(mydataframe, df) %>%
   mutate(
     FROM_DATE = max(FROM_DATE),
     TO_DATE = max(TO_DATE),
@@ -1706,13 +1688,15 @@ write(st_st_data_j, paste0(archive_dir, "st_ctry_ranking_traffic_DAI.json"))
 ## DELAY ----
 ### ACC  ----
 #### day ----
+mydataframe <- "nw_acc_delay_day_raw"
+myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+stakeholder <- str_sub(mydataframe, 1, 2)
+
 if (archive_mode) {
-  myarchivefile <- "_nw_acc_delay_day_raw.csv"
-  stakeholder <- str_sub(myarchivefile, 2,3)
-  nw_acc_delay_day_raw <-  read_csv(here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile)))
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
 
 } else {
-  nw_acc_delay_day_raw <-  read_xlsx(
+  df <-  read_xlsx(
   path  = fs::path_abs(
     str_glue(nw_base_file),
     start = nw_base_dir),
@@ -1722,15 +1706,11 @@ if (archive_mode) {
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
   # save pre-processed file in archive for generation of past json files
-  myarchivefile <- "_nw_acc_delay_day_raw.csv"
-  stakeholder <- str_sub(myarchivefile, 2,3)
-  write_csv(nw_acc_delay_day_raw,
-            here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile))
-            )
+  write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
 }
 
 # process data
-acc_delay_day_sorted <- nw_acc_delay_day_raw %>%
+acc_delay_day_sorted <- assign(mydataframe, df) %>%
   left_join(distinct(acc, Name, ICAO_code), by = c("UNIT_CODE" = "ICAO_code")) %>%
   relocate(Name, .before = everything()) %>%
   rename(NAME = Name) %>%
@@ -1764,13 +1744,15 @@ acc_delay_day_sorted <- nw_acc_delay_day_raw %>%
     )
 
 #### week ----
+mydataframe <- "nw_acc_delay_week_raw"
+myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+stakeholder <- str_sub(mydataframe, 1, 2)
+
 if (archive_mode) {
-  myarchivefile <- "_nw_acc_delay_week_raw.csv"
-  stakeholder <- str_sub(myarchivefile, 2,3)
-  nw_acc_delay_week_raw <-  read_csv(here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile)))
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
 
 } else {
-  nw_acc_delay_week_raw <-  read_xlsx(
+  df <-  read_xlsx(
   path  = fs::path_abs(
     str_glue(nw_base_file),
     start = nw_base_dir),
@@ -1780,15 +1762,11 @@ if (archive_mode) {
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
   # save pre-processed file in archive for generation of past json files
-  myarchivefile <- "_nw_acc_delay_week_raw.csv"
-  stakeholder <- str_sub(myarchivefile, 2,3)
-  write_csv(nw_acc_delay_week_raw,
-            here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile))
-            )
+  write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
 }
 
 # process data
-acc_delay_week <- nw_acc_delay_week_raw %>%
+acc_delay_week <- assign(mydataframe, df) %>%
   left_join(distinct(acc, Name, ICAO_code), by = c("UNIT_CODE" = "ICAO_code")) %>%
   relocate(Name, .before = everything()) %>%
   rename(NAME = Name) %>%
@@ -1822,13 +1800,15 @@ acc_delay_week <- nw_acc_delay_week_raw %>%
   )
 
 #### y2d ----
+mydataframe <- "nw_acc_delay_y2d_raw"
+myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+stakeholder <- str_sub(mydataframe, 1, 2)
+
 if (archive_mode) {
-  myarchivefile <- "_nw_acc_delay_y2d_raw.csv"
-  stakeholder <- str_sub(myarchivefile, 2,3)
-  nw_acc_delay_y2d_raw <-  read_csv(here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile)))
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
 
 } else {
-  nw_acc_delay_y2d_raw <-  read_xlsx(
+  df <-  read_xlsx(
   path  = fs::path_abs(
     str_glue(nw_base_file),
     start = nw_base_dir),
@@ -1838,15 +1818,11 @@ if (archive_mode) {
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
   # save pre-processed file in archive for generation of past json files
-  myarchivefile <- "_nw_acc_delay_y2d_raw.csv"
-  stakeholder <- str_sub(myarchivefile, 2,3)
-  write_csv(nw_acc_delay_y2d_raw,
-            here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile))
-            )
+  write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
 }
 
 # process data
-acc_delay_y2d <- nw_acc_delay_y2d_raw %>%
+acc_delay_y2d <- assign(mydataframe, df) %>%
   rename(Y2D_FROM_DATE = MIN_DATE) %>%
   left_join(distinct(acc, Name, ICAO_code), by = c("UNIT_CODE" = "ICAO_code")) %>%
   relocate(Name, .before = everything()) %>%
@@ -1938,13 +1914,15 @@ write(st_acc_delay_j, paste0(archive_dir, "st_acc_ranking_delay.json"))
 
 ### Airport ----
 # raw data
+mydataframe <- "nw_apt_delay_raw"
+myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+stakeholder <- str_sub(mydataframe, 1, 2)
+
 if (archive_mode) {
-  myarchivefile <- "_nw_apt_delay_raw.csv"
-  stakeholder <- str_sub(myarchivefile, 2,3)
-  nw_apt_delay_raw <-  read_csv(here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile)))
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
 
 } else {
-  nw_apt_delay_raw <-  read_xlsx(
+  df <-  read_xlsx(
   path  = fs::path_abs(
     str_glue(nw_base_file),
     start = nw_base_dir),
@@ -1954,13 +1932,10 @@ if (archive_mode) {
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
   # save pre-processed file in archive for generation of past json files
-  myarchivefile <- "_nw_apt_delay_raw.csv"
-  stakeholder <- str_sub(myarchivefile, 2,3)
-  write_csv(nw_apt_delay_raw,
-            here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile)))
+  write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
 }
 
-st_apt_delay_raw <- nw_apt_delay_raw %>%
+st_apt_delay_raw <- assign(mydataframe, df) %>%
   rename(
     ICAO_CODE = ARP_CODE,
     APT_NAME = ARP_NAME

@@ -4,6 +4,7 @@ library(sendmailR)
 library(dplyr)
 library(stringr)
 library(readxl)
+library(tidyverse)
 
 # parameters ----
 yesterday <- (lubridate::now() +  lubridate::days(-1)) %>% format("%Y-%m-%d")

@@ -625,8 +625,10 @@ DATA_ARP_2 as
 
       FROM DATA_ARP_2
       where ENTRY_DATE= ", mydate, " -1 --'01-mar-2020'
-      )
+      ),
 
+  DATA_ARP_4 as
+  (
    SELECT
         airport_code,
         airport_name,
@@ -672,7 +674,12 @@ DATA_ARP_2 as
     --   ,DENSE_RANK() OVER (PARTITION BY entry_date ORDER BY (DEP_ARR - DEP_ARR_14DAY) asc)  d_rank_by_day_14DAY_diff_asc
     --    ,CASE WHEN entry_date = ", mydate, "-1 then 'YES' ELSE '-' END as FILTER_LAST_DAY
    FROM DATA_ARP_3
-  WHERE DEP_ARR > 0 or DEP_ARR_PREV_YEAR > 0 or DEP_ARR_14DAY >0 or DEP_ARR_2019>0 or DEP_ARR_7DAY>0
+--  WHERE DEP_ARR > 0 or DEP_ARR_PREV_YEAR > 0 or DEP_ARR_14DAY >0 or DEP_ARR_2019>0 or DEP_ARR_7DAY>0
+)
+
+  select * from DATA_ARP_4
+  where r_rank_by_day <= 100
+
 "
   )
   }
@@ -756,9 +763,6 @@ select t.day_date,
 from pru_time_references t inner join list_day a on (t.day_date = a.day_date)
 ),
 
-
-
-
 AIRPORT_DAY AS (
 SELECT a.airport_code,
        a.db_airport_code,
@@ -802,8 +806,6 @@ from airport_day c
 group by c.day_date ,c.airport_code, c.year, c.airport_name, c.WEEK_NB_YEAR,c.DAY_TYPE,c.month,c.WEEK, c.day_of_week
 ) ,
 
-
-
 DATA_APT_2 as
 (
 select YEAR,
@@ -825,7 +827,7 @@ select YEAR,
       FROM ARP_SYN_DEP_ARR
      ),
 
-        DATA_APT_3  as
+DATA_APT_3  as
   (
       select
       apt_code,
@@ -860,8 +862,10 @@ select YEAR,
       group by
       apt_code,
       apt_name
-  )
+  ),
 
+DATA_APT_4  as
+  (
     select
        apt_code,
        apt_name,
@@ -930,10 +934,11 @@ select YEAR,
        ,ROW_NUMBER() OVER (PARTITION BY entry_date ORDER BY (ttf_dep_arr - ttf_dep_arr_2019) asc)  r_rank_by_day_diff_2019_asc
        ,ROW_NUMBER() OVER (PARTITION BY entry_date ORDER BY (ttf_dep_arr - ttf_dep_arr_14DAY) asc)  r_rank_by_day_diff_14DAY_asc
         ,ROW_NUMBER() OVER (PARTITION BY entry_date ORDER BY (ttf_dep_arr - ttf_dep_arr_7DAY) asc)  r_rank_by_day_diff_7DAY_asc
-        ,apt_code,
-       apt_name
 
       FROM DATA_APT_3
+)
+  SELECT * from DATA_APT_4
+  WHERE r_rank_by_day <=100
 "
   )
 }
@@ -1060,6 +1065,8 @@ APT_RANK as
 SELECT
    arp_code,
         ROW_NUMBER() OVER (PARTITION BY year
+                ORDER BY daily_dep_arr DESC, arp_name) as R_RANK,
+        RANK() OVER (PARTITION BY year
                 ORDER BY daily_dep_arr DESC, arp_name) as RANK
 FROM ALL_DAY_DATA_GRP
 where year = extract (year from ", mydate, "-1)
@@ -1069,7 +1076,7 @@ APT_RANK_PY as
 (
 SELECT
    arp_code,
-        ROW_NUMBER() OVER (PARTITION BY year
+        RANK() OVER (PARTITION BY year
                 ORDER BY daily_dep_arr DESC, arp_name) as RANK_PY
 FROM ALL_DAY_DATA_GRP
 where year = extract (year from ", mydate, "-1) - 1
@@ -1079,24 +1086,27 @@ select
 
    a.arp_code,
    a.arp_name,
+   extract (year from TO_DATE) as year,
    FROM_DATE, TO_DATE,
---  daily_dep_arr,
+   daily_dep_arr,
 --   mvt_dep_arr,
-   CASE when a.year = extract (year from ", mydate, "-1) then
-      daily_dep_arr else 0
-   END dep_arr_current_year,
-   CASE when a.year = extract (year from ", mydate, "-1)-1 then
-      daily_dep_arr else 0
-   END dep_arr_prev_year,
-   CASE when a.year = 2019 then
-      daily_dep_arr else 0
-   END dep_arr_2019,
+--   CASE when a.year = extract (year from ", mydate, "-1) then
+--      daily_dep_arr else 0
+--   END dep_arr_current_year,
+--   CASE when a.year = extract (year from ", mydate, "-1)-1 then
+--      daily_dep_arr else 0
+--   END dep_arr_prev_year,
+--   CASE when a.year = 2019 then
+--      daily_dep_arr else 0
+--   END dep_arr_2019,
+   R_RANK,
    RANK, RANK_PY
 
 FROM ALL_DAY_DATA_GRP a
 left join APT_RANK b on a.arp_code = b.arp_code
 left join APT_RANK_PY c on a.arp_code = c.arp_code
-where rank <= '40'
+where R_RANK <= '100'
+order by TO_DATE desc, R_RANK
 "
   )
   }
