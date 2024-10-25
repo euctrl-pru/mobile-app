@@ -1476,21 +1476,20 @@ ao_main_traffic <- ao_data_dy %>%
   ) %>%
   select(WK_R_RANK_BY_DAY, MAIN_TFC_AO_GRP_NAME, MAIN_TFC_AO_GRP_CODE, MAIN_TFC_AO_GRP_FLIGHT)
 
-ao_main_traffic_dif <- read_xlsx(
-  path = fs::path_abs(
-    str_glue(base_file),
-    start = base_dir
-  ),
-  sheet = "AO_DAY_MAIN",
-  range = cell_limits(c(3, 2), c(NA, 5))
-  )
-
-new_ao_main_traffic_dif <- nw_ao_day_raw %>%
+ao_main_traffic_dif <- nw_ao_day_raw %>%
   select(AO_GRP_CODE, AO_GRP_NAME, FLIGHT_7DAY_DIFF) %>%
   arrange(desc(abs(FLIGHT_7DAY_DIFF))) %>%
   mutate(WK_R_RANK_BY_DAY = row_number()) %>%
-  filter(WK_R_RANK_BY_DAY <= 10)
-
+  filter(WK_R_RANK_BY_DAY <= 10) %>%
+  mutate(across(-WK_R_RANK_BY_DAY, ~ ifelse(WK_R_RANK_BY_DAY > 4, NA, .))) %>%
+  arrange(abs(FLIGHT_7DAY_DIFF)) %>%
+  mutate(WK_R_RANK_BY_DAY = row_number()) %>%
+  select(
+    WK_R_RANK_BY_DAY,
+    MAIN_TFC_DIF_AO_GRP_NAME = AO_GRP_NAME,
+    MAIN_TFC_DIF_AO_GRP_CODE = AO_GRP_CODE,
+    MAIN_TFC_AO_GRP_DIF = FLIGHT_7DAY_DIFF
+    )
 
 ### merge and reorder tables
 ao_data <- merge(x = ao_data_wk, y = ao_data_dy, by = "WK_R_RANK_BY_DAY")
@@ -1683,14 +1682,20 @@ apt_main_traffic <- apt_data_dy %>%
   ) %>%
   select(DY_R_RANK_BY_DAY, MAIN_TFC_AIRPORT_NAME, MAIN_TFC_AIRPORT_DEP_ARR)
 
-apt_main_traffic_dif <- read_xlsx(
-  path = fs::path_abs(
-    str_glue(base_file),
-    start = base_dir
-  ),
-  sheet = "APT_DAY_MAIN",
-  range = cell_limits(c(3, 2), c(NA, 4))
-)
+apt_main_traffic_dif <- nw_apt_day_raw %>%
+  filter(R_RANK_BY_DAY <= 40) %>%
+  select(AIRPORT_NAME, DEP_ARR_7DAY_DIFF) %>%
+  arrange(desc(abs(DEP_ARR_7DAY_DIFF))) %>%
+  mutate(DY_R_RANK_BY_DAY = row_number()) %>%
+  filter(DY_R_RANK_BY_DAY <= 10) %>%
+  mutate(across(-DY_R_RANK_BY_DAY, ~ ifelse(DY_R_RANK_BY_DAY > 4, NA, .))) %>%
+  arrange(abs(DEP_ARR_7DAY_DIFF)) %>%
+  mutate(DY_R_RANK_BY_DAY = row_number()) %>%
+  select(
+    DY_R_RANK_BY_DAY,
+    MAIN_TFC_DIF_AIRPORT_NAME = AIRPORT_NAME,
+    MAIN_TFC_AIRPORT_DIF = DEP_ARR_7DAY_DIFF
+  )
 
 ### merge and reorder tables
 apt_data <- merge(x = apt_data_dy, y = apt_data_wk, by = "DY_R_RANK_BY_DAY")
