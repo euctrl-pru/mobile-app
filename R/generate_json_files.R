@@ -29,7 +29,7 @@ archive_dir_raw <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Projec
 archive_mode <- FALSE
 
 if (archive_mode) {
-  data_day_date <- ymd("2024-01-05")
+  data_day_date <- ymd("2024-10-22")
   data_day_text <- data_day_date %>% format("%Y%m%d")
   data_day_year <- as.numeric(format(data_day_date,'%Y'))
 }
@@ -1485,6 +1485,13 @@ ao_main_traffic_dif <- read_xlsx(
   range = cell_limits(c(3, 2), c(NA, 5))
   )
 
+new_ao_main_traffic_dif <- nw_ao_day_raw %>%
+  select(AO_GRP_CODE, AO_GRP_NAME, FLIGHT_7DAY_DIFF) %>%
+  arrange(desc(abs(FLIGHT_7DAY_DIFF))) %>%
+  mutate(WK_R_RANK_BY_DAY = row_number()) %>%
+  filter(WK_R_RANK_BY_DAY <= 10)
+
+
 ### merge and reorder tables
 ao_data <- merge(x = ao_data_wk, y = ao_data_dy, by = "WK_R_RANK_BY_DAY")
 ao_data <- merge(x = ao_data, y = ao_data_y2d, by = "WK_R_RANK_BY_DAY")
@@ -1617,16 +1624,6 @@ stakeholder <- str_sub(mydataframe, 1, 2)
 if (archive_mode) {
   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
 
-  df_test <- df %>%
-    mutate(FLAG_LAST_YEAR = case_when(
-      YEAR == data_day_year ~ "Y2D_DEP_ARR_CURRENT_YEAR",
-      YEAR == data_day_year - 1 ~ "Y2D_DEP_ARR_PREV_YEAR",
-      .default = paste0("Y2D_DEP_ARR_", as.character(YEAR))
-    )) %>%
-    pivot_wider(id_cols = -c(YEAR, FROM_DATE,  TO_DATE), names_from = "FLAG_LAST_YEAR", values_from = DAILY_DEP_ARR) %>%
-    mutate(Y2D_TO_DATE = data_day_date)
-
-
 } else {
   df <- read_xlsx(
   path = fs::path_abs(
@@ -1634,15 +1631,23 @@ if (archive_mode) {
     start = base_dir
   ),
   sheet = "TOP40_APT_Y2D",
-  range = cell_limits(c(5, 2), c(NA, 9))
+  range = cell_limits(c(5, 2), c(NA, 10))
 ) %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
   # save pre-processed file in archive for generation of past json files
-  # write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+  write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
 }
 
 apt_data_y2d <- assign(mydataframe, df) %>%
+  filter(R_RANK <= 10) %>%
+  mutate(FLAG_LAST_YEAR = case_when(
+    YEAR == data_day_year ~ "Y2D_DEP_ARR_CURRENT_YEAR",
+    YEAR == data_day_year - 1 ~ "Y2D_DEP_ARR_PREV_YEAR",
+    .default = paste0("Y2D_DEP_ARR_", as.character(YEAR))
+  )) %>%
+  pivot_wider(id_cols = -c(YEAR, FROM_DATE,  TO_DATE), names_from = "FLAG_LAST_YEAR", values_from = DAILY_DEP_ARR) %>%
+  mutate(Y2D_TO_DATE = data_day_date) %>%
   mutate(R_RANK = row_number(),
          Y2D_RANK_DIF_PREV_YEAR = RANK_PY - RANK,
          Y2D_DIF_PREV_YEAR_PERC = if_else(Y2D_DEP_ARR_PREV_YEAR == 0,
@@ -1652,14 +1657,13 @@ apt_data_y2d <- assign(mydataframe, df) %>%
                                           0,
                                           Y2D_DEP_ARR_CURRENT_YEAR/Y2D_DEP_ARR_2019-1)
   ) %>%
-  filter(R_RANK <= 10) %>%
   select(
     DY_R_RANK_BY_DAY = R_RANK,
-    Y2D_AIRPORT_NAME = Y2D_ARP_NAME,
+    Y2D_AIRPORT_NAME = ARP_NAME,
     Y2D_DEP_ARR = Y2D_DEP_ARR_CURRENT_YEAR,
     Y2D_DIF_PREV_YEAR_PERC,
     Y2D_DIF_2019_PERC,
-    Y2D_TO_DATE = TO_DATE,
+    Y2D_TO_DATE,
     Y2D_RANK_DIF_PREV_YEAR
   )
 
@@ -1789,7 +1793,7 @@ ct_dai_data_y2d <- read_xlsx(
   filter(DY_R_RANK_BY_DAY <= 10)
 
 ### main card
-ct_main_traffic <- ct_dai_data_dy_raw %>%
+ct_main_traffic <- nw_st_dai_day_raw %>%
   mutate(
     MAIN_TFC_CTRY_NAME = if_else(
       DY_R_RANK_BY_DAY <= 4,
