@@ -18,8 +18,8 @@ source(here::here("..", "mobile-app", "R", "helpers.R"))
 
 # Parameters ----
 data_folder <- here::here("..", "mobile-app", "data", "v2")
-base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/LastVersion/'
-base_file <- '099a_app_state_dataset.xlsx'
+st_base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/LastVersion/'
+st_base_file <- '099a_app_state_dataset.xlsx'
 
 nw_base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/LastVersion/'
 nw_base_file <- '099_Traffic_Landing_Page_dataset_new.xlsx'
@@ -49,56 +49,56 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
 
 
 # Dimension tables ----
-  state_iso <-  read_xlsx(
-    path  = fs::path_abs(
-      str_glue(base_file),
-      start = base_dir),
-    sheet = "lists",
-    range = cell_limits(c(2, 2), c(NA, 3))) %>%
-    as_tibble()
+state_iso <-  read_xlsx(
+  path  = fs::path_abs(
+    str_glue(st_base_file),
+    start = st_base_dir),
+  sheet = "lists",
+  range = cell_limits(c(2, 2), c(NA, 3))) %>%
+  as_tibble()
 
-  state_crco <-  read_xlsx(
-    path  = fs::path_abs(
-      str_glue(base_file),
-      start = base_dir),
-    sheet = "lists",
-    range = cell_limits(c(2, 6), c(NA, 8))) %>%
-    as_tibble()
+state_crco <-  read_xlsx(
+  path  = fs::path_abs(
+    str_glue(st_base_file),
+    start = st_base_dir),
+  sheet = "lists",
+  range = cell_limits(c(2, 6), c(NA, 8))) %>%
+  as_tibble()
 
-  state_daio <-  read_xlsx(
-    path  = fs::path_abs(
-      str_glue(base_file),
-      start = base_dir),
-    sheet = "lists",
-    range = cell_limits(c(2, 11), c(NA, 13))) %>%
-    as_tibble()
+state_daio <-  read_xlsx(
+  path  = fs::path_abs(
+    str_glue(st_base_file),
+    start = st_base_dir),
+  sheet = "lists",
+  range = cell_limits(c(2, 11), c(NA, 13))) %>%
+  as_tibble()
 
-  state_co2 <-  read_xlsx(
-    path  = fs::path_abs(
-      str_glue(base_file),
-      start = base_dir),
-    sheet = "lists",
-    range = cell_limits(c(2, 16), c(NA, 17))) %>%
-    as_tibble()
+state_co2 <-  read_xlsx(
+  path  = fs::path_abs(
+    str_glue(st_base_file),
+    start = st_base_dir),
+  sheet = "lists",
+  range = cell_limits(c(2, 16), c(NA, 17))) %>%
+  as_tibble()
 
-  acc <-  read_xlsx(
-    path  = fs::path_abs(
-      str_glue(nw_base_file),
-      start = nw_base_dir),
-    sheet = "ACC_names",
-    range = cell_limits(c(2, 3), c(NA, NA))) %>%
-    as_tibble()
+acc <-  read_xlsx(
+  path  = fs::path_abs(
+    str_glue(nw_base_file),
+    start = nw_base_dir),
+  sheet = "ACC_names",
+  range = cell_limits(c(2, 3), c(NA, NA))) %>%
+  as_tibble()
 
-  query <- "select * from PRU_AIRPORT"
+query <- "select * from PRU_AIRPORT"
 
-  airport <- export_query(query) %>%
-    as_tibble() %>%
-    mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
-    select(ICAO_CODE, ISO_COUNTRY_CODE) %>%
-    #in case we need to separate spain from canarias
-    # mutate(ISO_COUNTRY_CODE = if_else(substr(ICAO_CODE,1,2) == "GC",
-    #                                   "IC", ISO_COUNTRY_CODE)) %>%
-    rename(iso_2letter = ISO_COUNTRY_CODE)
+airport <- export_query(query) %>%
+  as_tibble() %>%
+  mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
+  select(ICAO_CODE, ISO_COUNTRY_CODE) %>%
+  #in case we need to separate spain from canarias
+  # mutate(ISO_COUNTRY_CODE = if_else(substr(ICAO_CODE,1,2) == "GC",
+  #                                   "IC", ISO_COUNTRY_CODE)) %>%
+  rename(iso_2letter = ISO_COUNTRY_CODE)
 
 # ____________________________________________________________________________________________
 #
@@ -172,8 +172,8 @@ st_billed_for_json <- st_billing %>%
 #### Traffic DAIO data ----
 st_daio_data <-  read_xlsx(
   path  = fs::path_abs(
-    str_glue(base_file),
-    start = base_dir),
+    str_glue(st_base_file),
+    start = st_base_dir),
   sheet = "state_daio",
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   as_tibble() %>%
@@ -221,8 +221,8 @@ st_daio_for_json <- st_daio_last_day %>%
 #### Traffic DAI data ----
 st_dai_data <-  read_xlsx(
   path  = fs::path_abs(
-    str_glue(base_file),
-    start = base_dir),
+    str_glue(st_base_file),
+    start = st_base_dir),
   sheet = "state_dai",
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   as_tibble() %>%
@@ -413,8 +413,8 @@ st_overflight_for_json <- st_overflight_last_day %>%
 #### Delay data ----
 st_delay_data <-  read_xlsx(
   path  = fs::path_abs(
-    str_glue(base_file),
-    start = base_dir),
+    str_glue(st_base_file),
+    start = st_base_dir),
   sheet = "state_delay",
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   as_tibble() %>%
@@ -895,8 +895,8 @@ if (archive_mode) {
 } else {
   df <- read_xlsx(
   path  = fs::path_abs(
-    str_glue(base_file),
-    start = base_dir),
+    str_glue(st_base_file),
+    start = st_base_dir),
   sheet = "state_ao_day",
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
@@ -954,8 +954,8 @@ if (archive_mode) {
 } else {
   df <- read_xlsx(
   path  = fs::path_abs(
-    str_glue(base_file),
-    start = base_dir),
+    str_glue(st_base_file),
+    start = st_base_dir),
   sheet = "state_ao_week",
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
@@ -1011,8 +1011,8 @@ if (archive_mode) {
 } else {
   df <- read_xlsx(
   path  = fs::path_abs(
-    str_glue(base_file),
-    start = base_dir),
+    str_glue(st_base_file),
+    start = st_base_dir),
   sheet = "state_ao_y2d",
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
@@ -1166,8 +1166,8 @@ if (archive_mode) {
 } else {
   df <- read_xlsx(
   path  = fs::path_abs(
-    str_glue(base_file),
-    start = base_dir),
+    str_glue(st_base_file),
+    start = st_base_dir),
   sheet = "state_apt_day",
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
@@ -1225,8 +1225,8 @@ if (archive_mode) {
 } else {
   df <- read_xlsx(
   path  = fs::path_abs(
-    str_glue(base_file),
-    start = base_dir),
+    str_glue(st_base_file),
+    start = st_base_dir),
   sheet = "state_apt_week",
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
@@ -1283,8 +1283,8 @@ if (archive_mode) {
 } else {
   df <- read_xlsx(
   path  = fs::path_abs(
-    str_glue(base_file),
-    start = base_dir),
+    str_glue(st_base_file),
+    start = st_base_dir),
   sheet = "state_apt_y2d",
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
@@ -1426,8 +1426,8 @@ if (archive_mode) {
 } else {
   df <- read_xlsx(
   path  = fs::path_abs(
-    str_glue(base_file),
-    start = base_dir),
+    str_glue(st_base_file),
+    start = st_base_dir),
   sheet = "state_st_day",
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
@@ -1485,8 +1485,8 @@ if (archive_mode) {
 } else {
   df <- read_xlsx(
   path  = fs::path_abs(
-    str_glue(base_file),
-    start = base_dir),
+    str_glue(st_base_file),
+    start = st_base_dir),
   sheet = "state_st_week",
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
@@ -1543,8 +1543,8 @@ if (archive_mode) {
 } else {
   df <- read_xlsx(
   path  = fs::path_abs(
-    str_glue(base_file),
-    start = base_dir),
+    str_glue(st_base_file),
+    start = st_base_dir),
   sheet = "state_st_y2d",
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
@@ -2484,8 +2484,8 @@ write(st_punct_evo_app_j, paste0(archive_dir, "st_punct_evo_chart.json"))
 ### Delay category ----
 st_delay_data <-  read_xlsx(
   path  = fs::path_abs(
-    str_glue(base_file),
-    start = base_dir),
+    str_glue(st_base_file),
+    start = st_base_dir),
   sheet = "state_delay",
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   as_tibble() %>%
@@ -2493,8 +2493,8 @@ st_delay_data <-  read_xlsx(
 
 st_delay_cause_data <-  read_xlsx(
   path  = fs::path_abs(
-    str_glue(base_file),
-    start = base_dir),
+    str_glue(st_base_file),
+    start = st_base_dir),
   sheet = "state_delay_cause",
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   as_tibble() %>%

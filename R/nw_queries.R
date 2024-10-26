@@ -2850,3 +2850,256 @@ ARP_CALC_PREV  as
   ")
   }
 
+# nw state delay ----
+## day ----
+query_nw_st_delay_day_raw <- function(mydate_string) {
+  mydate <- date_sql_string(mydate_string)
+  paste0("
+with DATA_CALC as (
+SELECT     agg_asp_entry_date as DY_TO_DATE,
+             agg_asp_id DY_CTRY_DLY_CODE,
+              CASE
+             WHEN agg_asp_id = 'LY' then 'Serbia/Montenegro'
+                WHEN agg_asp_id = 'LT' THEN 'Türkiye'
+                WHEN agg_asp_id = 'LQ' THEN 'Bosnia and Herzegovina'
+                ELSE agg_asp_name
+             END DY_CTRY_DLY_NAME,
+             SUM (coalesce(a.agg_asp_a_traffic_asp,0)) as DY_CTRY_FLT,
+             SUM(coalesce(a.agg_asp_delay_tvs,0)) as DY_CTRY_DLY,
+ --            SUM(coalesce(a.agg_asp_delay_tvs,0)) / SUM (coalesce(a.agg_asp_a_traffic_asp,0)) as DY_CTRY_DLY_PER_FLT,
+             (SUM (coalesce(a.agg_asp_delay_tvs,0)) - SUM (coalesce(a.agg_asp_delay_airport_tvs,0)))  AS DY_CTRY_DLY_ERT,
+             SUM (coalesce(a.agg_asp_delay_airport_tvs,0))  AS DY_CTRY_DLY_APT,
+             SUM (coalesce(a.agg_asp_delayed_traffic_tvs,0)) as DY_CTRY_DLYED_FLT
+       FROM v_aiu_agg_asp a
+       WHERE
+             a.AGG_ASP_ENTRY_DATE = ", mydate, "-1
+             and agg_asp_ty = 'COUNTRY_AUA'  AND A.agg_asp_unit_ty <> 'REGION'
+             AND (SUBSTR(a.agg_asp_id,1,1) IN ('E','L')
+         OR SUBSTR(a.agg_asp_id,1,2) IN ('GC','GM','GE','UD','UG','UK','YY'))
+    GROUP BY
+             agg_asp_entry_date,
+             agg_asp_id,
+             agg_asp_ty,
+             agg_asp_name
+)
+
+select a.*,
+      case when DY_CTRY_FLT = 0
+          then 0
+          else DY_CTRY_DLY/DY_CTRY_FLT
+      end DY_CTRY_DLY_PER_FLT
+from DATA_CALC a
+where DY_CTRY_DLY_NAME <> 'Ukraine'
+"
+)
+}
+
+## week ----
+query_nw_st_delay_week_raw <- function(mydate_string) {
+  mydate <- date_sql_string(mydate_string)
+  paste0("
+WITH
+    DATA_DAY
+    AS
+ (
+ SELECT     agg_asp_entry_date as entry_date,
+             agg_asp_id COUNTRY_CODE,
+             agg_asp_ty as TYPE,
+              CASE
+                WHEN agg_asp_id = 'LY' then 'Serbia/Montenegro'
+                WHEN agg_asp_id = 'LT' THEN 'Türkiye'
+                WHEN agg_asp_id = 'LQ' THEN 'Bosnia and Herzegovina'
+                ELSE agg_asp_name
+             END COUNTRY_NAME,
+             SUM (coalesce(a.agg_asp_a_traffic_asp,0)) as flight,
+             SUM(coalesce(a.agg_asp_delay_tvs,0)) as delay,
+             (SUM (coalesce(a.agg_asp_delay_tvs,0)) - SUM (coalesce(a.agg_asp_delay_airport_tvs,0)))  AS ERT_DELAY,
+             SUM (coalesce(a.agg_asp_delay_airport_tvs,0))  AS ARP_DELAY,
+             SUM (coalesce(a.agg_asp_delayed_traffic_tvs,0)) as DELAY_FLIGHT,
+             (SUM (coalesce(a.agg_asp_delayed_traffic_tvs,0))  - SUM (coalesce(  a.agg_asp_delayed_traffic_ad_tvs,0))) as ERT_DELAY_FLIGHT,
+              SUM (coalesce(a.agg_asp_delayed_traffic_ad_tvs,0))  AS ARP_DELAY_FLIGHT
+       FROM v_aiu_agg_asp a
+       WHERE
+             agg_asp_entry_date >= '24-dec-2018' AND a.AGG_ASP_ENTRY_DATE < ", mydate, "
+             and agg_asp_ty = 'COUNTRY_AUA'  AND A.agg_asp_unit_ty <> 'REGION'
+             AND (SUBSTR(a.agg_asp_id,1,1) IN ('E','L')
+         OR SUBSTR(a.agg_asp_id,1,2) IN ('GC','GM','GE','UD','UG','UK','YY'))
+    GROUP BY
+             agg_asp_entry_date,
+             agg_asp_id,
+             agg_asp_ty,
+             agg_asp_name
+  ),
+
+  LIST_COUNTRY as
+  (select distinct country_code, country_name from DATA_DAY
+  ),
+
+  ALL_DAY
+    AS
+        (SELECT
+                 a.country_code,
+                 a.country_name,
+                 t.day_date,
+                 case
+                     when (t.day_date >= ", mydate, "-7  AND t.day_date < ", mydate, ") then '1_ROL_WEEK'
+                     when  (t.day_date >= ", mydate, " -7 - ((extract (year from (", mydate, "-1))-2019) *364)- floor((extract (year from (", mydate, "-1))-2019)/4)*7
+                           AND t.day_date <  ", mydate, " - ((extract (year from (", mydate, "-1))-2019) *364)- floor((extract (year from (", mydate, "-1))-2019)/4)*7 )
+                        then '5_ROL_WEEK_2019'
+                     when  (t.day_date >= ", mydate, " - 7 - 364    AND t.day_date <  ", mydate, " - 364) then '4_ROL_WEEK_PREV_YEAR'
+                     when  (t.day_date >= ", mydate, " - 7 - 14    AND t.day_date <  ", mydate, " - 14) then '3_ROL_WEEK_14_DAY'
+                     when   (t.day_date >= ", mydate, " - 7 - 7    AND t.day_date <  ", mydate, " - 7) then  '2_ROL_WEEK_7_DAY'
+                 end PERIOD_TYPE
+           FROM pru_time_references t,
+                LIST_COUNTRY a
+            WHERE
+             (  (t.day_date >= ", mydate, "-7  AND t.day_date < ", mydate, ")
+            or(t.day_date >= ", mydate, " -7 - ((extract (year from (", mydate, "-1))-2019) *364)- floor((extract (year from (", mydate, "-1))-2019)/4)*7
+                AND t.day_date <  ", mydate, " - ((extract (year from (", mydate, "-1))-2019) *364)- floor((extract (year from (", mydate, "-1))-2019)/4)*7 )
+            or (t.day_date >= ", mydate, " - 7 - 364    AND t.day_date <  ", mydate, " - 364)
+            or (t.day_date >= ", mydate, " - 7 - 14    AND t.day_date <  ", mydate, " - 14)
+            or (t.day_date >= ", mydate, " - 7 - 7    AND t.day_date <  ", mydate, " - 7)
+             )
+       ),
+
+    ALL_DAY_DATA
+    AS
+        (SELECT
+                b.period_type,
+                a.country_code,
+                a.country_name,
+                COALESCE (a.ENTRY_DATE, b.day_date)   AS ENTRY_DATE,
+                COALESCE (a.FLIGHT, 0)                AS FLIGHT,
+                COALESCE (a.delay, 0)                 AS delay,
+                COALESCE (a.ARP_DELAY, 0)             AS ARP_DELAY,
+                COALESCE (a.ERT_DELAY, 0)             AS ERT_DELAY,
+                COALESCE (a.delay_FLIGHT, 0)          AS delay_FLIGHT,
+                COALESCE (a.ARP_DELAY, 0)             AS ARP_DELAY_FLIGHT,
+                COALESCE (a.ERT_DELAY, 0)             AS ERT_DELAY_FLIGHT
+           FROM ALL_DAY b LEFT JOIN DATA_DAY a ON  b.day_date =a.ENTRY_DATE  and b.country_code = a.country_code  and b.country_name = a.country_name
+         )
+
+      SELECT period_type,
+            country_code,
+            country_name,
+         MIN (entry_date)          FROM_DATE,
+         MAX (entry_date)          TO_DATE,
+            TO_CHAR (MIN (entry_date), 'dd-mm-yyyy')   || ' to ' || TO_CHAR (MAX (entry_date), 'dd-mm-yyyy') AS period,
+         SUM (flight)              flight,
+         SUM (delay)               DELAY,
+         SUM (ERT_DELAY)           ERT_DELAY,
+         SUM (ARP_DELAY)           ARP_DELAY,
+         SUM (delay_FLIGHT)        DELAY_FLIGHT,
+         SUM (ERT_DELAY_FLIGHT)    ERT_DELAY_FLIGHT,
+         SUM (ARP_DELAY_FLIGHT)    ARP_DELAY_FLIGHT,
+         AVG (delay)               avg_DELAY,
+         AVG (flight)              avg_flight,
+         AVG (ERT_DELAY)           AVG_ERT_DELAY,
+         AVG (ARP_DELAY)           AVG_ARP_DELAY,
+         AVG (delay_FLIGHT)        AVG_DELAY_FLIGHT,
+         AVG (ERT_DELAY_FLIGHT)    AVG_ERT_DELAY_FLIGHT,
+         AVG (ARP_DELAY_FLIGHT)    AVG_ARP_DELAY_FLIGHT
+    FROM ALL_DAY_DATA
+GROUP BY period_type, country_code, country_name
+order by period_type, country_name
+"
+)
+}
+
+## y2d ----
+query_nw_st_delay_y2d_raw <- function(mydate_string) {
+  mydate <- date_sql_string(mydate_string)
+  paste0("
+WITH
+    DATA_DAY
+    AS
+ (
+ SELECT     agg_asp_entry_date as entry_date,
+             agg_asp_id COUNTRY_CODE,
+             agg_asp_ty as TYPE,
+              CASE
+                WHEN agg_asp_id = 'LT' THEN 'Türkiye'
+             WHEN agg_asp_id = 'LY' then 'Serbia/Montenegro'
+                WHEN agg_asp_id = 'LQ' THEN 'Bosnia and Herzegovina'
+                ELSE agg_asp_name
+             END COUNTRY_NAME,
+             SUM (coalesce(a.agg_asp_a_traffic_asp,0)) as flight,
+             SUM(coalesce(a.agg_asp_delay_tvs,0)) as delay,
+             (SUM (coalesce(a.agg_asp_delay_tvs,0)) - SUM (coalesce(a.agg_asp_delay_airport_tvs,0)))  AS ERT_DELAY,
+             SUM (coalesce(a.agg_asp_delay_airport_tvs,0))  AS ARP_DELAY,
+             SUM (coalesce(a.agg_asp_delayed_traffic_tvs,0)) as DELAY_FLIGHT,
+             (SUM (coalesce(a.agg_asp_delayed_traffic_tvs,0))  - SUM (coalesce(  a.agg_asp_delayed_traffic_ad_tvs,0))) as ERT_DELAY_FLIGHT,
+              SUM (coalesce(a.agg_asp_delayed_traffic_ad_tvs,0))  AS ARP_DELAY_FLIGHT
+       FROM v_aiu_agg_asp a
+       WHERE
+             agg_asp_entry_date >= '01-JAN-2019' AND a.AGG_ASP_ENTRY_DATE < TRUNC (SYSDATE)
+             and agg_asp_ty = 'COUNTRY_AUA'  AND A.agg_asp_unit_ty <> 'REGION'
+             AND (SUBSTR(a.agg_asp_id,1,1) IN ('E','L')
+         OR SUBSTR(a.agg_asp_id,1,2) IN ('GC','GM','GE','UD','UG','UK', 'YY'))
+    GROUP BY
+             agg_asp_entry_date,
+             agg_asp_id,
+             agg_asp_ty,
+             agg_asp_name
+  ),
+
+  LIST_COUNTRY as
+  (select distinct country_code, country_name from DATA_DAY
+  ),
+
+  ALL_DAY
+    AS
+        (SELECT
+                 a.country_code,
+                 a.country_name,
+                 t.day_date,
+                 t.year
+           FROM pru_time_references t,
+                LIST_COUNTRY  a
+           WHERE
+               day_date >= TO_DATE ('01-01-2019', 'dd-mm-yyyy')   AND day_date < TRUNC (SYSDATE)
+                AND TO_NUMBER (TO_CHAR (t.day_date, 'mmdd')) <=   TO_NUMBER (TO_CHAR (TRUNC (SYSDATE)-1, 'mmdd'))
+       ),
+
+    ALL_DAY_DATA
+    AS
+        (SELECT
+                b.year,
+                a.country_code,
+                a.country_name,
+                COALESCE (a.ENTRY_DATE, b.day_date)   AS ENTRY_DATE,
+                COALESCE (a.FLIGHT, 0)                AS FLIGHT,
+                COALESCE (a.delay, 0)                 AS delay,
+                COALESCE (a.ARP_DELAY, 0)             AS ARP_DELAY,
+                COALESCE (a.ERT_DELAY, 0)             AS ERT_DELAY,
+                COALESCE (a.delay_FLIGHT, 0)          AS delay_FLIGHT,
+                COALESCE (a.ARP_DELAY, 0)             AS ARP_DELAY_FLIGHT,
+                COALESCE (a.ERT_DELAY, 0)             AS ERT_DELAY_FLIGHT
+           FROM ALL_DAY b LEFT JOIN DATA_DAY a ON  b.day_date =a.ENTRY_DATE  and b.country_code = a.country_code  and b.country_name = a.country_name
+         )
+
+      SELECT year,
+         MIN (entry_date)          FROM_DATE,
+         MAX (entry_date)          TO_DATE,
+         TO_CHAR (MIN (entry_date), 'dd-mm-yyyy')   || ' to ' || TO_CHAR (MAX (entry_date), 'dd-mm-yyyy') AS period,
+         country_code,
+         country_name,
+         SUM (flight)              flight,
+         SUM (delay)               DELAY,
+         SUM (ERT_DELAY)           ERT_DELAY,
+         SUM (ARP_DELAY)           ARP_DELAY,
+         SUM (delay_FLIGHT)        DELAY_FLIGHT,
+         SUM (ERT_DELAY_FLIGHT)    ERT_DELAY_FLIGHT,
+         SUM (ARP_DELAY_FLIGHT)    ARP_DELAY_FLIGHT,
+         AVG (delay)               avg_DELAY,
+         AVG (flight)              avg_flight,
+         AVG (ERT_DELAY)           AVG_ERT_DELAY,
+         AVG (ARP_DELAY)           AVG_ARP_DELAY,
+         AVG (delay_FLIGHT)        AVG_DELAY_FLIGHT,
+         AVG (ERT_DELAY_FLIGHT)    AVG_ERT_DELAY_FLIGHT,
+         AVG (ARP_DELAY_FLIGHT)    AVG_ARP_DELAY_FLIGHT
+    FROM ALL_DAY_DATA
+GROUP BY year, country_code, country_name
+order by year desc, country_name
+")
+}

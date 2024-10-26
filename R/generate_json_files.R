@@ -19,8 +19,11 @@ source(here("..", "mobile-app", "R", "helpers.R")) # so it can be launched from 
 # parameters ----
 data_folder <- here::here("..", "mobile-app", "data")
 
-base_dir <- "//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/"
-base_file <- "099_Traffic_Landing_Page_dataset_new_{data_day_text}.xlsx"
+nw_base_dir <- "//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/"
+nw_base_file <- "099_Traffic_Landing_Page_dataset_new_{data_day_text}.xlsx"
+
+st_base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/LastVersion/'
+st_base_file <- '099a_app_state_dataset.xlsx'
 
 archive_dir <- "//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/web_daily_json_files/app/"
 archive_dir_raw <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Project/DDP/AIU app/data_archive'
@@ -47,10 +50,18 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
 
 
 # Dimension tables ----
+state_iso <-  read_xlsx(
+  path  = fs::path_abs(
+    str_glue(st_base_file),
+    start = st_base_dir),
+  sheet = "lists",
+  range = cell_limits(c(2, 2), c(NA, 3))) %>%
+  as_tibble()
+
 acc <-  read_xlsx(
   path  = fs::path_abs(
-    str_glue(base_file),
-    start = base_dir),
+    str_glue(nw_base_file),
+    start = nw_base_dir),
   sheet = "ACC_names",
   range = cell_limits(c(2, 3), c(NA, NA))) %>%
   as_tibble()
@@ -142,8 +153,8 @@ acc <-  read_xlsx(
     # traffic data
     nw_traffic_data <- read_xlsx(
       path = fs::path_abs(
-        str_glue(base_file),
-        start = base_dir
+        str_glue(nw_base_file),
+        start = nw_base_dir
       ),
       sheet = "NM_Daily_Traffic_All",
       range = cell_limits(c(2, 1), c(NA, 39))
@@ -203,8 +214,8 @@ acc <-  read_xlsx(
     # delay data
     nw_delay_data <- read_xlsx(
       path = fs::path_abs(
-        str_glue(base_file),
-        start = base_dir
+        str_glue(nw_base_file),
+        start = nw_base_dir
       ),
       sheet = "NM_Daily_Delay_All",
       range = cell_limits(c(2, 1), c(NA, 39))
@@ -307,7 +318,7 @@ acc <-  read_xlsx(
     nw_punct_data_raw <- read_xlsx(
       path = fs::path_abs(
         str_glue("098_PUNCTUALITY_{data_day_text}.xlsx"),
-        start = base_dir
+        start = nw_base_dir
       ),
       sheet = "NETWORK",
       range = cell_limits(c(1, 1), c(NA, NA))
@@ -682,13 +693,13 @@ acc <-  read_xlsx(
 
     ### monthly ----
     # this graph has been discontinued but we keep it here just in case
-    base_dir <- "//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/"
-    base_file <- "099_Traffic_Landing_Page_dataset_new_{data_day_text}.xlsx"
+    nw_base_dir <- "//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/"
+    nw_base_file <- "099_Traffic_Landing_Page_dataset_new_{data_day_text}.xlsx"
 
     nw_traffic_month_data <- read_xlsx(
       path = fs::path_abs(
-        str_glue(base_file),
-        start = base_dir
+        str_glue(nw_base_file),
+        start = nw_base_dir
       ),
       sheet = "NM_Monthly_traffic",
       range = cell_limits(c(5, 10), c(NA, NA))
@@ -704,8 +715,8 @@ acc <-  read_xlsx(
   ## delay ----
   nw_delay_raw <- read_xlsx(
     path = fs::path_abs(
-      str_glue(base_file),
-      start = base_dir
+      str_glue(nw_base_file),
+      start = nw_base_dir
     ),
     sheet = "NM_Delay_for_graph",
     range = cell_limits(c(2, 1), c(NA, 34))
@@ -1366,8 +1377,8 @@ if (archive_mode) {
 } else {
   df <- read_xlsx(
   path = fs::path_abs(
-    str_glue(base_file),
-    start = base_dir
+    str_glue(nw_base_file),
+    start = nw_base_dir
   ),
   sheet = "AO_DAY_DATA",
   range = cell_limits(c(5, 2), c(NA, NA))
@@ -1379,7 +1390,9 @@ if (archive_mode) {
 }
 
 ao_data_dy <- assign(mydataframe, df) %>%
-  filter(R_RANK_BY_DAY <= 10 & R_RANK_BY_DAY != 0 & is.na(R_RANK_BY_DAY)) %>%
+  filter(R_RANK_BY_DAY <= 10 &
+           R_RANK_BY_DAY != 0 &
+           is.na(R_RANK_BY_DAY) == FALSE) %>%
   mutate(DY_RANK_DIF_PREV_WEEK = RANK_BY_DAY_7DAY - RANK_BY_DAY) %>%
   select(
     WK_R_RANK_BY_DAY = R_RANK_BY_DAY,
@@ -1402,8 +1415,8 @@ if (archive_mode) {
 } else {
   df <- read_xlsx(
     path = fs::path_abs(
-      str_glue(base_file),
-      start = base_dir
+      str_glue(nw_base_file),
+      start = nw_base_dir
     ),
     sheet = "AO_WEEK_DATA",
     range = cell_limits(c(5, 2), c(NA, NA))
@@ -1415,7 +1428,9 @@ if (archive_mode) {
 }
 
 ao_data_wk <- assign(mydataframe, df) %>%
-  filter(R_RANK_BY_DAY <= 10 & R_RANK_BY_DAY != 0 & is.na(R_RANK_BY_DAY)) %>%
+  filter(R_RANK_BY_DAY <= 10 &
+           R_RANK_BY_DAY != 0 &
+           is.na(R_RANK_BY_DAY) == FALSE) %>%
   mutate(WK_RANK_DIF_PREV_WEEK = RANK_BY_DAY_7DAY -  RANK_BY_DAY) %>%
   select(WK_R_RANK_BY_DAY = R_RANK_BY_DAY,
          WK_AO_GRP_NAME = AO_GRP_NAME,
@@ -1436,8 +1451,8 @@ if (archive_mode) {
 } else {
   df <- read_xlsx(
   path = fs::path_abs(
-    str_glue(base_file),
-    start = base_dir
+    str_glue(nw_base_file),
+    start = nw_base_dir
   ),
   sheet = "TOP40_AO_Y2D",
   range = cell_limits(c(6, 2), c(NA, NA))
@@ -1565,8 +1580,8 @@ if (archive_mode) {
 } else {
   df <- read_xlsx(
   path = fs::path_abs(
-    str_glue(base_file),
-    start = base_dir
+    str_glue(nw_base_file),
+    start = nw_base_dir
   ),
   sheet = "APT_DAY_DATA",
   range = cell_limits(c(5, 2), c(NA, NA))
@@ -1578,7 +1593,9 @@ if (archive_mode) {
 }
 
 apt_data_dy <- assign(mydataframe, df) %>%
-  filter(R_RANK_BY_DAY <= 10 & R_RANK_BY_DAY != 0 & is.na(R_RANK_BY_DAY)) %>%
+  filter(R_RANK_BY_DAY <= 10 &
+           R_RANK_BY_DAY != 0 &
+           is.na(R_RANK_BY_DAY) == FALSE) %>%
   mutate(DY_RANK_DIF_PREV_WEEK = RANK_BY_DAY_7DAY - RANK_BY_DAY) %>%
   select(
     DY_R_RANK_BY_DAY = R_RANK_BY_DAY,
@@ -1601,8 +1618,8 @@ if (archive_mode) {
 } else {
   df <- read_xlsx(
   path = fs::path_abs(
-    str_glue(base_file),
-    start = base_dir
+    str_glue(nw_base_file),
+    start = nw_base_dir
   ),
   sheet = "APT_WEEK_DATA",
   range = cell_limits(c(6, 1), c(NA, NA))
@@ -1614,7 +1631,9 @@ if (archive_mode) {
 }
 
 apt_data_wk <- assign(mydataframe, df) %>%
-  filter(R_RANK_BY_DAY <= 10 & R_RANK_BY_DAY != 0 & is.na(R_RANK_BY_DAY)) %>%
+  filter(R_RANK_BY_DAY <= 10 &
+           R_RANK_BY_DAY != 0 &
+           is.na(R_RANK_BY_DAY) == FALSE) %>%
   mutate(WK_RANK_DIF_PREV_WEEK = RANK_BY_DAY_7DAY - RANK_BY_DAY) %>%
   select(
     DY_R_RANK_BY_DAY = R_RANK_BY_DAY,
@@ -1637,8 +1656,8 @@ if (archive_mode) {
 } else {
   df <- read_xlsx(
   path = fs::path_abs(
-    str_glue(base_file),
-    start = base_dir
+    str_glue(nw_base_file),
+    start = nw_base_dir
   ),
   sheet = "TOP40_APT_Y2D",
   range = cell_limits(c(5, 2), c(NA, 10))
@@ -1650,7 +1669,7 @@ if (archive_mode) {
 }
 
 apt_data_y2d <- assign(mydataframe, df) %>%
-  filter(R_RANK <= 10 & R_RANK != 0 & is.na(R_RANK)) %>%
+  filter(R_RANK <= 10 & R_RANK != 0 & is.na(R_RANK) == FALSE) %>%
   mutate(FLAG_LAST_YEAR = case_when(
     YEAR == data_day_year ~ "Y2D_DEP_ARR_CURRENT_YEAR",
     YEAR == data_day_year - 1 ~ "Y2D_DEP_ARR_PREV_YEAR",
@@ -1768,8 +1787,8 @@ if (archive_mode) {
 } else {
   df <- read_xlsx(
   path = fs::path_abs(
-    str_glue(base_file),
-    start = base_dir
+    str_glue(nw_base_file),
+    start = nw_base_dir
   ),
   sheet = "CTRY_DAI_DAY_DATA",
   range = cell_limits(c(4, 3), c(NA, NA))
@@ -1811,8 +1830,8 @@ if (archive_mode) {
 } else {
  df <- read_xlsx(
   path = fs::path_abs(
-    str_glue(base_file),
-    start = base_dir
+    str_glue(nw_base_file),
+    start = nw_base_dir
   ),
   sheet = "CTRY_DAI_WK_DATA",
   range = cell_limits(c(4, 2), c(NA, NA))
@@ -1857,8 +1876,8 @@ if (archive_mode) {
 } else {
   df <- read_xlsx(
   path = fs::path_abs(
-    str_glue(base_file),
-    start = base_dir
+    str_glue(nw_base_file),
+    start = nw_base_dir
   ),
   sheet = "CTRY_DAI_Y2D_DATA",
   range = cell_limits(c(4, 2), c(NA, NA))
@@ -1989,8 +2008,8 @@ if (archive_mode) {
 } else {
   df <-  read_xlsx(
     path  = fs::path_abs(
-      str_glue(base_file),
-      start = base_dir),
+      str_glue(nw_base_file),
+      start = nw_base_dir),
     sheet = "APT_DELAY",
     range = cell_limits(c(5, 2), c(NA, 50))) %>%
     as_tibble() %>%
@@ -2120,8 +2139,8 @@ if (archive_mode) {
 } else {
   df <-  read_xlsx(
     path  = fs::path_abs(
-      str_glue(base_file),
-      start = base_dir),
+      str_glue(nw_base_file),
+      start = nw_base_dir),
     sheet = "ACC_DAY_DELAY",
     range = cell_limits(c(5, 2), c(NA, 20))) %>%
     as_tibble() %>%
@@ -2162,8 +2181,8 @@ if (archive_mode) {
 } else {
   df <-  read_xlsx(
     path  = fs::path_abs(
-      str_glue(base_file),
-      start = base_dir),
+      str_glue(nw_base_file),
+      start = nw_base_dir),
     sheet = "ACC_WEEK_DELAY",
     range = cell_limits(c(5, 2), c(NA, 16))) %>%
     as_tibble() %>%
@@ -2205,8 +2224,8 @@ if (archive_mode) {
 } else {
   df <-  read_xlsx(
     path  = fs::path_abs(
-      str_glue(base_file),
-      start = base_dir),
+      str_glue(nw_base_file),
+      start = nw_base_dir),
     sheet = "ACC_Y2D_DELAY",
     range = cell_limits(c(7, 2), c(NA, 13))) %>%
     as_tibble() %>%
@@ -2301,163 +2320,204 @@ write(acc_rank_data_j, paste0(archive_dir, "nw_acc_ranking_delay.json"))
 
 
 ## Country delay ----
+### day ----
+mydataframe <- "nw_st_delay_day_raw"
+myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+stakeholder <- str_sub(mydataframe, 1, 2)
 
-  ### day data
-  st_rank_data_day_raw <- read_xlsx(
+if (archive_mode) {
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+
+} else {
+  df <- read_xlsx(
     path = fs::path_abs(
-      str_glue(base_file),
-      start = base_dir
+      str_glue(nw_base_file),
+      start = nw_base_dir
     ),
     sheet = "CTRY_DLY_DAY",
-    range = cell_limits(c(5, 2), c(NA, 6))
+    range = cell_limits(c(5, 2), c(NA, 5))
   ) %>%
     as_tibble() %>%
     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
+  # save pre-processed file in archive for generation of past json files
+  write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+}
 
-  st_rank_data_day <- st_rank_data_day_raw %>%
-    arrange(desc(DY_CTRY_DLY), DY_CTRY_DLY_NAME) %>%
-    mutate(
-      RANK = row_number(),
-      DY_RANK = RANK
-    ) %>%
-    filter(DY_RANK <= 10)
+# process data
+st_rank_delay_day <- assign(mydataframe, df) %>%
+  left_join(distinct(state_iso, state, iso_2letter),
+            by = c("DY_CTRY_DLY_NAME" = "state")) %>%
+  mutate(DY_CTRY_DLY_CODE = case_when(
+    DY_CTRY_DLY_NAME == "Maastricht" ~ "MUAC",
+    DY_CTRY_DLY_NAME == "Serbia/Montenegro" ~ "RSME",
+    .default = iso_2letter
+  )) %>%
+  arrange(desc(DY_CTRY_DLY), DY_CTRY_DLY_NAME) %>%
+  mutate(
+    RANK = row_number(),
+    DY_RANK = RANK
+  ) %>%
+  filter(DY_RANK <= 10) %>%
+  select(
+    RANK,
+    DY_RANK,
+    DY_CTRY_DLY_NAME,
+    DY_TO_DATE,
+    DY_CTRY_DLY,
+    DY_CTRY_DLY_PER_FLT,
+    DY_CTRY_DLY_CODE
+  )
 
-  ### week
+### week ----
+mydataframe <- "nw_st_delay_week_raw"
+myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+stakeholder <- str_sub(mydataframe, 1, 2)
 
-  st_rank_data_week_raw <- read_xlsx(
+if (archive_mode) {
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+
+} else {
+  df <- read_xlsx(
     path = fs::path_abs(
-      str_glue(base_file),
-      start = base_dir
+      str_glue(nw_base_file),
+      start = nw_base_dir
     ),
-    sheet = "CTRY_DLY_WK",
-    range = cell_limits(c(3, 2), c(NA, 6))
+    sheet = "CTRY_DLY_WK_DATA",
+    range = cell_limits(c(5, 2), c(NA, NA))
   ) %>%
     as_tibble() %>%
     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-  st_rank_data_week <- st_rank_data_week_raw %>%
-    arrange(desc(WK_CTRY_DLY), WK_CTRY_DLY_NAME) %>%
-    mutate(
-      DY_RANK = row_number(),
-      WK_RANK = DY_RANK
-    ) %>%
-    filter(DY_RANK <= 10)
+  # save pre-processed file in archive for generation of past json files
+  write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+}
 
-  ### y2d
+# process data
+st_rank_delay_week <- assign(mydataframe, df) %>%
+  filter(PERIOD_TYPE == "1_ROL_WEEK") %>%
+  arrange(desc(AVG_DELAY), COUNTRY_NAME) %>%
+  mutate(
+    DY_RANK = row_number(),
+    WK_RANK = DY_RANK,
+    WK_FROM_DATE = TO_DATE + lubridate::days(-6),
+    WK_CTRY_DLY_PER_FLT = if_else(AVG_FLIGHT == 0, 0,AVG_DELAY/ AVG_FLIGHT)
+  ) %>%
+  filter(DY_RANK <= 10) %>%
+  select(
+    DY_RANK,
+    WK_RANK,
+    WK_CTRY_DLY_NAME = COUNTRY_NAME,
+    WK_FROM_DATE,
+    WK_TO_DATE = TO_DATE,
+    WK_CTRY_DLY = AVG_DELAY,
+    WK_CTRY_DLY_PER_FLT
+  )
 
-  st_rank_data_y2d_raw <- read_xlsx(
+### y2d ----
+mydataframe <- "nw_st_delay_y2d_raw"
+myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+stakeholder <- str_sub(mydataframe, 1, 2)
+
+if (archive_mode) {
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+
+} else {
+  df <- read_xlsx(
     path = fs::path_abs(
-      str_glue(base_file),
-      start = base_dir
+      str_glue(nw_base_file),
+      start = nw_base_dir
     ),
-    sheet = "CTRY_DLY_Y2D",
-    range = cell_limits(c(3, 2), c(NA, 6))
+    sheet = "CTRY_DLY_Y2D_DATA",
+    range = cell_limits(c(5, 2), c(NA, NA))
   ) %>%
     as_tibble() %>%
     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-  st_rank_data_y2d <- st_rank_data_y2d_raw %>%
-    arrange(desc(Y2D_CTRY_DLY), Y2D_CTRY_DLY_NAME) %>%
-    mutate(
-      DY_RANK = row_number(),
-      Y2D_RANK = DY_RANK
-    ) %>%
-    filter(DY_RANK <= 10)
+  # save pre-processed file in archive for generation of past json files
+  write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+}
 
-  ### main card
-  st_main_delay <- st_rank_data_day_raw %>%
-    mutate(
-      DY_RANK = row_number(),
-      MAIN_DLY_CTRY_NAME = if_else(
-        DY_RANK <= 4,
-        DY_CTRY_DLY_NAME,
-        NA
-      ),
-      MAIN_DLY_CTRY_DLY = if_else(
-        DY_RANK <= 4,
-        DY_CTRY_DLY,
-        NA
-      ),
-      MAIN_DLY_CTRY_CODE = if_else(
-        DY_RANK <= 4,
-        DY_CTRY_DLY_CODE,
-        NA
-      )
-    ) %>%
-    select(DY_RANK, MAIN_DLY_CTRY_NAME, MAIN_DLY_CTRY_DLY, MAIN_DLY_CTRY_CODE) %>%
-    filter(DY_RANK <= 10)
+# process data
+st_rank_delay_y2d <- assign(mydataframe, df) %>%
+  filter(YEAR == data_day_year) %>%
+  arrange(desc(AVG_DELAY), COUNTRY_NAME) %>%
+  mutate(
+    DY_RANK = row_number(),
+    Y2D_RANK = DY_RANK,
+    Y2D_CTRY_DLY_PER_FLT = if_else(AVG_FLIGHT == 0, 0,AVG_DELAY/ AVG_FLIGHT)
+  ) %>%
+  filter(DY_RANK <= 10) %>%
+  select(
+    DY_RANK,
+    Y2D_RANK,
+    Y2D_CTRY_DLY_NAME = COUNTRY_NAME,
+    Y2D_TO_DATE = TO_DATE,
+    Y2D_CTRY_DLY = AVG_DELAY,
+    Y2D_CTRY_DLY_PER_FLT
+  )
 
-  st_main_delay_flt <- st_rank_data_day_raw %>%
-    arrange(desc(DY_CTRY_DLY_PER_FLT), DY_CTRY_DLY_NAME) %>%
-    mutate(
-      DY_RANK = row_number(),
-      MAIN_DLY_FLT_CTRY_NAME = if_else(
-        DY_RANK <= 4,
-        DY_CTRY_DLY_NAME,
-        NA
-      ),
-      MAIN_DLY_FLT_CTRY_DLY_FLT = if_else(
-        DY_RANK <= 4,
-        DY_CTRY_DLY_PER_FLT,
-        NA
-      ),
-      MAIN_DLY_FLT_CTRY_CODE = if_else(
-        DY_RANK <= 4,
-        DY_CTRY_DLY_CODE,
-        NA)
-    ) %>%
-    select(DY_RANK,
-           MAIN_DLY_FLT_CTRY_NAME,
-           MAIN_DLY_FLT_CTRY_DLY_FLT,
-           MAIN_DLY_FLT_CTRY_CODE) %>%
-    filter(DY_RANK <= 10)
+### main card ----
+st_main_delay <- st_rank_delay_day %>%
+  mutate(across(-DY_RANK, ~ ifelse(DY_RANK > 4, NA, .))) %>%
+  select(DY_RANK,
+         MAIN_DLY_CTRY_NAME = DY_CTRY_DLY_NAME,
+         MAIN_DLY_CTRY_DLY = DY_CTRY_DLY,
+         MAIN_DLY_CTRY_CODE = DY_CTRY_DLY_CODE)
 
-  ### merge and reorder tables
-  st_rank_data <- merge(x = st_rank_data_day, y = st_rank_data_week, by = "DY_RANK")
-  st_rank_data <- merge(x = st_rank_data, y = st_rank_data_y2d, by = "DY_RANK")
-  st_rank_data <- merge(x = st_rank_data, y = st_main_delay, by = "DY_RANK")
-  st_rank_data <- merge(x = st_rank_data, y = st_main_delay_flt, by = "DY_RANK")
+st_main_delay_flt <- st_rank_delay_day %>%
+  arrange(desc(DY_CTRY_DLY_PER_FLT), DY_CTRY_DLY_NAME) %>%
+  mutate(DY_RANK = row_number(),
+         across(-DY_RANK, ~ ifelse(DY_RANK > 4, NA, .))) %>%
+  select(DY_RANK,
+         MAIN_DLY_FLT_CTRY_NAME = DY_CTRY_DLY_NAME,
+         MAIN_DLY_FLT_CTRY_DLY_FLT = DY_CTRY_DLY_PER_FLT,
+         MAIN_DLY_FLT_CTRY_CODE = DY_CTRY_DLY_CODE)
 
-  st_rank_data <- st_rank_data %>%
-    relocate(c(
-      RANK,
-      MAIN_DLY_CTRY_NAME,
-      MAIN_DLY_CTRY_DLY,
-      MAIN_DLY_CTRY_CODE,
-      MAIN_DLY_FLT_CTRY_NAME,
-      MAIN_DLY_FLT_CTRY_DLY_FLT,
-      MAIN_DLY_FLT_CTRY_CODE,
-      DY_RANK,
-      DY_CTRY_DLY_NAME,
-      DY_TO_DATE,
-      DY_CTRY_DLY,
-      DY_CTRY_DLY_PER_FLT,
-      WK_RANK,
-      WK_CTRY_DLY_NAME,
-      WK_FROM_DATE,
-      WK_TO_DATE,
-      WK_CTRY_DLY,
-      WK_CTRY_DLY_PER_FLT,
-      Y2D_RANK,
-      Y2D_CTRY_DLY_NAME,
-      Y2D_TO_DATE,
-      Y2D_CTRY_DLY,
-      Y2D_CTRY_DLY_PER_FLT
-    ))
+### merge and reorder tables
+st_rank_delay <- merge(x = st_rank_delay_day, y = st_rank_delay_week, by = "DY_RANK")
+st_rank_delay <- merge(x = st_rank_delay, y = st_rank_delay_y2d, by = "DY_RANK")
+st_rank_delay <- merge(x = st_rank_delay, y = st_main_delay, by = "DY_RANK")
+st_rank_delay <- merge(x = st_rank_delay, y = st_main_delay_flt, by = "DY_RANK")
 
-  ### covert to json and save in app data folder and archive
-  st_rank_data_j <- st_rank_data %>% toJSON(., pretty = TRUE)
-  # (not needed anymore since the release of v2)
-  # write(st_rank_data_j, here(data_folder, "ctry_ranking_delay.json"))
-  write(st_rank_data_j, here(data_folder, "v2", "ctry_ranking_delay.json"))
-  write(st_rank_data_j, paste0(archive_dir, data_day_text, "_ctry_ranking_delay.json"))
-  write(st_rank_data_j, paste0(archive_dir, "ctry_ranking_delay.json"))
+st_rank_delay <- st_rank_delay %>%
+  select(
+    RANK,
+    MAIN_DLY_CTRY_NAME,
+    MAIN_DLY_CTRY_DLY,
+    MAIN_DLY_CTRY_CODE,
+    MAIN_DLY_FLT_CTRY_NAME,
+    MAIN_DLY_FLT_CTRY_DLY_FLT,
+    MAIN_DLY_FLT_CTRY_CODE,
+    DY_RANK,
+    DY_CTRY_DLY_NAME,
+    DY_TO_DATE,
+    DY_CTRY_DLY,
+    DY_CTRY_DLY_PER_FLT,
+    WK_RANK,
+    WK_CTRY_DLY_NAME,
+    WK_FROM_DATE,
+    WK_TO_DATE,
+    WK_CTRY_DLY,
+    WK_CTRY_DLY_PER_FLT,
+    Y2D_RANK,
+    Y2D_CTRY_DLY_NAME,
+    Y2D_TO_DATE,
+    Y2D_CTRY_DLY,
+    Y2D_CTRY_DLY_PER_FLT
+  )
 
-  # we duplicate the files while the app is being remapped
-  write(st_rank_data_j, here(data_folder, "v2", "nw_ctry_ranking_delay.json"))
-  write(st_rank_data_j, paste0(archive_dir, data_day_text, "_nw_ctry_ranking_delay.json"))
-  write(st_rank_data_j, paste0(archive_dir, "nw_ctry_ranking_delay.json"))
+### covert to json and save in app data folder and archive
+st_rank_delay_j <- st_rank_delay %>% toJSON(., pretty = TRUE)
+
+write(st_rank_delay_j, here(data_folder, "v2", "ctry_ranking_delay.json"))
+write(st_rank_delay_j, paste0(archive_dir, data_day_text, "_ctry_ranking_delay.json"))
+write(st_rank_delay_j, paste0(archive_dir, "ctry_ranking_delay.json"))
+
+# we duplicate the files while the app is being remapped
+write(st_rank_delay_j, here(data_folder, "v2", "nw_ctry_ranking_delay.json"))
+write(st_rank_delay_j, paste0(archive_dir, data_day_text, "_nw_ctry_ranking_delay.json"))
+write(st_rank_delay_j, paste0(archive_dir, "nw_ctry_ranking_delay.json"))
 
 
 ## Airport punctuality ----
