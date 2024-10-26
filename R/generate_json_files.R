@@ -45,6 +45,17 @@ usr <- Sys.getenv("PRU_DEV_USR")
 pwd <- Sys.getenv("PRU_DEV_PWD")
 dbn <- Sys.getenv("PRU_DEV_DBNAME")
 
+
+# Dimension tables ----
+acc <-  read_xlsx(
+  path  = fs::path_abs(
+    str_glue(base_file),
+    start = base_dir),
+  sheet = "ACC_names",
+  range = cell_limits(c(2, 3), c(NA, NA))) %>%
+  as_tibble()
+
+
 # json for main page ----
 
   ## Network billed ----
@@ -1344,7 +1355,7 @@ dbn <- Sys.getenv("PRU_DEV_DBNAME")
 # jsons for ranking tables ----
 
 ## Aircraft operators traffic ----
-### day
+### day ----
 mydataframe <- "nw_ao_day_raw"
 myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
@@ -1380,7 +1391,7 @@ ao_data_dy <- assign(mydataframe, df) %>%
     DY_RANK_DIF_PREV_WEEK,
     DY_AO_GRP_CODE = AO_GRP_CODE)
 
-### week
+### week ----
 mydataframe <- "nw_ao_week_raw"
 myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
@@ -1414,7 +1425,7 @@ ao_data_wk <- assign(mydataframe, df) %>%
          WK_DIF_PREV_YEAR_PERC = FLIGHT_DIFF_7DAY_PERC,
          WK_RANK_DIF_PREV_WEEK)
 
-### y2d
+### y2d ----
 mydataframe <- "nw_ao_y2d_raw"
 myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
@@ -1455,7 +1466,7 @@ ao_data_y2d <- assign(mydataframe, df) %>%
     Y2D_RANK_DIF_PREV_YEAR
     )
 
-### main card
+### main card ----
 ao_main_traffic <- ao_data_dy %>%
   mutate(
     MAIN_TFC_AO_GRP_NAME = if_else(
@@ -1491,7 +1502,7 @@ ao_main_traffic_dif <- nw_ao_day_raw %>%
     MAIN_TFC_AO_GRP_DIF = FLIGHT_7DAY_DIFF
     )
 
-### merge and reorder tables
+### merge and reorder tables ----
 ao_data <- merge(x = ao_data_wk, y = ao_data_dy, by = "WK_R_RANK_BY_DAY")
 ao_data <- merge(x = ao_data, y = ao_data_y2d, by = "WK_R_RANK_BY_DAY")
 ao_data <- merge(x = ao_data, y = ao_main_traffic, by = "WK_R_RANK_BY_DAY")
@@ -1528,7 +1539,7 @@ ao_data <- ao_data %>%
     Y2D_DIF_2019_PERC
   )
 
-### covert to json and save in app data folder and archive
+### covert to json and save in app data folder and archive ----
 ao_data_j <- ao_data %>% toJSON(., pretty = TRUE)
 # (not needed anymore since the release of v2)
 # write(ao_data_j, here(data_folder, "ao_ranking_traffic.json"))
@@ -1543,7 +1554,7 @@ write(ao_data_j, paste0(archive_dir, data_day_text, "_nw_ao_ranking_traffic.json
 
 
 ## Airport traffic ----
-### day
+### day ----
 mydataframe <- "nw_apt_day_raw"
 myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
@@ -1579,7 +1590,7 @@ apt_data_dy <- assign(mydataframe, df) %>%
     DY_RANK_DIF_PREV_WEEK
     )
 
-### week
+### week ----
 mydataframe <- "nw_apt_week_raw"
 myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
@@ -1615,7 +1626,7 @@ apt_data_wk <- assign(mydataframe, df) %>%
     WK_RANK_DIF_PREV_WEEK
   )
 
-### y2d
+### y2d ----
 mydataframe <- "nw_apt_y2d_raw"
 myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
@@ -1666,7 +1677,7 @@ apt_data_y2d <- assign(mydataframe, df) %>%
     Y2D_RANK_DIF_PREV_YEAR
   )
 
-### main card
+### main card ----
 apt_main_traffic <- apt_data_dy %>%
   mutate(
     MAIN_TFC_AIRPORT_NAME = if_else(
@@ -1697,7 +1708,7 @@ apt_main_traffic_dif <- nw_apt_day_raw %>%
     MAIN_TFC_AIRPORT_DIF = DEP_ARR_7DAY_DIFF
   )
 
-### merge and reorder tables
+### merge and reorder tables ----
 apt_data <- merge(x = apt_data_dy, y = apt_data_wk, by = "DY_R_RANK_BY_DAY")
 apt_data <- merge(x = apt_data, y = apt_data_y2d, by = "DY_R_RANK_BY_DAY")
 apt_data <- merge(x = apt_data, y = apt_main_traffic, by = "DY_R_RANK_BY_DAY")
@@ -1732,7 +1743,7 @@ apt_data <- apt_data %>%
     Y2D_DIF_2019_PERC
   )
 
-### covert to json and save in app data folder and archive
+### covert to json and save in app data folder and archive ----
 apt_data_j <- apt_data %>% toJSON(., pretty = TRUE)
 
 write(apt_data_j, here(data_folder, "v2", "apt_ranking_traffic.json"))
@@ -1746,7 +1757,7 @@ write(apt_data_j, paste0(archive_dir, data_day_text, "_nw_apt_ranking_traffic.js
 
 
 ## Country traffic DAI ----
-### day
+### day----
 mydataframe <- "nw_st_dai_day_raw"
 myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
@@ -1789,7 +1800,7 @@ st_dai_data_dy <- assign(mydataframe, df) %>%
     DY_RANK_DIF_PREV_WEEK
 )
 
-### week
+### week ----
 mydataframe <- "nw_st_dai_week_raw"
 myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
@@ -1835,7 +1846,7 @@ st_dai_data_wk <- assign(mydataframe, df) %>%
     WK_RANK_DIF_PREV_WEEK
   )
 
-### y2d
+### y2d----
 mydataframe <- "nw_st_dai_y2d_raw"
 myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
@@ -1889,7 +1900,7 @@ st_dai_data_y2d <- assign(mydataframe, df) %>%
   )
 
 
-### main card
+### main card ----
 st_main_traffic <- st_dai_data_dy %>%
   mutate(across(-DY_R_RANK_BY_DAY, ~ ifelse(DY_R_RANK_BY_DAY > 4, NA, .))) %>%
   select(DY_R_RANK_BY_DAY,
@@ -1915,7 +1926,7 @@ st_main_traffic_dif <- nw_st_dai_day_raw %>%
     MAIN_TFC_DIF_CTRY_CODE = ISO_COUNTRY_CODE
   )
 
-### merge and reorder tables
+### merge and reorder tables ----
 st_dai_data <- merge(x = st_dai_data_dy, y = st_dai_data_wk, by = "DY_R_RANK_BY_DAY")
 st_dai_data <- merge(x = st_dai_data, y = st_dai_data_y2d, by = "DY_R_RANK_BY_DAY")
 st_dai_data <- merge(x = st_dai_data, y = st_main_traffic, by = "DY_R_RANK_BY_DAY")
@@ -1952,7 +1963,7 @@ st_dai_data <- st_dai_data %>%
     Y2D_RANK_DIF_PREV_YEAR
   ))
 
-### covert to json and save in app data folder and archive
+### covert to json and save in app data folder and archive ----
 st_dai_data_j <- st_dai_data %>% toJSON(., pretty = TRUE)
 # (not needed anymore since the release of v2)
 # write(st_dai_data_j, here(data_folder, "ctry_ranking_traffic_DAI.json"))
@@ -1967,298 +1978,326 @@ write(st_dai_data_j, paste0(archive_dir, "nw_ctry_ranking_traffic_DAI.json"))
 
 
 ## Airport delay -----
+### raw data
+mydataframe <- "nw_apt_delay_raw"
+myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+stakeholder <- str_sub(mydataframe, 1, 2)
 
-  ### raw data
-  apt_rank_data_raw <- read_xlsx(
-    path = fs::path_abs(
+if (archive_mode) {
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+
+} else {
+  df <-  read_xlsx(
+    path  = fs::path_abs(
       str_glue(base_file),
-      start = base_dir
-    ),
+      start = base_dir),
     sheet = "APT_DELAY",
-    range = cell_limits(c(5, 2), c(NA, 50))
+    range = cell_limits(c(5, 2), c(NA, 50))) %>%
+    as_tibble() %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+  # save pre-processed file in archive for generation of past json files
+  write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+}
+
+assign(mydataframe, df)
+
+### day data ----
+apt_rank_data_day <- nw_apt_delay_raw %>%
+  arrange(desc(DLY_ARR), ARP_NAME) %>%
+  mutate(
+    R_RANK_DLY_DAY = row_number(),
+    ARP_NAME_DAY = ARP_NAME,
+    DLY_PER_FLT = ifelse(FLT_ARR == 0, 0, round(DLY_ARR / FLT_ARR, 2))
   ) %>%
-    as_tibble()
+  select(R_RANK_DLY_DAY, ARP_NAME_DAY, FLIGHT_DATE, DLY_ARR, DLY_PER_FLT) %>%
+  as.data.frame() %>%
+  filter(R_RANK_DLY_DAY <= 10)
 
-  ### day data
-  apt_rank_data_day <- apt_rank_data_raw %>%
-    arrange(desc(DLY_ARR), ARP_NAME) %>%
-    mutate(
-      R_RANK_DLY_DAY = row_number(),
-      ARP_NAME_DAY = ARP_NAME,
-      DLY_PER_FLT = ifelse(FLT_ARR == 0, 0, round(DLY_ARR / FLT_ARR, 2))
-    ) %>%
-    select(R_RANK_DLY_DAY, ARP_NAME_DAY, FLIGHT_DATE, DLY_ARR, DLY_PER_FLT) %>%
-    as.data.frame() %>%
-    filter(R_RANK_DLY_DAY <= 10)
+### week ----
+apt_rank_data_week <- nw_apt_delay_raw %>%
+  arrange(desc(ROLL_WEEK_DLY_ARR), ARP_NAME) %>%
+  mutate(
+    R_RANK_DLY_DAY = row_number(),
+    WK_RANK = R_RANK_DLY_DAY,
+    ARP_NAME_WK = ARP_NAME,
+    DLY_PER_FLT_WEEK = ifelse(ROLL_WEEK_ARR == 0, 0, round(ROLL_WEEK_DLY_ARR / ROLL_WEEK_ARR, 2)),
+    WK_FROM_DATE = FLIGHT_DATE + days(-6),
+    WK_TO_DATE = FLIGHT_DATE
+  ) %>%
+  select(
+    R_RANK_DLY_DAY, WK_RANK, ARP_NAME_WK, WK_FROM_DATE, WK_TO_DATE,
+    ROLL_WEEK_DLY_ARR, DLY_PER_FLT_WEEK
+  ) %>%
+  as.data.frame() %>%
+  filter(R_RANK_DLY_DAY <= 10)
 
-  ### week
-  apt_rank_data_week <- apt_rank_data_raw %>%
-    arrange(desc(ROLL_WEEK_DLY_ARR), ARP_NAME) %>%
-    mutate(
-      R_RANK_DLY_DAY = row_number(),
-      WK_RANK = R_RANK_DLY_DAY,
-      ARP_NAME_WK = ARP_NAME,
-      DLY_PER_FLT_WEEK = ifelse(ROLL_WEEK_ARR == 0, 0, round(ROLL_WEEK_DLY_ARR / ROLL_WEEK_ARR, 2)),
-      WK_FROM_DATE = FLIGHT_DATE + days(-6),
-      WK_TO_DATE = FLIGHT_DATE
-    ) %>%
-    select(
-      R_RANK_DLY_DAY, WK_RANK, ARP_NAME_WK, WK_FROM_DATE, WK_TO_DATE,
-      ROLL_WEEK_DLY_ARR, DLY_PER_FLT_WEEK
-    ) %>%
-    as.data.frame() %>%
-    filter(R_RANK_DLY_DAY <= 10)
+### y2d ----
+apt_rank_data_y2d <- nw_apt_delay_raw %>%
+  arrange(desc(Y2D_AVG_DLY_ARR), ARP_NAME) %>%
+  mutate(
+    R_RANK_DLY_DAY = row_number(),
+    Y2D_RANK = R_RANK_DLY_DAY,
+    ARP_NAME_Y2D = ARP_NAME,
+    DLY_PER_FLT_Y2D = ifelse(Y2D_AVG_FLT == 0,
+      0,
+      round(Y2D_AVG_DLY / Y2D_AVG_ARR, 2)
+    ),
+    Y2D_TO_DATE = FLIGHT_DATE
+  ) %>%
+  select(R_RANK_DLY_DAY, Y2D_RANK, ARP_NAME_Y2D, Y2D_TO_DATE, Y2D_AVG_DLY_ARR, DLY_PER_FLT_Y2D) %>%
+  as.data.frame()
 
-  ### y2d
-  apt_rank_data_y2d <- apt_rank_data_raw %>%
-    arrange(desc(Y2D_AVG_DLY_ARR), ARP_NAME) %>%
-    mutate(
-      R_RANK_DLY_DAY = row_number(),
-      Y2D_RANK = R_RANK_DLY_DAY,
-      ARP_NAME_Y2D = ARP_NAME,
-      DLY_PER_FLT_Y2D = ifelse(Y2D_AVG_FLT == 0,
-        0,
-        round(Y2D_AVG_DLY / Y2D_AVG_ARR, 2)
-      ),
-      Y2D_TO_DATE = FLIGHT_DATE
-    ) %>%
-    select(R_RANK_DLY_DAY, Y2D_RANK, ARP_NAME_Y2D, Y2D_TO_DATE, Y2D_AVG_DLY_ARR, DLY_PER_FLT_Y2D) %>%
-    as.data.frame()
+### main card ----
+apt_main_delay <- apt_rank_data_day %>%
+  mutate(across(-R_RANK_DLY_DAY, ~ ifelse(R_RANK_DLY_DAY > 4, NA, .))) %>%
+  select(R_RANK_DLY_DAY,
+         MAIN_DLY_APT_NAME = ARP_NAME_DAY,
+         MAIN_DLY_APT_DLY = DLY_ARR)
 
-  ### main card
-  apt_main_delay <- apt_rank_data_day %>%
-    mutate(
-      MAIN_DLY_APT_NAME = if_else(
-        R_RANK_DLY_DAY <= 4,
-        ARP_NAME_DAY,
-        NA
-      ),
-      MAIN_DLY_APT_DLY = if_else(
-        R_RANK_DLY_DAY <= 4,
-        DLY_ARR,
-        NA
-      )
-    ) %>%
-    select(R_RANK_DLY_DAY, MAIN_DLY_APT_NAME, MAIN_DLY_APT_DLY)
+apt_main_delay_flt <- apt_rank_data_day %>%
+  arrange(desc(DLY_PER_FLT), ARP_NAME_DAY) %>%
+  mutate(R_RANK_DLY_DAY = row_number(),
+         across(-R_RANK_DLY_DAY,
+                ~ ifelse(R_RANK_DLY_DAY > 4, NA, .))) %>%
+  select(R_RANK_DLY_DAY,
+         MAIN_DLY_FLT_APT_NAME = ARP_NAME_DAY,
+         MAIN_DLY_FLT_APT_DLY_FLT = DLY_PER_FLT)
 
-  apt_main_delay_flt <- apt_rank_data_day %>%
-    arrange(desc(DLY_PER_FLT), ARP_NAME_DAY) %>%
-    mutate(
-      R_RANK_DLY_DAY = row_number(),
-      MAIN_DLY_FLT_APT_NAME = if_else(
-        R_RANK_DLY_DAY <= 4,
-        ARP_NAME_DAY,
-        NA
-      ),
-      MAIN_DLY_FLT_APT_DLY_FLT = if_else(
-        R_RANK_DLY_DAY <= 4,
-        DLY_PER_FLT,
-        NA
-      )
-    ) %>%
-    select(R_RANK_DLY_DAY, MAIN_DLY_FLT_APT_NAME, MAIN_DLY_FLT_APT_DLY_FLT)
+### merge and reorder tables ----
+apt_rank_data <- merge(x = apt_rank_data_day, y = apt_rank_data_week, by = "R_RANK_DLY_DAY")
+apt_rank_data <- merge(x = apt_rank_data, y = apt_rank_data_y2d, by = "R_RANK_DLY_DAY")
+apt_rank_data <- merge(x = apt_rank_data, y = apt_main_delay, by = "R_RANK_DLY_DAY")
+apt_rank_data <- merge(x = apt_rank_data, y = apt_main_delay_flt, by = "R_RANK_DLY_DAY")
 
-  ### merge and reorder tables
-  apt_rank_data <- merge(x = apt_rank_data_day, y = apt_rank_data_week, by = "R_RANK_DLY_DAY")
-  apt_rank_data <- merge(x = apt_rank_data, y = apt_rank_data_y2d, by = "R_RANK_DLY_DAY")
-  apt_rank_data <- merge(x = apt_rank_data, y = apt_main_delay, by = "R_RANK_DLY_DAY")
-  apt_rank_data <- merge(x = apt_rank_data, y = apt_main_delay_flt, by = "R_RANK_DLY_DAY")
+apt_rank_data <- apt_rank_data %>%
+  select(
+    RANK = R_RANK_DLY_DAY,
+    MAIN_DLY_APT_NAME,
+    MAIN_DLY_APT_DLY,
+    MAIN_DLY_FLT_APT_NAME,
+    MAIN_DLY_FLT_APT_DLY_FLT,
+    DY_RANK = R_RANK_DLY_DAY,
+    DY_AIRPORT_NAME = ARP_NAME_DAY,
+    DY_TO_DATE = FLIGHT_DATE,
+    DY_AIRPORT_DLY = DLY_ARR,
+    DY_AIRPORT_DLY_PER_FLT = DLY_PER_FLT,
+    WK_RANK,
+    WK_AIRPORT_NAME = ARP_NAME_WK,
+    WK_FROM_DATE,
+    WK_TO_DATE,
+    WK_AIRPORT_DLY = ROLL_WEEK_DLY_ARR,
+    WK_AIRPORT_DLY_PER_FLT = DLY_PER_FLT_WEEK,
+    Y2D_RANK,
+    Y2D_AIRPORT_NAME = ARP_NAME_Y2D,
+    Y2D_TO_DATE,
+    Y2D_AIRPORT_DLY = Y2D_AVG_DLY_ARR,
+    Y2D_AIRPORT_DLY_PER_FLT = DLY_PER_FLT_Y2D
+  )
 
-  apt_rank_data <- apt_rank_data %>%
-    relocate(c(
-      RANK = R_RANK_DLY_DAY,
-      MAIN_DLY_APT_NAME,
-      MAIN_DLY_APT_DLY,
-      MAIN_DLY_FLT_APT_NAME,
-      MAIN_DLY_FLT_APT_DLY_FLT,
-      DY_RANK = R_RANK_DLY_DAY,
-      DY_AIRPORT_NAME = ARP_NAME_DAY,
-      DY_TO_DATE = FLIGHT_DATE,
-      DY_AIRPORT_DLY = DLY_ARR,
-      DY_AIRPORT_DLY_PER_FLT = DLY_PER_FLT,
-      WK_RANK,
-      WK_AIRPORT_NAME = ARP_NAME_WK,
-      WK_FROM_DATE,
-      WK_TO_DATE,
-      WK_AIRPORT_DLY = ROLL_WEEK_DLY_ARR,
-      WK_AIRPORT_DLY_PER_FLT = DLY_PER_FLT_WEEK,
-      Y2D_RANK,
-      Y2D_AIRPORT_NAME = ARP_NAME_Y2D,
-      Y2D_TO_DATE,
-      Y2D_AIRPORT_DLY = Y2D_AVG_DLY_ARR,
-      Y2D_AIRPORT_DLY_PER_FLT = DLY_PER_FLT_Y2D
-    ))
+### covert to json and save in app data folder and archive ----
+apt_rank_data_j <- apt_rank_data %>% toJSON(., pretty = TRUE)
 
-  ### covert to json and save in app data folder and archive
-  apt_rank_data_j <- apt_rank_data %>% toJSON(., pretty = TRUE)
-  # (not needed anymore since the release of v2)
-  # write(apt_rank_data_j, here(data_folder, "apt_ranking_delay.json"))
-  write(apt_rank_data_j, here(data_folder, "v2", "apt_ranking_delay.json"))
-  write(apt_rank_data_j, paste0(archive_dir, data_day_text, "_apt_ranking_delay.json"))
-  write(apt_rank_data_j, paste0(archive_dir, "apt_ranking_delay.json"))
+write(apt_rank_data_j, here(data_folder, "v2", "apt_ranking_delay.json"))
+write(apt_rank_data_j, paste0(archive_dir, data_day_text, "_apt_ranking_delay.json"))
+write(apt_rank_data_j, paste0(archive_dir, "apt_ranking_delay.json"))
 
-  # we duplicate the files while the app is being remapped
-  write(apt_rank_data_j, here(data_folder, "v2", "nw_apt_ranking_delay.json"))
-  write(apt_rank_data_j, paste0(archive_dir, data_day_text, "_nw_apt_ranking_delay.json"))
-  write(apt_rank_data_j, paste0(archive_dir, "nw_apt_ranking_delay.json"))
+# we duplicate the files while the app is being remapped
+write(apt_rank_data_j, here(data_folder, "v2", "nw_apt_ranking_delay.json"))
+write(apt_rank_data_j, paste0(archive_dir, data_day_text, "_nw_apt_ranking_delay.json"))
+write(apt_rank_data_j, paste0(archive_dir, "nw_apt_ranking_delay.json"))
 
 
 ## ACC delay ----
+### day ----
+mydataframe <- "nw_acc_delay_day_raw"
+myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+stakeholder <- str_sub(mydataframe, 1, 2)
 
-  ### day data
-  acc_rank_data_day_raw <- read_xlsx(
-    path = fs::path_abs(
+if (archive_mode) {
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+
+} else {
+  df <-  read_xlsx(
+    path  = fs::path_abs(
       str_glue(base_file),
-      start = base_dir
-    ),
+      start = base_dir),
     sheet = "ACC_DAY_DELAY",
-    range = cell_limits(c(5, 1), c(NA, 20))
-  ) %>%
+    range = cell_limits(c(5, 2), c(NA, 20))) %>%
     as_tibble() %>%
-    mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
-    arrange(desc(DLY_ER), NAME) %>%
-    mutate(
-      DY_RANK = row_number(),
-      DY_ACC_NAME = NAME,
-      DY_ACC_DLY = DLY_ER,
-      DY_ACC_DLY_PER_FLT = DLY_ER / FLIGHT,
-      DY_TO_DATE = ENTRY_DATE
-    )
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-  acc_rank_data_day <- acc_rank_data_day_raw %>%
-    select(DY_RANK, R_RANK_DLY_DAY, DY_ACC_NAME, DY_TO_DATE, DY_ACC_DLY, DY_ACC_DLY_PER_FLT) %>%
-    filter(DY_RANK <= 10)
+  # save pre-processed file in archive for generation of past json files
+  write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+}
 
-  ### week
+# process data
+acc_rank_data_day_all <- assign(mydataframe, df) %>%
+  left_join(distinct(acc, Name, ICAO_code), by = c("UNIT_CODE" = "ICAO_code")) %>%
+  relocate(Name, .before = everything()) %>%
+  rename(NAME = Name) %>%
+  arrange(desc(DLY_ER), NAME) %>%
+  mutate(
+    DY_RANK = row_number(),
+    DY_ACC_DLY_PER_FLT = DLY_ER / FLIGHT,
+  ) %>%
+  select(DY_RANK,
+         R_RANK_DLY_DAY,
+         DY_ACC_NAME = NAME,
+         DY_TO_DATE = ENTRY_DATE,
+         DY_ACC_DLY = DLY_ER,
+         DY_ACC_DLY_PER_FLT)
 
-  acc_rank_data_week_raw <- read_xlsx(
-    path = fs::path_abs(
+acc_rank_data_day <- acc_rank_data_day_all %>%
+  filter(DY_RANK <= 10)
+
+### week ----
+mydataframe <- "nw_acc_delay_week_raw"
+myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+stakeholder <- str_sub(mydataframe, 1, 2)
+
+if (archive_mode) {
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+
+} else {
+  df <-  read_xlsx(
+    path  = fs::path_abs(
       str_glue(base_file),
-      start = base_dir
-    ),
+      start = base_dir),
     sheet = "ACC_WEEK_DELAY",
-    range = cell_limits(c(5, 1), c(NA, 16))
-  ) %>%
+    range = cell_limits(c(5, 2), c(NA, 16))) %>%
     as_tibble() %>%
     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-  acc_rank_data_week <- acc_rank_data_week_raw %>%
-    arrange(desc(DAILY_DLY_ER), NAME) %>%
-    mutate(
-      DY_RANK = row_number(),
-      WK_RANK = row_number(),
-      WK_ACC_NAME = NAME,
-      WK_ACC_DLY = DAILY_DLY_ER,
-      WK_ACC_DLY_PER_FLT = DAILY_DLY_ER / DAILY_FLIGHT,
-      WK_FROM_DATE = MIN_ENTRY_DATE,
-      WK_TO_DATE = MAX_ENTRY_DATE
-    ) %>%
-    select(DY_RANK, WK_RANK, WK_ACC_NAME, WK_FROM_DATE, WK_TO_DATE, WK_ACC_DLY, WK_ACC_DLY_PER_FLT) %>%
-    filter(DY_RANK <= 10)
+  # save pre-processed file in archive for generation of past json files
+  write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+}
 
-  ### y2d
+# process data
+acc_rank_data_week <- assign(mydataframe, df) %>%
+  left_join(distinct(acc, Name, ICAO_code), by = c("UNIT_CODE" = "ICAO_code")) %>%
+  relocate(Name, .before = everything()) %>%
+  rename(NAME = Name) %>%
 
-  acc_rank_data_y2d_raw <- read_xlsx(
-    path = fs::path_abs(
+  arrange(desc(DAILY_DLY_ER), NAME) %>%
+  mutate(
+    DY_RANK = row_number(),
+    WK_RANK = DY_RANK,
+    WK_ACC_DLY_PER_FLT = DAILY_DLY_ER / DAILY_FLIGHT
+  ) %>%
+  select(DY_RANK,
+         WK_RANK,
+         WK_ACC_NAME = NAME,
+         WK_FROM_DATE = MIN_ENTRY_DATE,
+         WK_TO_DATE = MAX_ENTRY_DATE,
+         WK_ACC_DLY = DAILY_DLY_ER,
+         WK_ACC_DLY_PER_FLT) %>%
+  filter(DY_RANK <= 10)
+
+### y2d ----
+mydataframe <- "nw_acc_delay_y2d_raw"
+myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+stakeholder <- str_sub(mydataframe, 1, 2)
+
+if (archive_mode) {
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+
+} else {
+  df <-  read_xlsx(
+    path  = fs::path_abs(
       str_glue(base_file),
-      start = base_dir
-    ),
+      start = base_dir),
     sheet = "ACC_Y2D_DELAY",
-    range = cell_limits(c(7, 1), c(NA, 12))
-  ) %>%
+    range = cell_limits(c(7, 2), c(NA, 13))) %>%
     as_tibble() %>%
     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-  acc_rank_data_y2d <- acc_rank_data_y2d_raw %>%
-    arrange(desc(Y2D_AVG_DLY_ER), NAME) %>%
-    mutate(
-      DY_RANK = row_number(),
-      Y2D_RANK = row_number(),
-      Y2D_ACC_NAME = NAME,
-      Y2D_ACC_DLY = Y2D_AVG_DLY_ER,
-      Y2D_ACC_DLY_PER_FLT = Y2D_AVG_DLY_ER / Y2D_AVG_FLIGHT,
-      Y2D_TO_DATE = ENTRY_DATE
+  # save pre-processed file in archive for generation of past json files
+  write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+}
+
+# process data
+acc_rank_data_y2d <- assign(mydataframe, df) %>%
+  rename(Y2D_FROM_DATE = MIN_DATE) %>%
+  left_join(distinct(acc, Name, ICAO_code), by = c("UNIT_CODE" = "ICAO_code")) %>%
+  relocate(Name, .before = everything()) %>%
+  rename(NAME = Name) %>%
+
+  arrange(desc(Y2D_AVG_DLY_ER), NAME) %>%
+  mutate(
+    DY_RANK = row_number(),
+    Y2D_RANK = DY_RANK,
+    Y2D_ACC_DLY_PER_FLT = Y2D_AVG_DLY_ER / Y2D_AVG_FLIGHT
+  ) %>%
+  select(DY_RANK,
+         Y2D_RANK,
+         Y2D_ACC_NAME = NAME,
+         Y2D_TO_DATE = ENTRY_DATE,
+         Y2D_ACC_DLY = Y2D_AVG_DLY_ER,
+         Y2D_ACC_DLY_PER_FLT
+         ) %>%
+  filter(DY_RANK <= 10)
+
+### main card ----
+acc_main_delay <- acc_rank_data_day %>%
+  mutate(across(-DY_RANK, ~ ifelse(DY_RANK > 4, NA, .))) %>%
+  select(DY_RANK,
+         MAIN_DLY_ACC_NAME = DY_ACC_NAME,
+         MAIN_DLY_ACC_DLY = DY_ACC_DLY)
+
+acc_main_delay_flt <- acc_rank_data_day_all %>%
+  arrange(desc(DY_ACC_DLY_PER_FLT), DY_ACC_NAME) %>%
+  mutate(
+    DY_RANK = row_number(),
+    across(-DY_RANK, ~ ifelse(DY_RANK > 4, NA, .))
     ) %>%
-    select(DY_RANK, Y2D_RANK, Y2D_ACC_NAME, Y2D_TO_DATE, Y2D_ACC_DLY, Y2D_ACC_DLY_PER_FLT) %>%
-    filter(DY_RANK <= 10)
+  select(DY_RANK,
+         MAIN_DLY_FLT_ACC_NAME = DY_ACC_NAME,
+         MAIN_DLY_FLT_ACC_DLY_FLT = DY_ACC_DLY_PER_FLT) %>%
+  filter(DY_RANK <= 10)
 
-  ### main card
-  acc_main_delay <- acc_rank_data_day %>%
-    mutate(
-      MAIN_DLY_ACC_NAME = if_else(
-        DY_RANK <= 4,
-        DY_ACC_NAME,
-        NA
-      ),
-      MAIN_DLY_ACC_DLY = if_else(
-        DY_RANK <= 4,
-        DY_ACC_DLY,
-        NA
-      )
-    ) %>%
-    select(DY_RANK, MAIN_DLY_ACC_NAME, MAIN_DLY_ACC_DLY)
+### merge and reorder tables ----
+acc_rank_data <- merge(x = acc_rank_data_day, y = acc_rank_data_week, by = "DY_RANK")
+acc_rank_data <- merge(x = acc_rank_data, y = acc_rank_data_y2d, by = "DY_RANK")
+acc_rank_data <- merge(x = acc_rank_data, y = acc_main_delay, by = "DY_RANK")
+acc_rank_data <- merge(x = acc_rank_data, y = acc_main_delay_flt, by = "DY_RANK")
 
-  acc_main_delay_flt <- acc_rank_data_day_raw %>%
-    arrange(desc(DY_ACC_DLY_PER_FLT), NAME) %>%
-    mutate(
-      DY_RANK = row_number(),
-      MAIN_DLY_FLT_ACC_NAME = if_else(
-        DY_RANK <= 4,
-        NAME,
-        NA
-      ),
-      MAIN_DLY_FLT_ACC_DLY_FLT = if_else(
-        DY_RANK <= 4,
-        DY_ACC_DLY_PER_FLT,
-        NA
-      )
-    ) %>%
-    select(DY_RANK, MAIN_DLY_FLT_ACC_NAME, MAIN_DLY_FLT_ACC_DLY_FLT) %>%
-    filter(DY_RANK <= 10)
+acc_rank_data <- acc_rank_data %>%
+  select(
+    RANK = DY_RANK,
+    MAIN_DLY_ACC_NAME,
+    MAIN_DLY_ACC_DLY,
+    MAIN_DLY_FLT_ACC_NAME,
+    MAIN_DLY_FLT_ACC_DLY_FLT,
+    DY_RANK,
+    DY_ACC_NAME,
+    DY_TO_DATE,
+    DY_ACC_DLY,
+    DY_ACC_DLY_PER_FLT,
+    WK_RANK,
+    WK_ACC_NAME,
+    WK_FROM_DATE,
+    WK_TO_DATE,
+    WK_ACC_DLY,
+    WK_ACC_DLY_PER_FLT,
+    Y2D_RANK,
+    Y2D_ACC_NAME,
+    Y2D_TO_DATE,
+    Y2D_ACC_DLY,
+    Y2D_ACC_DLY_PER_FLT
+  )
 
-  ### merge and reorder tables
-  acc_rank_data <- merge(x = acc_rank_data_day, y = acc_rank_data_week, by = "DY_RANK")
-  acc_rank_data <- merge(x = acc_rank_data, y = acc_rank_data_y2d, by = "DY_RANK")
-  acc_rank_data <- merge(x = acc_rank_data, y = acc_main_delay, by = "DY_RANK")
-  acc_rank_data <- merge(x = acc_rank_data, y = acc_main_delay_flt, by = "DY_RANK")
+### covert to json and save in app data folder and archive ----
+acc_rank_data_j <- acc_rank_data %>% toJSON(., pretty = TRUE)
 
-  acc_rank_data <- acc_rank_data %>%
-    relocate(c(
-      RANK = DY_RANK,
-      MAIN_DLY_ACC_NAME,
-      MAIN_DLY_ACC_DLY,
-      MAIN_DLY_FLT_ACC_NAME,
-      MAIN_DLY_FLT_ACC_DLY_FLT,
-      DY_RANK = DY_RANK,
-      DY_ACC_NAME,
-      DY_TO_DATE,
-      DY_ACC_DLY,
-      DY_ACC_DLY_PER_FLT,
-      WK_RANK,
-      WK_ACC_NAME,
-      WK_FROM_DATE,
-      WK_TO_DATE,
-      WK_ACC_DLY,
-      WK_ACC_DLY_PER_FLT,
-      Y2D_RANK,
-      Y2D_ACC_NAME,
-      Y2D_TO_DATE,
-      Y2D_ACC_DLY,
-      Y2D_ACC_DLY_PER_FLT
-    ))
+write(acc_rank_data_j, here(data_folder, "v2", "acc_ranking_delay.json"))
+write(acc_rank_data_j, paste0(archive_dir, data_day_text, "_acc_ranking_delay.json"))
+write(acc_rank_data_j, paste0(archive_dir, "acc_ranking_delay.json"))
 
-  ### covert to json and save in app data folder and archive
-  acc_rank_data_j <- acc_rank_data %>% toJSON(., pretty = TRUE)
-  # (not needed anymore since the release of v2)
-  # write(acc_rank_data_j, here(data_folder, "acc_ranking_delay.json"))
-  write(acc_rank_data_j, here(data_folder, "v2", "acc_ranking_delay.json"))
-  write(acc_rank_data_j, paste0(archive_dir, data_day_text, "_acc_ranking_delay.json"))
-  write(acc_rank_data_j, paste0(archive_dir, "acc_ranking_delay.json"))
-
-  # we duplicate the file while the app is being remapped
-  write(acc_rank_data_j, here(data_folder, "v2", "nw_acc_ranking_delay.json"))
-  write(acc_rank_data_j, paste0(archive_dir, data_day_text, "_nw_acc_ranking_delay.json"))
-  write(acc_rank_data_j, paste0(archive_dir, "nw_acc_ranking_delay.json"))
+# we duplicate the file while the app is being remapped
+write(acc_rank_data_j, here(data_folder, "v2", "nw_acc_ranking_delay.json"))
+write(acc_rank_data_j, paste0(archive_dir, data_day_text, "_nw_acc_ranking_delay.json"))
+write(acc_rank_data_j, paste0(archive_dir, "nw_acc_ranking_delay.json"))
 
 
 ## Country delay ----

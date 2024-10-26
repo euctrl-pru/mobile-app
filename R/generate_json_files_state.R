@@ -1705,8 +1705,7 @@ if (archive_mode) {
   as_tibble() %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-  # save pre-processed file in archive for generation of past json files
-  write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+  # saved already in the nw file
 }
 
 # process data
@@ -1761,8 +1760,7 @@ if (archive_mode) {
   as_tibble() %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-  # save pre-processed file in archive for generation of past json files
-  write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+  # saved already in the nw file
 }
 
 # process data
@@ -1817,8 +1815,7 @@ if (archive_mode) {
   as_tibble() %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-  # save pre-processed file in archive for generation of past json files
-  write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+  # saved already in the nw file
 }
 
 # process data
@@ -1931,8 +1928,7 @@ if (archive_mode) {
   as_tibble() %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-  # save pre-processed file in archive for generation of past json files
-  write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+  # saved already in the nw file
 }
 
 st_apt_delay_raw <- assign(mydataframe, df) %>%
