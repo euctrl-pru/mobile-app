@@ -1090,15 +1090,6 @@ select
    FROM_DATE, TO_DATE,
    daily_dep_arr,
 --   mvt_dep_arr,
---   CASE when a.year = extract (year from ", mydate, "-1) then
---      daily_dep_arr else 0
---   END dep_arr_current_year,
---   CASE when a.year = extract (year from ", mydate, "-1)-1 then
---      daily_dep_arr else 0
---   END dep_arr_prev_year,
---   CASE when a.year = 2019 then
---      daily_dep_arr else 0
---   END dep_arr_2019,
    R_RANK,
    RANK, RANK_PY
 
@@ -1107,6 +1098,603 @@ left join APT_RANK b on a.arp_code = b.arp_code
 left join APT_RANK_PY c on a.arp_code = c.arp_code
 where R_RANK <= '100'
 order by TO_DATE desc, R_RANK
+"
+  )
+  }
+
+# nw state dai ----
+## day ----
+query_nw_st_dai_day_raw <- function(mydate_string) {
+  mydate <- date_sql_string(mydate_string)
+  paste0("
+with
+
+REL_AP_CTRY as (
+select cfmu_ap_code ,
+       case when cfmu_ap_code = 'LYPR' THEN 'RSME'
+            WHEN country_code = 'RS' or country_code = 'ME' THEN 'RSME'
+--            WHEN country_code = 'MC' THEN 'FR'
+            ELSE country_code
+      END country_code
+ from  v_covid_rel_airport_area
+),
+
+CTRY_LIST as (
+select distinct
+      CASE WHEN iso_ct_code = 'RS' or iso_ct_code = 'ME' THEN 'RSME'
+--           WHEN iso_ct_code = 'MC' THEN 'FR'
+           ELSE iso_ct_code
+      END iso_ct_code,
+      CASE WHEN iso_ct_code = 'RS' or iso_ct_code = 'ME' THEN 'Serbia/Montenegro'
+--           WHEN iso_ct_code = 'MC' THEN 'FRANCE'
+           ELSE iso_ct_name
+      END iso_ct_name
+from v_covid_rel_airport_area where (region = 'ECAC'
+                              or iso_ct_name in ('ISRAEL', 'MOROCCO')
+                              ) AND iso_ct_name not in ('AZERBAIJAN' , 'GIBRALTAR', 'KOSOVO*', 'ICELAND',
+                              'MONACO', '#UNKNOWN#')
+),
+
+CTRY_LIST_ALL as (
+select
+      CASE WHEN aiu_iso_country_code = 'RS' or aiu_iso_country_code = 'ME' THEN 'RSME'
+--           WHEN aiu_iso_country_code = 'MC' THEN 'FR'
+           ELSE aiu_iso_country_code
+      END ec_iso_ct_code,
+      CASE WHEN aiu_iso_country_code = 'RS' or aiu_iso_country_code = 'ME' THEN 'Serbia/Montenegro'
+--           WHEN aiu_iso_country_code = 'MC' THEN 'France'
+           ELSE aiu_iso_country_name
+      END ec_iso_ct_name
+from pru_country_iso
+group by  CASE WHEN aiu_iso_country_code = 'RS' or aiu_iso_country_code = 'ME' THEN 'RSME'
+--            WHEN aiu_iso_country_code = 'MC' THEN 'FR'
+            ELSE aiu_iso_country_code
+          END,
+          CASE WHEN aiu_iso_country_code = 'RS' or aiu_iso_country_code = 'ME' THEN 'Serbia/Montenegro'
+--            WHEN aiu_iso_country_code = 'MC' THEN 'France'
+            ELSE aiu_iso_country_name
+          END
+)
+
+, AIRP_FLIGHT as (
+/* Formatted on 06-07-2020 15:56:37 (QP5 v5.318) */
+SELECT count(flt_uid) as mvt,
+       TRUNC (flt_a_asp_prof_time_entry) AS entry_day,
+       c1.country_code dep_ctry ,c2.country_code arr_ctry
+
+  FROM v_aiu_flt a, REL_AP_CTRY c1, REL_AP_CTRY c2
+ WHERE       (
+                      (     A.flt_lobt >= ", mydate, " -2 -1
+                        AND A.flt_lobt < ", mydate, "+2
+                        AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -1
+                        AND A.flt_a_asp_prof_time_entry < ", mydate, "-0
+                        )
+                        or
+                      (     A.flt_lobt >= ", mydate, " -2-1-7
+                        AND A.flt_lobt < ", mydate, "+2-7
+                        AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -1 -7
+                        AND A.flt_a_asp_prof_time_entry < ", mydate, "-0 -7
+                        )
+                        or
+                      (     A.flt_lobt >= ", mydate, " -2-1-364
+                        AND A.flt_lobt < ", mydate, "+2-364
+                        AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -1-364
+                        AND A.flt_a_asp_prof_time_entry < ", mydate, "-0 -364
+                        )
+                        or
+                        (     A.flt_lobt >=  ", mydate, "-1 - 2 -  greatest((extract (year from (", mydate, "-1))-2019) *364+ floor((extract (year from (", mydate, "-1))-2019)/4)*7,0)
+                        AND A.flt_lobt < ", mydate, " +2 - greatest((extract (year from (", mydate, "-1))-2019) *364+ floor((extract (year from (", mydate, "-1))-2019)/4)*7,0)
+                        AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -((extract (year from (", mydate, "-1))-2019) *364)- floor((extract (year from (", mydate, "-1))-2019)/4)*7 -1
+                        AND A.flt_a_asp_prof_time_entry < ", mydate, "-((extract (year from (", mydate, "-1))-2019) *364) - floor((extract (year from (", mydate, "-1))-2019)/4)*7
+                    )
+                     )
+       AND A.flt_state IN ('TE', 'TA', 'AA')
+       AND  flt_dep_ad IS NOT NULL
+       AND    flt_ctfm_ades
+ IS NOT NULL
+       AND flt_dep_ad = c1.cfmu_ap_code and    flt_ctfm_ades
+ = c2.cfmu_ap_code
+       GROUP BY c1.country_code, c2.country_code, TRUNC (flt_a_asp_prof_time_entry)
+     ),
+
+
+CTRY_PAIR_FLIGHT as
+(
+SELECT entry_day,
+      CASE WHEN   dep_ctry <= arr_ctry
+           THEN dep_ctry
+           ELSE   arr_ctry
+       END
+        ctry1,
+      CASE WHEN  dep_ctry <= arr_ctry
+           THEN arr_ctry
+           ELSE   dep_ctry
+       END
+        ctry2 , mvt,
+         case when entry_day >= ", mydate, " -1 and entry_day < ", mydate, "  then 'CURRENT_DAY'
+              when entry_day >= ", mydate, " -1-364 and entry_day < ", mydate, "-364  then 'DAY_PREV_YEAR'
+              when entry_day >= ", mydate, " -1-7 and entry_day < ", mydate, "-7  then 'DAY_PREV_WEEK'
+              when entry_day >= ", mydate, " -((extract (year from (", mydate, "-1))-2019) *364)- floor((extract (year from (", mydate, "-1))-2019)/4)*7 -1
+                    and entry_day < ", mydate, " -((extract (year from (", mydate, "-1))-2019) *364)- floor((extract (year from (", mydate, "-1))-2019)/4)*7
+                    then 'DAY_2019'
+                    else '-'
+          end  flag_day
+  FROM AIRP_FLIGHT
+
+  ),
+
+ CTRY_PAIR_ARP_1 as
+ (SELECT
+        flag_day,
+        ctry1,
+        ctry2,
+        sum(mvt) as TOT_MVT
+ FROM
+ CTRY_PAIR_FLIGHT
+ group by flag_day, ctry1, ctry2
+
+ ),
+
+ CTRY_PAIR_ARP_2 as
+(
+SELECT flag_day,
+       ctry2 as ctry1,
+       ctry1 as ctry2,
+       TOT_MVT
+FROM CTRY_PAIR_ARP_1
+  WHERE ctry1 <> ctry2
+ ),
+
+ CTRY_PAIR_ARP as (
+ SELECT ctry1, ctry2, ctry1 as country_id, flag_day, TOT_MVT
+ FROM CTRY_PAIR_ARP_1
+ UNION ALL
+ SELECT ctry1, ctry2, ctry1 as country_id, flag_day, TOT_MVT
+ FROM  CTRY_PAIR_ARP_2
+ )
+
+, CTRY_DAI as (
+ SELECT ctry1, country_id , flag_day,
+      sum(TOT_MVT) as tot_mvt
+ FROM  CTRY_PAIR_ARP
+  WHERE country_id in (select iso_ct_code from ctry_list)
+group by ctry1, country_id , flag_day
+
+ ),
+
+CTRY_DAI_RANK as
+(
+ select
+            country_id,
+            flag_day,
+            RANK() OVER (PARTITION BY  flag_day
+                ORDER BY TOT_MVT DESC) as RANK,
+            ROW_NUMBER() OVER (PARTITION BY  flag_day
+                ORDER BY TOT_MVT DESC, ctry1) as R_RANK
+from CTRY_DAI
+where flag_day = 'CURRENT_DAY'
+),
+
+CTRY_DAI_RANK_PREV as
+(
+ select
+            country_id,
+            flag_day,
+            ROW_NUMBER() OVER (PARTITION BY  flag_day
+                ORDER BY TOT_MVT DESC) as RANK_PREV_WEEK
+from CTRY_DAI
+where flag_day = 'DAY_PREV_WEEK'
+)
+
+ select
+            d.ec_iso_ct_name as country_name,
+            d.ec_iso_ct_code as iso_country_code,
+            a.flag_day,
+            TOT_MVT,
+            r_rank, rank, rank_prev_week,
+            ", mydate, "-1 as to_date
+
+from CTRY_DAI a
+
+ left join CTRY_DAI_RANK b on a.country_id =  b.country_id
+ left join CTRY_DAI_RANK_PREV c on a.country_id =  c.country_id
+ left join CTRY_LIST_ALL d on a.country_id = d.ec_iso_ct_code
+where d.ec_iso_ct_code <> '##'
+order by flag_day, r_rank
+"
+)
+}
+
+## week ----
+query_nw_st_dai_week_raw <- function(mydate_string) {
+  mydate <- date_sql_string(mydate_string)
+  paste0("
+with
+
+REL_AP_CTRY as (
+  select cfmu_ap_code ,
+  case when cfmu_ap_code = 'LYPR' THEN 'RSME'
+  WHEN country_code = 'RS' or country_code = 'ME' THEN 'RSME'
+  --            WHEN country_code = 'MC' THEN 'FR'
+  ELSE country_code
+  END country_code
+  from  v_covid_rel_airport_area
+),
+
+CTRY_LIST as (
+  select distinct
+  CASE WHEN iso_ct_code = 'RS' or iso_ct_code = 'ME' THEN 'RSME'
+  --           WHEN iso_ct_code = 'MC' THEN 'FR'
+  ELSE iso_ct_code
+  END iso_ct_code,
+  CASE WHEN iso_ct_code = 'RS' or iso_ct_code = 'ME' THEN 'Serbia/Montenegro'
+  --           WHEN iso_ct_code = 'MC' THEN 'FRANCE'
+  ELSE iso_ct_name
+  END iso_ct_name
+  from v_covid_rel_airport_area where (region = 'ECAC'
+                                       or iso_ct_name in ('ISRAEL', 'MOROCCO')
+  ) AND iso_ct_name not in ('AZERBAIJAN' , 'GIBRALTAR', 'KOSOVO*', 'ICELAND',
+                            'MONACO', '#UNKNOWN#')
+),
+
+CTRY_LIST_ALL as (
+  select
+  CASE WHEN aiu_iso_country_code = 'RS' or aiu_iso_country_code = 'ME' THEN 'RSME'
+  --           WHEN aiu_iso_country_code = 'MC' THEN 'FR'
+  ELSE aiu_iso_country_code
+  END ec_iso_ct_code,
+  CASE WHEN aiu_iso_country_code = 'RS' or aiu_iso_country_code = 'ME' THEN 'Serbia/Montenegro'
+  --           WHEN aiu_iso_country_code = 'MC' THEN 'France'
+  ELSE aiu_iso_country_name
+  END ec_iso_ct_name
+  from pru_country_iso
+  group by  CASE WHEN aiu_iso_country_code = 'RS' or aiu_iso_country_code = 'ME' THEN 'RSME'
+  --            WHEN aiu_iso_country_code = 'MC' THEN 'FR'
+  ELSE aiu_iso_country_code
+  END,
+  CASE WHEN aiu_iso_country_code = 'RS' or aiu_iso_country_code = 'ME' THEN 'Serbia/Montenegro'
+  --            WHEN aiu_iso_country_code = 'MC' THEN 'France'
+  ELSE aiu_iso_country_name
+  END
+)
+
+, AIRP_FLIGHT as (
+  /* Formatted on 06-07-2020 15:56:37 (QP5 v5.318) */
+    SELECT count(flt_uid) as mvt,
+  TRUNC (flt_a_asp_prof_time_entry) AS entry_day,
+  c1.country_code dep_ctry ,c2.country_code arr_ctry
+
+  FROM v_aiu_flt a, REL_AP_CTRY c1, REL_AP_CTRY c2
+  WHERE       (
+    (     A.flt_lobt >= ", mydate, " -2 -7
+          AND A.flt_lobt < ", mydate, "+2
+          AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -7
+          AND A.flt_a_asp_prof_time_entry < ", mydate, "-0
+    )
+    or
+    (     A.flt_lobt >= ", mydate, " -2-14
+      AND A.flt_lobt < ", mydate, "+2-7
+      AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -14
+      AND A.flt_a_asp_prof_time_entry < ", mydate, "-0 -7
+    )
+    or
+    (     A.flt_lobt >= ", mydate, " -2-7-364
+      AND A.flt_lobt < ", mydate, "+2-364
+      AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -7-364
+      AND A.flt_a_asp_prof_time_entry < ", mydate, "-0 -364
+    )
+    or
+    (     A.flt_lobt >=  ", mydate, "-7 - 2 -  greatest((extract (year from (", mydate, "-1))-2019) *364+ floor((extract (year from (", mydate, "-1))-2019)/4)*7,0)
+      AND A.flt_lobt < ", mydate, " +2 - greatest((extract (year from (", mydate, "-1))-2019) *364+ floor((extract (year from (", mydate, "-1))-2019)/4)*7,0)
+      AND A.flt_a_asp_prof_time_entry >=  ", mydate, "-7 -((extract (year from (", mydate, "-1))-2019) *364)- floor((extract (year from (", mydate, "-1))-2019)/4)*7
+      AND A.flt_a_asp_prof_time_entry < ", mydate, "-((extract (year from (", mydate, "-1))-2019) *364) - floor((extract (year from (", mydate, "-1))-2019)/4)*7
+    )
+  )
+  AND A.flt_state IN ('TE', 'TA', 'AA')
+  AND  flt_dep_ad IS NOT NULL
+  AND    flt_ctfm_ades IS NOT NULL
+  AND flt_dep_ad = c1.cfmu_ap_code and    flt_ctfm_ades = c2.cfmu_ap_code
+  --       AND c1.country_code = 'RSME'
+  GROUP BY c1.country_code, c2.country_code, TRUNC (flt_a_asp_prof_time_entry)
+),
+
+
+CTRY_PAIR_FLIGHT as
+(
+  SELECT entry_day,
+  CASE WHEN   dep_ctry <= arr_ctry
+  THEN dep_ctry
+  ELSE   arr_ctry
+  END
+  ctry1,
+  CASE WHEN  dep_ctry <= arr_ctry
+  THEN arr_ctry
+  ELSE   dep_ctry
+  END
+  ctry2 , mvt,
+  case when entry_day >= ", mydate, " -7 and entry_day < ", mydate, "  then 'CURRENT_ROLLING_WEEK'
+  when entry_day >= ", mydate, " -7-364 and entry_day < ", mydate, "-364  then 'ROLLING_WEEK_PREV_YEAR'
+  when entry_day >= ", mydate, " -14 and entry_day < ", mydate, "-7  then 'PREV_ROLLING_WEEK'
+  when entry_day >= ", mydate, " -7-((extract (year from (", mydate, "-1))-2019) *364)- floor((extract (year from (", mydate, "-1))-2019)/4)*7
+  and entry_day < ", mydate, " -((extract (year from (", mydate, "-1))-2019) *364)- floor((extract (year from (", mydate, "-1))-2019)/4)*7
+  then 'ROLLING_WEEK_2019'
+  else '-'
+  end  flag_rolling_week
+  FROM AIRP_FLIGHT
+
+),
+
+CTRY_PAIR_ARP_1 as
+(SELECT
+  flag_rolling_week,
+  ctry1,
+  ctry2,
+  sum(mvt) as TOT_MVT
+  FROM
+  CTRY_PAIR_FLIGHT
+  group by flag_rolling_week, ctry1, ctry2
+
+),
+
+CTRY_PAIR_ARP_2 as
+(
+  SELECT flag_rolling_week,
+  ctry2 as ctry1,
+  ctry1 as ctry2,
+  TOT_MVT
+  FROM CTRY_PAIR_ARP_1
+  WHERE ctry1 <> ctry2
+),
+
+CTRY_PAIR_ARP as (
+  SELECT ctry1, ctry2, ctry1 as country_id, flag_rolling_week, TOT_MVT
+  FROM CTRY_PAIR_ARP_1
+  UNION ALL
+  SELECT ctry1, ctry2, ctry1 as country_id, flag_rolling_week, TOT_MVT
+  FROM  CTRY_PAIR_ARP_2
+)
+
+, CTRY_DAI as (
+  SELECT ctry1, country_id , flag_rolling_week,
+  sum(TOT_MVT) as tot_mvt
+  FROM  CTRY_PAIR_ARP
+  WHERE country_id in (select iso_ct_code from ctry_list)
+  group by ctry1, country_id , flag_rolling_week
+
+),
+
+CTRY_DAI_RANK as
+(
+  select
+  country_id,
+  flag_rolling_week,
+  RANK() OVER (PARTITION BY  flag_rolling_week
+               ORDER BY TOT_MVT DESC) as RANK,
+  ROW_NUMBER() OVER (PARTITION BY  flag_rolling_week
+                     ORDER BY TOT_MVT DESC, ctry1) as R_RANK
+  from CTRY_DAI
+  where flag_rolling_week = 'CURRENT_ROLLING_WEEK'
+),
+
+CTRY_DAI_RANK_PREV as
+(
+  select
+  country_id,
+  flag_rolling_week,
+  ROW_NUMBER() OVER (PARTITION BY  flag_rolling_week
+                     ORDER BY TOT_MVT DESC) as RANK_PREV_WEEK
+  from CTRY_DAI
+  where flag_rolling_week = 'PREV_ROLLING_WEEK'
+)
+
+select
+d.ec_iso_ct_name as country_name,
+d.ec_iso_ct_code as iso_country_code,
+a.flag_rolling_week,
+TOT_MVT,
+r_rank, rank, rank_prev_week,
+", mydate, "-1 as to_date,
+", mydate, "-7 as from_date
+
+from CTRY_DAI a
+
+left join CTRY_DAI_RANK b on a.country_id =  b.country_id
+left join CTRY_DAI_RANK_PREV c on a.country_id =  c.country_id
+left join CTRY_LIST_ALL d on a.country_id = d.ec_iso_ct_code
+where d.ec_iso_ct_code <> '##' --and d.ec_iso_ct_code = 'RSME'
+order by flag_rolling_week, r_rank
+"
+  )
+}
+
+## y2d ----
+query_nw_st_dai_y2d_raw <- function(mydate_string) {
+  mydate <- date_sql_string(mydate_string)
+  paste0("
+  with
+
+REL_AP_CTRY as (
+select cfmu_ap_code ,
+       case when cfmu_ap_code = 'LYPR' THEN 'RSME'
+            WHEN country_code = 'RS' or country_code = 'ME' THEN 'RSME'
+--            WHEN country_code = 'MC' THEN 'FR'
+            ELSE country_code
+      END country_code
+ from  v_covid_rel_airport_area
+),
+
+CTRY_LIST as (
+select distinct
+      CASE WHEN iso_ct_code = 'RS' or iso_ct_code = 'ME' THEN 'RSME'
+--           WHEN iso_ct_code = 'MC' THEN 'FR'
+           ELSE iso_ct_code
+      END iso_ct_code,
+      CASE WHEN iso_ct_code = 'RS' or iso_ct_code = 'ME' THEN 'Serbia/Montenegro'
+--           WHEN iso_ct_code = 'MC' THEN 'FRANCE'
+           ELSE iso_ct_name
+      END iso_ct_name
+from v_covid_rel_airport_area where (region = 'ECAC'
+                              or iso_ct_name in ('ISRAEL', 'MOROCCO')
+                              ) AND iso_ct_name not in ('AZERBAIJAN' , 'GIBRALTAR', 'KOSOVO*', 'ICELAND',
+                              'MONACO', '#UNKNOWN#')
+),
+
+CTRY_LIST_ALL as (
+select
+      CASE WHEN aiu_iso_country_code = 'RS' or aiu_iso_country_code = 'ME' THEN 'RSME'
+--           WHEN aiu_iso_country_code = 'MC' THEN 'FR'
+           ELSE aiu_iso_country_code
+      END ec_iso_ct_code,
+      CASE WHEN aiu_iso_country_code = 'RS' or aiu_iso_country_code = 'ME' THEN 'Serbia/Montenegro'
+--           WHEN aiu_iso_country_code = 'MC' THEN 'France'
+           ELSE aiu_iso_country_name
+      END ec_iso_ct_name
+from pru_country_iso
+group by  CASE WHEN aiu_iso_country_code = 'RS' or aiu_iso_country_code = 'ME' THEN 'RSME'
+--            WHEN aiu_iso_country_code = 'MC' THEN 'FR'
+            ELSE aiu_iso_country_code
+          END,
+          CASE WHEN aiu_iso_country_code = 'RS' or aiu_iso_country_code = 'ME' THEN 'Serbia/Montenegro'
+--            WHEN aiu_iso_country_code = 'MC' THEN 'France'
+            ELSE aiu_iso_country_name
+          END
+),
+
+REF_DATES as
+(
+SELECT
+  year,
+  min(day_date) as from_date,
+  max(day_date) as to_date,
+  max(day_date) - min(day_date) + 1 as no_days
+FROM pru_time_references
+where day_date >= TO_DATE ('01-01-2019', 'dd-mm-yyyy')
+        AND TO_NUMBER (TO_CHAR (TRUNC (day_date), 'mmdd')) <=   TO_NUMBER (TO_CHAR (", mydate, "-1, 'mmdd'))
+        AND year <= extract(year from (", mydate, "-1))
+group by year
+)
+
+, AIRP_FLIGHT as (
+/* Formatted on 06-07-2020 15:56:37 (QP5 v5.318) */
+SELECT count(flt_uid) as mvt,
+       TRUNC (flt_a_asp_prof_time_entry) AS entry_day,
+       extract (year from flt_a_asp_prof_time_entry) as year,
+       c1.country_code dep_ctry ,c2.country_code arr_ctry
+FROM v_aiu_flt a, REL_AP_CTRY c1, REL_AP_CTRY c2
+WHERE   A.flt_lobt>= TO_DATE ('01-01-2019', 'dd-mm-yyyy') -2
+            AND A.flt_lobt < ", mydate, " + 2
+            AND flt_a_asp_prof_time_entry >= TO_DATE ('01-01-2019', 'dd-mm-yyyy')
+            AND TO_NUMBER (TO_CHAR (TRUNC (flt_a_asp_prof_time_entry), 'mmdd')) <=   TO_NUMBER (TO_CHAR (", mydate, "-1, 'mmdd'))
+            AND A.flt_state IN ('TE', 'TA', 'AA')
+            AND flt_dep_ad IS NOT NULL
+            AND flt_ctfm_ades IS NOT NULL
+            AND flt_dep_ad = c1.cfmu_ap_code
+            AND flt_ctfm_ades = c2.cfmu_ap_code
+   GROUP BY c1.country_code,
+            c2.country_code,
+            TRUNC (flt_a_asp_prof_time_entry),
+            extract (year from flt_a_asp_prof_time_entry)
+     )
+
+, CTRY_PAIR_FLIGHT as (
+
+SELECT year, entry_day,
+      CASE WHEN   dep_ctry <= arr_ctry
+           THEN dep_ctry
+           ELSE   arr_ctry
+       END
+        ctry1,
+      CASE WHEN  dep_ctry <= arr_ctry
+           THEN arr_ctry
+           ELSE   dep_ctry
+       END
+        ctry2 , mvt
+  FROM AIRP_FLIGHT
+
+  )
+
+, CTRY_PAIR_ARP_1 as (
+SELECT
+        year,
+        ctry1,
+        ctry2,
+        sum(mvt) as TOT_MVT
+ FROM
+ CTRY_PAIR_FLIGHT
+ group by year, ctry1, ctry2
+
+ ),
+
+ CTRY_PAIR_ARP_2 as
+(
+SELECT year,
+       ctry2 as ctry1,
+       ctry1 as ctry2,
+       TOT_MVT
+FROM CTRY_PAIR_ARP_1
+  WHERE ctry1 <> ctry2
+ ),
+
+ CTRY_PAIR_ARP as (
+ SELECT ctry1, ctry2, ctry1 as country_id, year, TOT_MVT
+ FROM CTRY_PAIR_ARP_1
+ UNION ALL
+ SELECT ctry1, ctry2, ctry1 as country_id, year, TOT_MVT
+ FROM  CTRY_PAIR_ARP_2
+ )
+
+, CTRY_DAI as (
+ SELECT ctry1, country_id , year,
+      sum(TOT_MVT) as tot_mvt
+ FROM  CTRY_PAIR_ARP
+-- where country_id = 'RSME'
+WHERE country_id in (select iso_ct_code from ctry_list)
+group by ctry1, country_id , year
+
+ ),
+
+CTRY_DAI_RANK as
+(
+ select
+            country_id,
+            year,
+            RANK() OVER (PARTITION BY  year
+                ORDER BY TOT_MVT DESC) as RANK,
+            ROW_NUMBER() OVER (PARTITION BY  year
+                ORDER BY TOT_MVT DESC, ctry1) as R_RANK
+from CTRY_DAI
+where year = extract (year from (", mydate, " -1))
+),
+
+CTRY_DAI_RANK_PREV as
+(
+ select
+            country_id,
+            year,
+            ROW_NUMBER() OVER (PARTITION BY  year
+                ORDER BY TOT_MVT DESC) as RANK_PREV_YEAR
+from CTRY_DAI
+where year = extract (year from ", mydate, " -1) -1
+)
+
+ select
+            d.ec_iso_ct_name as country_name,
+            d.ec_iso_ct_code as iso_country_code,
+            a.year,
+            TOT_MVT,
+            TOT_MVT/e.no_days as avg_MVT,
+            r_rank, rank, rank_prev_year
+            ,e.from_date,
+            e.to_date,
+            e.no_days
+
+from CTRY_DAI a
+
+ left join CTRY_DAI_RANK b on a.country_id =  b.country_id
+ left join CTRY_DAI_RANK_PREV c on a.country_id =  c.country_id
+ left join CTRY_LIST_ALL d on a.country_id = d.ec_iso_ct_code
+ left join REF_DATES e on a.year=e.year
+order by year, r_rank
 "
   )
   }
