@@ -1368,7 +1368,7 @@ if (archive_mode) {
 }
 
 ao_data_dy <- assign(mydataframe, df) %>%
-  filter(R_RANK_BY_DAY <= 10) %>%
+  filter(R_RANK_BY_DAY <= 10 & R_RANK_BY_DAY != 0 & is.na(R_RANK_BY_DAY)) %>%
   mutate(DY_RANK_DIF_PREV_WEEK = RANK_BY_DAY_7DAY - RANK_BY_DAY) %>%
   select(
     WK_R_RANK_BY_DAY = R_RANK_BY_DAY,
@@ -1404,7 +1404,7 @@ if (archive_mode) {
 }
 
 ao_data_wk <- assign(mydataframe, df) %>%
-  filter(R_RANK_BY_DAY <= 10) %>%
+  filter(R_RANK_BY_DAY <= 10 & R_RANK_BY_DAY != 0 & is.na(R_RANK_BY_DAY)) %>%
   mutate(WK_RANK_DIF_PREV_WEEK = RANK_BY_DAY_7DAY -  RANK_BY_DAY) %>%
   select(WK_R_RANK_BY_DAY = R_RANK_BY_DAY,
          WK_AO_GRP_NAME = AO_GRP_NAME,
@@ -1567,7 +1567,7 @@ if (archive_mode) {
 }
 
 apt_data_dy <- assign(mydataframe, df) %>%
-  filter(R_RANK_BY_DAY <= 10) %>%
+  filter(R_RANK_BY_DAY <= 10 & R_RANK_BY_DAY != 0 & is.na(R_RANK_BY_DAY)) %>%
   mutate(DY_RANK_DIF_PREV_WEEK = RANK_BY_DAY_7DAY - RANK_BY_DAY) %>%
   select(
     DY_R_RANK_BY_DAY = R_RANK_BY_DAY,
@@ -1603,7 +1603,7 @@ if (archive_mode) {
 }
 
 apt_data_wk <- assign(mydataframe, df) %>%
-  filter(R_RANK_BY_DAY <= 10) %>%
+  filter(R_RANK_BY_DAY <= 10 & R_RANK_BY_DAY != 0 & is.na(R_RANK_BY_DAY)) %>%
   mutate(WK_RANK_DIF_PREV_WEEK = RANK_BY_DAY_7DAY - RANK_BY_DAY) %>%
   select(
     DY_R_RANK_BY_DAY = R_RANK_BY_DAY,
@@ -1639,7 +1639,7 @@ if (archive_mode) {
 }
 
 apt_data_y2d <- assign(mydataframe, df) %>%
-  filter(R_RANK <= 10) %>%
+  filter(R_RANK <= 10 & R_RANK != 0 & is.na(R_RANK)) %>%
   mutate(FLAG_LAST_YEAR = case_when(
     YEAR == data_day_year ~ "Y2D_DEP_ARR_CURRENT_YEAR",
     YEAR == data_day_year - 1 ~ "Y2D_DEP_ARR_PREV_YEAR",
@@ -1771,7 +1771,8 @@ if (archive_mode) {
 
 st_dai_data_dy <- assign(mydataframe, df) %>%
   pivot_wider(names_from = "FLAG_DAY", values_from = TOT_MVT) %>%
-  filter(R_RANK <= 10 & R_RANK != 0) %>%
+  mutate(R_RANK = as.numeric(R_RANK)) %>%
+  filter(R_RANK <= 10 & R_RANK != 0 & is.na(R_RANK) == FALSE) %>%
   mutate(
     DY_RANK_DIF_PREV_WEEK = RANK_PREV_WEEK - RANK,
     DY_DIF_PREV_WEEK_PERC = if_else(DAY_PREV_WEEK ==0, 0, CURRENT_DAY/DAY_PREV_WEEK-1),
@@ -1813,8 +1814,9 @@ if (archive_mode) {
 }
 
 st_dai_data_wk <- assign(mydataframe, df) %>%
-pivot_wider(names_from = "FLAG_ROLLING_WEEK", values_from = TOT_MVT) %>%
-  filter(R_RANK <= 10 & R_RANK != 0) %>%
+  mutate(R_RANK = as.numeric(R_RANK)) %>%
+  pivot_wider(names_from = "FLAG_ROLLING_WEEK", values_from = TOT_MVT) %>%
+  filter(R_RANK <= 10 & R_RANK != 0 & is.na(R_RANK) == FALSE) %>%
   mutate(
     WK_RANK_DIF_PREV_WEEK = RANK_PREV_WEEK - RANK,
     WK_CTRY_DAI = CURRENT_ROLLING_WEEK/7,
@@ -1858,7 +1860,8 @@ if (archive_mode) {
 }
 
 st_dai_data_y2d <- assign(mydataframe, df) %>%
-  mutate(TO_DATE = max(TO_DATE, na.rm = TRUE),
+  mutate(R_RANK = as.numeric(R_RANK),
+         TO_DATE = max(TO_DATE, na.rm = TRUE),
          FLAG_YEAR = case_when(
            YEAR == data_day_year ~ "CURRENT_YEAR",
            YEAR == data_day_year-1 ~ "PREVIOUS_YEAR",
@@ -1867,7 +1870,7 @@ st_dai_data_y2d <- assign(mydataframe, df) %>%
               names_from = "FLAG_YEAR",
               values_from = AVG_MVT,
               names_prefix = "AVG_MVT_") %>%
-  filter(R_RANK <= 10 & R_RANK != 0) %>%
+  filter(R_RANK <= 10 & R_RANK != 0 & is.na(R_RANK) == FALSE) %>%
   mutate(
     Y2D_RANK_DIF_PREV_YEAR = RANK_PREV_YEAR - RANK,
     Y2D_CTRY_DAI = AVG_MVT_CURRENT_YEAR ,
