@@ -1455,27 +1455,43 @@ if (archive_mode) {
     start = nw_base_dir
   ),
   sheet = "TOP40_AO_Y2D",
-  range = cell_limits(c(6, 2), c(NA, NA))
+  range = cell_limits(c(5, 2), c(NA, NA))
   ) %>%
     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
   # save pre-processed file in archive for generation of past json files
-  # write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+  write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
 }
 
 ao_data_y2d <- assign(mydataframe, df) %>%
-  clean_names() %>%
-  filter(rank <= 10) %>%
+  mutate(TO_DATE = max(TO_DATE, na.rm = TRUE),
+         Y2D_YEAR = case_when(
+           Y2D_YEAR == "1_Y2D_CURRENT_YEAR" ~ "Y2D_CURRENT_YEAR",
+           Y2D_YEAR == "2_Y2D_PREV_YEAR" ~ "Y2D_PREV_YEAR",
+           .default = Y2D_YEAR
+         )) %>%
+  filter(R_RANK <= 10) %>%
+  select(Y2D_YEAR,
+         AO_GRP_NAME,
+         AO_GRP_CODE,
+         TO_DATE,
+         R_RANK,
+         RANK,
+         RANK_PY,
+         FLT) %>%
+  pivot_wider(names_from = "Y2D_YEAR", values_from = FLT) %>%
   mutate(
-    Y2D_DIF_PREV_YEAR_PERC = if_else(x2_y2d_prev_year_4 == 0 , 0, (x1_y2d_current_year_3 / x2_y2d_prev_year_4) -1),
-    Y2D_DIF_2019_PERC = if_else(y2d_2019_5 == 0 , 0, (x1_y2d_current_year_3 / y2d_2019_5) -1),
-    Y2D_RANK_DIF_PREV_YEAR = x2_y2d_prev_year_16 - rank
+    Y2D_DIF_PREV_YEAR_PERC = if_else(Y2D_PREV_YEAR == 0 , 0,
+                                     Y2D_CURRENT_YEAR / Y2D_PREV_YEAR -1),
+    Y2D_DIF_2019_PERC = if_else(Y2D_2019 == 0 , 0,
+                                Y2D_CURRENT_YEAR / Y2D_2019 -1),
+    Y2D_RANK_DIF_PREV_YEAR = RANK_PY - RANK
     ) %>%
   select(
-    WK_R_RANK_BY_DAY = rank,
-    Y2D_AO_GRP_NAME = ao_grp_name,
-    Y2D_TO_DATE = x1_y2d_current_year_9,
-    Y2D_DAILY_FLIGHT = x1_y2d_current_year_3,
+    WK_R_RANK_BY_DAY = R_RANK,
+    Y2D_AO_GRP_NAME = AO_GRP_NAME,
+    Y2D_TO_DATE = TO_DATE,
+    Y2D_DAILY_FLIGHT = Y2D_CURRENT_YEAR,
     Y2D_DIF_PREV_YEAR_PERC,
     Y2D_DIF_2019_PERC,
     Y2D_RANK_DIF_PREV_YEAR
@@ -1556,8 +1572,7 @@ ao_data <- ao_data %>%
 
 ### covert to json and save in app data folder and archive ----
 ao_data_j <- ao_data %>% toJSON(., pretty = TRUE)
-# (not needed anymore since the release of v2)
-# write(ao_data_j, here(data_folder, "ao_ranking_traffic.json"))
+
 write(ao_data_j, here(data_folder, "v2", "ao_ranking_traffic.json"))
 write(ao_data_j, paste0(archive_dir, "ao_ranking_traffic.json"))
 write(ao_data_j, paste0(archive_dir, data_day_text, "_ao_ranking_traffic.json"))

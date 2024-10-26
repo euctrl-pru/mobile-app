@@ -486,6 +486,121 @@ select YEAR,
   )
 }
 
+## y2d ----
+query_nw_ao_y2d_raw <- function(mydate_string) {
+  mydate <- date_sql_string(mydate_string)
+  paste0("
+  WITH
+
+DIM_AO
+ as (
+SELECT ao_code,ao_name,ao_grp_code,ao_grp_name , ao_grp_level,ao_nm_list
+FROM prudev.v_covid_dim_ao
+) ,
+
+AO_LIST as (
+SELECT ao_code,ao_name,ao_grp_code,ao_grp_name ,ao_grp_level
+FROM dim_ao
+ ),
+
+
+DATA_FLIGHT as (
+
+     SELECT
+        b.ao_grp_code,
+        b.ao_grp_name ,
+        b.ao_grp_level,
+        trunc(A.flt_a_asp_prof_time_entry ) as entry_day,
+        extract(year from A.flt_a_asp_prof_time_entry ) as year,
+        A.flt_uid
+FROM v_aiu_flt A
+     inner join  AO_LIST b ON   (a.ao_icao_id = b.ao_code)
+
+WHERE
+    A.flt_lobt>= TO_DATE ('01-01-2019', 'dd-mm-yyyy') -1
+    AND A.flt_lobt < ", mydate, "
+     AND a.flt_a_asp_prof_time_entry >= TO_DATE ('01-01-2019', 'dd-mm-yyyy')
+     AND TO_NUMBER (TO_CHAR (TRUNC (flt_a_asp_prof_time_entry), 'mmdd')) <=   TO_NUMBER (TO_CHAR (", mydate, "-1, 'mmdd'))
+     and extract(year from A.flt_a_asp_prof_time_entry ) <= extract (year from (", mydate, "-1))
+     AND A.flt_state IN ('TE', 'TA', 'AA')
+
+
+)
+
+, DATA_FLIGHT_GRP as (
+ SELECT
+     a.year,
+     a.ao_grp_code, a.ao_grp_name, a.ao_grp_level,
+    CASE when a.year = extract(year from (", mydate, "-1)) then
+         '1_Y2D_CURRENT_YEAR'
+         when a.year = extract(year from (", mydate, "-1))-1 then
+         '2_Y2D_PREV_YEAR'
+         ELSE 'Y2D_' || year
+    END Y2D_YEAR,
+--    to_date(  '01-01-' || year ,'dd-mm-yyyy') as from_date,
+--    to_date(  TO_CHAR (", mydate, "-1, 'dd-mm-') || year ,'dd-mm-yyyy') as to_date,
+     count(flt_uid) as TOT_FLT ,
+      min(entry_Day) as from_date_with_data,
+      max(entry_day) as to_date_with_data
+  FROM DATA_FLIGHT a
+ where a.ao_grp_name <> 'Unidentified'
+GROUP BY
+        a.year,
+       a.ao_grp_code, a.ao_grp_name,a.ao_grp_level
+)
+
+, DATA_FLIGHT_GRP2 AS(
+SELECT
+    a.*,
+    MIN(from_date_with_data) OVER (PARTITION BY year) as from_date,
+    MAX(to_date_with_data) OVER (PARTITION BY year) as to_date
+FROM DATA_FLIGHT_GRP a
+
+)
+
+, AO_RANK as
+(
+SELECT
+  ao_grp_code, year, ao_grp_name,
+        ROW_NUMBER() OVER (PARTITION BY year
+                ORDER BY TOT_FLT DESC, ao_grp_name) as R_RANK,
+        RANK() OVER (PARTITION BY year
+                ORDER BY TOT_FLT DESC, ao_grp_name) as RANK
+FROM DATA_FLIGHT_GRP
+where year = extract(year from ", mydate, "-1 )
+),
+
+AO_RANK_PREV as
+(
+SELECT
+  ao_grp_code, year, ao_grp_name,
+        RANK() OVER (PARTITION BY year
+                ORDER BY TOT_FLT DESC, ao_grp_name) as RANK_PY
+FROM DATA_FLIGHT_GRP
+where year = extract(year from ", mydate, "-1 ) -1
+)
+
+ SELECT
+     a.year,
+     a.ao_grp_code, a.ao_grp_name, a.ao_grp_level,
+    a.Y2D_YEAR, a.from_date_with_data, a.to_date_with_data,
+    a.from_date, a.to_date,
+     a.TOT_FLT/(a.to_date-a.from_date+1) flt,
+     a.TOT_FLT,
+     b.rank, b.R_RANK,
+     c.rank_py
+
+  FROM DATA_FLIGHT_GRP2 a
+left join AO_RANK b on a.ao_grp_code = b.ao_grp_code
+left join AO_RANK_PREV c on a.ao_grp_code = c.ao_grp_code
+
+where rank <= 100
+order by year desc, R_RANK
+
+"
+  )
+}
+
 # nw apt traffic ----
 ## day ----
 query_nw_apt_day_raw <- function(mydate_string) {
@@ -3032,7 +3147,7 @@ WITH
               SUM (coalesce(a.agg_asp_delayed_traffic_ad_tvs,0))  AS ARP_DELAY_FLIGHT
        FROM v_aiu_agg_asp a
        WHERE
-             agg_asp_entry_date >= '01-JAN-2019' AND a.AGG_ASP_ENTRY_DATE < TRUNC (SYSDATE)
+             agg_asp_entry_date >= '01-JAN-2019' AND a.AGG_ASP_ENTRY_DATE < ", mydate, "
              and agg_asp_ty = 'COUNTRY_AUA'  AND A.agg_asp_unit_ty <> 'REGION'
              AND (SUBSTR(a.agg_asp_id,1,1) IN ('E','L')
          OR SUBSTR(a.agg_asp_id,1,2) IN ('GC','GM','GE','UD','UG','UK', 'YY'))
@@ -3057,8 +3172,8 @@ WITH
            FROM pru_time_references t,
                 LIST_COUNTRY  a
            WHERE
-               day_date >= TO_DATE ('01-01-2019', 'dd-mm-yyyy')   AND day_date < TRUNC (SYSDATE)
-                AND TO_NUMBER (TO_CHAR (t.day_date, 'mmdd')) <=   TO_NUMBER (TO_CHAR (TRUNC (SYSDATE)-1, 'mmdd'))
+               day_date >= TO_DATE ('01-01-2019', 'dd-mm-yyyy')   AND day_date < ", mydate, "
+                AND TO_NUMBER (TO_CHAR (t.day_date, 'mmdd')) <=   TO_NUMBER (TO_CHAR (", mydate, "-1, 'mmdd'))
        ),
 
     ALL_DAY_DATA
