@@ -29,14 +29,10 @@ archive_dir_raw <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Projec
 
 # archive mode for past dates
 if (exists("archive_mode") == FALSE) {archive_mode <- FALSE}
-
-if (archive_mode) {
-  data_day_date <- ymd("2024-01-05")
-  data_day_text <- data_day_date %>% format("%Y%m%d")
-  data_day_year <- as.numeric(format(data_day_date,'%Y'))
+if (exists("data_day_date") == FALSE) {
+  lubridate::today(tzone = "") +  days(-1)
 }
 
-data_day_date <- lubridate::today(tzone = "") +  days(-1)
 data_day_text <- data_day_date %>% format("%Y%m%d")
 data_day_year <- as.numeric(format(data_day_date,'%Y'))
 

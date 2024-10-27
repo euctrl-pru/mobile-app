@@ -19,8 +19,8 @@ source(here("..", "mobile-app", "R", "helpers.R")) # so it can be launched from 
 # parameters ----
 data_folder <- here::here("..", "mobile-app", "data")
 
-nw_base_dir <- "//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/"
-nw_base_file <- "099_Traffic_Landing_Page_dataset_new_{data_day_text}.xlsx"
+nw_base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/LastVersion/'
+nw_base_file <- "099_Traffic_Landing_Page_dataset_new.xlsx"
 
 st_base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/LastVersion/'
 st_base_file <- '099a_app_state_dataset.xlsx'
@@ -30,14 +30,10 @@ archive_dir_raw <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Projec
 
 # archive mode for past dates
 if (exists("archive_mode") == FALSE) {archive_mode <- FALSE}
+if (exists("data_day_date") == FALSE) {
+  lubridate::today(tzone = "") +  days(-1)
+  }
 
-if (archive_mode) {
-  data_day_date <- ymd("2024-10-22")
-  data_day_text <- data_day_date %>% format("%Y%m%d")
-  data_day_year <- as.numeric(format(data_day_date,'%Y'))
-}
-
-data_day_date <- lubridate::today(tzone = "") +  days(-1)
 data_day_text <- data_day_date %>% format("%Y%m%d")
 data_day_year <- as.numeric(format(data_day_date,'%Y'))
 
@@ -319,7 +315,7 @@ nw_delay_json_v2 <- nw_delay_for_json_v2 %>%
 # punctuality data
 nw_punct_data_raw <- read_xlsx(
   path = fs::path_abs(
-    str_glue("098_PUNCTUALITY_{data_day_text}.xlsx"),
+    str_glue("098_PUNCTUALITY.xlsx"),
     start = nw_base_dir
   ),
   sheet = "NETWORK",
@@ -679,8 +675,6 @@ write(nw_traffic_evo_v2_j, paste0(archive_dir, data_day_text, "_nw_traffic_evo_c
 ### monthly ----
 # this graph has been discontinued but we keep it here just in case
 # it has not been adapted for past data so, if back in use, it needs to be redone
-nw_base_dir <- "//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/"
-nw_base_file <- "099_Traffic_Landing_Page_dataset_new_{data_day_text}.xlsx"
 
 nw_traffic_month_data <- read_xlsx(
   path = fs::path_abs(
