@@ -161,7 +161,8 @@ nw_traffic_data <- read_xlsx(
   sheet = "NM_Daily_Traffic_All",
   range = cell_limits(c(2, 1), c(NA, 39))
 ) %>%
-  as_tibble()
+  as_tibble() %>%
+  mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
 
 # get data for last date
@@ -222,7 +223,8 @@ nw_delay_data <- read_xlsx(
   sheet = "NM_Daily_Delay_All",
   range = cell_limits(c(2, 1), c(NA, 39))
 ) %>%
-  as_tibble()
+  as_tibble() %>%
+  mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
 # calcs
 nw_delay_for_json <- nw_delay_data %>%
@@ -324,7 +326,7 @@ nw_punct_data_raw <- read_xlsx(
   range = cell_limits(c(1, 1), c(NA, NA))
   ) %>%
   as_tibble() %>%
-  mutate(DATE = as.Date(DATE, format = "%d-%m-%Y"))
+  mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
 # pull out date parameters
 last_day_punct <- min(max(nw_punct_data_raw$DATE),
@@ -1627,23 +1629,15 @@ apt_data_y2d <- assign(mydataframe, df) %>%
 
 ### main card ----
 apt_main_traffic <- apt_data_dy %>%
-  mutate(
-    MAIN_TFC_AIRPORT_NAME = if_else(
-      DY_R_RANK_BY_DAY <= 4,
-      DY_AIRPORT_NAME,
-      NA
-    ),
-    MAIN_TFC_AIRPORT_DEP_ARR = if_else(
-      DY_R_RANK_BY_DAY <= 4,
-      DY_DEP_ARR,
-      NA
-    )
-  ) %>%
-  select(DY_R_RANK_BY_DAY, MAIN_TFC_AIRPORT_NAME, MAIN_TFC_AIRPORT_DEP_ARR)
+  mutate(across(-DY_R_RANK_BY_DAY, ~ ifelse(DY_R_RANK_BY_DAY > 4, NA, .))) %>%
+  select(DY_R_RANK_BY_DAY,
+         MAIN_TFC_AIRPORT_NAME = DY_AIRPORT_NAME,
+         MAIN_TFC_AIRPORT_DEP_ARR = DY_DEP_ARR)
 
 apt_main_traffic_dif <- nw_apt_day_raw %>%
   filter(R_RANK_BY_DAY <= 40) %>%
-  select(AIRPORT_NAME, DEP_ARR_7DAY_DIFF) %>%
+  select(AIRPORT_NAME,
+         DEP_ARR_7DAY_DIFF) %>%
   arrange(desc(abs(DEP_ARR_7DAY_DIFF))) %>%
   mutate(DY_R_RANK_BY_DAY = row_number()) %>%
   filter(DY_R_RANK_BY_DAY <= 10) %>%
@@ -2403,7 +2397,7 @@ st_main_delay_flt <- st_rank_delay_day %>%
          MAIN_DLY_FLT_CTRY_DLY_FLT = DY_CTRY_DLY_PER_FLT,
          MAIN_DLY_FLT_CTRY_CODE = DY_CTRY_DLY_CODE)
 
-### merge and reorder tables
+### merge and reorder tables ----
 st_rank_delay <- merge(x = st_rank_delay_day, y = st_rank_delay_week, by = "DY_RANK")
 st_rank_delay <- merge(x = st_rank_delay, y = st_rank_delay_y2d, by = "DY_RANK")
 st_rank_delay <- merge(x = st_rank_delay, y = st_main_delay, by = "DY_RANK")
@@ -2436,7 +2430,7 @@ st_rank_delay <- st_rank_delay %>%
     Y2D_CTRY_DLY_PER_FLT
   )
 
-### covert to json and save in app data folder and archive
+### covert to json and save in app data folder and archive ----
 st_rank_delay_j <- st_rank_delay %>% toJSON(., pretty = TRUE)
 
 write(st_rank_delay_j, here(data_folder, "v2", "ctry_ranking_delay.json"))
@@ -2974,27 +2968,11 @@ select(
 
 ### main card ----
 st_main_punct_top <- st_punct_dy_calc_top %>%
-mutate(
-  MAIN_PUNCT_CTRY_NAME = if_else(
-    RANK <= 4,
-    DY_CTRY_NAME,
-    NA
-  ),
-  MAIN_PUNCT_CTRY_ARR_PUNCT = if_else(
-    RANK <= 4,
-    DY_CTRY_ARR_PUNCT,
-    NA
-  ),
-  MAIN_PUNCT_CTRY_CODE = if_else(
-    RANK <= 4,
-    ISO_CT_CODE,
-    NA
-  )
-) %>%
-select(RANK,
-       MAIN_PUNCT_CTRY_NAME,
-       MAIN_PUNCT_CTRY_ARR_PUNCT,
-       MAIN_PUNCT_CTRY_CODE)
+  mutate(across(-RANK, ~ ifelse(RANK > 4, NA, .))) %>%
+  select(RANK,
+         MAIN_PUNCT_CTRY_NAME = DY_CTRY_NAME,
+         MAIN_PUNCT_CTRY_ARR_PUNCT = DY_CTRY_ARR_PUNCT,
+         MAIN_PUNCT_CTRY_CODE = ISO_CT_CODE)
 
 st_main_punct_bottom <- st_punct_calc %>%
 filter(DATE == last_punctuality_day) %>%
@@ -3003,30 +2981,13 @@ mutate(
   DY_CTRY_NAME = EC_ISO_CT_NAME,
   DY_CTRY_ARR_PUNCT = ARR_PUNCTUALITY_PERCENTAGE / 100
 ) %>%
-mutate(
-  MAIN_PUNCT_CTRY_NAME_BOTTOM = if_else(
-    RANK <= 4,
-    DY_CTRY_NAME,
-    NA
-  ),
-  MAIN_PUNCT_CTRY_ARR_PUNCT_BOTTOM = if_else(
-    RANK <= 4,
-    DY_CTRY_ARR_PUNCT,
-    NA
-  ),
-  MAIN_PUNCT_CTRY_CODE_BOTTOM = if_else(
-    RANK <= 4,
-    ISO_CT_CODE,
-    NA
-  )
-) %>%
-filter(RANK < 11) %>%
-arrange(RANK) %>%
-select(RANK,
-       MAIN_PUNCT_CTRY_NAME_BOTTOM,
-       MAIN_PUNCT_CTRY_ARR_PUNCT_BOTTOM,
-       MAIN_PUNCT_CTRY_CODE_BOTTOM)
-
+  mutate(across(-RANK, ~ ifelse(RANK > 4, NA, .))) %>%
+  select(RANK,
+         MAIN_PUNCT_CTRY_NAME_BOTTOM = DY_CTRY_NAME,
+         MAIN_PUNCT_CTRY_ARR_PUNCT_BOTTOM = DY_CTRY_ARR_PUNCT,
+         MAIN_PUNCT_CTRY_CODE_BOTTOM = ISO_CT_CODE) %>%
+  filter(RANK < 11) %>%
+  arrange(RANK)
 
 ### merge and reorder tables ----
 st_punct_data <- merge(x = st_punct_dy_top, y = st_punct_wk_top, by = "RANK")
