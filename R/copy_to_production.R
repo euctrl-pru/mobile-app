@@ -24,7 +24,7 @@ archive_mode <- FALSE
 
 if (archive_mode) {
   wef <- "2024-01-01"  #included in output
-  til <- "2024-01-01"  #included in output
+  til <- "2024-01-02"  #included in output
   data_day_date <- seq(ymd(wef), ymd(til), by = "day")
 } else {
   data_day_date <- lubridate::today(tzone = "") +  days(-1)
@@ -35,8 +35,8 @@ network_data_folder_v2 <- here(destination_dir, "data", "v2")
 
 # check data status ----
 nw_file_status <- read_xlsx(path = fs::path_abs(str_glue(nw_file),start = data_dir),
-  sheet = "Checks",
-  range = cell_limits(c(1, 5), c(2, 5))) %>% pull()
+                            sheet = "Checks",
+                            range = cell_limits(c(1, 5), c(2, 5))) %>% pull()
 
 st_file_status <- read_xlsx(path = fs::path_abs(str_glue(st_file),start = data_dir),
                             sheet = "checks",
@@ -46,7 +46,7 @@ st_file_status <- read_xlsx(path = fs::path_abs(str_glue(st_file),start = data_d
 generate_app_data <- function(data_day_date) {
   source(here("..", "mobile-app", "R", "generate_json_files.R"))
   source(here("..", "mobile-app", "R", "generate_json_files_state.R"))
- }
+}
 
 copy_app_data <- function(data_day_date) {
   # parameters ----
@@ -69,6 +69,12 @@ copy_app_data <- function(data_day_date) {
   file.copy(from = v3_files_to_copy, to = network_data_folder_v3, overwrite = FALSE)
 }
 
+# Define a combined function
+process_app_data <- function(data_day_date) {
+  generate_app_data(data_day_date)
+  copy_app_data(data_day_date)
+}
+
 
 # generate and copy app files ----
 if(archive_mode | (nw_file_status == "OK" & st_file_status == "OK")){
@@ -77,9 +83,9 @@ if(archive_mode | (nw_file_status == "OK" & st_file_status == "OK")){
   source(here("..", "mobile-app", "R", "get_common_data.R"))
 
   # generate and copy data for date sequence ----
-  walk(data_day_date, .f = c(generate_app_data, copy_app_data))
+  walk(data_day_date, .f = process_app_data)
 
-  }
+}
 
 # send email ----
 ## email parameters ----
@@ -95,10 +101,10 @@ if (nw_file_status == "OK" & st_file_status == "OK") {
 
 from    <- "oscar.alfaro@eurocontrol.int"
 to      <- c("oscar.alfaro@eurocontrol.int"
-             # ,
-             # "quinten.goens@eurocontrol.int",
-             # "enrico.spinielli@eurocontrol.int",
-             # "denis.huet@eurocontrol.int"
+             ,
+             "quinten.goens@eurocontrol.int",
+             "enrico.spinielli@eurocontrol.int",
+             "denis.huet@eurocontrol.int"
 )
 # cc      <- c("enrico.spinielli@eurocontrol.int")
 control <- list(smtpServer="mailservices.eurocontrol.int")

@@ -199,25 +199,25 @@ network_punctuality_latest <- function(today = lubridate::today()) {
       ARR_PUN_PREV_YEAR = lag(ARR_PUNCTUALITY_PERCENTAGE, 364),
       DEP_PUN_PREV_YEAR = lag(DEP_PUNCTUALITY_PERCENTAGE, 364),
       ARR_PUN_2019 = if_else(YEAR_FLIGHT == last_year,
-        lag(
-          ARR_PUNCTUALITY_PERCENTAGE,
-          364 * (last_year - 2019) + floor((last_year - 2019) / 4) * 7
-        ),
-        1
+                             lag(
+                               ARR_PUNCTUALITY_PERCENTAGE,
+                               364 * (last_year - 2019) + floor((last_year - 2019) / 4) * 7
+                             ),
+                             1
       ),
       DEP_PUN_2019 = if_else(YEAR_FLIGHT == last_year,
-        lag(
-          DEP_PUNCTUALITY_PERCENTAGE,
-          364 * (last_year - 2019) + floor((last_year - 2019) / 4) * 7
-        ),
-        1
+                             lag(
+                               DEP_PUNCTUALITY_PERCENTAGE,
+                               364 * (last_year - 2019) + floor((last_year - 2019) / 4) * 7
+                             ),
+                             1
       ),
       DAY_2019 = if_else(YEAR_FLIGHT == last_year,
-        lag(
-          DATE,
-          364 * (last_year - 2019) + floor((last_year - 2019) / 4) * 7
-        ),
-        last_day
+                         lag(
+                           DATE,
+                           364 * (last_year - 2019) + floor((last_year - 2019) / 4) * 7
+                         ),
+                         last_day
       ),
       DAY_ARR_PUN_DIF_PY_PERC = ARR_PUNCTUALITY_PERCENTAGE - ARR_PUN_PREV_YEAR,
       DAY_DEP_PUN_DIF_PY_PERC = DEP_PUNCTUALITY_PERCENTAGE - DEP_PUN_PREV_YEAR,
@@ -232,12 +232,12 @@ network_punctuality_latest <- function(today = lubridate::today()) {
       ARR_PUN_WK_PREV_YEAR = lag(ARR_PUN_WK, 364),
       DEP_PUN_WK_PREV_YEAR = lag(DEP_PUN_WK, 364),
       ARR_PUN_WK_2019 = if_else(YEAR_FLIGHT == last_year,
-        lag(ARR_PUN_WK, 364 * (last_year - 2019) + floor((last_year - 2019) / 4) * 7),
-        1
+                                lag(ARR_PUN_WK, 364 * (last_year - 2019) + floor((last_year - 2019) / 4) * 7),
+                                1
       ),
       DEP_PUN_WK_2019 = if_else(YEAR_FLIGHT == last_year,
-        lag(DEP_PUN_WK, 364 * (last_year - 2019) + floor((last_year - 2019) / 4) * 7),
-        1
+                                lag(DEP_PUN_WK, 364 * (last_year - 2019) + floor((last_year - 2019) / 4) * 7),
+                                1
       ),
       WK_ARR_PUN_DIF_PY_PERC = ARR_PUN_WK - ARR_PUN_WK_PREV_YEAR,
       WK_DEP_PUN_DIF_PY_PERC = DEP_PUN_WK - DEP_PUN_WK_PREV_YEAR,
@@ -707,5 +707,185 @@ where (substr(ADEP, 1,2) in ('GC', 'GE', 'LE') or substr(ADES, 1,2) in ('GC', 'G
 }
 
 
-
-
+# get_punct_data_spain2 <- function() {
+#   query1 <- str_glue("
+# with
+# DATA_SPAIN as (
+#   select a.*
+# from LDW_VDM.V_DELAY_TRACKER_ARCHIVE_TURN a
+# where (substr(ADEP, 1,2) in ('GC', 'GE', 'LE') or substr(ADES, 1,2) in ('GC', 'GE', 'LE'))
+# )
+#
+# select
+#       a.*,
+#       trunc(a.ACTUAL_DEP_TIME - 3 / 24) as dep_date,
+#       trunc(a.ACTUAL_ARR_TIME - 3 / 24) as arr_date,
+#       case when substr(ADES, 1,2) = 'GC' then 'IC'
+#             when substr(ADES, 1,2) = 'LE' then 'ES'
+#             when substr(ADES, 1,2) = 'GE' then 'ES'
+#         end iso_ct_code_des,
+#      case when substr(ADEP, 1,2) = 'GC' then 'IC'
+#             when substr(ADEP, 1,2) = 'LE' then 'ES'
+#             when substr(ADEP, 1,2) = 'GE' then 'ES'
+#         end iso_ct_code_dep
+#
+# from DATA_SPAIN a
+# where  (
+#         trunc(a.ACTUAL_DEP_TIME - 3 / 24) >= to_date('24-12-2018','DD-MM-YYYY')
+#         or
+#         trunc(a.ACTUAL_ARR_TIME - 3 / 24) >= to_date('24-12-2018','DD-MM-YYYY')
+#         )
+# order by ID
+# "
+#   )
+#
+# punct_data_raw_raw <- export_query(query1)
+#
+# punct_data_raw_calc <- punct_data_raw_raw |>
+#   # mutate(across(.cols = where(is.instant), ~ as.POSIXct(.x, format="%Y-%m-%d %H:%M:%S")))  |>
+#   mutate(
+#     ARR_DATE = as.Date(ARR_DATE),
+#     ARR_PUNCTUAL_FLIGHTS = case_when(
+#       is.na(SLOT_TIME_ADES) == FALSE & ACTUAL_ARR_TIME < SLOT_TIME_ADES + lubridate::minutes(16) ~ 1,
+#       .default = 0
+#     ),
+#     ARR_SCHEDULE_FLIGHT = case_when (
+#       is.na(SLOT_TIME_ADES) == FALSE ~ 1,
+#       .default =0
+#     ),
+#     DEP_DATE = as.Date(DEP_DATE),
+#     DEP_PUNCTUAL_FLIGHTS = case_when(
+#       is.na(SLOT_TIME_ADEP) == FALSE & ACTUAL_DEP_TIME < (SLOT_TIME_ADEP + lubridate::minutes(16)) ~ 1,
+#       .default = 0
+#     ),
+#     DEP_SCHEDULE_FLIGHT = case_when (
+#       is.na(SLOT_TIME_ADEP) == FALSE ~ 1,
+#       .default =0
+#     )
+#   )
+#
+#
+# punct_data_arr <- punct_data_raw_calc |>
+#   group_by(ISO_CT_CODE_DES, ARR_DATE) |>
+#   summarise(ARR_PUNCTUAL_FLIGHTS = sum(ARR_PUNCTUAL_FLIGHTS, na.rm = TRUE),
+#             ARR_SCHEDULE_FLIGHT = sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE),
+#             ARR_FLIGHTS = n())
+#
+# punct_data_dep <- punct_data_raw_calc |>
+#   group_by(ISO_CT_CODE_DEP, DEP_DATE) |>
+#   summarise(DEP_PUNCTUAL_FLIGHTS = sum(DEP_PUNCTUAL_FLIGHTS, na.rm = TRUE),
+#             DEP_SCHEDULE_FLIGHT = sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE),
+#             DEP_FLIGHTS = n())
+#
+# start_date <- as.Date("2018-12-24")
+# end_date <- lubridate::today() + days(-1)
+#
+# date_seq <- seq(from = start_date, to = end_date, by = "day")
+# my_codes <- c('IC', 'ES')
+# repeated_dates <- rep(date_seq, times = length(my_codes))
+# repeated_values <- rep(my_codes, each = length(date_seq))
+# country_day <- data.frame(DAY_DATE = repeated_dates, ISO_2LETTER = repeated_values) |>
+#   arrange(ISO_2LETTER, DAY_DATE)
+#
+# punct_data_spain_raw <- country_day |>
+#   left_join(punct_data_arr, by = c("DAY_DATE" = "ARR_DATE", "ISO_2LETTER" = "ISO_CT_CODE_DES")) |>
+#   left_join(punct_data_dep, by = c("DAY_DATE" = "DEP_DATE", "ISO_2LETTER" = "ISO_CT_CODE_DEP"))
+#
+# rm(punct_data_raw_raw, punct_data_raw_calc)
+#
+# return(punct_data_spain_raw)
+# }
+#
+# get_punct_data_spain3 <- function() {
+#   query1 <- str_glue("
+# WITH DATA_SPAIN AS (
+#   SELECT a.*
+#   FROM LDW_VDM.V_DELAY_TRACKER_ARCHIVE_TURN a
+#   WHERE (
+#         substr(ADEP, 1, 2) IN ('GC', 'GE', 'LE')
+#         OR
+#         substr(ADES, 1, 2) IN ('GC', 'GE', 'LE')
+#         )
+#     AND (
+#         a.ACTUAL_DEP_TIME >= to_date('24-12-2018','DD-MM-YYYY') + 3 / 24
+#         OR
+#         a.ACTUAL_ARR_TIME >= to_date('24-12-2018','DD-MM-YYYY') + 3 / 24
+#     )
+# )
+#
+# SELECT
+#       a.*,
+#       trunc(a.ACTUAL_DEP_TIME - 3 / 24) AS dep_date,
+#       trunc(a.ACTUAL_ARR_TIME - 3 / 24) AS arr_date,
+#       CASE
+#           WHEN substr(ADES, 1, 2) = 'GC' THEN 'IC'
+#           WHEN substr(ADES, 1, 2) = 'LE' THEN 'ES'
+#           WHEN substr(ADES, 1, 2) = 'GE' THEN 'ES'
+#       END AS iso_ct_code_des,
+#       CASE
+#           WHEN substr(ADEP, 1, 2) = 'GC' THEN 'IC'
+#           WHEN substr(ADEP, 1, 2) = 'LE' THEN 'ES'
+#           WHEN substr(ADEP, 1, 2) = 'GE' THEN 'ES'
+#       END AS iso_ct_code_dep
+# FROM DATA_SPAIN a
+# ORDER BY ID
+#
+# "
+#   )
+#
+# punct_data_raw_raw <- export_query(query1)
+#
+# punct_data_raw_calc <- punct_data_raw_raw |>
+#   # mutate(across(.cols = where(is.instant), ~ as.POSIXct(.x, format="%Y-%m-%d %H:%M:%S")))  |>
+#   mutate(
+#     ARR_DATE = as.Date(ARR_DATE),
+#     ARR_PUNCTUAL_FLIGHTS = case_when(
+#       is.na(SLOT_TIME_ADES) == FALSE & ACTUAL_ARR_TIME < SLOT_TIME_ADES + lubridate::minutes(16) ~ 1,
+#       .default = 0
+#     ),
+#     ARR_SCHEDULE_FLIGHT = case_when (
+#       is.na(SLOT_TIME_ADES) == FALSE ~ 1,
+#       .default =0
+#     ),
+#     DEP_DATE = as.Date(DEP_DATE),
+#     DEP_PUNCTUAL_FLIGHTS = case_when(
+#       is.na(SLOT_TIME_ADEP) == FALSE & ACTUAL_DEP_TIME < (SLOT_TIME_ADEP + lubridate::minutes(16)) ~ 1,
+#       .default = 0
+#     ),
+#     DEP_SCHEDULE_FLIGHT = case_when (
+#       is.na(SLOT_TIME_ADEP) == FALSE ~ 1,
+#       .default =0
+#     )
+#   )
+#
+#
+# punct_data_arr <- punct_data_raw_calc |>
+#   group_by(ISO_CT_CODE_DES, ARR_DATE) |>
+#   summarise(ARR_PUNCTUAL_FLIGHTS = sum(ARR_PUNCTUAL_FLIGHTS, na.rm = TRUE),
+#             ARR_SCHEDULE_FLIGHT = sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE),
+#             ARR_FLIGHTS = n())
+#
+# punct_data_dep <- punct_data_raw_calc |>
+#   group_by(ISO_CT_CODE_DEP, DEP_DATE) |>
+#   summarise(DEP_PUNCTUAL_FLIGHTS = sum(DEP_PUNCTUAL_FLIGHTS, na.rm = TRUE),
+#             DEP_SCHEDULE_FLIGHT = sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE),
+#             DEP_FLIGHTS = n())
+#
+# start_date <- as.Date("2018-12-24")
+# end_date <- lubridate::today() + days(-1)
+#
+# date_seq <- seq(from = start_date, to = end_date, by = "day")
+# my_codes <- c('IC', 'ES')
+# repeated_dates <- rep(date_seq, times = length(my_codes))
+# repeated_values <- rep(my_codes, each = length(date_seq))
+# country_day <- data.frame(DAY_DATE = repeated_dates, ISO_2LETTER = repeated_values) |>
+#   arrange(ISO_2LETTER, DAY_DATE)
+#
+# punct_data_spain_raw <- country_day |>
+#   left_join(punct_data_arr, by = c("DAY_DATE" = "ARR_DATE", "ISO_2LETTER" = "ISO_CT_CODE_DES")) |>
+#   left_join(punct_data_dep, by = c("DAY_DATE" = "DEP_DATE", "ISO_2LETTER" = "ISO_CT_CODE_DEP"))
+#
+# rm(punct_data_raw_raw, punct_data_raw_calc)
+#
+# return(punct_data_spain_raw)
+# }

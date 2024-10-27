@@ -2739,7 +2739,7 @@ st_delay_value_y2d_long <- st_delay_cause_y2d %>%
          ) %>%
   pivot_longer(-c(iso_2letter, daio_zone, FLIGHT_DATE), names_to = 'metric', values_to = 'value')
 
- st_delay_share_y2d_long <- st_delay_cause_y2d %>%
+st_delay_share_y2d_long <- st_delay_cause_y2d %>%
    select(-c("Aerodrome capacity",
             "Capacity/Staffing (ATC)",
             "Disruptions (ATC)",
