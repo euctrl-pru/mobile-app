@@ -7,8 +7,6 @@ library(readxl)
 library(tidyverse)
 
 # parameters ----
-yesterday <- (lubridate::now() +  lubridate::days(-1)) %>% format("%Y-%m-%d")
-
 data_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/LastVersion/'
 nw_file <- "099_Traffic_Landing_Page_dataset_new.xlsx"
 st_file <- '099a_app_state_dataset.xlsx'
@@ -19,8 +17,19 @@ local_data_folder <- here("..", "mobile-app", "data", "V2")
 # temporary folder for testing new v3 files
 test_local_data_folder <- here("..", "mobile-app", "data", "V3")
 
+# current day = FALSE, past days = TRUE
+archive_mode <- FALSE
+
+data_day_date <- lubridate::today(tzone = "") +  days(-1)
+data_day_text_dash <- data_day_date %>% format("%Y-%m-%d")
+
 network_data_folder_v2 <- here(destination_dir, "data", "v2")
-network_data_folder_v3 <- here(destination_dir, "data", "v3", yesterday)
+network_data_folder_v3 <- here(destination_dir, "data", "v3", data_day_text_dash)
+
+
+# get functions and large data sets
+source(here("..", "mobile-app", "R", "helpers.R"))
+source(here("..", "mobile-app", "R", "get_common_data.R"))
 
 # check data status ----
 nw_file_status <- read_xlsx(path = fs::path_abs(str_glue(nw_file),start = data_dir),
@@ -33,11 +42,8 @@ st_file_status <- read_xlsx(path = fs::path_abs(str_glue(st_file),start = data_d
 
 # generate json files, if data files updated ----
 if (nw_file_status == "OK") {
-  source(here("..", "mobile-app", "R", "helpers.R"))
-  source(here("..", "mobile-app", "R", "get_common_data.R"))
   source(here("..", "mobile-app", "R", "generate_json_files.R"))
-  # rmarkdown::render(here::here("R", "mob_ao_traffic_rank_day.Rmd"), output_dir = here::here("iframes"))
-  # rmarkdown::render(here::here("R", "mob_apt_traffic_rank_day.Rmd"), output_dir = here::here("iframes"))
+  # source(here("..", "mobile-app", "R", "test_parameters.R"))
 }
 
 if (st_file_status == "OK") {
@@ -45,15 +51,7 @@ if (st_file_status == "OK") {
 }
 
 # copy files to performance folder ----
-## copy v1 files ----
-if (nw_file_status == "OK") {
-
-  ### set email status parameters
-  sbj = "Only nw files updated. App update halted"
-  msg = "Some tables of the state dataset were not updated. App datasets not copied"
-}
-
-## copy v2, v3 files ----
+## copy files if status ok ----
 if (nw_file_status == "OK" & st_file_status == "OK") {
 
   ### copy that data directory to the V2 network folder
@@ -75,10 +73,10 @@ if (nw_file_status == "OK" & st_file_status == "OK") {
   sbj = "App network and state datasets copied successfully to folder"
   msg = "All good, relax!"
 
-} else if (nw_file_status != "OK" & st_file_status != "OK") {
+} else {
   ### set email status parameters
   sbj = "App datasets not copied - some tables not updated"
-  msg = "Some tables of both nw and state datasets were not updated."
+  msg = "Some tables were not updated."
 
 }
 

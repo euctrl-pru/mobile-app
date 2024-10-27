@@ -29,7 +29,7 @@ archive_dir <- "//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataP
 archive_dir_raw <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Project/DDP/AIU app/data_archive'
 
 # archive mode for past dates
-archive_mode <- FALSE
+if (exists("archive_mode") == FALSE) {archive_mode <- FALSE}
 
 if (archive_mode) {
   data_day_date <- ymd("2024-10-22")
