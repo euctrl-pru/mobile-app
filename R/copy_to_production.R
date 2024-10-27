@@ -6,6 +6,7 @@ library(stringr)
 library(readxl)
 library(tidyverse)
 library(lubridate)
+library(purrr)
 
 # parameters ----
 data_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/LastVersion/'
@@ -22,7 +23,9 @@ test_local_data_folder <- here("..", "mobile-app", "data", "V3")
 archive_mode <- FALSE
 
 if (archive_mode) {
-  data_day_date <- lubridate::ymd("2024-01-01")
+  wef <- "2024-01-01"  #included in output
+  til <- "2024-01-01"  #included in output
+  data_day_date <- seq(ymd(wef), ymd(til), by = "day")
 } else {
   data_day_date <- lubridate::today(tzone = "") +  days(-1)
 }
@@ -39,21 +42,11 @@ st_file_status <- read_xlsx(path = fs::path_abs(str_glue(st_file),start = data_d
                             sheet = "checks",
                             range = cell_limits(c(1, 5), c(2, 5))) %>% pull()
 
-# get functions and large data sets
-if(archive_mode | (nw_file_status == "OK" & st_file_status == "OK")){
-  source(here("..", "mobile-app", "R", "helpers.R"))
-  source(here("..", "mobile-app", "R", "get_common_data.R"))
-}
-
-# define function for data generation & copy
-generate_app_data <- function(archive_mode, data_day_date) {
-
-  # generate files ----
+# define functions for data generation & copy ----
+generate_app_data <- function(data_day_date) {
   source(here("..", "mobile-app", "R", "generate_json_files.R"))
-  # source(here("..", "mobile-app", "R", "generate_json_files_state.R"))
+  source(here("..", "mobile-app", "R", "generate_json_files_state.R"))
  }
-
-# generate_app_data(archive_mode, data_day_date)
 
 copy_app_data <- function(data_day_date) {
   # parameters ----
@@ -68,7 +61,7 @@ copy_app_data <- function(data_day_date) {
     dir.create(network_data_folder_v3)
   }
 
-  ## copy that data directory to the V3 network folder ----
+  # copy that data directory to the V3 network folder ----
   copyDirectory(local_data_folder, network_data_folder_v3, overwrite = TRUE)
 
   ### copy the v3 test files
@@ -77,23 +70,29 @@ copy_app_data <- function(data_day_date) {
 }
 
 
-# generate and copy files to performance folder ----
-if (nw_file_status == "OK" & st_file_status == "OK") {
-  generate_app_data(archive_mode, data_day_date)
-  copy_app_data(data_day_date)
+# generate and copy app files ----
+if(archive_mode | (nw_file_status == "OK" & st_file_status == "OK")){
+  # get helper functions and large data sets ----
+  source(here("..", "mobile-app", "R", "helpers.R"))
+  source(here("..", "mobile-app", "R", "get_common_data.R"))
 
-  ## set email status parameters ----
+  # generate and copy data for date sequence ----
+  walk(data_day_date, .f = c(generate_app_data, copy_app_data))
+
+  }
+
+# send email ----
+## email parameters ----
+if (nw_file_status == "OK" & st_file_status == "OK") {
   sbj = "App network and state datasets copied successfully to folder"
   msg = "All good, relax!"
 
 } else {
-  ## no data - set email status parameters ----
   sbj = "App datasets not copied - some tables not updated"
   msg = "Some tables were not updated."
 
 }
 
-# send email ----
 from    <- "oscar.alfaro@eurocontrol.int"
 to      <- c("oscar.alfaro@eurocontrol.int"
              # ,
@@ -104,7 +103,10 @@ to      <- c("oscar.alfaro@eurocontrol.int"
 # cc      <- c("enrico.spinielli@eurocontrol.int")
 control <- list(smtpServer="mailservices.eurocontrol.int")
 
-sendmail(from = from, to = to,
-         # cc = cc,
-         subject = sbj, msg = msg,
-         control = control)
+## send ----
+if (archive_mode == FALSE){
+  sendmail(from = from, to = to,
+           # cc = cc,
+           subject = sbj, msg = msg,
+           control = control)
+}
