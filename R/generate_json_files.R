@@ -2506,7 +2506,9 @@ query <- "
         order by a.ARP_CODE, b.\"DATE\"
  "
 
-apt_punct_raw <- export_query(query)
+apt_punct_raw <- export_query(query) %>%
+  as_tibble() %>%
+  mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
 last_punctuality_day <- min(max(apt_punct_raw$DAY_DATE),
                             data_day_date, na.rm = TRUE)
@@ -2681,19 +2683,10 @@ apt_punct_y2d_bottom <- apt_punct_y2d %>%
 
 ### main card ----
 apt_main_punct_top <- apt_punct_dy_top %>%
-  mutate(
-    MAIN_PUNCT_APT_NAME = if_else(
-      RANK <= 4,
-      DY_APT_NAME,
-      NA
-    ),
-    MAIN_PUNCT_APT_ARR_PUNCT = if_else(
-      RANK <= 4,
-      DY_APT_ARR_PUNCT,
-      NA
-    )
-  ) %>%
-  select(RANK, MAIN_PUNCT_APT_NAME, MAIN_PUNCT_APT_ARR_PUNCT)
+  mutate(across(-RANK, ~ ifelse(RANK > 4, NA, .))) %>%
+  select(RANK,
+         MAIN_PUNCT_APT_NAME = DY_APT_NAME,
+         MAIN_PUNCT_APT_ARR_PUNCT = DY_APT_ARR_PUNCT)
 
 apt_main_punct_bottom <- apt_punct_calc %>%
   filter(DAY_DATE == last_punctuality_day) %>%
@@ -2702,22 +2695,12 @@ apt_main_punct_bottom <- apt_punct_calc %>%
     DY_APT_NAME = ARP_NAME,
     DY_APT_ARR_PUNCT = ARR_PUNCTUALITY_PERCENTAGE / 100
   ) %>%
-  mutate(
-    MAIN_PUNCT_APT_NAME_BOTTOM = if_else(
-      RANK <= 4,
-      DY_APT_NAME,
-      NA
-    ),
-    MAIN_PUNCT_APT_ARR_PUNCT_BOTTOM = if_else(
-      RANK <= 4,
-      DY_APT_ARR_PUNCT,
-      NA
-    )
-  ) %>%
+  mutate(across(-RANK, ~ ifelse(RANK > 4, NA, .))) %>%
+  select(RANK,
+         MAIN_PUNCT_APT_NAME_BOTTOM = DY_APT_NAME,
+         MAIN_PUNCT_APT_ARR_PUNCT_BOTTOM = DY_APT_ARR_PUNCT) %>%
   filter(RANK < 11) %>%
-  arrange(RANK) %>%
-  select(RANK, MAIN_PUNCT_APT_NAME_BOTTOM, MAIN_PUNCT_APT_ARR_PUNCT_BOTTOM)
-
+  arrange(RANK)
 
 ### merge and reorder tables ----
 apt_punct_data <- merge(x = apt_punct_dy_top, y = apt_punct_wk_top, by = "RANK")
@@ -2799,16 +2782,18 @@ ORDER BY b.EC_ISO_CT_NAME
  "
 
 st_punct_raw <- export_query(query) %>%
-filter(
-  ISO_CT_CODE != "GI",
-  ISO_CT_CODE != "FO",
-  ISO_CT_CODE != "SJ",
-  ISO_CT_CODE != "MC",
-  ISO_CT_CODE != "PM",
-  ISO_CT_CODE != "UA",
-  ISO_CT_CODE != "SM"
-) %>%
-mutate_at("EC_ISO_CT_NAME", ~ if_else(. == "Turkiye", "Türkiye", .))
+  as_tibble() %>%
+  mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
+  filter(
+    ISO_CT_CODE != "GI",
+    ISO_CT_CODE != "FO",
+    ISO_CT_CODE != "SJ",
+    ISO_CT_CODE != "MC",
+    ISO_CT_CODE != "PM",
+    ISO_CT_CODE != "UA",
+    ISO_CT_CODE != "SM"
+  ) %>%
+  mutate_at("EC_ISO_CT_NAME", ~ if_else(. == "Turkiye", "Türkiye", .))
 
 last_punctuality_day <- min(max(st_punct_raw$DATE),
                             data_day_date, na.rm = TRUE)

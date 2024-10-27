@@ -2137,7 +2137,9 @@ query <- "
       order by a.apt_CODE, b.\"DATE\"
 "
 
-st_apt_punct_raw <- export_query(query)
+st_apt_punct_raw <- export_query(query) %>%
+  as_tibble() %>%
+  mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
 # calc
 st_apt_punct_calc <- st_apt_punct_raw %>%
@@ -2279,7 +2281,6 @@ st_apt_punct_y2d <- st_apt_punct_calc %>%
   )
 
 #### main card ----
-
 st_apt_main_punct <- st_apt_punct_dy %>%
   mutate(
     MAIN_PUNCT_APT_RANK = DY_RANK,
