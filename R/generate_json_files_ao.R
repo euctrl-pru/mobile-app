@@ -876,32 +876,24 @@ ao_st_des_data_y2d <- assign(mydataframe, df) %>%
 
 #### main card ----
 ao_st_des_main_traffic <- ao_st_des_data_day_int %>%
-  mutate(
-    MAIN_TFC_ST_DES_NAME = if_else(
-      R_RANK <= 4,
-      ISO_CT_NAME_ARR,
-      NA
-    ),
-    MAIN_TFC_ST_DES_FLT = if_else(
-      R_RANK <= 4,
-      CURRENT_DAY,
-      NA
-    ),
-    MAIN_TFC_ST_DES_CODE = if_else(
-      R_RANK <= 4,
-      ISO_CT_CODE_ARR,
-      NA
-    ),
-    AO_GRP_RANK = paste0(tolower(AO_GRP_NAME), R_RANK)
-  ) %>%
-  select(AO_GRP_RANK, MAIN_TFC_ST_DES_NAME, MAIN_TFC_ST_DES_FLT, MAIN_TFC_ST_DES_CODE)
+  mutate(AO_GRP_RANK = paste0(tolower(AO_GRP_NAME), R_RANK),
+         across(-AO_GRP_RANK,
+                ~ ifelse(R_RANK > 4, NA, .))
+         ) %>%
+  select(AO_GRP_RANK,
+         MAIN_TFC_ST_DES_NAME = ISO_CT_NAME_ARR,
+         MAIN_TFC_ST_DES_FLT = CURRENT_DAY,
+         MAIN_TFC_ST_DES_CODE = ISO_CT_CODE_ARR)
 
 ao_st_des_main_traffic_dif <- ao_st_des_data_day_int %>%
-  arrange(AO_GRP_NAME, desc(abs(AO_GRP_TFC_ST_DES_DIF)), R_RANK) %>%
+  arrange(AO_GRP_NAME,
+          desc(abs(AO_GRP_TFC_ST_DES_DIF)),
+          R_RANK) %>%
   group_by(AO_GRP_NAME) %>%
   mutate(RANK_DIF_ST_DES_TFC = row_number()) %>%
   ungroup() %>%
-  arrange(AO_GRP_NAME, R_RANK) %>%
+  arrange(AO_GRP_NAME,
+          R_RANK) %>%
   mutate(
     MAIN_TFC_DIF_ST_DES_NAME = if_else(
       RANK_DIF_ST_DES_TFC <= 4,

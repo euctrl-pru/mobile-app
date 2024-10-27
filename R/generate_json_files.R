@@ -1415,27 +1415,16 @@ ao_data_y2d <- assign(mydataframe, df) %>%
 
 ### main card ----
 ao_main_traffic <- ao_data_dy %>%
-  mutate(
-    MAIN_TFC_AO_GRP_NAME = if_else(
-      WK_R_RANK_BY_DAY <= 4,
-      DY_AO_GRP_NAME,
-      NA
-    ),
-    MAIN_TFC_AO_GRP_CODE = if_else(
-      WK_R_RANK_BY_DAY <= 4,
-      DY_AO_GRP_CODE,
-      NA
-    ),
-    MAIN_TFC_AO_GRP_FLIGHT = if_else(
-      WK_R_RANK_BY_DAY <= 4,
-      DY_FLIGHT,
-      NA
-    )
-  ) %>%
-  select(WK_R_RANK_BY_DAY, MAIN_TFC_AO_GRP_NAME, MAIN_TFC_AO_GRP_CODE, MAIN_TFC_AO_GRP_FLIGHT)
+  mutate(across(-WK_R_RANK_BY_DAY, ~ ifelse(WK_R_RANK_BY_DAY > 4, NA, .))) %>%
+  select(WK_R_RANK_BY_DAY,
+         MAIN_TFC_AO_GRP_NAME = DY_AO_GRP_NAME,
+         MAIN_TFC_AO_GRP_CODE = DY_AO_GRP_CODE,
+         MAIN_TFC_AO_GRP_FLIGHT = DY_FLIGHT)
 
 ao_main_traffic_dif <- nw_ao_day_raw %>%
-  select(AO_GRP_CODE, AO_GRP_NAME, FLIGHT_7DAY_DIFF) %>%
+  select(AO_GRP_CODE,
+         AO_GRP_NAME,
+         FLIGHT_7DAY_DIFF) %>%
   arrange(desc(abs(FLIGHT_7DAY_DIFF))) %>%
   mutate(WK_R_RANK_BY_DAY = row_number()) %>%
   filter(WK_R_RANK_BY_DAY <= 10) %>%
