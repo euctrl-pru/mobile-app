@@ -1151,7 +1151,7 @@ nw_punct_evo_app <- nw_punct_data_raw %>%
   ) %>%
   select(DATE, DEP_PUN_WK, ARR_PUN_WK, OP_FLT_WK) %>%
   filter(DATE >= as.Date(paste0("01-01-", data_day_year - 1), format = "%d-%m-%Y"),
-         DAY_DATE <= last_day_punct)
+         DATE <= last_day_punct)
 
 column_names <- c(
   "FLIGHT_DATE",
@@ -1189,7 +1189,8 @@ nw_billing_evo <- nw_billing %>%
     total_billing_y2d_py = lag(total_billing_y2d, 12),
     total_billing_dif_y2d_perc = total_billing_y2d / total_billing_y2d_py - 1
   ) %>%
-  filter(year == last_billing_year) %>%
+  filter(year == last_billing_year,
+         month <= last_billing_month) %>%
   select(
     month,
     total_billing,
@@ -1201,9 +1202,7 @@ nw_billing_evo <- nw_billing %>%
     month = month.name[month],
     min_right_axis = -0.2,
     max_right_axis = 1.3
-  ) %>%
-  filter(year == last_billing_year,
-         month <= last_billing_month)
+  )
 
 column_names <- c(
   "month",
