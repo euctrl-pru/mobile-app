@@ -44,7 +44,7 @@ st_file_status <- read_xlsx(path = fs::path_abs(str_glue(st_file),start = data_d
 
 # define functions for data generation & copy ----
 generate_app_data <- function(data_day_date) {
-  source(here("..", "mobile-app", "R", "generate_json_files.R"))
+  source(here("..", "mobile-app", "R", "generate_json_files_nw.R"))
   source(here("..", "mobile-app", "R", "generate_json_files_state.R"))
 }
 

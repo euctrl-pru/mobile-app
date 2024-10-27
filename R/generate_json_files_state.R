@@ -14,87 +14,22 @@ library(jsonlite)
 library(here)
 library(RODBC)
 
-source(here::here("..", "mobile-app", "R", "helpers.R"))
+# functions
+source(here("..", "mobile-app", "R", "helpers.R")) # so it can be launched from the checkupdates script in grounded aircraft
 
-# Parameters ----
-data_folder <- here::here("..", "mobile-app", "data", "v2")
-st_base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/LastVersion/'
-st_base_file <- '099a_app_state_dataset.xlsx'
-
-nw_base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/LastVersion/'
-nw_base_file <- '099_Traffic_Landing_Page_dataset_new.xlsx'
-
-archive_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/web_daily_json_files/app/'
-archive_dir_raw <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Project/DDP/AIU app/data_archive'
+# parameters ----
+source(here("..", "mobile-app", "R", "params.R")) # so it can be launched from the checkupdates script in grounded aircraft
 
 # archive mode for past dates
 if (exists("archive_mode") == FALSE) {archive_mode <- FALSE}
 if (exists("data_day_date") == FALSE) {
-  lubridate::today(tzone = "") +  days(-1)
+  data_day_date <- lubridate::today(tzone = "") +  days(-1)
 }
 
 data_day_text <- data_day_date %>% format("%Y%m%d")
 data_day_year <- as.numeric(format(data_day_date,'%Y'))
 
 st_json_app <-""
-
-# DB params
-usr <- Sys.getenv("PRU_DEV_USR")
-pwd <- Sys.getenv("PRU_DEV_PWD")
-dbn <- Sys.getenv("PRU_DEV_DBNAME")
-
-
-# Dimension tables ----
-state_iso <-  read_xlsx(
-  path  = fs::path_abs(
-    str_glue(st_base_file),
-    start = st_base_dir),
-  sheet = "lists",
-  range = cell_limits(c(2, 2), c(NA, 3))) %>%
-  as_tibble()
-
-state_crco <-  read_xlsx(
-  path  = fs::path_abs(
-    str_glue(st_base_file),
-    start = st_base_dir),
-  sheet = "lists",
-  range = cell_limits(c(2, 6), c(NA, 8))) %>%
-  as_tibble()
-
-state_daio <-  read_xlsx(
-  path  = fs::path_abs(
-    str_glue(st_base_file),
-    start = st_base_dir),
-  sheet = "lists",
-  range = cell_limits(c(2, 11), c(NA, 13))) %>%
-  as_tibble()
-
-state_co2 <-  read_xlsx(
-  path  = fs::path_abs(
-    str_glue(st_base_file),
-    start = st_base_dir),
-  sheet = "lists",
-  range = cell_limits(c(2, 16), c(NA, 17))) %>%
-  as_tibble()
-
-acc <-  read_xlsx(
-  path  = fs::path_abs(
-    str_glue(nw_base_file),
-    start = nw_base_dir),
-  sheet = "ACC_names",
-  range = cell_limits(c(2, 3), c(NA, NA))) %>%
-  as_tibble()
-
-query <- "select * from PRU_AIRPORT"
-
-airport <- export_query(query) %>%
-  as_tibble() %>%
-  mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
-  select(ICAO_CODE, ISO_COUNTRY_CODE) %>%
-  #in case we need to separate spain from canarias
-  # mutate(ISO_COUNTRY_CODE = if_else(substr(ICAO_CODE,1,2) == "GC",
-  #                                   "IC", ISO_COUNTRY_CODE)) %>%
-  rename(iso_2letter = ISO_COUNTRY_CODE)
 
 # ____________________________________________________________________________________________
 #
