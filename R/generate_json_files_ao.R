@@ -14,41 +14,22 @@ library(jsonlite)
 library(here)
 library(RODBC)
 
+# functions ----
 source(here::here("..", "mobile-app", "R", "helpers.R"))
 
 # Parameters ----
-data_folder <- here::here("..", "mobile-app", "data", "v3")
-# base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/'
-ao_base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Oscar/Develop/'
-ao_base_file <- '099b_app_ao_dataset.xlsx'
-
-nw_ao_base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/LastVersion/'
-nw_base_file <- '099_Traffic_Landing_Page_dataset_new.xlsx'
-
-archive_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Oscar/old/'
-archive_dir_raw <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Project/DDP/AIU app/data_archive'
+source(here("..", "mobile-app", "R", "params.R"))
 
 # archive mode for past dates
 if (exists("archive_mode") == FALSE) {archive_mode <- FALSE}
 if (exists("data_day_date") == FALSE) {
-  lubridate::today(tzone = "") +  days(-1)
+  data_day_date <- lubridate::today(tzone = "") +  days(-1)
 }
 
 data_day_text <- data_day_date %>% format("%Y%m%d")
 data_day_year <- as.numeric(format(data_day_date,'%Y'))
 
-st_json_app <-""
-
-# DB params
-usr <- Sys.getenv("PRU_DEV_USR")
-pwd <- Sys.getenv("PRU_DEV_PWD")
-dbn <- Sys.getenv("PRU_DEV_DBNAME")
-
-
-# Dimension tables ----
-if (exists("ao_grp_icao") == FALSE) {
-  get_dimension_tables()
-}
+ao_json_app <-""
 
 # ____________________________________________________________________________________________
 #
@@ -942,7 +923,7 @@ ao_st_des_data <- ao_grp_icao_ranking %>%
 
 # covert to json and save in app data folder and archive
 ao_st_des_data_j <- ao_st_des_data %>% toJSON(., pretty = TRUE)
-write(ao_st_des_data_j, here(data_folder,"ao_st_ranking_traffic.json"))
+write(ao_st_des_data_j, here(ao_local_data_folder_dev ,"ao_st_ranking_traffic.json"))
 write(ao_st_des_data_j, paste0(archive_dir, data_day_text, "_ao_st_ranking_traffic.json"))
 write(ao_st_des_data_j, paste0(archive_dir, "ao_st_ranking_traffic.json"))
 
@@ -1204,7 +1185,7 @@ ao_apt_dep_data <- ao_grp_icao_ranking %>%
 
 # covert to json and save in app data folder and archive
 ao_apt_dep_data_j <- ao_apt_dep_data %>% toJSON(., pretty = TRUE)
-write(ao_apt_dep_data_j, here(data_folder,"ao_apt_ranking_traffic.json"))
+write(ao_apt_dep_data_j, here(ao_local_data_folder_dev ,"ao_apt_ranking_traffic.json"))
 write(ao_apt_dep_data_j, paste0(archive_dir, data_day_text, "_ao_apt_ranking_traffic.json"))
 write(ao_apt_dep_data_j, paste0(archive_dir, "ao_apt_ranking_traffic.json"))
 
@@ -1468,7 +1449,7 @@ ao_apt_pair_data <- ao_grp_icao_ranking %>%
 
 # covert to json and save in app data folder and archive
 ao_apt_pair_data_j <- ao_apt_pair_data %>% toJSON(., pretty = TRUE)
-write(ao_apt_pair_data_j, here(data_folder,"ao_apt_pair_ranking_traffic.json"))
+write(ao_apt_pair_data_j, here(ao_local_data_folder_dev ,"ao_apt_pair_ranking_traffic.json"))
 write(ao_apt_pair_data_j, paste0(archive_dir, data_day_text, "_ao_apt_pair_ranking_traffic.json"))
 write(ao_apt_pair_data_j, paste0(archive_dir, "ao_apt_pair_ranking_traffic.json"))
 
@@ -1625,7 +1606,7 @@ ao_apt_arr_delay_data <- ao_grp_icao_ranking %>%
 
 # covert to json and save in app data folder and archive
 ao_apt_arr_delay_data_j <- ao_apt_arr_delay_data %>% toJSON(., pretty = TRUE)
-write(ao_apt_arr_delay_data_j, here(data_folder,"ao_apt_arr_ranking_delay.json"))
+write(ao_apt_arr_delay_data_j, here(ao_local_data_folder_dev ,"ao_apt_arr_ranking_delay.json"))
 write(ao_apt_arr_delay_data_j, paste0(archive_dir, data_day_text, "_ao_apt_arr_ranking_delay.json"))
 write(ao_apt_arr_delay_data_j, paste0(archive_dir, "ao_apt_arr_ranking_delay.json"))
 
@@ -1662,7 +1643,7 @@ ao_traffic_evo_long <- ao_traffic_evo %>%
 
 
 ao_traffic_evo_j <- ao_traffic_evo_long %>% toJSON(., pretty = TRUE)
-write(ao_traffic_evo_j, here(data_folder,"ao_traffic_evo_chart_daily.json"))
+write(ao_traffic_evo_j, here(ao_local_data_folder_dev ,"ao_traffic_evo_chart_daily.json"))
 write(ao_traffic_evo_j, paste0(archive_dir, data_day_text, "_ao_traffic_chart_daily.json"))
 write(ao_traffic_evo_j, paste0(archive_dir, "ao_traffic_chart_daily.json"))
 
@@ -1698,7 +1679,7 @@ ao_delay_flt_evo_long <- ao_delay_flt_evo %>%
 
 ###convert to json and save
 ao_delay_flt_evo_j <- ao_delay_flt_evo_long %>% toJSON(., pretty = TRUE)
-write(ao_delay_flt_evo_j, here(data_folder,"ao_delay_per_flight_evo_chart_daily.json"))
+write(ao_delay_flt_evo_j, here(ao_local_data_folder_dev ,"ao_delay_per_flight_evo_chart_daily.json"))
 write(ao_delay_flt_evo_j, paste0(archive_dir, data_day_text, "_ao_delay_per_flight_chart_daily.json"))
 write(ao_delay_flt_evo_j, paste0(archive_dir, "ao_delay_per_flight_chart_daily.json"))
 
@@ -1745,7 +1726,7 @@ ao_delayed_flights_evo_long <- ao_delayed_flights_evo %>%
 
 
 ao_delayed_flights_evo_j <- ao_delayed_flights_evo_long %>% toJSON(., pretty = TRUE)
-write(ao_delayed_flights_evo_j, here(data_folder,"ao_delayed_flights_evo_chart_daily.json"))
+write(ao_delayed_flights_evo_j, here(ao_local_data_folder_dev ,"ao_delayed_flights_evo_chart_daily.json"))
 write(ao_delayed_flights_evo_j, paste0(archive_dir, data_day_text, "_ao_delayed_flights_chart_daily.json"))
 write(ao_delayed_flights_evo_j, paste0(archive_dir, "ao_delayed_flights_chart_daily.json"))
 
@@ -1793,7 +1774,7 @@ ao_punct_evo_long <- ao_punct_evo %>%
 
 
 ao_punct_evo_j <- ao_punct_evo_long %>% toJSON(., pretty = TRUE)
-write(ao_punct_evo_j, here(data_folder,"ao_punct_evo_chart.json"))
+write(ao_punct_evo_j, here(ao_local_data_folder_dev ,"ao_punct_evo_chart.json"))
 write(ao_punct_evo_j, paste0(archive_dir, data_day_text, "_ao_punct_evo_chart.json"))
 write(ao_punct_evo_j, paste0(archive_dir, "ao_punct_evo_chart.json"))
 
@@ -1913,7 +1894,7 @@ write(ao_punct_evo_j, paste0(archive_dir, "ao_punct_evo_chart.json"))
 #
 # # for consistency with v1 we use the word category in the name files... should have been cause
 # st_delay_cause_evo_dy_j <- st_delay_cause_day_long %>% toJSON(., pretty = TRUE)
-# write(st_delay_cause_evo_dy_j, here(data_folder,"st_delay_category_evo_chart_dy.json"))
+# write(st_delay_cause_evo_dy_j, here(ao_local_data_folder_dev ,"st_delay_category_evo_chart_dy.json"))
 # write(st_delay_cause_evo_dy_j, paste0(archive_dir, data_day_text, "_st_delay_category_chart_evo_dy.json"))
 # write(st_delay_cause_evo_dy_j, paste0(archive_dir, "st_delay_category_evo_chart_dy.json"))
 #
@@ -1995,7 +1976,7 @@ write(ao_punct_evo_j, paste0(archive_dir, "ao_punct_evo_chart.json"))
 #
 # # for consistency with v1 we use the word category in the name files... should have been cause
 # st_delay_cause_evo_wk_j <- st_delay_cause_wk_long %>% toJSON(., pretty = TRUE)
-# write(st_delay_cause_evo_wk_j, here(data_folder,"st_delay_category_evo_chart_wk.json"))
+# write(st_delay_cause_evo_wk_j, here(ao_local_data_folder_dev ,"st_delay_category_evo_chart_wk.json"))
 # write(st_delay_cause_evo_wk_j, paste0(archive_dir, data_day_text, "_st_delay_category_evo_chart_wk.json"))
 # write(st_delay_cause_evo_wk_j, paste0(archive_dir, "st_delay_category_evo_chart_wk.json"))
 #
@@ -2076,7 +2057,7 @@ write(ao_punct_evo_j, paste0(archive_dir, "ao_punct_evo_chart.json"))
 #
 # # for consistency with v1 we use the word category in the name files... should have been cause
 # st_delay_cause_evo_y2d_j <- st_delay_cause_y2d_long %>% toJSON(., pretty = TRUE)
-# write(st_delay_cause_evo_y2d_j, here(data_folder,"st_delay_category_evo_chart_y2d.json"))
+# write(st_delay_cause_evo_y2d_j, here(ao_local_data_folder_dev ,"st_delay_category_evo_chart_y2d.json"))
 # write(st_delay_cause_evo_y2d_j, paste0(archive_dir, data_day_text, "_st_delay_category_evo_chart_y2d.json"))
 # write(st_delay_cause_evo_y2d_j, paste0(archive_dir, "st_delay_category_evo_chart_y2d.json"))
 #
@@ -2160,7 +2141,7 @@ write(ao_punct_evo_j, paste0(archive_dir, "ao_punct_evo_chart.json"))
 #   nest_legacy(.key = "statistics")
 #
 # st_delay_type_evo_dy_j <- st_delay_type_day_long %>% toJSON(., pretty = TRUE)
-# write(st_delay_type_evo_dy_j, here(data_folder,"st_delay_flt_type_evo_chart_dy.json"))
+# write(st_delay_type_evo_dy_j, here(ao_local_data_folder_dev ,"st_delay_flt_type_evo_chart_dy.json"))
 # write(st_delay_type_evo_dy_j, paste0(archive_dir, data_day_text, "_st_delay_flt_type_chart_evo_dy.json"))
 # write(st_delay_type_evo_dy_j, paste0(archive_dir, "st_delay_flt_type_evo_chart_dy.json"))
 #
@@ -2237,7 +2218,7 @@ write(ao_punct_evo_j, paste0(archive_dir, "ao_punct_evo_chart.json"))
 #   nest_legacy(.key = "statistics")
 #
 # st_delay_type_evo_wk_j <- st_delay_type_wk_long %>% toJSON(., pretty = TRUE)
-# write(st_delay_type_evo_wk_j, here(data_folder,"st_delay_flt_type_evo_chart_wk.json"))
+# write(st_delay_type_evo_wk_j, here(ao_local_data_folder_dev ,"st_delay_flt_type_evo_chart_wk.json"))
 # write(st_delay_type_evo_wk_j, paste0(archive_dir, data_day_text, "_st_delay_flt_type_chart_evo_wk.json"))
 # write(st_delay_type_evo_wk_j, paste0(archive_dir, "st_delay_flt_type_evo_chart_wk.json"))
 #
@@ -2296,7 +2277,7 @@ write(ao_punct_evo_j, paste0(archive_dir, "ao_punct_evo_chart.json"))
 #   nest_legacy(.key = "statistics")
 #
 # st_delay_type_evo_y2d_j <- st_delay_type_y2d_long %>% toJSON(., pretty = TRUE)
-# write(st_delay_type_evo_y2d_j, here(data_folder,"st_delay_flt_type_evo_chart_y2d.json"))
+# write(st_delay_type_evo_y2d_j, here(ao_local_data_folder_dev ,"st_delay_flt_type_evo_chart_y2d.json"))
 # write(st_delay_type_evo_y2d_j, paste0(archive_dir, data_day_text, "_st_delay_flt_type_chart_evo_y2d.json"))
 # write(st_delay_type_evo_y2d_j, paste0(archive_dir, "st_delay_flt_type_evo_chart_y2d.json"))
 #
@@ -2358,7 +2339,7 @@ ao_billing_evo_long <- ao_billing_evo %>%
 
 
 ao_billing_evo_j <- ao_billing_evo_long %>% toJSON(., pretty = TRUE)
-write(ao_billing_evo_j, here(data_folder,"ao_billing_evo.json"))
+write(ao_billing_evo_j, here(ao_local_data_folder_dev ,"ao_billing_evo.json"))
 write(ao_billing_evo_j, paste0(archive_dir, data_day_text, "_ao_billing_evo.json"))
 write(ao_billing_evo_j, paste0(archive_dir, "ao_billing_evo.json"))
 
@@ -2398,7 +2379,7 @@ ao_co2_evo_long <- ao_co2_evo %>%
   nest_legacy(.key = "statistics")
 
 ao_co2_evo_j <- ao_co2_evo_long %>% toJSON(., pretty = TRUE)
-write(ao_co2_evo_j, here(data_folder,"ao_co2_evo.json"))
+write(ao_co2_evo_j, here(ao_local_data_folder_dev ,"ao_co2_evo.json"))
 write(ao_co2_evo_j, paste0(archive_dir, "ao_co2_evo.json"))
 write(ao_co2_evo_j, paste0(archive_dir, data_day_text, "_ao_co2_evo.json"))
 

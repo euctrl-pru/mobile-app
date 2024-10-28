@@ -3,13 +3,19 @@
 source(here("..", "mobile-app", "R", "params.R"))
 
 # billing data ----
-billed_raw <- get_billing_data()
+if (exists("billed_raw") == FALSE) {
+  billed_raw <- get_billing_data()
+}
 
 # co2 data ----
-co2_data_raw <- get_co2_data()
+if (exists("co2_data_raw") == FALSE) {
+  co2_data_raw <- get_co2_data()
+}
 
 # punctuality data spain ----
-punct_data_spain_raw <- get_punct_data_spain()
+if (exists("punct_data_spain_raw") == FALSE) {
+  punct_data_spain_raw <- get_punct_data_spain()
+}
 
 # network traffic data ---
 nw_traffic_data <- read_xlsx(

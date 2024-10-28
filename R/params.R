@@ -1,5 +1,12 @@
 # parameters ----
-data_folder <- here::here("..", "mobile-app", "data", "v2")
+# data_folder <- here::here("..", "mobile-app", "data", "v2")
+
+nw_local_data_folder_prod <- here::here("..", "mobile-app", "data", "prod", "nw")
+st_local_data_folder_prod <- here::here("..", "mobile-app", "data", "prod", "st")
+
+nw_local_data_folder_dev <- here::here("..", "mobile-app", "data", "dev", "nw")
+st_local_data_folder_dev <- here::here("..", "mobile-app", "data", "dev", "st")
+ao_local_data_folder_dev <- here::here("..", "mobile-app", "data", "dev", "ao")
 
 nw_base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/LastVersion/'
 nw_base_file <- "099_Traffic_Landing_Page_dataset_new.xlsx"
@@ -72,14 +79,6 @@ ao_grp_icao <-  read_xlsx(
   sheet = "lists",
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   as_tibble()
-
-
-
-
-
-
-
-
 
 
 # DB params
