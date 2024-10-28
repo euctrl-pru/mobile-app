@@ -1,3 +1,11 @@
+# date parameters
+if (exists("data_day_date") == FALSE) {
+  data_day_date <- lubridate::today(tzone = "") +  days(-1)
+}
+data_day_text <- data_day_date %>% format("%Y%m%d")
+data_day_year <- as.numeric(format(data_day_date,'%Y'))
+
+
 # json for main page ----
 nw_json_app <- function(data_day_date){
 
@@ -5,23 +13,19 @@ nw_json_app <- function(data_day_date){
 
   ## Network billed ----
   #### billing json - we do this first to avoid 'R fatal error'
-  if (exists("billed_raw") == FALSE) {billed_raw <- get_billing_data()}
-
-  # format dates and extract date parameters
-  nw_billed_clean <- billed_raw %>%
-    janitor::clean_names() %>%
-    mutate(billing_period_start_date = as.Date(billing_period_start_date, format = "%d-%m-%Y"))
-
-  last_billing_date <- min(max(nw_billed_clean$billing_period_start_date),
-                           floor_date(data_day_date + months(-1), 'month)'))
-  last_billing_year <- year(last_billing_date)
-  last_billing_month <- month(last_billing_date)
+  if (exists("nw_billed_per_cz") == FALSE) {nw_billed_per_cz <- get_billing_data()}
 
   # calculate network total
-  nw_billing <- nw_billed_clean %>%
+  nw_billing <- nw_billed_per_cz %>%
     group_by(year, month, billing_period_start_date) %>%
     summarise(total_billing = sum(route_charges)) %>%
     ungroup()
+
+  # extract date parameters
+  last_billing_date <- min(max(nw_billing$billing_period_start_date),
+                           floor_date(data_day_date + months(-1), 'month)'))
+  last_billing_year <- year(last_billing_date)
+  last_billing_month <- month(last_billing_date)
 
   # calcs + format
   nw_billed_for_json <- nw_billing %>%
@@ -1098,6 +1102,18 @@ nw_punct_evo_chart <- function(data_day_date){
 
 ## billing ----
 nw_billing_evo_chart <- function(data_day_date) {
+  # calculate network total
+  nw_billing <- nw_billed_per_cz %>%
+    group_by(year, month, billing_period_start_date) %>%
+    summarise(total_billing = sum(route_charges)) %>%
+    ungroup()
+
+  # extract date parameters
+  last_billing_date <- min(max(nw_billing$billing_period_start_date),
+                           floor_date(data_day_date + months(-1), 'month)'))
+  last_billing_year <- year(last_billing_date)
+  last_billing_month <- month(last_billing_date)
+
   nw_billing_evo <- nw_billing %>%
     arrange(year, month) %>%
     mutate(
@@ -1156,6 +1172,15 @@ nw_billing_evo_chart <- function(data_day_date) {
 
 ## co2 emissions ----
 nw_co2_evo_chart <- function(data_day_date){
+  # pull out date parameters
+  co2_last_date <- min(max(co2_data_raw$FLIGHT_MONTH, na.rm = TRUE),
+                       floor_date(data_day_date, 'month') -1,
+                       na.rm = TRUE)
+
+  co2_last_month <- format(co2_last_date, "%B")
+  co2_last_month_num <- as.numeric(format(co2_last_date, "%m"))
+  co2_last_year <- lubridate::year(co2_last_date)
+
   nw_co2_evo <- co2_data_raw %>%
     filter(YEAR >= 2019,
            YEAR <= co2_last_year,

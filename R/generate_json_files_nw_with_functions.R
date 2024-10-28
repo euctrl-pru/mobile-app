@@ -1,18 +1,3 @@
-# libraries  ----
-library(fs)
-library(tibble)
-library(dplyr)
-library(tidyr)
-library(stringr)
-library(readxl)
-library(DBI)
-library(ROracle)
-library(lubridate)
-library(zoo)
-library(jsonlite)
-library(here)
-library(RODBC)
-
 # functions
 source(here("..", "mobile-app", "R", "helpers.R")) # so it can be launched from the checkupdates script in grounded aircraft
 

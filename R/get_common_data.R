@@ -1,10 +1,12 @@
+# functions for export query
+source(here("..", "mobile-app", "R", "helpers.R"))
 
 # parameters ----
 source(here("..", "mobile-app", "R", "params.R"))
 
 # billing data ----
-if (exists("billed_raw") == FALSE) {
-  billed_raw <- get_billing_data()
+if (exists("nw_billed_per_cz") == FALSE) {
+  nw_billed_per_cz <- get_billing_data()
 }
 
 # co2 data ----
@@ -40,3 +42,63 @@ nw_punct_data_raw <- read_xlsx(
 ) %>%
   as_tibble() %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+# dimensions ----
+state_iso <-  read_xlsx(
+  path  = fs::path_abs(
+    str_glue(st_base_file),
+    start = st_base_dir),
+  sheet = "lists",
+  range = cell_limits(c(2, 2), c(NA, 3))) %>%
+  as_tibble()
+
+state_crco <-  read_xlsx(
+  path  = fs::path_abs(
+    str_glue(st_base_file),
+    start = st_base_dir),
+  sheet = "lists",
+  range = cell_limits(c(2, 6), c(NA, 8))) %>%
+  as_tibble()
+
+state_daio <-  read_xlsx(
+  path  = fs::path_abs(
+    str_glue(st_base_file),
+    start = st_base_dir),
+  sheet = "lists",
+  range = cell_limits(c(2, 11), c(NA, 13))) %>%
+  as_tibble()
+
+state_co2 <-  read_xlsx(
+  path  = fs::path_abs(
+    str_glue(st_base_file),
+    start = st_base_dir),
+  sheet = "lists",
+  range = cell_limits(c(2, 16), c(NA, 17))) %>%
+  as_tibble()
+
+acc <-  read_xlsx(
+  path  = fs::path_abs(
+    str_glue(nw_base_file),
+    start = nw_base_dir),
+  sheet = "ACC_names",
+  range = cell_limits(c(2, 3), c(NA, NA))) %>%
+  as_tibble()
+
+query <- "select * from PRU_AIRPORT"
+
+airport <- export_query(query) %>%
+  as_tibble() %>%
+  mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
+  select(ICAO_CODE, ISO_COUNTRY_CODE) %>%
+  #in case we need to separate spain from canarias
+  # mutate(ISO_COUNTRY_CODE = if_else(substr(ICAO_CODE,1,2) == "GC",
+  #                                   "IC", ISO_COUNTRY_CODE)) %>%
+  rename(iso_2letter = ISO_COUNTRY_CODE)
+
+ao_grp_icao <-  read_xlsx(
+  path  = fs::path_abs(
+    str_glue(ao_base_file),
+    start = ao_base_dir),
+  sheet = "lists",
+  range = cell_limits(c(1, 1), c(NA, NA))) %>%
+  as_tibble()

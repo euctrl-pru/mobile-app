@@ -1,3 +1,4 @@
+library(here)
 library(withr)
 library(DBI)
 library(tibble)
@@ -19,6 +20,8 @@ library(RODBC)
 
 library(eurocontrol)
 library(tidyverse)
+library(jsonlite)
+
 
 date_sql_string <- function(date_string) {
   paste0("TO_DATE('", date_string ,"', 'yyyy-mm-dd') + 1")
@@ -558,7 +561,11 @@ get_billing_data <- function() {
   close(channel)
   rm(channel)
 
-  return(billed_raw)
+  nw_billed_per_cz <- billed_raw %>%
+    janitor::clean_names() %>%
+    mutate(billing_period_start_date = as.Date(billing_period_start_date, format = "%d-%m-%Y"))
+
+  return(nw_billed_per_cz)
 }
 
 get_co2_data <- function() {
