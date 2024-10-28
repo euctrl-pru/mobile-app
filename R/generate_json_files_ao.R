@@ -60,11 +60,11 @@ ao_billing <- ao_billed_clean %>%
 ao_billed_for_json <- ao_billing %>%
   arrange(AO_GRP_CODE, year, billing_period_start_date) %>%
   mutate(
-    BILLING_DATE = (billing_period_start_date + days(1) + months(1)) + days(-1),
+    BILLING_DATE = billing_period_start_date,
     Year = year,
-    MONTH_TEXT = format(billing_period_start_date + days(1),'%B'),
-    MM_BILLED_PY = lag(total_billing, last_billing_month),
-    MM_BILLED_2019 = lag(total_billing, 2* last_billing_month),  # we only load 2019, current year and current year-1
+    MONTH_TEXT = format(billing_period_start_date,'%B'),
+    MM_BILLED_PY = lag(total_billing, 12),
+    MM_BILLED_2019 = lag(total_billing, (last_billing_year - 2019) * 12),
     MM_BILLED_DIF_PREV_YEAR = total_billing / MM_BILLED_PY - 1,
     MM_BILLED_DIF_2019 = total_billing / MM_BILLED_2019 - 1,
     MM_BILLED = round(total_billing / 1000000, 1)
@@ -653,7 +653,7 @@ ao_json_app_j <- ao_json_app_j %>%   group_by(AO_GRP_CODE, AO_GRP_NAME)
 ao_json_app <- ao_json_app_j %>%
   toJSON(., pretty = TRUE)
 
-write(ao_json_app, here(data_folder,"ao_json_app.json"))
+write(ao_json_app, here(ao_local_data_folder_dev, "ao_json_app.json"))
 write(ao_json_app, paste0(archive_dir, "ao_json_app.json"))
 write(ao_json_app, paste0(archive_dir, data_day_text, "_ao_json_app.json"))
 

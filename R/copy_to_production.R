@@ -23,7 +23,7 @@ source(here("..", "mobile-app", "R", "params.R"))
 archive_mode <- FALSE
 
 if (archive_mode) {
-  wef <- "2024-01-01"  #included in output
+  wef <- "2024-01-02"  #included in output
   til <- "2024-01-02"  #included in output
   data_day_date <- seq(ymd(wef), ymd(til), by = "day")
 } else {
@@ -41,62 +41,9 @@ st_file_status <- read_xlsx(path = fs::path_abs(str_glue(st_file),start = data_d
 
 # define functions for data generation & copy ----
 generate_app_data <- function(data_day_date) {
-  # source(here("..", "mobile-app", "R", "helpers.R")) # so it can be launched from the checkupdates script in grounded aircraft
-  #
-  # # parameters ----
-  # source(here("..", "mobile-app", "R", "params.R")) # so it can be launched from the checkupdates script in grounded aircraft
-  # source(here("..", "mobile-app", "R", "get_common_data.R"))
-  #
-  # source(here("..", "mobile-app", "R", "functions_json_files_nw.R"))
-  # # source(here("..", "mobile-app", "R", "generate_json_files_nw_with_functions.R"))
-  # # json for main page ----
-  # nw_json_app(data_day_date)
-  #
-  # # jsons for graphs -------
-  # ## traffic -----
-  # nw_traffic_evo_chart_daily(data_day_date)
-  #
-  # ## delay ----
-  # nw_delay_category_evo_charts(data_day_date)
-  #
-  # ## punctuality ----
-  # nw_punct_evo_chart(data_day_date)
-  #
-  # ## billing ----
-  # nw_billing_evo_chart(data_day_date)
-  #
-  # ## co2 emissions ----
-  # nw_co2_evo_chart(data_day_date)
-  #
-  # # jsons for ranking tables ----
-  #
-  # ## Aircraft operators traffic ----
-  # nw_ao_ranking_traffic(data_day_date)
-  #
-  # ## Airport traffic ----
-  # nw_apt_ranking_traffic(data_day_date)
-  #
-  # ## Country traffic DAI ----
-  # nw_ctry_ranking_traffic_DAI(data_day_date)
-  #
-  # ## Airport delay -----
-  # nw_apt_ranking_delay(data_day_date)
-  #
-  # ## ACC delay ----
-  # nw_acc_ranking_delay(data_day_date)
-  #
-  # ## Country delay ----
-  # nw_ctry_ranking_delay(data_day_date)
-  #
-  #
-  # ## Airport punctuality ----
-  # nw_apt_ranking_punctuality(data_day_date)
-  #
-  # ## Country punctuality ----
-  # nw_ctry_ranking_punctuality(data_day_date)
-
   source(here("..", "mobile-app", "R", "generate_json_files_nw.R"))
   source(here("..", "mobile-app", "R", "generate_json_files_state.R"))
+  source(here("..", "mobile-app", "R", "generate_json_files_ao.R"))
 }
 
 copy_app_data <- function(data_day_date) {
@@ -106,11 +53,13 @@ copy_app_data <- function(data_day_date) {
   network_data_folder_v3 <- here(destination_dir, "data", "v3", data_day_text_dash)
 
   # copy files to the V2 network folder ----
-  nw_prod_files_to_copy <- list.files(nw_local_data_folder_prod, full.names = TRUE)
-  file.copy(from = nw_prod_files_to_copy, to = network_data_folder_v2, overwrite = TRUE)
-
   st_prod_files_to_copy <- list.files(st_local_data_folder_prod, full.names = TRUE)
-  file.copy(from = st_prod_files_to_copy, to = network_data_folder_v2, overwrite = TRUE)
+  nw_prod_files_to_copy <- list.files(nw_local_data_folder_prod, full.names = TRUE)
+
+  if (archive_mode == FALSE) {
+    file.copy(from = nw_prod_files_to_copy, to = network_data_folder_v2, overwrite = TRUE)
+    file.copy(from = st_prod_files_to_copy, to = network_data_folder_v2, overwrite = TRUE)
+  }
 
   # check if v3 date folder already exists ----
   if (!dir.exists(network_data_folder_v3)) {
@@ -118,12 +67,13 @@ copy_app_data <- function(data_day_date) {
   }
 
   # copy files to the V3 network folder ----
-  file.copy(from = nw_prod_files_to_copy, to = network_data_folder_v3, overwrite = TRUE)
+  nw_dev_files_to_copy <- list.files(nw_local_data_folder_dev, full.names = TRUE)
+  file.copy(from = nw_dev_files_to_copy, to = network_data_folder_v3, overwrite = TRUE)
   file.copy(from = st_prod_files_to_copy, to = network_data_folder_v3, overwrite = TRUE)
 
   ### copy the v3 test files
   ao_dev_files_to_copy <- list.files(ao_local_data_folder_dev, full.names = TRUE)
-  file.copy(from = ao_dev_files_to_copy, to = network_data_folder_v3, overwrite = FALSE)
+  file.copy(from = ao_dev_files_to_copy, to = network_data_folder_v3, overwrite = TRUE)
 }
 
 # Define a combined function
@@ -139,9 +89,13 @@ if(archive_mode | (nw_file_status == "OK" & st_file_status == "OK")){
   source(here("..", "mobile-app", "R", "helpers.R"))
   source(here("..", "mobile-app", "R", "get_common_data.R"))
 
-  # generate and copy data for date sequence ----
-  walk(data_day_date, .f = process_app_data)
-
+  #temporary for loop until I can get the purr setup properly
+  data_day_date_temp <- data_day_date
+  for (i in 1:length(data_day_date_temp)) {
+    data_day_date <- data_day_date_temp[[i]]
+    # generate and copy data for date sequence ----
+    walk(data_day_date, .f = process_app_data)
+  }
 }
 
 # send email ----
