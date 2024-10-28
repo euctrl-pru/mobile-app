@@ -30,9 +30,6 @@ if (archive_mode) {
   data_day_date <- lubridate::today(tzone = "") +  days(-1)
 }
 
-network_data_folder_v2 <- here(destination_dir, "data", "v2")
-# network_data_folder_v3 <- here(destination_dir, "data", "v3", data_day_text_dash)
-
 # check data status ----
 nw_file_status <- read_xlsx(path = fs::path_abs(str_glue(nw_file),start = data_dir),
                             sheet = "Checks",
@@ -51,6 +48,7 @@ generate_app_data <- function(data_day_date) {
 copy_app_data <- function(data_day_date) {
   # parameters ----
   data_day_text_dash <- data_day_date %>% format("%Y-%m-%d")
+  network_data_folder_v2 <- here(destination_dir, "data", "v2")
   network_data_folder_v3 <- here(destination_dir, "data", "v3", data_day_text_dash)
 
   # copy that data directory to the V2 network folder ----

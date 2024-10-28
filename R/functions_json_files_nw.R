@@ -85,17 +85,7 @@ nw_json_app <- function(data_day_date){
 
   ## Network traffic ----
   # traffic data
-  nw_traffic_data <- read_xlsx(
-    path = fs::path_abs(
-      str_glue(nw_base_file),
-      start = nw_base_dir
-    ),
-    sheet = "NM_Daily_Traffic_All",
-    range = cell_limits(c(2, 1), c(NA, 39))
-  ) %>%
-    as_tibble() %>%
-    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-
+  ## moved to get common data script
 
   # get data for last date
   nw_traffic_last_day <- nw_traffic_data %>%
@@ -249,16 +239,7 @@ nw_json_app <- function(data_day_date){
 
   ##------ Network punctuality ----
   # punctuality data
-  nw_punct_data_raw <- read_xlsx(
-    path = fs::path_abs(
-      str_glue("098_PUNCTUALITY.xlsx"),
-      start = nw_base_dir
-    ),
-    sheet = "NETWORK",
-    range = cell_limits(c(1, 1), c(NA, NA))
-    ) %>%
-    as_tibble() %>%
-    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+  ## moved to get common data script as it is used for another function
 
   # pull out date parameters
   last_day_punct <- min(max(nw_punct_data_raw$DATE),
@@ -570,6 +551,17 @@ nw_json_app <- function(data_day_date){
 # jsons for graphs -------
 ## traffic -----
 nw_traffic_evo_chart_daily <- function(data_day_date){
+  nw_traffic_data <- read_xlsx(
+    path = fs::path_abs(
+      str_glue(nw_base_file),
+      start = nw_base_dir
+    ),
+    sheet = "NM_Daily_Traffic_All",
+    range = cell_limits(c(2, 1), c(NA, 39))
+  ) %>%
+    as_tibble() %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
   ### 7-day average daily ----
   #### app v1
   nw_traffic_evo_app <- nw_traffic_data %>%
@@ -1067,6 +1059,10 @@ nw_delay_flt_type_evo_charts <- function(data_day_date){
 
 ## punctuality ----
 nw_punct_evo_chart <- function(data_day_date){
+  last_day_punct <- min(max(nw_punct_data_raw$DATE),
+                        data_day_date, na.rm = TRUE)
+  last_year_punct <- as.numeric(format(last_day_punct, "%Y"))
+
   nw_punct_evo_app <- nw_punct_data_raw %>%
     filter(DATE >= as.Date(paste0("01-01-", data_day_year - 2), format = "%d-%m-%Y")) %>%
     arrange(DATE) %>%

@@ -30,7 +30,12 @@ data_day_year <- as.numeric(format(data_day_date,'%Y'))
 
 nw_json_app <- ""
 
+# json functions ----
+source(here("..", "mobile-app", "R", "functions_json_files_nw.R")) # so it can be launched from the checkupdates script in grounded aircraft
+
 # json for main page ----
+# nw_json_app(data_day_date)
+
 ## Network billed ----
 #### billing json - we do this first to avoid 'R fatal error'
 
@@ -600,7 +605,7 @@ nw_json_app_v2 <- paste0(
 )
 
 write(nw_json_app_v2, here(data_folder, "nw_json_app.json"))
-write(nw_json_app, paste0(archive_dir, data_day_text, "_nw_json_app_v2.json"))
+write(nw_json_app_v2, paste0(archive_dir, data_day_text, "_nw_json_app_v2.json"))
 
 # jsons for graphs -------
 ## traffic -----
