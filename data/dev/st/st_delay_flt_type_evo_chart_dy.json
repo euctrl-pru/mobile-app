@@ -1,0 +1,926 @@
+[
+  {
+    "iso_2letter": "AL",
+    "daio_zone": "Albania",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0
+      }
+    ]
+  },
+  {
+    "iso_2letter": "AM",
+    "daio_zone": "Armenia",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0
+      }
+    ]
+  },
+  {
+    "iso_2letter": "AT",
+    "daio_zone": "Austria",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0
+      }
+    ]
+  },
+  {
+    "iso_2letter": "BA",
+    "daio_zone": "Bosnia and Herzegovina",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0.2825,
+        "share": 1
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0
+      }
+    ]
+  },
+  {
+    "iso_2letter": "BE",
+    "daio_zone": "Belgium",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 0.2446,
+        "share": 1
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0.2008
+      }
+    ]
+  },
+  {
+    "iso_2letter": "BG",
+    "daio_zone": "Bulgaria",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0
+      }
+    ]
+  },
+  {
+    "iso_2letter": "CH",
+    "daio_zone": "Switzerland",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0.0579,
+        "share": 0.0532
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 1.0301,
+        "share": 0.9468
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0.4454
+      }
+    ]
+  },
+  {
+    "iso_2letter": "CY",
+    "daio_zone": "Cyprus",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0
+      }
+    ]
+  },
+  {
+    "iso_2letter": "CZ",
+    "daio_zone": "Czech Republic",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0
+      }
+    ]
+  },
+  {
+    "iso_2letter": "DE",
+    "daio_zone": "Germany",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0.7321,
+        "share": 0.3582
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 1.3119,
+        "share": 0.6418
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0.7999
+      }
+    ]
+  },
+  {
+    "iso_2letter": "DK",
+    "daio_zone": "Denmark",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0
+      }
+    ]
+  },
+  {
+    "iso_2letter": "EE",
+    "daio_zone": "Estonia",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0
+      }
+    ]
+  },
+  {
+    "iso_2letter": "ES",
+    "daio_zone": "Spain Continental",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 1.7209,
+        "share": 0.478
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 1.8795,
+        "share": 0.522
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0.4868
+      }
+    ]
+  },
+  {
+    "iso_2letter": "FI",
+    "daio_zone": "Finland",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0
+      }
+    ]
+  },
+  {
+    "iso_2letter": "FR",
+    "daio_zone": "France",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0.3941,
+        "share": 0.4466
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 0.4884,
+        "share": 0.5534
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 1.0586
+      }
+    ]
+  },
+  {
+    "iso_2letter": "GB",
+    "daio_zone": "United Kingdom",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 0.423,
+        "share": 1
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0.671
+      }
+    ]
+  },
+  {
+    "iso_2letter": "GE",
+    "daio_zone": "Georgia",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0.6351,
+        "share": 1
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0
+      }
+    ]
+  },
+  {
+    "iso_2letter": "GR",
+    "daio_zone": "Greece",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 0.091,
+        "share": 1
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0.0762
+      }
+    ]
+  },
+  {
+    "iso_2letter": "HR",
+    "daio_zone": "Croatia",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0
+      }
+    ]
+  },
+  {
+    "iso_2letter": "HU",
+    "daio_zone": "Hungary",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 3.0813,
+        "share": 1
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 1.9558
+      }
+    ]
+  },
+  {
+    "iso_2letter": "IC",
+    "daio_zone": "Spain Canaries",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0.5765,
+        "share": 0.379
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 0.9447,
+        "share": 0.621
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 2.0268
+      }
+    ]
+  },
+  {
+    "iso_2letter": "IE",
+    "daio_zone": "Ireland",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0.0237,
+        "share": 1
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0.2343
+      }
+    ]
+  },
+  {
+    "iso_2letter": "IL",
+    "daio_zone": "Israel",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 1.5241,
+        "share": 1
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0.7179
+      }
+    ]
+  },
+  {
+    "iso_2letter": "IT",
+    "daio_zone": "Italy",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0.2472
+      }
+    ]
+  },
+  {
+    "iso_2letter": "LT",
+    "daio_zone": "Lithuania",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0
+      }
+    ]
+  },
+  {
+    "iso_2letter": "LU",
+    "daio_zone": "Luxembourg",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0
+      }
+    ]
+  },
+  {
+    "iso_2letter": "LV",
+    "daio_zone": "Latvia",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0
+      }
+    ]
+  },
+  {
+    "iso_2letter": "MA",
+    "daio_zone": "Morocco",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0.2489,
+        "share": 0.4955
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 0.2534,
+        "share": 0.5045
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0
+      }
+    ]
+  },
+  {
+    "iso_2letter": "MD",
+    "daio_zone": "Moldova",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0
+      }
+    ]
+  },
+  {
+    "iso_2letter": "ME",
+    "daio_zone": "Serbia/Montenegro",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0
+      }
+    ]
+  },
+  {
+    "iso_2letter": "MK",
+    "daio_zone": "North Macedonia",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0.0614,
+        "share": 1
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0
+      }
+    ]
+  },
+  {
+    "iso_2letter": "MT",
+    "daio_zone": "Malta",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0
+      }
+    ]
+  },
+  {
+    "iso_2letter": "MUAC",
+    "daio_zone": "Maastricht",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0.225,
+        "share": 1
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0.0096
+      }
+    ]
+  },
+  {
+    "iso_2letter": "NL",
+    "daio_zone": "Netherlands",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 1.0923,
+        "share": 1
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0.6299
+      }
+    ]
+  },
+  {
+    "iso_2letter": "NO",
+    "daio_zone": "Norway",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0.0713,
+        "share": 1
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 1.2466
+      }
+    ]
+  },
+  {
+    "iso_2letter": "PL",
+    "daio_zone": "Poland",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 0.2109,
+        "share": 1
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0
+      }
+    ]
+  },
+  {
+    "iso_2letter": "PT",
+    "daio_zone": "Portugal",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0.6353,
+        "share": 0.569
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 0.4811,
+        "share": 0.431
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0.4566
+      }
+    ]
+  },
+  {
+    "iso_2letter": "RO",
+    "daio_zone": "Romania",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0
+      }
+    ]
+  },
+  {
+    "iso_2letter": "RS",
+    "daio_zone": "Serbia/Montenegro",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0
+      }
+    ]
+  },
+  {
+    "iso_2letter": "SE",
+    "daio_zone": "Sweden",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0
+      }
+    ]
+  },
+  {
+    "iso_2letter": "SI",
+    "daio_zone": "Slovenia",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0
+      }
+    ]
+  },
+  {
+    "iso_2letter": "SK",
+    "daio_zone": "Slovakia",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0
+      }
+    ]
+  },
+  {
+    "iso_2letter": "TR",
+    "daio_zone": "Türkiye",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 0.0434,
+        "share": 1
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0.0905
+      }
+    ]
+  },
+  {
+    "iso_2letter": "UA",
+    "daio_zone": "Ukraine",
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 0,
+        "share": 0
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 0
+      }
+    ]
+  }
+]

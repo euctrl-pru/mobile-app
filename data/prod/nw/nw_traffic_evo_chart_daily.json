@@ -1,0 +1,7624 @@
+[
+  {
+    "FLIGHT_DATE": "2024-01-01",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 23352.7143
+      },
+      {
+        "metric": "2023",
+        "value": 21963.7143
+      },
+      {
+        "metric": "2020",
+        "value": 22994.8571
+      },
+      {
+        "metric": "2019",
+        "value": 22845.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-01-02",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 23662.7143
+      },
+      {
+        "metric": "2023",
+        "value": 22038.8571
+      },
+      {
+        "metric": "2020",
+        "value": 23038.1429
+      },
+      {
+        "metric": "2019",
+        "value": 23816.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-01-03",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 23640
+      },
+      {
+        "metric": "2023",
+        "value": 22077
+      },
+      {
+        "metric": "2020",
+        "value": 23879.7143
+      },
+      {
+        "metric": "2019",
+        "value": 24258.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-01-04",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 23600.7143
+      },
+      {
+        "metric": "2023",
+        "value": 22129.1429
+      },
+      {
+        "metric": "2020",
+        "value": 24263.1429
+      },
+      {
+        "metric": "2019",
+        "value": 24275.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-01-05",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 23582.2857
+      },
+      {
+        "metric": "2023",
+        "value": 22141.5714
+      },
+      {
+        "metric": "2020",
+        "value": 24288.2857
+      },
+      {
+        "metric": "2019",
+        "value": 24301.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-01-06",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 23562.8571
+      },
+      {
+        "metric": "2023",
+        "value": 22634.4286
+      },
+      {
+        "metric": "2020",
+        "value": 24319.4286
+      },
+      {
+        "metric": "2019",
+        "value": 24229.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-01-07",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 24210.2857
+      },
+      {
+        "metric": "2023",
+        "value": 23084.4286
+      },
+      {
+        "metric": "2020",
+        "value": 24467.8571
+      },
+      {
+        "metric": "2019",
+        "value": 24453.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-01-08",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 24677.7143
+      },
+      {
+        "metric": "2023",
+        "value": 22914.2857
+      },
+      {
+        "metric": "2020",
+        "value": 24634.1429
+      },
+      {
+        "metric": "2019",
+        "value": 25487.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-01-09",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 24308.7143
+      },
+      {
+        "metric": "2023",
+        "value": 22633.5714
+      },
+      {
+        "metric": "2020",
+        "value": 25375.8571
+      },
+      {
+        "metric": "2019",
+        "value": 26118
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-01-10",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 23965.8571
+      },
+      {
+        "metric": "2023",
+        "value": 22407.7143
+      },
+      {
+        "metric": "2020",
+        "value": 26062.5714
+      },
+      {
+        "metric": "2019",
+        "value": 26026.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-01-11",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 23680.2857
+      },
+      {
+        "metric": "2023",
+        "value": 22250
+      },
+      {
+        "metric": "2020",
+        "value": 25955.1429
+      },
+      {
+        "metric": "2019",
+        "value": 25919.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-01-12",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 23506.8571
+      },
+      {
+        "metric": "2023",
+        "value": 22204.7143
+      },
+      {
+        "metric": "2020",
+        "value": 26024.5714
+      },
+      {
+        "metric": "2019",
+        "value": 25856.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-01-13",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 23144.7143
+      },
+      {
+        "metric": "2023",
+        "value": 21943.5714
+      },
+      {
+        "metric": "2020",
+        "value": 25704
+      },
+      {
+        "metric": "2019",
+        "value": 25610
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-01-14",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 22865
+      },
+      {
+        "metric": "2023",
+        "value": 21733.2857
+      },
+      {
+        "metric": "2020",
+        "value": 25491.2857
+      },
+      {
+        "metric": "2019",
+        "value": 25375.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-01-15",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 22637
+      },
+      {
+        "metric": "2023",
+        "value": 21634.2857
+      },
+      {
+        "metric": "2020",
+        "value": 25414.4286
+      },
+      {
+        "metric": "2019",
+        "value": 25312
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-01-16",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 22481.7143
+      },
+      {
+        "metric": "2023",
+        "value": 21541.5714
+      },
+      {
+        "metric": "2020",
+        "value": 25207.2857
+      },
+      {
+        "metric": "2019",
+        "value": 25236.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-01-17",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 22190.7143
+      },
+      {
+        "metric": "2023",
+        "value": 21481.1429
+      },
+      {
+        "metric": "2020",
+        "value": 25148.1429
+      },
+      {
+        "metric": "2019",
+        "value": 25221.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-01-18",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 22059.1429
+      },
+      {
+        "metric": "2023",
+        "value": 21398.1429
+      },
+      {
+        "metric": "2020",
+        "value": 25183.7143
+      },
+      {
+        "metric": "2019",
+        "value": 25271.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-01-19",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 22065.7143
+      },
+      {
+        "metric": "2023",
+        "value": 21465.5714
+      },
+      {
+        "metric": "2020",
+        "value": 25168.1429
+      },
+      {
+        "metric": "2019",
+        "value": 25457.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-01-20",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 22077.1429
+      },
+      {
+        "metric": "2023",
+        "value": 21461.4286
+      },
+      {
+        "metric": "2020",
+        "value": 25072
+      },
+      {
+        "metric": "2019",
+        "value": 25439.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-01-21",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 21994.8571
+      },
+      {
+        "metric": "2023",
+        "value": 21444.7143
+      },
+      {
+        "metric": "2020",
+        "value": 25040
+      },
+      {
+        "metric": "2019",
+        "value": 25487
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-01-22",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 22009
+      },
+      {
+        "metric": "2023",
+        "value": 21440.4286
+      },
+      {
+        "metric": "2020",
+        "value": 25069.5714
+      },
+      {
+        "metric": "2019",
+        "value": 25559.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-01-23",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 22083.5714
+      },
+      {
+        "metric": "2023",
+        "value": 21445.5714
+      },
+      {
+        "metric": "2020",
+        "value": 25208.5714
+      },
+      {
+        "metric": "2019",
+        "value": 25634
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-01-24",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 22314.8571
+      },
+      {
+        "metric": "2023",
+        "value": 21432
+      },
+      {
+        "metric": "2020",
+        "value": 25208.1429
+      },
+      {
+        "metric": "2019",
+        "value": 25581.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-01-25",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 22479.4286
+      },
+      {
+        "metric": "2023",
+        "value": 21504.2857
+      },
+      {
+        "metric": "2020",
+        "value": 25250.2857
+      },
+      {
+        "metric": "2019",
+        "value": 25588.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-01-26",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 22464.4286
+      },
+      {
+        "metric": "2023",
+        "value": 21408.2857
+      },
+      {
+        "metric": "2020",
+        "value": 25284.5714
+      },
+      {
+        "metric": "2019",
+        "value": 25517
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-01-27",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 22471.1429
+      },
+      {
+        "metric": "2023",
+        "value": 21402.2857
+      },
+      {
+        "metric": "2020",
+        "value": 25270
+      },
+      {
+        "metric": "2019",
+        "value": 25486.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-01-28",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 22570.1429
+      },
+      {
+        "metric": "2023",
+        "value": 21428.8571
+      },
+      {
+        "metric": "2020",
+        "value": 25263.5714
+      },
+      {
+        "metric": "2019",
+        "value": 25455.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-01-29",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 22602.7143
+      },
+      {
+        "metric": "2023",
+        "value": 21454.2857
+      },
+      {
+        "metric": "2020",
+        "value": 25264.8571
+      },
+      {
+        "metric": "2019",
+        "value": 25379.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-01-30",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 22639
+      },
+      {
+        "metric": "2023",
+        "value": 21427.2857
+      },
+      {
+        "metric": "2020",
+        "value": 25202.1429
+      },
+      {
+        "metric": "2019",
+        "value": 25396.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-01-31",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 22697
+      },
+      {
+        "metric": "2023",
+        "value": 21511.1429
+      },
+      {
+        "metric": "2020",
+        "value": 25195.4286
+      },
+      {
+        "metric": "2019",
+        "value": 25413.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-02-01",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 22585.8571
+      },
+      {
+        "metric": "2023",
+        "value": 21553
+      },
+      {
+        "metric": "2020",
+        "value": 25178.4286
+      },
+      {
+        "metric": "2019",
+        "value": 25431.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-02-02",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 22622.2857
+      },
+      {
+        "metric": "2023",
+        "value": 21667.8571
+      },
+      {
+        "metric": "2020",
+        "value": 25193
+      },
+      {
+        "metric": "2019",
+        "value": 25406
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-02-03",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 22676
+      },
+      {
+        "metric": "2023",
+        "value": 21742.4286
+      },
+      {
+        "metric": "2020",
+        "value": 25265.8571
+      },
+      {
+        "metric": "2019",
+        "value": 25467.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-02-04",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 22713.5714
+      },
+      {
+        "metric": "2023",
+        "value": 21754.5714
+      },
+      {
+        "metric": "2020",
+        "value": 25277.8571
+      },
+      {
+        "metric": "2019",
+        "value": 25420.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-02-05",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 22846.2857
+      },
+      {
+        "metric": "2023",
+        "value": 21819
+      },
+      {
+        "metric": "2020",
+        "value": 25292.1429
+      },
+      {
+        "metric": "2019",
+        "value": 25447.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-02-06",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 22902.4286
+      },
+      {
+        "metric": "2023",
+        "value": 21941.8571
+      },
+      {
+        "metric": "2020",
+        "value": 25322.5714
+      },
+      {
+        "metric": "2019",
+        "value": 25482.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-02-07",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 22850
+      },
+      {
+        "metric": "2023",
+        "value": 22042.1429
+      },
+      {
+        "metric": "2020",
+        "value": 25385.8571
+      },
+      {
+        "metric": "2019",
+        "value": 25579.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-02-08",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 23065.4286
+      },
+      {
+        "metric": "2023",
+        "value": 22215.7143
+      },
+      {
+        "metric": "2020",
+        "value": 25439.7143
+      },
+      {
+        "metric": "2019",
+        "value": 25662
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-02-09",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 23233.4286
+      },
+      {
+        "metric": "2023",
+        "value": 22444.8571
+      },
+      {
+        "metric": "2020",
+        "value": 25418.7143
+      },
+      {
+        "metric": "2019",
+        "value": 25778.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-02-10",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 23441.4286
+      },
+      {
+        "metric": "2023",
+        "value": 22629.2857
+      },
+      {
+        "metric": "2020",
+        "value": 25492.4286
+      },
+      {
+        "metric": "2019",
+        "value": 25839.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-02-11",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 23517.2857
+      },
+      {
+        "metric": "2023",
+        "value": 22836.8571
+      },
+      {
+        "metric": "2020",
+        "value": 25077.8571
+      },
+      {
+        "metric": "2019",
+        "value": 25927.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-02-12",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 23543.1429
+      },
+      {
+        "metric": "2023",
+        "value": 22992.5714
+      },
+      {
+        "metric": "2020",
+        "value": 24724.8571
+      },
+      {
+        "metric": "2019",
+        "value": 25984.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-02-13",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 23646.7143
+      },
+      {
+        "metric": "2023",
+        "value": 23145.2857
+      },
+      {
+        "metric": "2020",
+        "value": 24727.4286
+      },
+      {
+        "metric": "2019",
+        "value": 26059.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-02-14",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 23893.7143
+      },
+      {
+        "metric": "2023",
+        "value": 23270.7143
+      },
+      {
+        "metric": "2020",
+        "value": 24804.1429
+      },
+      {
+        "metric": "2019",
+        "value": 26014.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-02-15",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 24050.5714
+      },
+      {
+        "metric": "2023",
+        "value": 23315
+      },
+      {
+        "metric": "2020",
+        "value": 24859
+      },
+      {
+        "metric": "2019",
+        "value": 26093.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-02-16",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 24156
+      },
+      {
+        "metric": "2023",
+        "value": 22992.7143
+      },
+      {
+        "metric": "2020",
+        "value": 25010.7143
+      },
+      {
+        "metric": "2019",
+        "value": 26238.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-02-17",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 24260.8571
+      },
+      {
+        "metric": "2023",
+        "value": 23154.2857
+      },
+      {
+        "metric": "2020",
+        "value": 25147.1429
+      },
+      {
+        "metric": "2019",
+        "value": 26432.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-02-18",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 24452
+      },
+      {
+        "metric": "2023",
+        "value": 23236.1429
+      },
+      {
+        "metric": "2020",
+        "value": 25589.5714
+      },
+      {
+        "metric": "2019",
+        "value": 26586.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-02-19",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 24564.8571
+      },
+      {
+        "metric": "2023",
+        "value": 23268.1429
+      },
+      {
+        "metric": "2020",
+        "value": 26005.2857
+      },
+      {
+        "metric": "2019",
+        "value": 26628.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-02-20",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 24517.1429
+      },
+      {
+        "metric": "2023",
+        "value": 23311.4286
+      },
+      {
+        "metric": "2020",
+        "value": 26209.1429
+      },
+      {
+        "metric": "2019",
+        "value": 26671.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-02-21",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 24566.2857
+      },
+      {
+        "metric": "2023",
+        "value": 23365.8571
+      },
+      {
+        "metric": "2020",
+        "value": 26300.8571
+      },
+      {
+        "metric": "2019",
+        "value": 26761.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-02-22",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 24509
+      },
+      {
+        "metric": "2023",
+        "value": 23395.5714
+      },
+      {
+        "metric": "2020",
+        "value": 26330.7143
+      },
+      {
+        "metric": "2019",
+        "value": 26783.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-02-23",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 24441.1429
+      },
+      {
+        "metric": "2023",
+        "value": 23686.5714
+      },
+      {
+        "metric": "2020",
+        "value": 26348.4286
+      },
+      {
+        "metric": "2019",
+        "value": 26717.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-02-24",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 24383
+      },
+      {
+        "metric": "2023",
+        "value": 23594.8571
+      },
+      {
+        "metric": "2020",
+        "value": 26419.2857
+      },
+      {
+        "metric": "2019",
+        "value": 26725.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-02-25",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 24368.2857
+      },
+      {
+        "metric": "2023",
+        "value": 23575.1429
+      },
+      {
+        "metric": "2020",
+        "value": 26517.5714
+      },
+      {
+        "metric": "2019",
+        "value": 26798.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-02-26",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 24410.4286
+      },
+      {
+        "metric": "2023",
+        "value": 23572
+      },
+      {
+        "metric": "2020",
+        "value": 26612.5714
+      },
+      {
+        "metric": "2019",
+        "value": 26880.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-02-27",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 24573
+      },
+      {
+        "metric": "2023",
+        "value": 23602.4286
+      },
+      {
+        "metric": "2020",
+        "value": 26628.8571
+      },
+      {
+        "metric": "2019",
+        "value": 26946.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-02-28",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 24633.2857
+      },
+      {
+        "metric": "2023",
+        "value": 23667.5714
+      },
+      {
+        "metric": "2020",
+        "value": 26599.1429
+      },
+      {
+        "metric": "2019",
+        "value": 27054.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-02-29",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 24745.4286
+      },
+      {
+        "metric": "2023",
+        "value": 23716.4286
+      },
+      {
+        "metric": "2020",
+        "value": 26548.7143
+      },
+      {
+        "metric": "2019",
+        "value": 27107.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-03-01",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 24826.8571
+      },
+      {
+        "metric": "2023",
+        "value": 23758.1429
+      },
+      {
+        "metric": "2020",
+        "value": 26520.1429
+      },
+      {
+        "metric": "2019",
+        "value": 27136.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-03-02",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 24841.2857
+      },
+      {
+        "metric": "2023",
+        "value": 23743
+      },
+      {
+        "metric": "2020",
+        "value": 26411.5714
+      },
+      {
+        "metric": "2019",
+        "value": 27132.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-03-03",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 24861.5714
+      },
+      {
+        "metric": "2023",
+        "value": 23733.7143
+      },
+      {
+        "metric": "2020",
+        "value": 26413.1429
+      },
+      {
+        "metric": "2019",
+        "value": 27062.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-03-04",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 24959.7143
+      },
+      {
+        "metric": "2023",
+        "value": 23754.5714
+      },
+      {
+        "metric": "2020",
+        "value": 26331.4286
+      },
+      {
+        "metric": "2019",
+        "value": 27013.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-03-05",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 25051.5714
+      },
+      {
+        "metric": "2023",
+        "value": 23596.4286
+      },
+      {
+        "metric": "2020",
+        "value": 26295.7143
+      },
+      {
+        "metric": "2019",
+        "value": 27041.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-03-06",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 25117.4286
+      },
+      {
+        "metric": "2023",
+        "value": 23390.5714
+      },
+      {
+        "metric": "2020",
+        "value": 26290.1429
+      },
+      {
+        "metric": "2019",
+        "value": 27084
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-03-07",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 25089.8571
+      },
+      {
+        "metric": "2023",
+        "value": 23294.1429
+      },
+      {
+        "metric": "2020",
+        "value": 26235.4286
+      },
+      {
+        "metric": "2019",
+        "value": 27085.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-03-08",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 25029.2857
+      },
+      {
+        "metric": "2023",
+        "value": 23099.5714
+      },
+      {
+        "metric": "2020",
+        "value": 26046.5714
+      },
+      {
+        "metric": "2019",
+        "value": 27124.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-03-09",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 24997.5714
+      },
+      {
+        "metric": "2023",
+        "value": 23043.7143
+      },
+      {
+        "metric": "2020",
+        "value": 25903.4286
+      },
+      {
+        "metric": "2019",
+        "value": 27083.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-03-10",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 25011.2857
+      },
+      {
+        "metric": "2023",
+        "value": 23050.4286
+      },
+      {
+        "metric": "2020",
+        "value": 25731.5714
+      },
+      {
+        "metric": "2019",
+        "value": 27081.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-03-11",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 25015.7143
+      },
+      {
+        "metric": "2023",
+        "value": 23024.4286
+      },
+      {
+        "metric": "2020",
+        "value": 25498.2857
+      },
+      {
+        "metric": "2019",
+        "value": 27196.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-03-12",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 24956.4286
+      },
+      {
+        "metric": "2023",
+        "value": 23230.8571
+      },
+      {
+        "metric": "2020",
+        "value": 25172.8571
+      },
+      {
+        "metric": "2019",
+        "value": 27237.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-03-13",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 24893.2857
+      },
+      {
+        "metric": "2023",
+        "value": 23446.1429
+      },
+      {
+        "metric": "2020",
+        "value": 24772.2857
+      },
+      {
+        "metric": "2019",
+        "value": 27178.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-03-14",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 25018.2857
+      },
+      {
+        "metric": "2023",
+        "value": 23581.5714
+      },
+      {
+        "metric": "2020",
+        "value": 24372.5714
+      },
+      {
+        "metric": "2019",
+        "value": 27184.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-03-15",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 25203.8571
+      },
+      {
+        "metric": "2023",
+        "value": 23792.1429
+      },
+      {
+        "metric": "2020",
+        "value": 23950.8571
+      },
+      {
+        "metric": "2019",
+        "value": 27233
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-03-16",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 25259.4286
+      },
+      {
+        "metric": "2023",
+        "value": 23866.1429
+      },
+      {
+        "metric": "2020",
+        "value": 23508.5714
+      },
+      {
+        "metric": "2019",
+        "value": 27255.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-03-17",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 25271.8571
+      },
+      {
+        "metric": "2023",
+        "value": 23918.2857
+      },
+      {
+        "metric": "2020",
+        "value": 22849.2857
+      },
+      {
+        "metric": "2019",
+        "value": 27290.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-03-18",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 25303.1429
+      },
+      {
+        "metric": "2023",
+        "value": 24063.7143
+      },
+      {
+        "metric": "2020",
+        "value": 21906.7143
+      },
+      {
+        "metric": "2019",
+        "value": 27323.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-03-19",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 25429.1429
+      },
+      {
+        "metric": "2023",
+        "value": 24112.1429
+      },
+      {
+        "metric": "2020",
+        "value": 20738.2857
+      },
+      {
+        "metric": "2019",
+        "value": 27320.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-03-20",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 25605.4286
+      },
+      {
+        "metric": "2023",
+        "value": 24124.8571
+      },
+      {
+        "metric": "2020",
+        "value": 19364.4286
+      },
+      {
+        "metric": "2019",
+        "value": 27460.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-03-21",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 25662
+      },
+      {
+        "metric": "2023",
+        "value": 24090
+      },
+      {
+        "metric": "2020",
+        "value": 17763
+      },
+      {
+        "metric": "2019",
+        "value": 27539.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-03-22",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 25747.7143
+      },
+      {
+        "metric": "2023",
+        "value": 24024.4286
+      },
+      {
+        "metric": "2020",
+        "value": 15979.2857
+      },
+      {
+        "metric": "2019",
+        "value": 27597.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-03-23",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 25822.8571
+      },
+      {
+        "metric": "2023",
+        "value": 23920
+      },
+      {
+        "metric": "2020",
+        "value": 14412.8571
+      },
+      {
+        "metric": "2019",
+        "value": 27596.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-03-24",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 25785.2857
+      },
+      {
+        "metric": "2023",
+        "value": 23911.7143
+      },
+      {
+        "metric": "2020",
+        "value": 12627
+      },
+      {
+        "metric": "2019",
+        "value": 27640.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-03-25",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 25795.2857
+      },
+      {
+        "metric": "2023",
+        "value": 23700.5714
+      },
+      {
+        "metric": "2020",
+        "value": 10877.8571
+      },
+      {
+        "metric": "2019",
+        "value": 27590.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-03-26",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 25888
+      },
+      {
+        "metric": "2023",
+        "value": 24014.1429
+      },
+      {
+        "metric": "2020",
+        "value": 9601.2857
+      },
+      {
+        "metric": "2019",
+        "value": 27656.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-03-27",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 25995.5714
+      },
+      {
+        "metric": "2023",
+        "value": 24375.7143
+      },
+      {
+        "metric": "2020",
+        "value": 8464.4286
+      },
+      {
+        "metric": "2019",
+        "value": 27654.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-03-28",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 26012.5714
+      },
+      {
+        "metric": "2023",
+        "value": 24769.7143
+      },
+      {
+        "metric": "2020",
+        "value": 7497.7143
+      },
+      {
+        "metric": "2019",
+        "value": 27666.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-03-29",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 25716.5714
+      },
+      {
+        "metric": "2023",
+        "value": 25024.2857
+      },
+      {
+        "metric": "2020",
+        "value": 6564.5714
+      },
+      {
+        "metric": "2019",
+        "value": 27660.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-03-30",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 25705.2857
+      },
+      {
+        "metric": "2023",
+        "value": 25470.7143
+      },
+      {
+        "metric": "2020",
+        "value": 5939.4286
+      },
+      {
+        "metric": "2019",
+        "value": 27695
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-03-31",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 25877.1429
+      },
+      {
+        "metric": "2023",
+        "value": 25647.8571
+      },
+      {
+        "metric": "2020",
+        "value": 5342
+      },
+      {
+        "metric": "2019",
+        "value": 27868
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-04-01",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 26024
+      },
+      {
+        "metric": "2023",
+        "value": 26147.4286
+      },
+      {
+        "metric": "2020",
+        "value": 4944.4286
+      },
+      {
+        "metric": "2019",
+        "value": 28229.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-04-02",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 26472.5714
+      },
+      {
+        "metric": "2023",
+        "value": 26304.7143
+      },
+      {
+        "metric": "2020",
+        "value": 4649.8571
+      },
+      {
+        "metric": "2019",
+        "value": 28605.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-04-03",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 26804.1429
+      },
+      {
+        "metric": "2023",
+        "value": 26443
+      },
+      {
+        "metric": "2020",
+        "value": 4449.5714
+      },
+      {
+        "metric": "2019",
+        "value": 28975.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-04-04",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 27186.7143
+      },
+      {
+        "metric": "2023",
+        "value": 26462.4286
+      },
+      {
+        "metric": "2020",
+        "value": 4190.5714
+      },
+      {
+        "metric": "2019",
+        "value": 29286.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-04-05",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 27697.4286
+      },
+      {
+        "metric": "2023",
+        "value": 26336.8571
+      },
+      {
+        "metric": "2020",
+        "value": 3968.4286
+      },
+      {
+        "metric": "2019",
+        "value": 29542.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-04-06",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 28087
+      },
+      {
+        "metric": "2023",
+        "value": 26286.4286
+      },
+      {
+        "metric": "2020",
+        "value": 3823
+      },
+      {
+        "metric": "2019",
+        "value": 29863.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-04-07",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 28381
+      },
+      {
+        "metric": "2023",
+        "value": 26266.4286
+      },
+      {
+        "metric": "2020",
+        "value": 3725.5714
+      },
+      {
+        "metric": "2019",
+        "value": 29948.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-04-08",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 28631
+      },
+      {
+        "metric": "2023",
+        "value": 26175
+      },
+      {
+        "metric": "2020",
+        "value": 3666.7143
+      },
+      {
+        "metric": "2019",
+        "value": 29911
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-04-09",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 28708
+      },
+      {
+        "metric": "2023",
+        "value": 26232.8571
+      },
+      {
+        "metric": "2020",
+        "value": 3621
+      },
+      {
+        "metric": "2019",
+        "value": 29918
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-04-10",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 28841.2857
+      },
+      {
+        "metric": "2023",
+        "value": 26176.7143
+      },
+      {
+        "metric": "2020",
+        "value": 3572.7143
+      },
+      {
+        "metric": "2019",
+        "value": 29975.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-04-11",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 29014.8571
+      },
+      {
+        "metric": "2023",
+        "value": 26261.8571
+      },
+      {
+        "metric": "2020",
+        "value": 3541.1429
+      },
+      {
+        "metric": "2019",
+        "value": 30070.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-04-12",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 29099.4286
+      },
+      {
+        "metric": "2023",
+        "value": 26612.2857
+      },
+      {
+        "metric": "2020",
+        "value": 3389.7143
+      },
+      {
+        "metric": "2019",
+        "value": 30209.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-04-13",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 29146.4286
+      },
+      {
+        "metric": "2023",
+        "value": 26781.7143
+      },
+      {
+        "metric": "2020",
+        "value": 3340.8571
+      },
+      {
+        "metric": "2019",
+        "value": 30420.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-04-14",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 29158.1429
+      },
+      {
+        "metric": "2023",
+        "value": 26990
+      },
+      {
+        "metric": "2020",
+        "value": 3259
+      },
+      {
+        "metric": "2019",
+        "value": 30526.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-04-15",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 29152.2857
+      },
+      {
+        "metric": "2023",
+        "value": 27229.1429
+      },
+      {
+        "metric": "2020",
+        "value": 3114
+      },
+      {
+        "metric": "2019",
+        "value": 30555.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-04-16",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 29169.2857
+      },
+      {
+        "metric": "2023",
+        "value": 27357
+      },
+      {
+        "metric": "2020",
+        "value": 3090.8571
+      },
+      {
+        "metric": "2019",
+        "value": 30566.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-04-17",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 29170.7143
+      },
+      {
+        "metric": "2023",
+        "value": 27563.8571
+      },
+      {
+        "metric": "2020",
+        "value": 3084.7143
+      },
+      {
+        "metric": "2019",
+        "value": 30579.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-04-18",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 29172.8571
+      },
+      {
+        "metric": "2023",
+        "value": 27709
+      },
+      {
+        "metric": "2020",
+        "value": 3127
+      },
+      {
+        "metric": "2019",
+        "value": 30591.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-04-19",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 29197.5714
+      },
+      {
+        "metric": "2023",
+        "value": 27749.4286
+      },
+      {
+        "metric": "2020",
+        "value": 3255.2857
+      },
+      {
+        "metric": "2019",
+        "value": 30153.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-04-20",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 29184
+      },
+      {
+        "metric": "2023",
+        "value": 27813.2857
+      },
+      {
+        "metric": "2020",
+        "value": 3265.7143
+      },
+      {
+        "metric": "2019",
+        "value": 30059.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-04-21",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 29225.5714
+      },
+      {
+        "metric": "2023",
+        "value": 27962
+      },
+      {
+        "metric": "2020",
+        "value": 3316.5714
+      },
+      {
+        "metric": "2019",
+        "value": 29895.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-04-22",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 29292.1429
+      },
+      {
+        "metric": "2023",
+        "value": 28008.2857
+      },
+      {
+        "metric": "2020",
+        "value": 3483.5714
+      },
+      {
+        "metric": "2019",
+        "value": 29743
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-04-23",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 29325.7143
+      },
+      {
+        "metric": "2023",
+        "value": 28014.5714
+      },
+      {
+        "metric": "2020",
+        "value": 3528.4286
+      },
+      {
+        "metric": "2019",
+        "value": 29858.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-04-24",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 29394.5714
+      },
+      {
+        "metric": "2023",
+        "value": 28059.5714
+      },
+      {
+        "metric": "2020",
+        "value": 3579.4286
+      },
+      {
+        "metric": "2019",
+        "value": 29861.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-04-25",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 29103.4286
+      },
+      {
+        "metric": "2023",
+        "value": 28192.7143
+      },
+      {
+        "metric": "2020",
+        "value": 3628.2857
+      },
+      {
+        "metric": "2019",
+        "value": 29868
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-04-26",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 29196.1429
+      },
+      {
+        "metric": "2023",
+        "value": 28379.4286
+      },
+      {
+        "metric": "2020",
+        "value": 3675.2857
+      },
+      {
+        "metric": "2019",
+        "value": 30176.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-04-27",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 29306.8571
+      },
+      {
+        "metric": "2023",
+        "value": 28437.8571
+      },
+      {
+        "metric": "2020",
+        "value": 3699.5714
+      },
+      {
+        "metric": "2019",
+        "value": 30316.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-04-28",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 29334.8571
+      },
+      {
+        "metric": "2023",
+        "value": 28372.7143
+      },
+      {
+        "metric": "2020",
+        "value": 3733.7143
+      },
+      {
+        "metric": "2019",
+        "value": 30556.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-04-29",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 29404
+      },
+      {
+        "metric": "2023",
+        "value": 28129
+      },
+      {
+        "metric": "2020",
+        "value": 3778.7143
+      },
+      {
+        "metric": "2019",
+        "value": 30770.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-04-30",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 29525.4286
+      },
+      {
+        "metric": "2023",
+        "value": 28203.1429
+      },
+      {
+        "metric": "2020",
+        "value": 3814.2857
+      },
+      {
+        "metric": "2019",
+        "value": 30743.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-05-01",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 29395.4286
+      },
+      {
+        "metric": "2023",
+        "value": 28245.2857
+      },
+      {
+        "metric": "2020",
+        "value": 3840.2857
+      },
+      {
+        "metric": "2019",
+        "value": 30483.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-05-02",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 29715.7143
+      },
+      {
+        "metric": "2023",
+        "value": 28291.7143
+      },
+      {
+        "metric": "2020",
+        "value": 3841.1429
+      },
+      {
+        "metric": "2019",
+        "value": 30459
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-05-03",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 29714.2857
+      },
+      {
+        "metric": "2023",
+        "value": 28258.8571
+      },
+      {
+        "metric": "2020",
+        "value": 3716.4286
+      },
+      {
+        "metric": "2019",
+        "value": 30598.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-05-04",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 29823.8571
+      },
+      {
+        "metric": "2023",
+        "value": 28307.1429
+      },
+      {
+        "metric": "2020",
+        "value": 3714.1429
+      },
+      {
+        "metric": "2019",
+        "value": 30668.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-05-05",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 29945.2857
+      },
+      {
+        "metric": "2023",
+        "value": 28443.8571
+      },
+      {
+        "metric": "2020",
+        "value": 3740.8571
+      },
+      {
+        "metric": "2019",
+        "value": 30804
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-05-06",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 30016.4286
+      },
+      {
+        "metric": "2023",
+        "value": 28800.7143
+      },
+      {
+        "metric": "2020",
+        "value": 3773.5714
+      },
+      {
+        "metric": "2019",
+        "value": 30928.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-05-07",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 30131.4286
+      },
+      {
+        "metric": "2023",
+        "value": 28881.7143
+      },
+      {
+        "metric": "2020",
+        "value": 3806
+      },
+      {
+        "metric": "2019",
+        "value": 31102.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-05-08",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 30476
+      },
+      {
+        "metric": "2023",
+        "value": 28934.1429
+      },
+      {
+        "metric": "2020",
+        "value": 3840
+      },
+      {
+        "metric": "2019",
+        "value": 31415.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-05-09",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 30479
+      },
+      {
+        "metric": "2023",
+        "value": 28936.4286
+      },
+      {
+        "metric": "2020",
+        "value": 3911.1429
+      },
+      {
+        "metric": "2019",
+        "value": 31301.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-05-10",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 30422.2857
+      },
+      {
+        "metric": "2023",
+        "value": 29021.8571
+      },
+      {
+        "metric": "2020",
+        "value": 4073
+      },
+      {
+        "metric": "2019",
+        "value": 31425.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-05-11",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 30466.5714
+      },
+      {
+        "metric": "2023",
+        "value": 29098.2857
+      },
+      {
+        "metric": "2020",
+        "value": 4134
+      },
+      {
+        "metric": "2019",
+        "value": 31448.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-05-12",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 30647.7143
+      },
+      {
+        "metric": "2023",
+        "value": 29157.8571
+      },
+      {
+        "metric": "2020",
+        "value": 4153.8571
+      },
+      {
+        "metric": "2019",
+        "value": 31471.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-05-13",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 30770.7143
+      },
+      {
+        "metric": "2023",
+        "value": 29230
+      },
+      {
+        "metric": "2020",
+        "value": 4177.8571
+      },
+      {
+        "metric": "2019",
+        "value": 31544
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-05-14",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 30807.1429
+      },
+      {
+        "metric": "2023",
+        "value": 29243
+      },
+      {
+        "metric": "2020",
+        "value": 4248.5714
+      },
+      {
+        "metric": "2019",
+        "value": 31471.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-05-15",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 30838.5714
+      },
+      {
+        "metric": "2023",
+        "value": 29284.7143
+      },
+      {
+        "metric": "2020",
+        "value": 4304.4286
+      },
+      {
+        "metric": "2019",
+        "value": 31540.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-05-16",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 31071.5714
+      },
+      {
+        "metric": "2023",
+        "value": 29136.1429
+      },
+      {
+        "metric": "2020",
+        "value": 4358.4286
+      },
+      {
+        "metric": "2019",
+        "value": 31793
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-05-17",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 31261.7143
+      },
+      {
+        "metric": "2023",
+        "value": 28832.5714
+      },
+      {
+        "metric": "2020",
+        "value": 4479.2857
+      },
+      {
+        "metric": "2019",
+        "value": 31653
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-05-18",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 31316.8571
+      },
+      {
+        "metric": "2023",
+        "value": 28833.8571
+      },
+      {
+        "metric": "2020",
+        "value": 4531.8571
+      },
+      {
+        "metric": "2019",
+        "value": 31651.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-05-19",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 31184.7143
+      },
+      {
+        "metric": "2023",
+        "value": 28988.8571
+      },
+      {
+        "metric": "2020",
+        "value": 4571.8571
+      },
+      {
+        "metric": "2019",
+        "value": 31614.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-05-20",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 31120.5714
+      },
+      {
+        "metric": "2023",
+        "value": 29052.1429
+      },
+      {
+        "metric": "2020",
+        "value": 4653
+      },
+      {
+        "metric": "2019",
+        "value": 31622.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-05-21",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 31156.4286
+      },
+      {
+        "metric": "2023",
+        "value": 29148.2857
+      },
+      {
+        "metric": "2020",
+        "value": 4698.7143
+      },
+      {
+        "metric": "2019",
+        "value": 31569.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-05-22",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 31202.8571
+      },
+      {
+        "metric": "2023",
+        "value": 29254.5714
+      },
+      {
+        "metric": "2020",
+        "value": 4799
+      },
+      {
+        "metric": "2019",
+        "value": 31665.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-05-23",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 31322.4286
+      },
+      {
+        "metric": "2023",
+        "value": 29549.5714
+      },
+      {
+        "metric": "2020",
+        "value": 4724
+      },
+      {
+        "metric": "2019",
+        "value": 31802.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-05-24",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 31457.1429
+      },
+      {
+        "metric": "2023",
+        "value": 30030.2857
+      },
+      {
+        "metric": "2020",
+        "value": 4674.5714
+      },
+      {
+        "metric": "2019",
+        "value": 32055.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-05-25",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 31528.2857
+      },
+      {
+        "metric": "2023",
+        "value": 30225.2857
+      },
+      {
+        "metric": "2020",
+        "value": 4693.7143
+      },
+      {
+        "metric": "2019",
+        "value": 32200
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-05-26",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 31657.5714
+      },
+      {
+        "metric": "2023",
+        "value": 30108.8571
+      },
+      {
+        "metric": "2020",
+        "value": 4749.5714
+      },
+      {
+        "metric": "2019",
+        "value": 32324.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-05-27",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 31858.1429
+      },
+      {
+        "metric": "2023",
+        "value": 30120.2857
+      },
+      {
+        "metric": "2020",
+        "value": 4750.7143
+      },
+      {
+        "metric": "2019",
+        "value": 32421.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-05-28",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 31942.1429
+      },
+      {
+        "metric": "2023",
+        "value": 30230.4286
+      },
+      {
+        "metric": "2020",
+        "value": 4787.8571
+      },
+      {
+        "metric": "2019",
+        "value": 32642.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-05-29",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 32060
+      },
+      {
+        "metric": "2023",
+        "value": 30314
+      },
+      {
+        "metric": "2020",
+        "value": 4808.1429
+      },
+      {
+        "metric": "2019",
+        "value": 32826.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-05-30",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 32045.2857
+      },
+      {
+        "metric": "2023",
+        "value": 30450.1429
+      },
+      {
+        "metric": "2020",
+        "value": 4962.4286
+      },
+      {
+        "metric": "2019",
+        "value": 32589.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-05-31",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 32093.7143
+      },
+      {
+        "metric": "2023",
+        "value": 30466.5714
+      },
+      {
+        "metric": "2020",
+        "value": 5092.4286
+      },
+      {
+        "metric": "2019",
+        "value": 32356.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-06-01",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 32256.2857
+      },
+      {
+        "metric": "2023",
+        "value": 30542.1429
+      },
+      {
+        "metric": "2020",
+        "value": 5127
+      },
+      {
+        "metric": "2019",
+        "value": 32519.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-06-02",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 32504.5714
+      },
+      {
+        "metric": "2023",
+        "value": 30749.7143
+      },
+      {
+        "metric": "2020",
+        "value": 5112
+      },
+      {
+        "metric": "2019",
+        "value": 32886.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-06-03",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 32613.1429
+      },
+      {
+        "metric": "2023",
+        "value": 30931.8571
+      },
+      {
+        "metric": "2020",
+        "value": 5112.5714
+      },
+      {
+        "metric": "2019",
+        "value": 33063.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-06-04",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 32734.7143
+      },
+      {
+        "metric": "2023",
+        "value": 30852.5714
+      },
+      {
+        "metric": "2020",
+        "value": 5173.7143
+      },
+      {
+        "metric": "2019",
+        "value": 33249.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-06-05",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 32843.8571
+      },
+      {
+        "metric": "2023",
+        "value": 30993.7143
+      },
+      {
+        "metric": "2020",
+        "value": 5255.1429
+      },
+      {
+        "metric": "2019",
+        "value": 33343
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-06-06",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 32979.4286
+      },
+      {
+        "metric": "2023",
+        "value": 30994.7143
+      },
+      {
+        "metric": "2020",
+        "value": 5380.7143
+      },
+      {
+        "metric": "2019",
+        "value": 33737.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-06-07",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33087
+      },
+      {
+        "metric": "2023",
+        "value": 31067.2857
+      },
+      {
+        "metric": "2020",
+        "value": 5495.2857
+      },
+      {
+        "metric": "2019",
+        "value": 34178.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-06-08",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33088.8571
+      },
+      {
+        "metric": "2023",
+        "value": 31140.5714
+      },
+      {
+        "metric": "2020",
+        "value": 5612.7143
+      },
+      {
+        "metric": "2019",
+        "value": 34288.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-06-09",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33026.7143
+      },
+      {
+        "metric": "2023",
+        "value": 31303.1429
+      },
+      {
+        "metric": "2020",
+        "value": 5787.1429
+      },
+      {
+        "metric": "2019",
+        "value": 34061
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-06-10",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33130
+      },
+      {
+        "metric": "2023",
+        "value": 31367.7143
+      },
+      {
+        "metric": "2020",
+        "value": 6001
+      },
+      {
+        "metric": "2019",
+        "value": 34016.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-06-11",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33191.1429
+      },
+      {
+        "metric": "2023",
+        "value": 31607.5714
+      },
+      {
+        "metric": "2020",
+        "value": 6099.1429
+      },
+      {
+        "metric": "2019",
+        "value": 34130.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-06-12",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33274.8571
+      },
+      {
+        "metric": "2023",
+        "value": 31647.7143
+      },
+      {
+        "metric": "2020",
+        "value": 6188
+      },
+      {
+        "metric": "2019",
+        "value": 34202.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-06-13",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33413
+      },
+      {
+        "metric": "2023",
+        "value": 31837.7143
+      },
+      {
+        "metric": "2020",
+        "value": 6203.7143
+      },
+      {
+        "metric": "2019",
+        "value": 34407.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-06-14",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33592.1429
+      },
+      {
+        "metric": "2023",
+        "value": 32006.2857
+      },
+      {
+        "metric": "2020",
+        "value": 6283.1429
+      },
+      {
+        "metric": "2019",
+        "value": 34498.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-06-15",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33758.4286
+      },
+      {
+        "metric": "2023",
+        "value": 32067.8571
+      },
+      {
+        "metric": "2020",
+        "value": 6316.7143
+      },
+      {
+        "metric": "2019",
+        "value": 34554
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-06-16",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33884.1429
+      },
+      {
+        "metric": "2023",
+        "value": 32026
+      },
+      {
+        "metric": "2020",
+        "value": 6376.1429
+      },
+      {
+        "metric": "2019",
+        "value": 34768.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-06-17",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33897.1429
+      },
+      {
+        "metric": "2023",
+        "value": 32146
+      },
+      {
+        "metric": "2020",
+        "value": 6568.5714
+      },
+      {
+        "metric": "2019",
+        "value": 34992.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-06-18",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33985.1429
+      },
+      {
+        "metric": "2023",
+        "value": 32149
+      },
+      {
+        "metric": "2020",
+        "value": 6727.1429
+      },
+      {
+        "metric": "2019",
+        "value": 35037
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-06-19",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34084.8571
+      },
+      {
+        "metric": "2023",
+        "value": 32241.2857
+      },
+      {
+        "metric": "2020",
+        "value": 6869.2857
+      },
+      {
+        "metric": "2019",
+        "value": 35091.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-06-20",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34139.7143
+      },
+      {
+        "metric": "2023",
+        "value": 32183.4286
+      },
+      {
+        "metric": "2020",
+        "value": 7079.5714
+      },
+      {
+        "metric": "2019",
+        "value": 35013.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-06-21",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34033.8571
+      },
+      {
+        "metric": "2023",
+        "value": 32148.8571
+      },
+      {
+        "metric": "2020",
+        "value": 7270.5714
+      },
+      {
+        "metric": "2019",
+        "value": 34918.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-06-22",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34034.8571
+      },
+      {
+        "metric": "2023",
+        "value": 32213.7143
+      },
+      {
+        "metric": "2020",
+        "value": 7459.1429
+      },
+      {
+        "metric": "2019",
+        "value": 34910.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-06-23",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34085.8571
+      },
+      {
+        "metric": "2023",
+        "value": 32349.5714
+      },
+      {
+        "metric": "2020",
+        "value": 7706.4286
+      },
+      {
+        "metric": "2019",
+        "value": 34937.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-06-24",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34171.7143
+      },
+      {
+        "metric": "2023",
+        "value": 32421
+      },
+      {
+        "metric": "2020",
+        "value": 7842.5714
+      },
+      {
+        "metric": "2019",
+        "value": 34925.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-06-25",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34254.5714
+      },
+      {
+        "metric": "2023",
+        "value": 32605.1429
+      },
+      {
+        "metric": "2020",
+        "value": 7979.7143
+      },
+      {
+        "metric": "2019",
+        "value": 34935.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-06-26",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34198.4286
+      },
+      {
+        "metric": "2023",
+        "value": 32635.7143
+      },
+      {
+        "metric": "2020",
+        "value": 8121.7143
+      },
+      {
+        "metric": "2019",
+        "value": 34953.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-06-27",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34139.5714
+      },
+      {
+        "metric": "2023",
+        "value": 32704.5714
+      },
+      {
+        "metric": "2020",
+        "value": 8289.5714
+      },
+      {
+        "metric": "2019",
+        "value": 35097.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-06-28",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34215.8571
+      },
+      {
+        "metric": "2023",
+        "value": 32757.4286
+      },
+      {
+        "metric": "2020",
+        "value": 8466.4286
+      },
+      {
+        "metric": "2019",
+        "value": 35254.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-06-29",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34233.2857
+      },
+      {
+        "metric": "2023",
+        "value": 32906.1429
+      },
+      {
+        "metric": "2020",
+        "value": 8570.8571
+      },
+      {
+        "metric": "2019",
+        "value": 35381.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-06-30",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34245.2857
+      },
+      {
+        "metric": "2023",
+        "value": 32997.1429
+      },
+      {
+        "metric": "2020",
+        "value": 8658
+      },
+      {
+        "metric": "2019",
+        "value": 35446.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-07-01",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34250.7143
+      },
+      {
+        "metric": "2023",
+        "value": 33020
+      },
+      {
+        "metric": "2020",
+        "value": 8703.5714
+      },
+      {
+        "metric": "2019",
+        "value": 35491.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-07-02",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34252
+      },
+      {
+        "metric": "2023",
+        "value": 32984.2857
+      },
+      {
+        "metric": "2020",
+        "value": 8778.7143
+      },
+      {
+        "metric": "2019",
+        "value": 35520.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-07-03",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34316.1429
+      },
+      {
+        "metric": "2023",
+        "value": 32955.7143
+      },
+      {
+        "metric": "2020",
+        "value": 9281.7143
+      },
+      {
+        "metric": "2019",
+        "value": 35548.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-07-04",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34367.7143
+      },
+      {
+        "metric": "2023",
+        "value": 33030.1429
+      },
+      {
+        "metric": "2020",
+        "value": 9731.4286
+      },
+      {
+        "metric": "2019",
+        "value": 35548
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-07-05",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34370
+      },
+      {
+        "metric": "2023",
+        "value": 33115.1429
+      },
+      {
+        "metric": "2020",
+        "value": 10316.4286
+      },
+      {
+        "metric": "2019",
+        "value": 35526.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-07-06",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34445.5714
+      },
+      {
+        "metric": "2023",
+        "value": 33087.2857
+      },
+      {
+        "metric": "2020",
+        "value": 10938.8571
+      },
+      {
+        "metric": "2019",
+        "value": 35518.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-07-07",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34460.2857
+      },
+      {
+        "metric": "2023",
+        "value": 33042.2857
+      },
+      {
+        "metric": "2020",
+        "value": 11552.7143
+      },
+      {
+        "metric": "2019",
+        "value": 35457.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-07-08",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34419.4286
+      },
+      {
+        "metric": "2023",
+        "value": 33047
+      },
+      {
+        "metric": "2020",
+        "value": 12092.2857
+      },
+      {
+        "metric": "2019",
+        "value": 35440.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-07-09",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34408.5714
+      },
+      {
+        "metric": "2023",
+        "value": 33040.1429
+      },
+      {
+        "metric": "2020",
+        "value": 12527
+      },
+      {
+        "metric": "2019",
+        "value": 35425.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-07-10",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34388.8571
+      },
+      {
+        "metric": "2023",
+        "value": 33090.7143
+      },
+      {
+        "metric": "2020",
+        "value": 12584.4286
+      },
+      {
+        "metric": "2019",
+        "value": 35402.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-07-11",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34401.8571
+      },
+      {
+        "metric": "2023",
+        "value": 33057.7143
+      },
+      {
+        "metric": "2020",
+        "value": 12649.4286
+      },
+      {
+        "metric": "2019",
+        "value": 35378.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-07-12",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34303.8571
+      },
+      {
+        "metric": "2023",
+        "value": 32968.2857
+      },
+      {
+        "metric": "2020",
+        "value": 12741.2857
+      },
+      {
+        "metric": "2019",
+        "value": 35313.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-07-13",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34367.5714
+      },
+      {
+        "metric": "2023",
+        "value": 32853.7143
+      },
+      {
+        "metric": "2020",
+        "value": 12860
+      },
+      {
+        "metric": "2019",
+        "value": 35343.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-07-14",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34401.8571
+      },
+      {
+        "metric": "2023",
+        "value": 32882
+      },
+      {
+        "metric": "2020",
+        "value": 12935.5714
+      },
+      {
+        "metric": "2019",
+        "value": 35366.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-07-15",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34520.5714
+      },
+      {
+        "metric": "2023",
+        "value": 32864.5714
+      },
+      {
+        "metric": "2020",
+        "value": 12992.8571
+      },
+      {
+        "metric": "2019",
+        "value": 35383.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-07-16",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34526.5714
+      },
+      {
+        "metric": "2023",
+        "value": 32896.5714
+      },
+      {
+        "metric": "2020",
+        "value": 13058.2857
+      },
+      {
+        "metric": "2019",
+        "value": 35379.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-07-17",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34554.4286
+      },
+      {
+        "metric": "2023",
+        "value": 32881.7143
+      },
+      {
+        "metric": "2020",
+        "value": 13205.5714
+      },
+      {
+        "metric": "2019",
+        "value": 35351.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-07-18",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34549.7143
+      },
+      {
+        "metric": "2023",
+        "value": 32895.8571
+      },
+      {
+        "metric": "2020",
+        "value": 13421.5714
+      },
+      {
+        "metric": "2019",
+        "value": 35315.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-07-19",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34402.7143
+      },
+      {
+        "metric": "2023",
+        "value": 32883.4286
+      },
+      {
+        "metric": "2020",
+        "value": 13596.1429
+      },
+      {
+        "metric": "2019",
+        "value": 35339.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-07-20",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34361.1429
+      },
+      {
+        "metric": "2023",
+        "value": 33015.4286
+      },
+      {
+        "metric": "2020",
+        "value": 13793.1429
+      },
+      {
+        "metric": "2019",
+        "value": 35348.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-07-21",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34259.8571
+      },
+      {
+        "metric": "2023",
+        "value": 32987.5714
+      },
+      {
+        "metric": "2020",
+        "value": 13995.7143
+      },
+      {
+        "metric": "2019",
+        "value": 35316.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-07-22",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34169.7143
+      },
+      {
+        "metric": "2023",
+        "value": 32901.4286
+      },
+      {
+        "metric": "2020",
+        "value": 14203.8571
+      },
+      {
+        "metric": "2019",
+        "value": 35255.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-07-23",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34133.4286
+      },
+      {
+        "metric": "2023",
+        "value": 32835.5714
+      },
+      {
+        "metric": "2020",
+        "value": 14368.8571
+      },
+      {
+        "metric": "2019",
+        "value": 35235.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-07-24",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34130.2857
+      },
+      {
+        "metric": "2023",
+        "value": 32824.2857
+      },
+      {
+        "metric": "2020",
+        "value": 14414.2857
+      },
+      {
+        "metric": "2019",
+        "value": 35176.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-07-25",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34115.8571
+      },
+      {
+        "metric": "2023",
+        "value": 32769.2857
+      },
+      {
+        "metric": "2020",
+        "value": 14487.4286
+      },
+      {
+        "metric": "2019",
+        "value": 35085.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-07-26",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34240.1429
+      },
+      {
+        "metric": "2023",
+        "value": 32776
+      },
+      {
+        "metric": "2020",
+        "value": 14553.5714
+      },
+      {
+        "metric": "2019",
+        "value": 35007.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-07-27",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34268.8571
+      },
+      {
+        "metric": "2023",
+        "value": 32758.4286
+      },
+      {
+        "metric": "2020",
+        "value": 14685.8571
+      },
+      {
+        "metric": "2019",
+        "value": 34954.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-07-28",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34371
+      },
+      {
+        "metric": "2023",
+        "value": 32766.8571
+      },
+      {
+        "metric": "2020",
+        "value": 14763.1429
+      },
+      {
+        "metric": "2019",
+        "value": 34956.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-07-29",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34334.1429
+      },
+      {
+        "metric": "2023",
+        "value": 32804.1429
+      },
+      {
+        "metric": "2020",
+        "value": 14794.5714
+      },
+      {
+        "metric": "2019",
+        "value": 34958.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-07-30",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34342.2857
+      },
+      {
+        "metric": "2023",
+        "value": 32831.2857
+      },
+      {
+        "metric": "2020",
+        "value": 14815.5714
+      },
+      {
+        "metric": "2019",
+        "value": 34907.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-07-31",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34305.1429
+      },
+      {
+        "metric": "2023",
+        "value": 32774
+      },
+      {
+        "metric": "2020",
+        "value": 14875.8571
+      },
+      {
+        "metric": "2019",
+        "value": 34949.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-08-01",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34196
+      },
+      {
+        "metric": "2023",
+        "value": 32708.4286
+      },
+      {
+        "metric": "2020",
+        "value": 14901.2857
+      },
+      {
+        "metric": "2019",
+        "value": 34962.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-08-02",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34261.7143
+      },
+      {
+        "metric": "2023",
+        "value": 32656.1429
+      },
+      {
+        "metric": "2020",
+        "value": 14942.5714
+      },
+      {
+        "metric": "2019",
+        "value": 34928.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-08-03",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34269.5714
+      },
+      {
+        "metric": "2023",
+        "value": 32680.1429
+      },
+      {
+        "metric": "2020",
+        "value": 15221.2857
+      },
+      {
+        "metric": "2019",
+        "value": 34971.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-08-04",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34203.1429
+      },
+      {
+        "metric": "2023",
+        "value": 32632.1429
+      },
+      {
+        "metric": "2020",
+        "value": 15506.4286
+      },
+      {
+        "metric": "2019",
+        "value": 34966.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-08-05",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34204.2857
+      },
+      {
+        "metric": "2023",
+        "value": 32612.7143
+      },
+      {
+        "metric": "2020",
+        "value": 15766.2857
+      },
+      {
+        "metric": "2019",
+        "value": 34848.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-08-06",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34164.2857
+      },
+      {
+        "metric": "2023",
+        "value": 32540
+      },
+      {
+        "metric": "2020",
+        "value": 15990
+      },
+      {
+        "metric": "2019",
+        "value": 34764
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-08-07",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34049.7143
+      },
+      {
+        "metric": "2023",
+        "value": 32547.4286
+      },
+      {
+        "metric": "2020",
+        "value": 16200.1429
+      },
+      {
+        "metric": "2019",
+        "value": 34583.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-08-08",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34071.2857
+      },
+      {
+        "metric": "2023",
+        "value": 32567.4286
+      },
+      {
+        "metric": "2020",
+        "value": 16396.8571
+      },
+      {
+        "metric": "2019",
+        "value": 34510.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-08-09",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34046.8571
+      },
+      {
+        "metric": "2023",
+        "value": 32590.8571
+      },
+      {
+        "metric": "2020",
+        "value": 16622.1429
+      },
+      {
+        "metric": "2019",
+        "value": 34492.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-08-10",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34043.1429
+      },
+      {
+        "metric": "2023",
+        "value": 32583.2857
+      },
+      {
+        "metric": "2020",
+        "value": 16640.2857
+      },
+      {
+        "metric": "2019",
+        "value": 34482.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-08-11",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34026.4286
+      },
+      {
+        "metric": "2023",
+        "value": 32595.1429
+      },
+      {
+        "metric": "2020",
+        "value": 16677
+      },
+      {
+        "metric": "2019",
+        "value": 34462.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-08-12",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33984.5714
+      },
+      {
+        "metric": "2023",
+        "value": 32482.1429
+      },
+      {
+        "metric": "2020",
+        "value": 16714.7143
+      },
+      {
+        "metric": "2019",
+        "value": 34463.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-08-13",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33909.7143
+      },
+      {
+        "metric": "2023",
+        "value": 32419.4286
+      },
+      {
+        "metric": "2020",
+        "value": 16714.4286
+      },
+      {
+        "metric": "2019",
+        "value": 34489.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-08-14",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33898.1429
+      },
+      {
+        "metric": "2023",
+        "value": 32365.8571
+      },
+      {
+        "metric": "2020",
+        "value": 16688.4286
+      },
+      {
+        "metric": "2019",
+        "value": 34599.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-08-15",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33774.2857
+      },
+      {
+        "metric": "2023",
+        "value": 32313.1429
+      },
+      {
+        "metric": "2020",
+        "value": 16657.5714
+      },
+      {
+        "metric": "2019",
+        "value": 34530
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-08-16",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33752.8571
+      },
+      {
+        "metric": "2023",
+        "value": 32278.7143
+      },
+      {
+        "metric": "2020",
+        "value": 16671.4286
+      },
+      {
+        "metric": "2019",
+        "value": 34510.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-08-17",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33699.2857
+      },
+      {
+        "metric": "2023",
+        "value": 32251.7143
+      },
+      {
+        "metric": "2020",
+        "value": 16691.7143
+      },
+      {
+        "metric": "2019",
+        "value": 34503.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-08-18",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33679.1429
+      },
+      {
+        "metric": "2023",
+        "value": 32308.5714
+      },
+      {
+        "metric": "2020",
+        "value": 16775
+      },
+      {
+        "metric": "2019",
+        "value": 34575.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-08-19",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33718.8571
+      },
+      {
+        "metric": "2023",
+        "value": 32456.8571
+      },
+      {
+        "metric": "2020",
+        "value": 16803.1429
+      },
+      {
+        "metric": "2019",
+        "value": 34663.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-08-20",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33828.5714
+      },
+      {
+        "metric": "2023",
+        "value": 32610.4286
+      },
+      {
+        "metric": "2020",
+        "value": 16833.2857
+      },
+      {
+        "metric": "2019",
+        "value": 34744.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-08-21",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33923.5714
+      },
+      {
+        "metric": "2023",
+        "value": 32732.1429
+      },
+      {
+        "metric": "2020",
+        "value": 16906.7143
+      },
+      {
+        "metric": "2019",
+        "value": 34810.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-08-22",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34076.7143
+      },
+      {
+        "metric": "2023",
+        "value": 32792.4286
+      },
+      {
+        "metric": "2020",
+        "value": 17008.4286
+      },
+      {
+        "metric": "2019",
+        "value": 35025.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-08-23",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34155
+      },
+      {
+        "metric": "2023",
+        "value": 32813.4286
+      },
+      {
+        "metric": "2020",
+        "value": 17025.7143
+      },
+      {
+        "metric": "2019",
+        "value": 35150.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-08-24",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34143.7143
+      },
+      {
+        "metric": "2023",
+        "value": 32767
+      },
+      {
+        "metric": "2020",
+        "value": 17008
+      },
+      {
+        "metric": "2019",
+        "value": 35146.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-08-25",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34185.5714
+      },
+      {
+        "metric": "2023",
+        "value": 32666.2857
+      },
+      {
+        "metric": "2020",
+        "value": 17026.5714
+      },
+      {
+        "metric": "2019",
+        "value": 35135
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-08-26",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34184.1429
+      },
+      {
+        "metric": "2023",
+        "value": 32381.2857
+      },
+      {
+        "metric": "2020",
+        "value": 17068.2857
+      },
+      {
+        "metric": "2019",
+        "value": 35181.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-08-27",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34192.8571
+      },
+      {
+        "metric": "2023",
+        "value": 32450
+      },
+      {
+        "metric": "2020",
+        "value": 17114.7143
+      },
+      {
+        "metric": "2019",
+        "value": 35237.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-08-28",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34238.4286
+      },
+      {
+        "metric": "2023",
+        "value": 32518.8571
+      },
+      {
+        "metric": "2020",
+        "value": 17127.8571
+      },
+      {
+        "metric": "2019",
+        "value": 35298.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-08-29",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34296.4286
+      },
+      {
+        "metric": "2023",
+        "value": 32626.5714
+      },
+      {
+        "metric": "2020",
+        "value": 17195
+      },
+      {
+        "metric": "2019",
+        "value": 35353.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-08-30",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34319.7143
+      },
+      {
+        "metric": "2023",
+        "value": 32714.8571
+      },
+      {
+        "metric": "2020",
+        "value": 17257.4286
+      },
+      {
+        "metric": "2019",
+        "value": 35411.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-08-31",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34334.4286
+      },
+      {
+        "metric": "2023",
+        "value": 32709.4286
+      },
+      {
+        "metric": "2020",
+        "value": 17254.2857
+      },
+      {
+        "metric": "2019",
+        "value": 35434.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-09-01",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34387.2857
+      },
+      {
+        "metric": "2023",
+        "value": 32800.4286
+      },
+      {
+        "metric": "2020",
+        "value": 17280
+      },
+      {
+        "metric": "2019",
+        "value": 35401.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-09-02",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34389.5714
+      },
+      {
+        "metric": "2023",
+        "value": 33082.7143
+      },
+      {
+        "metric": "2020",
+        "value": 17335.2857
+      },
+      {
+        "metric": "2019",
+        "value": 35368.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-09-03",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34378.5714
+      },
+      {
+        "metric": "2023",
+        "value": 32974.1429
+      },
+      {
+        "metric": "2020",
+        "value": 17301.7143
+      },
+      {
+        "metric": "2019",
+        "value": 35364.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-09-04",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34306.8571
+      },
+      {
+        "metric": "2023",
+        "value": 32858.2857
+      },
+      {
+        "metric": "2020",
+        "value": 17230.8571
+      },
+      {
+        "metric": "2019",
+        "value": 35346.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-09-05",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34236.4286
+      },
+      {
+        "metric": "2023",
+        "value": 32809.1429
+      },
+      {
+        "metric": "2020",
+        "value": 17140.8571
+      },
+      {
+        "metric": "2019",
+        "value": 35299.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-09-06",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34200
+      },
+      {
+        "metric": "2023",
+        "value": 32693.4286
+      },
+      {
+        "metric": "2020",
+        "value": 17069.2857
+      },
+      {
+        "metric": "2019",
+        "value": 35171.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-09-07",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 34052.8571
+      },
+      {
+        "metric": "2023",
+        "value": 32620.4286
+      },
+      {
+        "metric": "2020",
+        "value": 16922.2857
+      },
+      {
+        "metric": "2019",
+        "value": 35009
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-09-08",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33916.2857
+      },
+      {
+        "metric": "2023",
+        "value": 32569.4286
+      },
+      {
+        "metric": "2020",
+        "value": 16768.8571
+      },
+      {
+        "metric": "2019",
+        "value": 35001.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-09-09",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33884.5714
+      },
+      {
+        "metric": "2023",
+        "value": 32532.7143
+      },
+      {
+        "metric": "2020",
+        "value": 16601.2857
+      },
+      {
+        "metric": "2019",
+        "value": 34898.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-09-10",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33799.7143
+      },
+      {
+        "metric": "2023",
+        "value": 32514
+      },
+      {
+        "metric": "2020",
+        "value": 16518.2857
+      },
+      {
+        "metric": "2019",
+        "value": 34732.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-09-11",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33785
+      },
+      {
+        "metric": "2023",
+        "value": 32506.1429
+      },
+      {
+        "metric": "2020",
+        "value": 16484.5714
+      },
+      {
+        "metric": "2019",
+        "value": 34665
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-09-12",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33751
+      },
+      {
+        "metric": "2023",
+        "value": 32479.1429
+      },
+      {
+        "metric": "2020",
+        "value": 16431.7143
+      },
+      {
+        "metric": "2019",
+        "value": 34661.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-09-13",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33678.1429
+      },
+      {
+        "metric": "2023",
+        "value": 32533.1429
+      },
+      {
+        "metric": "2020",
+        "value": 16402.8571
+      },
+      {
+        "metric": "2019",
+        "value": 34730.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-09-14",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33626.7143
+      },
+      {
+        "metric": "2023",
+        "value": 32454.2857
+      },
+      {
+        "metric": "2020",
+        "value": 16313.2857
+      },
+      {
+        "metric": "2019",
+        "value": 34705.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-09-15",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33634.2857
+      },
+      {
+        "metric": "2023",
+        "value": 32369.8571
+      },
+      {
+        "metric": "2020",
+        "value": 16286
+      },
+      {
+        "metric": "2019",
+        "value": 34655.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-09-16",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33608.8571
+      },
+      {
+        "metric": "2023",
+        "value": 32298.8571
+      },
+      {
+        "metric": "2020",
+        "value": 16214.7143
+      },
+      {
+        "metric": "2019",
+        "value": 34707.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-09-17",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33632.7143
+      },
+      {
+        "metric": "2023",
+        "value": 32247.8571
+      },
+      {
+        "metric": "2020",
+        "value": 16153.1429
+      },
+      {
+        "metric": "2019",
+        "value": 34772
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-09-18",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33611.1429
+      },
+      {
+        "metric": "2023",
+        "value": 32221.1429
+      },
+      {
+        "metric": "2020",
+        "value": 16070
+      },
+      {
+        "metric": "2019",
+        "value": 34733.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-09-19",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33623.8571
+      },
+      {
+        "metric": "2023",
+        "value": 32156
+      },
+      {
+        "metric": "2020",
+        "value": 15980
+      },
+      {
+        "metric": "2019",
+        "value": 34668.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-09-20",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33643.4286
+      },
+      {
+        "metric": "2023",
+        "value": 32111.7143
+      },
+      {
+        "metric": "2020",
+        "value": 15904
+      },
+      {
+        "metric": "2019",
+        "value": 34628.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-09-21",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33607.5714
+      },
+      {
+        "metric": "2023",
+        "value": 32070
+      },
+      {
+        "metric": "2020",
+        "value": 15800.7143
+      },
+      {
+        "metric": "2019",
+        "value": 34552
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-09-22",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33566.5714
+      },
+      {
+        "metric": "2023",
+        "value": 31994.4286
+      },
+      {
+        "metric": "2020",
+        "value": 15702.7143
+      },
+      {
+        "metric": "2019",
+        "value": 34466.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-09-23",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33512.5714
+      },
+      {
+        "metric": "2023",
+        "value": 31930.2857
+      },
+      {
+        "metric": "2020",
+        "value": 15632.1429
+      },
+      {
+        "metric": "2019",
+        "value": 34417.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-09-24",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33384.5714
+      },
+      {
+        "metric": "2023",
+        "value": 31943.8571
+      },
+      {
+        "metric": "2020",
+        "value": 15571
+      },
+      {
+        "metric": "2019",
+        "value": 34334.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-09-25",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33337.1429
+      },
+      {
+        "metric": "2023",
+        "value": 31918.2857
+      },
+      {
+        "metric": "2020",
+        "value": 15511.2857
+      },
+      {
+        "metric": "2019",
+        "value": 34333.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-09-26",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33273
+      },
+      {
+        "metric": "2023",
+        "value": 31930.2857
+      },
+      {
+        "metric": "2020",
+        "value": 15457.8571
+      },
+      {
+        "metric": "2019",
+        "value": 34278.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-09-27",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33189.2857
+      },
+      {
+        "metric": "2023",
+        "value": 31892.7143
+      },
+      {
+        "metric": "2020",
+        "value": 15399.8571
+      },
+      {
+        "metric": "2019",
+        "value": 34168
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-09-28",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33160.5714
+      },
+      {
+        "metric": "2023",
+        "value": 31918.1429
+      },
+      {
+        "metric": "2020",
+        "value": 15350.2857
+      },
+      {
+        "metric": "2019",
+        "value": 34135.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-09-29",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33127.7143
+      },
+      {
+        "metric": "2023",
+        "value": 31909.8571
+      },
+      {
+        "metric": "2020",
+        "value": 15283.7143
+      },
+      {
+        "metric": "2019",
+        "value": 34082.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-09-30",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 33080.1429
+      },
+      {
+        "metric": "2023",
+        "value": 31861.7143
+      },
+      {
+        "metric": "2020",
+        "value": 15223.5714
+      },
+      {
+        "metric": "2019",
+        "value": 33983.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-10-01",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 32956
+      },
+      {
+        "metric": "2023",
+        "value": 31703
+      },
+      {
+        "metric": "2020",
+        "value": 15182.5714
+      },
+      {
+        "metric": "2019",
+        "value": 33827.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-10-02",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 32770.2857
+      },
+      {
+        "metric": "2023",
+        "value": 31556.8571
+      },
+      {
+        "metric": "2020",
+        "value": 15207.2857
+      },
+      {
+        "metric": "2019",
+        "value": 33645.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-10-03",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 32521.1429
+      },
+      {
+        "metric": "2023",
+        "value": 31414.1429
+      },
+      {
+        "metric": "2020",
+        "value": 15130.2857
+      },
+      {
+        "metric": "2019",
+        "value": 33418.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-10-04",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 32301.1429
+      },
+      {
+        "metric": "2023",
+        "value": 31333.5714
+      },
+      {
+        "metric": "2020",
+        "value": 15001.1429
+      },
+      {
+        "metric": "2019",
+        "value": 33249.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-10-05",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 32163.4286
+      },
+      {
+        "metric": "2023",
+        "value": 31202.4286
+      },
+      {
+        "metric": "2020",
+        "value": 14892.8571
+      },
+      {
+        "metric": "2019",
+        "value": 33048
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-10-06",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 32019.4286
+      },
+      {
+        "metric": "2023",
+        "value": 31098.7143
+      },
+      {
+        "metric": "2020",
+        "value": 14748.2857
+      },
+      {
+        "metric": "2019",
+        "value": 32910.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-10-07",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 31873.5714
+      },
+      {
+        "metric": "2023",
+        "value": 31014.8571
+      },
+      {
+        "metric": "2020",
+        "value": 14648.7143
+      },
+      {
+        "metric": "2019",
+        "value": 32771
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-10-08",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 31779.1429
+      },
+      {
+        "metric": "2023",
+        "value": 30918.1429
+      },
+      {
+        "metric": "2020",
+        "value": 14475.7143
+      },
+      {
+        "metric": "2019",
+        "value": 32608.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-10-09",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 31675.5714
+      },
+      {
+        "metric": "2023",
+        "value": 30805.1429
+      },
+      {
+        "metric": "2020",
+        "value": 14278
+      },
+      {
+        "metric": "2019",
+        "value": 32362.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-10-10",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 31692.1429
+      },
+      {
+        "metric": "2023",
+        "value": 30708
+      },
+      {
+        "metric": "2020",
+        "value": 14188.5714
+      },
+      {
+        "metric": "2019",
+        "value": 32316.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-10-11",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 31743.8571
+      },
+      {
+        "metric": "2023",
+        "value": 30493.7143
+      },
+      {
+        "metric": "2020",
+        "value": 14213.8571
+      },
+      {
+        "metric": "2019",
+        "value": 32301.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-10-12",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 31650.7143
+      },
+      {
+        "metric": "2023",
+        "value": 30408
+      },
+      {
+        "metric": "2020",
+        "value": 14192.5714
+      },
+      {
+        "metric": "2019",
+        "value": 32230.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-10-13",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 31576.1429
+      },
+      {
+        "metric": "2023",
+        "value": 30336.5714
+      },
+      {
+        "metric": "2020",
+        "value": 14182
+      },
+      {
+        "metric": "2019",
+        "value": 32132.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-10-14",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 31507.8571
+      },
+      {
+        "metric": "2023",
+        "value": 30331.4286
+      },
+      {
+        "metric": "2020",
+        "value": 14130.4286
+      },
+      {
+        "metric": "2019",
+        "value": 32059.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-10-15",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 31536.2857
+      },
+      {
+        "metric": "2023",
+        "value": 30257.8571
+      },
+      {
+        "metric": "2020",
+        "value": 14088.8571
+      },
+      {
+        "metric": "2019",
+        "value": 32052.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-10-16",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 31531.4286
+      },
+      {
+        "metric": "2023",
+        "value": 30171.1429
+      },
+      {
+        "metric": "2020",
+        "value": 14042.4286
+      },
+      {
+        "metric": "2019",
+        "value": 32095
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-10-17",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 31463.4286
+      },
+      {
+        "metric": "2023",
+        "value": 30021.8571
+      },
+      {
+        "metric": "2020",
+        "value": 13925.2857
+      },
+      {
+        "metric": "2019",
+        "value": 32068.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-10-18",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 31411.1429
+      },
+      {
+        "metric": "2023",
+        "value": 29916
+      },
+      {
+        "metric": "2020",
+        "value": 13920.5714
+      },
+      {
+        "metric": "2019",
+        "value": 32007.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-10-19",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 31449.2857
+      },
+      {
+        "metric": "2023",
+        "value": 29851.2857
+      },
+      {
+        "metric": "2020",
+        "value": 13954.8571
+      },
+      {
+        "metric": "2019",
+        "value": 31981.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-10-20",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 31356.8571
+      },
+      {
+        "metric": "2023",
+        "value": 29767.5714
+      },
+      {
+        "metric": "2020",
+        "value": 13948.5714
+      },
+      {
+        "metric": "2019",
+        "value": 31897.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-10-21",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 31325.1429
+      },
+      {
+        "metric": "2023",
+        "value": 29605.4286
+      },
+      {
+        "metric": "2020",
+        "value": 13895.5714
+      },
+      {
+        "metric": "2019",
+        "value": 31894.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-10-22",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 31276.1429
+      },
+      {
+        "metric": "2023",
+        "value": 29542.2857
+      },
+      {
+        "metric": "2020",
+        "value": 13822.4286
+      },
+      {
+        "metric": "2019",
+        "value": 31854.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-10-23",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 31240
+      },
+      {
+        "metric": "2023",
+        "value": 29523.7143
+      },
+      {
+        "metric": "2020",
+        "value": 13729.1429
+      },
+      {
+        "metric": "2019",
+        "value": 31849.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-10-24",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 31229.4286
+      },
+      {
+        "metric": "2023",
+        "value": 29517
+      },
+      {
+        "metric": "2020",
+        "value": 13739.2857
+      },
+      {
+        "metric": "2019",
+        "value": 31822.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-10-25",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 31215.4286
+      },
+      {
+        "metric": "2023",
+        "value": 29624.4286
+      },
+      {
+        "metric": "2020",
+        "value": 13613.5714
+      },
+      {
+        "metric": "2019",
+        "value": 31714.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-10-26",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 31177
+      },
+      {
+        "metric": "2023",
+        "value": 29595.7143
+      },
+      {
+        "metric": "2020",
+        "value": 13552.1429
+      },
+      {
+        "metric": "2019",
+        "value": 31683.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-10-27",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 30908.1429
+      },
+      {
+        "metric": "2023",
+        "value": 29327
+      },
+      {
+        "metric": "2020",
+        "value": 13470.5714
+      },
+      {
+        "metric": "2019",
+        "value": 31397.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "2024",
+        "value": 30530.8571
+      },
+      {
+        "metric": "2023",
+        "value": 28991.8571
+      },
+      {
+        "metric": "2020",
+        "value": 13407.7143
+      },
+      {
+        "metric": "2019",
+        "value": 31014.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-10-29",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 28531.8571
+      },
+      {
+        "metric": "2020",
+        "value": 13364.4286
+      },
+      {
+        "metric": "2019",
+        "value": 30609.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-10-30",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 27839
+      },
+      {
+        "metric": "2020",
+        "value": 13336.7143
+      },
+      {
+        "metric": "2019",
+        "value": 30175.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-10-31",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 27086
+      },
+      {
+        "metric": "2020",
+        "value": 13293.2857
+      },
+      {
+        "metric": "2019",
+        "value": 29696.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-11-01",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 26606.7143
+      },
+      {
+        "metric": "2020",
+        "value": 13210.1429
+      },
+      {
+        "metric": "2019",
+        "value": 29087
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-11-02",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 26091.1429
+      },
+      {
+        "metric": "2020",
+        "value": 13080.8571
+      },
+      {
+        "metric": "2019",
+        "value": 28468.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-11-03",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 25914.5714
+      },
+      {
+        "metric": "2020",
+        "value": 13023.4286
+      },
+      {
+        "metric": "2019",
+        "value": 28362.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-11-04",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 25837.8571
+      },
+      {
+        "metric": "2020",
+        "value": 12900.5714
+      },
+      {
+        "metric": "2019",
+        "value": 28278.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-11-05",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 25565.1429
+      },
+      {
+        "metric": "2020",
+        "value": 12769.1429
+      },
+      {
+        "metric": "2019",
+        "value": 28131.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-11-06",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 25525.2857
+      },
+      {
+        "metric": "2020",
+        "value": 12624.4286
+      },
+      {
+        "metric": "2019",
+        "value": 27906.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-11-07",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 25570.7143
+      },
+      {
+        "metric": "2020",
+        "value": 12385.7143
+      },
+      {
+        "metric": "2019",
+        "value": 27639.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-11-08",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 25460.4286
+      },
+      {
+        "metric": "2020",
+        "value": 12156.7143
+      },
+      {
+        "metric": "2019",
+        "value": 27701.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-11-09",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 25206.4286
+      },
+      {
+        "metric": "2020",
+        "value": 11853.8571
+      },
+      {
+        "metric": "2019",
+        "value": 27469
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-11-10",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 25007.5714
+      },
+      {
+        "metric": "2020",
+        "value": 11573.8571
+      },
+      {
+        "metric": "2019",
+        "value": 27238.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-11-11",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 24808.5714
+      },
+      {
+        "metric": "2020",
+        "value": 11362
+      },
+      {
+        "metric": "2019",
+        "value": 27049.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-11-12",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 24716.2857
+      },
+      {
+        "metric": "2020",
+        "value": 11189.7143
+      },
+      {
+        "metric": "2019",
+        "value": 26874.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-11-13",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 24641.4286
+      },
+      {
+        "metric": "2020",
+        "value": 10956.1429
+      },
+      {
+        "metric": "2019",
+        "value": 26740.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-11-14",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 24619.2857
+      },
+      {
+        "metric": "2020",
+        "value": 10818
+      },
+      {
+        "metric": "2019",
+        "value": 26784
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-11-15",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 24617.8571
+      },
+      {
+        "metric": "2020",
+        "value": 10632.7143
+      },
+      {
+        "metric": "2019",
+        "value": 26827.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-11-16",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 24578.2857
+      },
+      {
+        "metric": "2020",
+        "value": 10439.2857
+      },
+      {
+        "metric": "2019",
+        "value": 26807.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-11-17",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 24504.8571
+      },
+      {
+        "metric": "2020",
+        "value": 10251.4286
+      },
+      {
+        "metric": "2019",
+        "value": 26772.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-11-18",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 24465.5714
+      },
+      {
+        "metric": "2020",
+        "value": 10164
+      },
+      {
+        "metric": "2019",
+        "value": 26793.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-11-19",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 24407.7143
+      },
+      {
+        "metric": "2020",
+        "value": 10097.7143
+      },
+      {
+        "metric": "2019",
+        "value": 26772.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-11-20",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 24331.2857
+      },
+      {
+        "metric": "2020",
+        "value": 10124.1429
+      },
+      {
+        "metric": "2019",
+        "value": 26782.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-11-21",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 24263.5714
+      },
+      {
+        "metric": "2020",
+        "value": 10017.5714
+      },
+      {
+        "metric": "2019",
+        "value": 26711.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-11-22",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 24094.7143
+      },
+      {
+        "metric": "2020",
+        "value": 9912.2857
+      },
+      {
+        "metric": "2019",
+        "value": 26706.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-11-23",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 24067.8571
+      },
+      {
+        "metric": "2020",
+        "value": 9835
+      },
+      {
+        "metric": "2019",
+        "value": 26664
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-11-24",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 24088
+      },
+      {
+        "metric": "2020",
+        "value": 9715.2857
+      },
+      {
+        "metric": "2019",
+        "value": 26656.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-11-25",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 24097.1429
+      },
+      {
+        "metric": "2020",
+        "value": 9627.2857
+      },
+      {
+        "metric": "2019",
+        "value": 26522.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-11-26",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 24047.5714
+      },
+      {
+        "metric": "2020",
+        "value": 9567.2857
+      },
+      {
+        "metric": "2019",
+        "value": 26484.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-11-27",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 24061.1429
+      },
+      {
+        "metric": "2020",
+        "value": 9501
+      },
+      {
+        "metric": "2019",
+        "value": 26444.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-11-28",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 24034
+      },
+      {
+        "metric": "2020",
+        "value": 9446.7143
+      },
+      {
+        "metric": "2019",
+        "value": 26417
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-11-29",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 24064.2857
+      },
+      {
+        "metric": "2020",
+        "value": 9394.4286
+      },
+      {
+        "metric": "2019",
+        "value": 26339.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-11-30",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 23907.2857
+      },
+      {
+        "metric": "2020",
+        "value": 9350.1429
+      },
+      {
+        "metric": "2019",
+        "value": 26335.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-12-01",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 23808.5714
+      },
+      {
+        "metric": "2020",
+        "value": 9330.1429
+      },
+      {
+        "metric": "2019",
+        "value": 26288.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-12-02",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 23709.2857
+      },
+      {
+        "metric": "2020",
+        "value": 9324.1429
+      },
+      {
+        "metric": "2019",
+        "value": 26395.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-12-03",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 23703.2857
+      },
+      {
+        "metric": "2020",
+        "value": 9309.4286
+      },
+      {
+        "metric": "2019",
+        "value": 26431.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-12-04",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 23665.7143
+      },
+      {
+        "metric": "2020",
+        "value": 9315.1429
+      },
+      {
+        "metric": "2019",
+        "value": 26512
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-12-05",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 23637.4286
+      },
+      {
+        "metric": "2020",
+        "value": 9354.5714
+      },
+      {
+        "metric": "2019",
+        "value": 26387.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-12-06",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 23605.1429
+      },
+      {
+        "metric": "2020",
+        "value": 9427.1429
+      },
+      {
+        "metric": "2019",
+        "value": 26300.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-12-07",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 23784.5714
+      },
+      {
+        "metric": "2020",
+        "value": 9492.4286
+      },
+      {
+        "metric": "2019",
+        "value": 26275.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-12-08",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 23933.2857
+      },
+      {
+        "metric": "2020",
+        "value": 9491.5714
+      },
+      {
+        "metric": "2019",
+        "value": 26299.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-12-09",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 24070.1429
+      },
+      {
+        "metric": "2020",
+        "value": 9483.4286
+      },
+      {
+        "metric": "2019",
+        "value": 26309.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-12-10",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 24188.2857
+      },
+      {
+        "metric": "2020",
+        "value": 9549.1429
+      },
+      {
+        "metric": "2019",
+        "value": 26219.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-12-11",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 24296.8571
+      },
+      {
+        "metric": "2020",
+        "value": 9578.4286
+      },
+      {
+        "metric": "2019",
+        "value": 26232.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-12-12",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 24438.5714
+      },
+      {
+        "metric": "2020",
+        "value": 9660.2857
+      },
+      {
+        "metric": "2019",
+        "value": 26378.7143
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-12-13",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 24707.8571
+      },
+      {
+        "metric": "2020",
+        "value": 9724.1429
+      },
+      {
+        "metric": "2019",
+        "value": 26424
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-12-14",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 24940.7143
+      },
+      {
+        "metric": "2020",
+        "value": 9790.4286
+      },
+      {
+        "metric": "2019",
+        "value": 26529.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-12-15",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 24982.2857
+      },
+      {
+        "metric": "2020",
+        "value": 9895.4286
+      },
+      {
+        "metric": "2019",
+        "value": 26563.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-12-16",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 25045.8571
+      },
+      {
+        "metric": "2020",
+        "value": 10052.5714
+      },
+      {
+        "metric": "2019",
+        "value": 26588.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-12-17",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 25312.4286
+      },
+      {
+        "metric": "2020",
+        "value": 10212.4286
+      },
+      {
+        "metric": "2019",
+        "value": 26682.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-12-18",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 25587.8571
+      },
+      {
+        "metric": "2020",
+        "value": 10406.8571
+      },
+      {
+        "metric": "2019",
+        "value": 26772.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-12-19",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 25663.4286
+      },
+      {
+        "metric": "2020",
+        "value": 10752
+      },
+      {
+        "metric": "2019",
+        "value": 26974.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-12-20",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 25613.2857
+      },
+      {
+        "metric": "2020",
+        "value": 11212.4286
+      },
+      {
+        "metric": "2019",
+        "value": 27200.4286
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-12-21",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 25766.1429
+      },
+      {
+        "metric": "2020",
+        "value": 11782.1429
+      },
+      {
+        "metric": "2019",
+        "value": 27596
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-12-22",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 25041.4286
+      },
+      {
+        "metric": "2020",
+        "value": 12204.7143
+      },
+      {
+        "metric": "2019",
+        "value": 27677.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-12-23",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 23482.7143
+      },
+      {
+        "metric": "2020",
+        "value": 12429.2857
+      },
+      {
+        "metric": "2019",
+        "value": 27477.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-12-24",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 23014.2857
+      },
+      {
+        "metric": "2020",
+        "value": 12617
+      },
+      {
+        "metric": "2019",
+        "value": 26516.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-12-25",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 22777.2857
+      },
+      {
+        "metric": "2020",
+        "value": 12837.4286
+      },
+      {
+        "metric": "2019",
+        "value": 24624.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-12-26",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 22669.7143
+      },
+      {
+        "metric": "2020",
+        "value": 12240.4286
+      },
+      {
+        "metric": "2019",
+        "value": 23890.1429
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-12-27",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 22499.2857
+      },
+      {
+        "metric": "2020",
+        "value": 10935
+      },
+      {
+        "metric": "2019",
+        "value": 23451.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-12-28",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 22377.1429
+      },
+      {
+        "metric": "2020",
+        "value": 10438
+      },
+      {
+        "metric": "2019",
+        "value": 23270.2857
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-12-29",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 22452.8571
+      },
+      {
+        "metric": "2020",
+        "value": 10210.2857
+      },
+      {
+        "metric": "2019",
+        "value": 23147.5714
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-12-30",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 23352.7143
+      },
+      {
+        "metric": "2020",
+        "value": 9934.8571
+      },
+      {
+        "metric": "2019",
+        "value": 22994.8571
+      }
+    ]
+  },
+  {
+    "FLIGHT_DATE": "2024-12-31",
+    "statistics": [
+      {
+        "metric": "2024"
+      },
+      {
+        "metric": "2023",
+        "value": 23662.7143
+      },
+      {
+        "metric": "2020",
+        "value": 9634.5714
+      },
+      {
+        "metric": "2019",
+        "value": 23038.1429
+      }
+    ]
+  }
+]

@@ -115,7 +115,9 @@ to      <- c("oscar.alfaro@eurocontrol.int"
              ,
              "quinten.goens@eurocontrol.int",
              "enrico.spinielli@eurocontrol.int",
-             "denis.huet@eurocontrol.int"
+             "delia.budulan@eurocontrol.int",
+             "nora.cashman@eurocontrol.int"
+             #,  "denis.huet@eurocontrol.int"
 )
 # cc      <- c("enrico.spinielli@eurocontrol.int")
 control <- list(smtpServer="mailservices.eurocontrol.int")

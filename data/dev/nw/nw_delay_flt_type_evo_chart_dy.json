@@ -1,0 +1,21 @@
+[
+  {
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "En-route ATFM delay/flight",
+        "value": 1.1497,
+        "share": 0.4579
+      },
+      {
+        "metric": "Airport ATFM delay/flight",
+        "value": 1.3613,
+        "share": 0.5421
+      },
+      {
+        "metric": "Total ATFM delay/flight 2023",
+        "value": 1.3956
+      }
+    ]
+  }
+]

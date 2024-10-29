@@ -1,0 +1,36 @@
+[
+  {
+    "FLIGHT_DATE": "2024-10-28",
+    "statistics": [
+      {
+        "metric": "Aerodrome capacity",
+        "value": 6288,
+        "share": 0.0858
+      },
+      {
+        "metric": "Capacity/Staffing (ATC)",
+        "value": 17371,
+        "share": 0.2369
+      },
+      {
+        "metric": "Disruptions (ATC)",
+        "value": 8723,
+        "share": 0.119
+      },
+      {
+        "metric": "Weather",
+        "value": 37303,
+        "share": 0.5088
+      },
+      {
+        "metric": "Other",
+        "value": 3632,
+        "share": 0.0495
+      },
+      {
+        "metric": "Total delay 2023",
+        "value": 38578
+      }
+    ]
+  }
+]

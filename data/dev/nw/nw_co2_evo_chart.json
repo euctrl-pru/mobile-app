@@ -1,0 +1,704 @@
+[
+  {
+    "month": "2019-01-31",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 100
+      },
+      {
+        "metric": "Departures index",
+        "value": 100
+      }
+    ]
+  },
+  {
+    "month": "2019-02-28",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 90.9507
+      },
+      {
+        "metric": "Departures index",
+        "value": 94.8627
+      }
+    ]
+  },
+  {
+    "month": "2019-03-31",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 105.6082
+      },
+      {
+        "metric": "Departures index",
+        "value": 108.3049
+      }
+    ]
+  },
+  {
+    "month": "2019-04-30",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 112.9366
+      },
+      {
+        "metric": "Departures index",
+        "value": 116.5639
+      }
+    ]
+  },
+  {
+    "month": "2019-05-31",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 122.3719
+      },
+      {
+        "metric": "Departures index",
+        "value": 127.7457
+      }
+    ]
+  },
+  {
+    "month": "2019-06-30",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 129.3936
+      },
+      {
+        "metric": "Departures index",
+        "value": 133.7485
+      }
+    ]
+  },
+  {
+    "month": "2019-07-31",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 138.0321
+      },
+      {
+        "metric": "Departures index",
+        "value": 140.3429
+      }
+    ]
+  },
+  {
+    "month": "2019-08-31",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 137.4068
+      },
+      {
+        "metric": "Departures index",
+        "value": 138.2702
+      }
+    ]
+  },
+  {
+    "month": "2019-09-30",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 128.7695
+      },
+      {
+        "metric": "Departures index",
+        "value": 133.3541
+      }
+    ]
+  },
+  {
+    "month": "2020-01-31",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 98.9173
+      },
+      {
+        "metric": "Departures index",
+        "value": 99.37
+      }
+    ]
+  },
+  {
+    "month": "2020-02-29",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 91.2664
+      },
+      {
+        "metric": "Departures index",
+        "value": 95.36
+      }
+    ]
+  },
+  {
+    "month": "2020-03-31",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 65.2117
+      },
+      {
+        "metric": "Departures index",
+        "value": 63.3944
+      }
+    ]
+  },
+  {
+    "month": "2020-04-30",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 17.7069
+      },
+      {
+        "metric": "Departures index",
+        "value": 13.3641
+      }
+    ]
+  },
+  {
+    "month": "2020-05-31",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 22.6076
+      },
+      {
+        "metric": "Departures index",
+        "value": 17.3077
+      }
+    ]
+  },
+  {
+    "month": "2020-06-30",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 26.1718
+      },
+      {
+        "metric": "Departures index",
+        "value": 28.8325
+      }
+    ]
+  },
+  {
+    "month": "2020-07-31",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 44.4669
+      },
+      {
+        "metric": "Departures index",
+        "value": 58.8657
+      }
+    ]
+  },
+  {
+    "month": "2020-08-31",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 54.6648
+      },
+      {
+        "metric": "Departures index",
+        "value": 71.3336
+      }
+    ]
+  },
+  {
+    "month": "2020-09-30",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 49.9237
+      },
+      {
+        "metric": "Departures index",
+        "value": 64.0139
+      }
+    ]
+  },
+  {
+    "month": "2021-01-31",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 37.4983
+      },
+      {
+        "metric": "Departures index",
+        "value": 35.2677
+      }
+    ]
+  },
+  {
+    "month": "2021-02-28",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 32.0548
+      },
+      {
+        "metric": "Departures index",
+        "value": 31.0675
+      }
+    ]
+  },
+  {
+    "month": "2021-03-31",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 37.9213
+      },
+      {
+        "metric": "Departures index",
+        "value": 38.393
+      }
+    ]
+  },
+  {
+    "month": "2021-04-30",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 40.0823
+      },
+      {
+        "metric": "Departures index",
+        "value": 41.0367
+      }
+    ]
+  },
+  {
+    "month": "2021-05-31",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 44.2922
+      },
+      {
+        "metric": "Departures index",
+        "value": 48.3219
+      }
+    ]
+  },
+  {
+    "month": "2021-06-30",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 55.6298
+      },
+      {
+        "metric": "Departures index",
+        "value": 67.4748
+      }
+    ]
+  },
+  {
+    "month": "2021-07-31",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 77.0395
+      },
+      {
+        "metric": "Departures index",
+        "value": 93.2474
+      }
+    ]
+  },
+  {
+    "month": "2021-08-31",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 83.697
+      },
+      {
+        "metric": "Departures index",
+        "value": 100.0362
+      }
+    ]
+  },
+  {
+    "month": "2021-09-30",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 79.5541
+      },
+      {
+        "metric": "Departures index",
+        "value": 95.6724
+      }
+    ]
+  },
+  {
+    "month": "2022-01-31",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 68.1327
+      },
+      {
+        "metric": "Departures index",
+        "value": 68.4752
+      }
+    ]
+  },
+  {
+    "month": "2022-02-28",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 62.77
+      },
+      {
+        "metric": "Departures index",
+        "value": 67.4255
+      }
+    ]
+  },
+  {
+    "month": "2022-03-31",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 77.7451
+      },
+      {
+        "metric": "Departures index",
+        "value": 85.1475
+      }
+    ]
+  },
+  {
+    "month": "2022-04-30",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 89.779
+      },
+      {
+        "metric": "Departures index",
+        "value": 98.7957
+      }
+    ]
+  },
+  {
+    "month": "2022-05-31",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 100.5891
+      },
+      {
+        "metric": "Departures index",
+        "value": 113.6371
+      }
+    ]
+  },
+  {
+    "month": "2022-06-30",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 106.4431
+      },
+      {
+        "metric": "Departures index",
+        "value": 118.818
+      }
+    ]
+  },
+  {
+    "month": "2022-07-31",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 115.861
+      },
+      {
+        "metric": "Departures index",
+        "value": 125.5707
+      }
+    ]
+  },
+  {
+    "month": "2022-08-31",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 116.3297
+      },
+      {
+        "metric": "Departures index",
+        "value": 124.9475
+      }
+    ]
+  },
+  {
+    "month": "2022-09-30",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 108.4395
+      },
+      {
+        "metric": "Departures index",
+        "value": 118.8083
+      }
+    ]
+  },
+  {
+    "month": "2023-01-31",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 86.1406
+      },
+      {
+        "metric": "Departures index",
+        "value": 86.5675
+      }
+    ]
+  },
+  {
+    "month": "2023-02-28",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 80.044
+      },
+      {
+        "metric": "Departures index",
+        "value": 83.2252
+      }
+    ]
+  },
+  {
+    "month": "2023-03-31",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 92.9479
+      },
+      {
+        "metric": "Departures index",
+        "value": 96.4931
+      }
+    ]
+  },
+  {
+    "month": "2023-04-30",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 102.46
+      },
+      {
+        "metric": "Departures index",
+        "value": 106.5536
+      }
+    ]
+  },
+  {
+    "month": "2023-05-31",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 112.3856
+      },
+      {
+        "metric": "Departures index",
+        "value": 119.119
+      }
+    ]
+  },
+  {
+    "month": "2023-06-30",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 118.386
+      },
+      {
+        "metric": "Departures index",
+        "value": 125.8403
+      }
+    ]
+  },
+  {
+    "month": "2023-07-31",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 128.4233
+      },
+      {
+        "metric": "Departures index",
+        "value": 132.9179
+      }
+    ]
+  },
+  {
+    "month": "2023-08-31",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 128.2456
+      },
+      {
+        "metric": "Departures index",
+        "value": 131.5651
+      }
+    ]
+  },
+  {
+    "month": "2023-09-30",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 121.232
+      },
+      {
+        "metric": "Departures index",
+        "value": 126.7841
+      }
+    ]
+  },
+  {
+    "month": "2024-01-31",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 94.9697
+      },
+      {
+        "metric": "Departures index",
+        "value": 90.295
+      }
+    ]
+  },
+  {
+    "month": "2024-02-29",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 90.3216
+      },
+      {
+        "metric": "Departures index",
+        "value": 89.7755
+      }
+    ]
+  },
+  {
+    "month": "2024-03-31",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 102.578
+      },
+      {
+        "metric": "Departures index",
+        "value": 101.7162
+      }
+    ]
+  },
+  {
+    "month": "2024-04-30",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 111.5756
+      },
+      {
+        "metric": "Departures index",
+        "value": 113.5075
+      }
+    ]
+  },
+  {
+    "month": "2024-05-31",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 123.609
+      },
+      {
+        "metric": "Departures index",
+        "value": 126.282
+      }
+    ]
+  },
+  {
+    "month": "2024-06-30",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 128.6514
+      },
+      {
+        "metric": "Departures index",
+        "value": 131.5754
+      }
+    ]
+  },
+  {
+    "month": "2024-07-31",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 136.964
+      },
+      {
+        "metric": "Departures index",
+        "value": 138.3028
+      }
+    ]
+  },
+  {
+    "month": "2024-08-31",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 137.4444
+      },
+      {
+        "metric": "Departures index",
+        "value": 136.7727
+      }
+    ]
+  },
+  {
+    "month": "2024-09-30",
+    "statistics": [
+      {
+        "metric": "CO2 index",
+        "value": 129.0383
+      },
+      {
+        "metric": "Departures index",
+        "value": 131.0274
+      }
+    ]
+  }
+]
