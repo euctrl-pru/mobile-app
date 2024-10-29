@@ -13,8 +13,6 @@ if (exists("data_day_date") == FALSE) {
 data_day_text <- data_day_date %>% format("%Y%m%d")
 data_day_year <- as.numeric(format(data_day_date,'%Y'))
 
-nw_json_app <- ""
-
 # json functions ----
 source(here("..", "mobile-app", "R", "functions_json_files_nw.R")) # so it can be launched from the checkupdates script in grounded aircraft
 
