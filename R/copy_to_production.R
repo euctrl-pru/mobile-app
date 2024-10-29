@@ -8,16 +8,10 @@ library(tidyverse)
 library(lubridate)
 library(purrr)
 
-# parameters ----
-data_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/LastVersion/'
-nw_file <- "099_Traffic_Landing_Page_dataset_new.xlsx"
-st_file <- '099a_app_state_dataset.xlsx'
-
-base_dir <- here("..", "mobile-app")
-destination_dir <- '//ihx-vdm05/LIVE_var_www_performance$/briefing'
-
-## other params
+## params
 source(here("..", "mobile-app", "R", "params.R"))
+
+destination_dir <- '//ihx-vdm05/LIVE_var_www_performance$/briefing'
 
 # current day = FALSE, past days = TRUE
 archive_mode <- FALSE
@@ -31,13 +25,18 @@ if (archive_mode) {
 }
 
 # check data status ----
-nw_file_status <- read_xlsx(path = fs::path_abs(str_glue(nw_file),start = data_dir),
+nw_file_status <- read_xlsx(path = fs::path_abs(str_glue(nw_base_file),start = nw_base_dir),
                             sheet = "Checks",
                             range = cell_limits(c(1, 5), c(2, 5))) %>% pull()
 
-st_file_status <- read_xlsx(path = fs::path_abs(str_glue(st_file),start = data_dir),
+st_file_status <- read_xlsx(path = fs::path_abs(str_glue(st_base_file),start = st_base_dir),
                             sheet = "checks",
                             range = cell_limits(c(1, 5), c(2, 5))) %>% pull()
+
+ao_file_status <- read_xlsx(path = fs::path_abs(str_glue(ao_base_file),start = ao_base_dir),
+                            sheet = "checks",
+                            range = cell_limits(c(1, 5), c(2, 5))) %>% pull()
+
 
 # define functions for data generation & copy ----
 generate_app_data <- function(data_day_date) {
@@ -84,7 +83,7 @@ process_app_data <- function(data_day_date) {
 
 
 # generate and copy app files ----
-if(archive_mode | (nw_file_status == "OK" & st_file_status == "OK")){
+if(archive_mode | (nw_file_status == "OK" & st_file_status == "OK" & ao_file_status == "OK")){
   # get helper functions and large data sets ----
   source(here("..", "mobile-app", "R", "helpers.R"))
   source(here("..", "mobile-app", "R", "get_common_data.R"))
@@ -100,7 +99,7 @@ if(archive_mode | (nw_file_status == "OK" & st_file_status == "OK")){
 
 # send email ----
 ## email parameters ----
-if (nw_file_status == "OK" & st_file_status == "OK") {
+if (nw_file_status == "OK" & st_file_status == "OK" & ao_file_status == "OK") {
   sbj = "App network and state datasets copied successfully to folder"
   msg = "All good, relax!"
 

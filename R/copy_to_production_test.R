@@ -1,3 +1,5 @@
+#this is a test script to see if all files can be created as functions of the data_day_date so we can use purr instead of a loop
+
 library(here)
 library("R.utils")
 library(sendmailR)
@@ -8,34 +10,32 @@ library(tidyverse)
 library(lubridate)
 library(purrr)
 
-# parameters ----
-data_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/LastVersion/'
-nw_file <- "099_Traffic_Landing_Page_dataset_new.xlsx"
-st_file <- '099a_app_state_dataset.xlsx'
-
-base_dir <- here("..", "mobile-app")
-destination_dir <- '//ihx-vdm05/LIVE_var_www_performance$/briefing'
-
-## other params
+## params
 source(here("..", "mobile-app", "R", "params.R"))
 
+destination_dir <- '//ihx-vdm05/LIVE_var_www_performance$/briefing'
+
 # current day = FALSE, past days = TRUE
-archive_mode <- TRUE
+archive_mode <- FALSE
 
 if (archive_mode) {
-  wef <- "2024-01-03"  #included in output
-  til <- "2024-01-03"  #included in output
+  wef <- "2024-01-02"  #included in output
+  til <- "2024-01-02"  #included in output
   data_day_date <- seq(ymd(wef), ymd(til), by = "day")
 } else {
   data_day_date <- lubridate::today(tzone = "") +  days(-1)
 }
 
 # check data status ----
-nw_file_status <- read_xlsx(path = fs::path_abs(str_glue(nw_file),start = data_dir),
+nw_file_status <- read_xlsx(path = fs::path_abs(str_glue(nw_base_file),start = nw_base_dir),
                             sheet = "Checks",
                             range = cell_limits(c(1, 5), c(2, 5))) %>% pull()
 
-st_file_status <- read_xlsx(path = fs::path_abs(str_glue(st_file),start = data_dir),
+st_file_status <- read_xlsx(path = fs::path_abs(str_glue(st_base_file),start = st_base_dir),
+                            sheet = "checks",
+                            range = cell_limits(c(1, 5), c(2, 5))) %>% pull()
+
+ao_file_status <- read_xlsx(path = fs::path_abs(str_glue(ao_base_file),start = ao_base_dir),
                             sheet = "checks",
                             range = cell_limits(c(1, 5), c(2, 5))) %>% pull()
 
@@ -137,23 +137,23 @@ process_app_data <- function(data_day_date) {
 
 
 # generate and copy app files ----
-if(archive_mode | (nw_file_status == "OK" & st_file_status == "OK")){
+if(archive_mode | (nw_file_status == "OK" & st_file_status == "OK" & ao_file_status == "OK")){
   # get helper functions and large data sets ----
   source(here("..", "mobile-app", "R", "helpers.R"))
   source(here("..", "mobile-app", "R", "get_common_data.R"))
 
   #temporary for loop until I can get the purr setup properly
-  data_day_date_temp <- data_day_date
-  for (i in 1:length(data_day_date_temp)) {
-    data_day_date <- data_day_date_temp[[i]]
+  # data_day_date_temp <- data_day_date
+  # for (i in 1:length(data_day_date_temp)) {
+    # data_day_date <- data_day_date_temp[[i]]
     # generate and copy data for date sequence ----
     walk(data_day_date, .f = process_app_data)
-  }
+  # }
 }
 
 # send email ----
 ## email parameters ----
-if (nw_file_status == "OK" & st_file_status == "OK") {
+if (nw_file_status == "OK" & st_file_status == "OK" & ao_file_status == "OK") {
   sbj = "App network and state datasets copied successfully to folder"
   msg = "All good, relax!"
 
@@ -168,7 +168,9 @@ to      <- c("oscar.alfaro@eurocontrol.int"
              ,
              "quinten.goens@eurocontrol.int",
              "enrico.spinielli@eurocontrol.int",
-             "denis.huet@eurocontrol.int"
+             "delia.budulan@eurocontrol.int",
+             "nora.cashman@eurocontrol.int"
+             #,  "denis.huet@eurocontrol.int"
 )
 # cc      <- c("enrico.spinielli@eurocontrol.int")
 control <- list(smtpServer="mailservices.eurocontrol.int")
