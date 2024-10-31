@@ -1818,10 +1818,11 @@ Prev_Period as
 
   SELECT
          t.prd as Period, t.start_d as start_date, t.end_d as end_date, t.ao_group as ao_group_code,
-         t.Apt_Code  , t.flts as arr_flight, t.delayed_flts as arr_delayed_flight, t.delay_amnt as arr_atfm_delay, t.rnk as rank_by_flight,
+         t.Apt_Code  , b.Dashboard_name as Apt_name, t.flts as arr_flight, t.delayed_flts as arr_delayed_flight, t.delay_amnt as arr_atfm_delay, t.rnk as rank_by_flight,
           a.start_d as prev_start_date, a.end_d as prev_end_date,  a.flts as prev_arr_flight, a.delayed_flts as prev_delayed_flight, a.delay_amnt as prev_arr_atfm_delay
     FROM Top_10 T
          left JOIN Prev_Period A  on  (t.Prd =a.Prd and t.Ao_group = a.Ao_group and t.Apt_Code = a.Apt_Code)
+         left JOIN PRU_AIRPORT b  on  (t.Apt_Code = b.code)
 "
   )
   }
