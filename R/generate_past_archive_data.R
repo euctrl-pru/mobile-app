@@ -11,10 +11,10 @@ source(here("..", "mobile-app", "R", "nw_queries.R"))
 
 test_archive_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Project/DDP/AIU app/data_archive'
 # set period
-wef <- "2024-10-23"  #included in output
-til <- "2024-10-24"  #included in output
+wef <- "2024-08-02"  #included in output
+til <- "2024-09-01"  #included in output
 
-myquery_string <- "query_ao_st_des_data_week_raw" # set the name of the query function here
+myquery_string <- "query_ao_apt_arr_delay_raw" # set the name of the query function here
 myarchivefile <- paste0(str_replace(myquery_string, "query", ""), ".csv")
 stakeholder <- stringr::str_sub(myarchivefile, 2,
                                 regexpr("_", substr(myarchivefile, 2, nchar(myarchivefile))))
