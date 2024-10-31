@@ -384,7 +384,11 @@ ao_punct_d_w <- ao_punct_data %>%
 
 ao_punct_y2d <- ao_punct_raw %>%
   arrange(AO_GRP_NAME, DAY_DATE) %>%
-  mutate(MONTH_DAY = as.numeric(format(DAY_DATE, format="%m%d"))) %>%
+  mutate(
+    MONTH_DAY = as.numeric(format(DAY_DATE, format="%m%d"))
+    , ARR_PUNCTUAL_FLIGHTS = 0,  ## while the figures are not showable
+    DEP_PUNCTUAL_FLIGHTS = 0,  ## while the figures are not showable
+    ) %>%
   filter(MONTH_DAY <= as.numeric(format(last_day_punct, format="%m%d"))) %>%
   group_by(AO_GRP_NAME, AO_GRP_CODE, YEAR) %>%
   summarise (Y2D_ARR_PUN = sum(ARR_PUNCTUAL_FLIGHTS, na.rm=TRUE) / sum(ARR_SCHEDULE_FLIGHT, na.rm=TRUE) * 100,
@@ -1724,6 +1728,8 @@ ao_punct_evo <- ao_punct_raw %>%
   filter(DAY_DATE >= as.Date(paste0("01-01-", data_day_year-2), format = "%d-%m-%Y")) %>%
   arrange(AO_GRP_CODE, DAY_DATE) %>%
   mutate(
+    ARR_PUNCTUAL_FLIGHTS = 0,  ## while the figures are not showable
+    DEP_PUNCTUAL_FLIGHTS = 0,  ## while the figures are not showable
     DEP_PUN_WK = rollsum(DEP_PUNCTUAL_FLIGHTS, 7, fill = NA, align = "right") /
       rollsum(DEP_SCHEDULE_FLIGHT,7, fill = NA, align = "right") * 100,
     ARR_PUN_WK = rollsum(ARR_PUNCTUAL_FLIGHTS, 7, fill = NA, align = "right") /
