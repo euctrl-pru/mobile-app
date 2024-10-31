@@ -1627,3 +1627,201 @@ order by ao_grp_name, year, r_rank
   "
   )
 }
+
+# ao apt delay ----
+query_ao_apt_arr_delay_raw <- function(mydate_string) {
+  mydate <- date_sql_string(mydate_string)
+  paste0 (
+"
+WITH
+
+
+   Base_date AS(SELECT CAST(", mydate, "-1 AS DATE) Bd FROM DUAL),
+
+   Ref_dates AS
+        (SELECT 'D' Type_ref, Bd Ref_date FROM Base_date
+         UNION ALL
+         SELECT 'C'
+              , NEXT_DAY(ADD_MONTHS(Bd, -12) - 1, TO_CHAR(Bd, 'DAY'))
+           FROM Base_date)
+    ,
+
+    Ref_dates_YTD AS
+        (SELECT 'D' Type_ref, Bd Ref_date FROM Base_date
+         UNION ALL
+         SELECT 'C'
+              , ADD_MONTHS(BD,-12)
+           FROM Base_date) ,
+
+
+    Prds AS
+        (SELECT 'YTD'                        Prd
+              , Type_ref
+              , TRUNC(Ref_date, 'YEAR')     Start_d
+              , Ref_date                    End_d
+           FROM Ref_dates_YTD
+         UNION ALL
+         SELECT 'WK'
+              , Type_ref
+              ,   Ref_date
+                - INTERVAL '6' DAY
+              , Ref_date
+           FROM Ref_dates
+         UNION ALL
+         SELECT '1D', Type_ref, Ref_date, Ref_date FROM Ref_dates)
+
+
+
+         ,
+    Ao_list AS
+        (SELECT Ao_code
+              , Ao_name
+              , Ao_nm_group_code
+           FROM Prudev.V_covid_dim_ao
+          WHERE Ao_grp_code
+                      IN ('RYR_GRP'
+                              , 'EZY_GRP'
+                              , 'THY_GRP'
+                              , 'DLH_GRP'
+                              , 'AFR_GRP'
+                              , 'WZZ_GRP'
+                              , 'KLM_GRP'
+                              , 'BAW_GRP'
+                              , 'SAS_GRP'
+                              , 'VLG'
+                              , 'PGT'
+                              , 'EWG_GRP'
+                              , 'SWR_GRP'
+                              , 'NAX_GRP'
+                              , 'IBE_GRP'
+                              , 'ITY'
+                              , 'TUI_GRP'
+                              , 'AEE_GRP'
+                              , 'TAP_GRP'
+                              , 'WIF'
+                              , 'AUA'
+                              , 'LOT'
+                              , 'EXS'
+                              , 'FIN'
+                              , 'BCS_GRP'
+                              , 'SXS'
+                              , 'QTR'
+                              , 'ANE'
+                              , 'UAE'
+                              , 'EIN_GRP'
+                              , 'VOE'
+                              , 'AEA'
+                              , 'RAM'
+                              , 'BEL'
+                              , 'NJE'
+                              , 'UAL'
+                              , 'LOG'
+                              , 'SEH'
+                              , 'DAL'
+                              , 'ASL')
+                              ),
+    Apt_arr_reg AS
+        (SELECT DISTINCT
+                Agg_flt_lobt     Flts_lobt
+              , Agg_flt_mp_regu_id
+              , Ref_loc_id       Reg_arpt
+           FROM Prudev.V_aiu_agg_flt_flow
+          WHERE Mp_regu_loc_cat = 'Arrival'
+            AND Agg_flt_mp_regu_loc_ty = 'Airport'
+            and agg_flt_lobt >= (SELECT MIN(Start_d) FROM Prds)-1
+            ),
+
+
+    Apt_arr_delay_ao AS
+        (SELECT DISTINCT
+                TRUNC(A.Arvt_3)       AS Arr_day
+              , C.Ao_nm_group_code    Ao_group
+              , A.Flt_ctfm_ades      Apt_Code
+              , COUNT(*)
+                    OVER(
+                        PARTITION BY TRUNC(A.Arvt_3)
+                                   , C.Ao_nm_group_code
+                                   , A.Flt_ctfm_ades
+                    )                 Flts
+              , SUM(NVL2(Agg_flt_mp_regu_id, decode(atfm_delay,NULL,0,0,0, 1),0))
+                    OVER(
+                        PARTITION BY TRUNC(A.Arvt_3)
+                                   , C.Ao_nm_group_code
+                                   , A.Flt_ctfm_ades
+                    )                 AS Delayed_flts
+              , SUM(NVL2(Agg_flt_mp_regu_id, Atfm_delay, 0))
+                    OVER(
+                        PARTITION BY TRUNC(A.Arvt_3)
+                                   , C.Ao_nm_group_code
+                                   , A.Flt_ctfm_ades
+                    )                 AS Delay_amnt
+           FROM V_aiu_flt  A
+                INNER JOIN Ao_list C ON (A.Ao_icao_id = C.Ao_code)
+                LEFT JOIN Apt_arr_reg B
+                    ON (TRUNC(A.Flt_lobt) = B.Flts_lobt
+                    AND A.Flt_most_penal_regu_id =
+                        B.Agg_flt_mp_regu_id
+                    AND A.Flt_ftfm_ades = B.Reg_arpt)
+          WHERE A.Flt_state IN ('TE', 'TA', 'AA')
+            AND Flt_lobt >= (SELECT MIN(Start_d) FROM Prds) -1
+            AND Flt_lobt < (SELECT MAX(End_d) FROM Prds)+1)
+
+,
+    All_trf AS
+        (SELECT DISTINCT P.*
+                       , Ao_group
+                       , Apt_Code
+                       , SUM(Flts)
+                             OVER(
+                                 PARTITION BY Prd
+                                            , Type_ref
+                                            , Ao_group
+                                            , Apt_Code
+                             )    Flts
+                       , SUM(Delayed_flts)
+                             OVER(
+                                 PARTITION BY Prd
+                                            , Type_ref
+                                            , Ao_group
+                                            , Apt_Code
+                             )    Delayed_flts
+                       , SUM(Delay_amnt)
+                             OVER(
+                                 PARTITION BY Prd
+                                            , Type_ref
+                                            , Ao_group
+                                            , Apt_Code
+                             )    Delay_amnt
+           FROM Prds  P
+                JOIN Apt_arr_delay_ao
+                    ON (Arr_day BETWEEN Start_d AND End_d)),
+
+
+Period_Rank as
+(SELECT D.*
+                      , ROW_NUMBER()
+                            OVER(
+                                PARTITION BY Prd, Type_ref, Ao_group
+                                ORDER BY Flts DESC, Apt_Code
+                            )    Rnk
+                   FROM All_trf D
+                  WHERE D.Type_ref = 'D'),
+
+Top_10 AS
+        (SELECT *
+           FROM Period_Rank
+          WHERE Rnk <= 10),
+
+Prev_Period as
+        (SELECT * from all_trf where type_ref = 'C')
+
+
+  SELECT
+         t.prd as Period, t.start_d as start_date, t.end_d as end_date, t.ao_group as ao_group_code,
+         t.Apt_Code  , t.flts as arr_flight, t.delayed_flts as arr_delayed_flight, t.delay_amnt as arr_atfm_delay, t.rnk as rank_by_flight,
+          a.start_d as prev_start_date, a.end_d as prev_end_date,  a.flts as prev_arr_flight, a.delayed_flts as prev_delayed_flight, a.delay_amnt as prev_arr_atfm_delay
+    FROM Top_10 T
+         left JOIN Prev_Period A  on  (t.Prd =a.Prd and t.Ao_group = a.Ao_group and t.Apt_Code = a.Apt_Code)
+"
+  )
+  }

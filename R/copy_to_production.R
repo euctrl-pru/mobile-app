@@ -100,7 +100,7 @@ if(archive_mode | (nw_file_status == "OK" & st_file_status == "OK" & ao_file_sta
 # send email ----
 ## email parameters ----
 if (nw_file_status == "OK" & st_file_status == "OK" & ao_file_status == "OK") {
-  sbj = "App network and state datasets copied successfully to folder"
+  sbj = "All app datasets copied successfully to folder"
   msg = "All good, relax!"
 
 } else {
@@ -116,7 +116,7 @@ to      <- c("oscar.alfaro@eurocontrol.int"
              "enrico.spinielli@eurocontrol.int",
              "delia.budulan@eurocontrol.int",
              "nora.cashman@eurocontrol.int"
-             #,  "denis.huet@eurocontrol.int"
+             ,  "denis.huet@eurocontrol.int"
 )
 # cc      <- c("enrico.spinielli@eurocontrol.int")
 control <- list(smtpServer="mailservices.eurocontrol.int")
