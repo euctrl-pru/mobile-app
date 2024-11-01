@@ -47,6 +47,31 @@ export_query <- function(query, schema = "PRU_DEV") {
   #   tibble::as_tibble()
 }
 
+# save json file
+save_json <- function(data_day_date, df, filename) {
+  data_day_text_dash <- data_day_date %>% format("%Y-%m-%d")
+
+  # df <-st_ao_data_j
+  # filename <- "st_ao_ranking_traffic"
+
+  stakeholder_prefix <- stringr::str_sub(filename, 1,
+                                         regexpr("_", substr(filename, 1, nchar(filename)))-1)
+
+  target_dir <- get(paste0(stakeholder_prefix, "_","local_data_folder"))
+  write(df, here(target_dir, paste0(filename,".json")))
+
+  # check if date folder already exists ----
+  archive_dir_date <- here(archive_dir, data_day_text_dash)
+  if (!dir.exists(archive_dir_date)) {
+    dir.create(archive_dir_date)
+  }
+
+  write(df, here(archive_dir_date, paste0(filename,".json")))
+
+}
+
+
+
 # get values for the day before `tdy`
 network_traffic_full_latest <- function(today = lubridate::today()) {
   yesterday <- today |> magrittr::subtract(days(1))

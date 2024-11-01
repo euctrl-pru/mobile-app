@@ -807,7 +807,7 @@ st_json_app_j <- st_json_app_j %>%   group_by(iso_2letter, state)
 st_json_app <- st_json_app_j %>%
   toJSON(., pretty = TRUE)
 
-write(st_json_app, here(st_local_data_folder, "st_json_app.json"))
+save_json(data_day_date, st_json_app, "st_json_app")
 
 # ____________________________________________________________________________________________
 #
@@ -1084,7 +1084,7 @@ st_ao_data <- state_iso_ranking %>%
 # covert to json and save in app data folder and archive
 st_ao_data_j <- st_ao_data %>% toJSON(., pretty = TRUE)
 
-write(st_ao_data_j, here(st_local_data_folder,"st_ao_ranking_traffic.json"))
+save_json(data_day_date, st_ao_data_j, "st_ao_ranking_traffic")
 
 ### Airports ----
 #### day ----
@@ -1343,7 +1343,7 @@ st_apt_data <- state_iso_ranking %>%
 # covert to json and save in app data folder and archive
 st_apt_data_j <- st_apt_data %>% toJSON(., pretty = TRUE)
 
-write(st_apt_data_j, here(st_local_data_folder, "st_apt_ranking_traffic.json"))
+save_json(data_day_date, st_apt_data_j, "st_apt_ranking_traffic")
 
 ### State pair ----
 #### day ----
@@ -1613,7 +1613,8 @@ st_st_data <- state_iso_ranking %>%
 st_st_data_j <- st_st_data %>% toJSON(., pretty = TRUE)
 
 # name of json file in consistency with network
-write(st_st_data_j, here(st_local_data_folder,"st_ctry_ranking_traffic_DAI.json"))
+save_json(data_day_date, st_st_data_j, "st_ctry_ranking_traffic_DAI")
+
 
 ## DELAY ----
 ### ACC  ----
@@ -1836,7 +1837,8 @@ st_acc_delay <- state_iso_ranking %>%
 # covert to json and save in app data folder and archive
 st_acc_delay_j <- st_acc_delay %>% toJSON(., pretty = TRUE)
 
-write(st_acc_delay_j, here(st_local_data_folder,"st_acc_ranking_delay.json"))
+save_json(data_day_date, st_acc_delay_j, "st_acc_ranking_delay")
+
 
 ### Airport ----
 # raw data
@@ -2005,7 +2007,8 @@ st_apt_delay <- state_iso_ranking %>%
 # covert to json and save in app data folder and archive
 st_apt_delay_j <- st_apt_delay %>% toJSON(., pretty = TRUE)
 
-write(st_apt_delay_j, here(st_local_data_folder,"st_apt_ranking_delay.json"))
+save_json(data_day_date, st_apt_delay_j, "st_apt_ranking_delay")
+
 
 ## PUNTCUALITY ----
 ### Airport ----
@@ -2262,7 +2265,7 @@ st_apt_punctuality <- state_iso_ranking %>%
 # convert to json and save in app data folder and archive
 st_apt_punctuality_j <- st_apt_punctuality %>% toJSON(., pretty = TRUE)
 
-write(st_apt_punctuality_j, here(st_local_data_folder, "st_apt_ranking_punctuality.json"))
+save_json(data_day_date, st_apt_punctuality_j, "st_apt_ranking_punctuality")
 
 
 # ____________________________________________________________________________________________
@@ -2298,7 +2301,8 @@ st_daio_evo_app_long <- st_daio_evo_app %>%
 
 st_daio_evo_app_j <- st_daio_evo_app_long %>% toJSON(., pretty = TRUE)
 
-write(st_daio_evo_app_j, here(st_local_data_folder ,"st_daio_evo_chart_daily.json"))
+save_json(data_day_date, st_daio_evo_app_j, "st_daio_evo_chart_daily")
+
 
 ### 7-day DAI avg ----
 st_dai_evo_app <- st_dai_data_zone %>%
@@ -2326,7 +2330,8 @@ st_dai_evo_app_long <- st_dai_evo_app %>%
 
 st_dai_evo_app_j <- st_dai_evo_app_long %>% toJSON(., pretty = TRUE)
 
-write(st_dai_evo_app_j, here(st_local_data_folder, "st_dai_evo_chart_daily.json"))
+save_json(data_day_date, st_dai_evo_app_j, "st_dai_evo_chart_daily")
+
 
 ### 7-day OVF avg ----
 st_ovf_evo_app <- st_overflight_data_zone %>%
@@ -2355,7 +2360,8 @@ st_ovf_evo_app_long <- st_ovf_evo_app %>%
 
 st_ovf_evo_app_j <- st_ovf_evo_app_long %>% toJSON(., pretty = TRUE)
 
-write(st_ovf_evo_app_j, here(st_local_data_folder, "st_ovf_evo_chart_daily.json"))
+save_json(data_day_date, st_ovf_evo_app_j, "st_ovf_evo_chart_daily")
+
 
 ## PUNCTUALITY ----
 ### 7-day punctuality avg ----
@@ -2400,7 +2406,8 @@ st_punct_evo_app_long <- st_punct_evo_app %>%
 
 st_punct_evo_app_j <- st_punct_evo_app_long %>% toJSON(., pretty = TRUE)
 
-write(st_punct_evo_app_j, here(st_local_data_folder ,"st_punct_evo_chart.json"))
+save_json(data_day_date, st_punct_evo_app_j, "st_punct_evo_chart")
+
 
 ## DELAY ----
 ### Delay category ----
@@ -2520,7 +2527,8 @@ st_delay_cause_day_long <- cbind(st_delay_value_day_long, st_delay_share_day_lon
 # for consistency with v1 we use the word category in the name files... should have been cause
 st_delay_cause_evo_dy_j <- st_delay_cause_day_long %>% toJSON(., pretty = TRUE)
 
-write(st_delay_cause_evo_dy_j, here(st_local_data_folder ,"st_delay_category_evo_chart_dy.json"))
+save_json(data_day_date, st_delay_cause_evo_dy_j, "st_delay_category_evo_chart_dy")
+
 
 #### week ----
 st_delay_cause_wk <- st_delay_cause_data %>%
@@ -2603,7 +2611,8 @@ group_by(iso_2letter, daio_zone, FLIGHT_DATE) %>%
 # for consistency with v1 we use the word category in the name files... should have been cause
 st_delay_cause_evo_wk_j <- st_delay_cause_wk_long %>% toJSON(., pretty = TRUE)
 
-write(st_delay_cause_evo_wk_j, here(st_local_data_folder ,"st_delay_category_evo_chart_wk.json"))
+save_json(data_day_date, st_delay_cause_evo_wk_j, "st_delay_category_evo_chart_wk")
+
 
 #### y2d ----
 st_delay_cause_y2d <- st_delay_cause_data %>%
@@ -2684,7 +2693,8 @@ st_delay_share_y2d_long <- st_delay_cause_y2d %>%
 # for consistency with v1 we use the word category in the name files... should have been cause
 st_delay_cause_evo_y2d_j <- st_delay_cause_y2d_long %>% toJSON(., pretty = TRUE)
 
-write(st_delay_cause_evo_y2d_j, here(st_local_data_folder, "st_delay_category_evo_chart_y2d.json"))
+save_json(data_day_date, st_delay_cause_evo_y2d_j, "st_delay_category_evo_chart_y2d")
+
 
 ### Delay type ----
 st_delay_type_data <- st_delay_data %>%
@@ -2769,7 +2779,8 @@ st_delay_type_day_long <- cbind(st_delay_type_value_day_long, st_delay_type_shar
 
 st_delay_type_evo_dy_j <- st_delay_type_day_long %>% toJSON(., pretty = TRUE)
 
-write(st_delay_type_evo_dy_j, here(st_local_data_folder, "st_delay_flt_type_evo_chart_dy.json"))
+save_json(data_day_date, st_delay_type_evo_dy_j, "st_delay_flt_type_evo_chart_dy")
+
 
 #### week ----
 st_delay_type_wk <- st_delay_type_data %>%
@@ -2847,7 +2858,7 @@ st_delay_type_wk_long <- cbind(st_delay_type_value_wk_long, st_delay_type_share_
 
 st_delay_type_evo_wk_j <- st_delay_type_wk_long %>% toJSON(., pretty = TRUE)
 
-write(st_delay_type_evo_wk_j, here(st_local_data_folder, "st_delay_flt_type_evo_chart_wk.json"))
+save_json(data_day_date, st_delay_type_evo_wk_j, "st_delay_flt_type_evo_chart_wk")
 
 #### y2d ----
 st_delay_type_y2d <- st_delay_type_data %>%
@@ -2905,7 +2916,7 @@ st_delay_type_y2d_long <- cbind(st_delay_type_value_y2d_long, st_delay_type_shar
 
 st_delay_type_evo_y2d_j <- st_delay_type_y2d_long %>% toJSON(., pretty = TRUE)
 
-write(st_delay_type_evo_y2d_j, here(st_local_data_folder, "st_delay_flt_type_evo_chart_y2d.json"))
+save_json(data_day_date, st_delay_type_evo_y2d_j, "st_delay_flt_type_evo_chart_y2d")
 
 
 ## BILLING ----
@@ -2966,7 +2977,8 @@ st_billing_evo_long <- st_billing_evo %>%
 
 st_billing_evo_j <- st_billing_evo_long %>% toJSON(., pretty = TRUE)
 
-write(st_billing_evo_j, here(st_local_data_folder, "st_billing_evo.json"))
+save_json(data_day_date, st_billing_evo_j, "st_billing_evo")
+
 
 ## CO2 ----
 st_co2_data_filtered <- co2_data_raw %>%
@@ -3017,5 +3029,6 @@ st_co2_evo_long <- st_co2_evo %>%
 
 st_co2_evo_j <- st_co2_evo_long %>% toJSON(., pretty = TRUE)
 
-write(st_co2_evo_j, here(st_local_data_folder, "st_co2_evo.json"))
+save_json(data_day_date, st_co2_evo_j, "st_co2_evo")
+
 
