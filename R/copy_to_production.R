@@ -18,7 +18,7 @@ archive_mode <- FALSE
 
 if (archive_mode) {
   wef <- "2024-09-01"  #included in output
-  til <- "2024-09-14"  #included in output
+  til <- "2024-09-10"  #included in output
   data_day_date <- seq(ymd(wef), ymd(til), by = "day")
 } else {
   data_day_date <- lubridate::today(tzone = "") +  days(-1)

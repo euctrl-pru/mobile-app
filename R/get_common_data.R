@@ -31,15 +31,42 @@ nw_traffic_data <- read_xlsx(
   as_tibble() %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
-# network punctuality data ---
-nw_punct_data_raw <- read_xlsx(
-  path = fs::path_abs(
-    str_glue("098_PUNCTUALITY.xlsx"),
-    start = nw_base_dir
-  ),
-  sheet = "NETWORK",
-  range = cell_limits(c(1, 1), c(NA, NA))
-) %>%
+# network punctuality data ----
+query <- "
+WITH
+ DATA_DAY AS (
+SELECT
+              t.day_date
+FROM pru_time_references t
+WHERE
+t.day_date >= to_date('01-01-2018','DD-MM-YYYY')
+AND t.day_date < trunc(sysdate)
+)
+
+SELECT
+    a.day_date as \"DATE\",
+    DEP_PUNCTUALITY_PERCENTAGE,
+    DEPARTURE_FLIGHTS,
+    AVG_DEPARTURE_SCHEDULE_DELAY,
+    ARR_PUNCTUALITY_PERCENTAGE,
+    ARRIVAL_FLIGHTS,
+    AVG_ARRIVAL_SCHEDULE_DELAY,
+    MISSING_SCHEDULES_PERCENTAGE,
+    DEP_PUNCTUAL_FLIGHTS,
+    ARR_PUNCTUAL_FLIGHTS,
+    DEP_SCHED_DELAY,
+    ARR_SCHED_DELAY,
+    MISSING_SCHED_FLIGHTS,
+    DEP_SCHEDULE_FLIGHT,
+    ARR_SCHEDULE_FLIGHT,
+    DEP_FLIGHTS_NO_OVERFLIGHTS
+
+FROM DATA_DAY a
+left join LDW_VDM.VIEW_FAC_PUNCTUALITY_NW_DAY b on a.day_date = b.\"DATE\"
+order by a.day_date
+ "
+
+nw_punct_data_raw <- export_query(query) %>%
   as_tibble() %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
