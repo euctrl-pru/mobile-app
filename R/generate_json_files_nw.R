@@ -98,12 +98,6 @@ nw_billed_for_json_v2 <- nw_billed_for_json %>%
          Y2D_BILLED_DIF_PREV_YEAR = DIF_BILL_Y2D_PY,
          Y2D_BILLED_DIF_2019 = DIF_BILL_Y2D_2019)
 
-# app v1 json
-nw_billed_json <- nw_billed_for_json %>%
-  toJSON(., pretty = TRUE) %>%
-  substr(., 1, nchar(.) - 1) %>%
-  substr(., 2, nchar(.))
-
 # app v2 json
 nw_billed_json_v2 <- nw_billed_for_json_v2 %>%
   toJSON(., pretty = TRUE) %>%
@@ -160,12 +154,6 @@ nw_traffic_for_json_v2 <- nw_traffic_for_json %>%
     Y2D_TFC_DIF_PREV_YEAR_PERC = Y2D_DIFF_PREV_YEAR_PERC,
     Y2D_TFC_DIF_2019_PERC = Y2D_DIFF_2019_PERC
     )
-
-# app v1 json
-nw_traffic_json <- nw_traffic_for_json %>%
-  toJSON(., pretty = TRUE, digits = 10) %>%
-  substr(., 1, nchar(.) - 1) %>%
-  substr(., 2, nchar(.))
 
 # app v2 json
 nw_traffic_json_v2 <- nw_traffic_for_json_v2 %>%
@@ -262,12 +250,6 @@ nw_delay_for_json_v2 <- nw_delay_for_json %>%
     Y2D_DLY_DIF_2019_PERC = Y2D_DIFF_2019_PERC,
     Y2D_DLY_FLT_DIF_PREV_YEAR_PERC = Y2D_DLY_FLT_DIF_PY_PERC,
     )
-
-# app V1 json
-nw_delay_json <- nw_delay_for_json %>%
-  toJSON(., pretty = TRUE) %>%
-  substr(., 1, nchar(.) - 1) %>%
-  substr(., 2, nchar(.))
 
 # app V2 json
 nw_delay_json_v2 <- nw_delay_for_json_v2 %>%
@@ -587,8 +569,12 @@ nw_json_app_v2 <- paste0(
   "}"
 )
 
+
 write(nw_json_app_v2, here(nw_local_data_folder_prod, "nw_json_app.json"))
-write(nw_json_app_v2, here(nw_local_data_folder_dev, "nw_json_app.json"))
+
+# this saves and archives the dev file. line above temporary til v3 release
+save_json(nw_json_app_v2, "nw_json_app")
+
 
 # jsons for graphs -------
 ## traffic -----
@@ -619,7 +605,9 @@ nw_traffic_evo_v2_long <- nw_traffic_evo_v2 %>%
 nw_traffic_evo_v2_j <- nw_traffic_evo_v2_long %>% toJSON(., pretty = TRUE)
 
 write(nw_traffic_evo_v2_j, here(nw_local_data_folder_prod, "nw_traffic_evo_chart_daily.json"))
-write(nw_traffic_evo_v2_j, here(nw_local_data_folder_dev, "nw_traffic_evo_chart_daily.json"))
+
+# this saves and archives the dev file. line above temporary til v3 release
+save_json(nw_traffic_evo_v2_j, "nw_traffic_evo_chart_daily")
 
 ### monthly ----
 # this graph has been discontinued but we keep it here just in case
@@ -735,7 +723,9 @@ nw_delay_cause_day_long <- cbind(nw_delay_value_day_long, nw_delay_share_day_lon
 nw_delay_cause_evo_dy_j <- nw_delay_cause_day_long %>% toJSON(., pretty = TRUE)
 
 write(nw_delay_cause_evo_dy_j, here(nw_local_data_folder_prod, "nw_delay_category_evo_chart_dy.json"))
-write(nw_delay_cause_evo_dy_j, here(nw_local_data_folder_dev, "nw_delay_category_evo_chart_dy.json"))
+
+# this saves and archives the dev file. line above temporary til v3 release
+save_json(nw_delay_cause_evo_dy_j, "nw_delay_category_evo_chart_dy")
 
 #### week ----
 nw_delay_cause_wk <- nw_delay_evo %>%
@@ -797,8 +787,10 @@ nw_delay_cause_wk_long <- cbind(nw_delay_value_wk_long, nw_delay_share_wk_long) 
 #### convert to json and save in data folder and archive
 nw_delay_cause_evo_wk_j <- nw_delay_cause_wk_long %>% toJSON(., pretty = TRUE)
 
-write(nw_delay_cause_evo_dy_j, here(nw_local_data_folder_prod, "nw_delay_category_evo_chart_wk.json"))
-write(nw_delay_cause_evo_dy_j, here(nw_local_data_folder_dev, "nw_delay_category_evo_chart_wk.json"))
+write(nw_delay_cause_evo_wk_j, here(nw_local_data_folder_prod, "nw_delay_category_evo_chart_wk.json"))
+
+# this saves and archives the dev file. line above temporary til v3 release
+save_json(nw_delay_cause_evo_wk_j, "nw_delay_category_evo_chart_wk")
 
 #### y2d ----
 nw_delay_cause_y2d <- nw_delay_evo %>%
@@ -861,7 +853,9 @@ nw_delay_cause_evo_y2d_j <- nw_delay_cause_y2d_long %>% toJSON(., pretty = TRUE)
 
 #new name for v2 in line with delay per category
 write(nw_delay_cause_evo_y2d_j, here(nw_local_data_folder_prod, "nw_delay_category_evo_chart_y2d.json"))
-write(nw_delay_cause_evo_y2d_j, here(nw_local_data_folder_dev, "nw_delay_category_evo_chart_y2d.json"))
+# this saves and archives the dev file. line above temporary til v3 release
+save_json(nw_delay_cause_evo_y2d_j, "nw_delay_category_evo_chart_y2d")
+
 
 ### delay per flight per type v1----
 nw_delay_flt_evo <- nw_delay_raw %>%
@@ -968,7 +962,8 @@ nw_delay_flt_day_long <- cbind(nw_delay_flt_value_day_long, nw_delay_flt_share_d
 nw_delay_flt_day_j <- nw_delay_flt_day_long %>% toJSON(., pretty = TRUE)
 
 write(nw_delay_flt_day_j, here(nw_local_data_folder_prod, "nw_delay_flt_type_evo_chart_dy.json"))
-write(nw_delay_flt_day_j, here(nw_local_data_folder_dev, "nw_delay_flt_type_evo_chart_dy.json"))
+# this saves and archives the dev file. line above temporary til v3 release
+save_json(nw_delay_flt_day_j, "nw_delay_flt_type_evo_chart_dy")
 
 #### week ----
 nw_delay_flt_wk <- nw_delay_flt_evo %>%
@@ -1017,7 +1012,8 @@ nw_delay_flt_wk_long <- cbind(nw_delay_flt_value_wk_long, nw_delay_flt_share_wk_
 nw_delay_flt_wk_j <- nw_delay_flt_wk_long %>% toJSON(., pretty = TRUE)
 
 write(nw_delay_flt_wk_j, here(nw_local_data_folder_prod , "nw_delay_flt_type_evo_chart_wk.json"))
-write(nw_delay_flt_wk_j, here(nw_local_data_folder_dev , "nw_delay_flt_type_evo_chart_wk.json"))
+# this saves and archives the dev file. line above temporary til v3 release
+save_json(nw_delay_flt_wk_j, "nw_delay_flt_type_evo_chart_wk")
 
 #### y2d ----
 nw_delay_flt_y2d <- nw_delay_flt_evo %>%
@@ -1066,7 +1062,8 @@ nw_delay_flt_y2d_j <- nw_delay_flt_y2d_long %>% toJSON(., pretty = TRUE)
 
 #new name for v2 in line with delay per category
 write(nw_delay_flt_y2d_j, here(nw_local_data_folder_prod, "nw_delay_flt_type_evo_chart_y2d.json"))
-write(nw_delay_flt_y2d_j, here(nw_local_data_folder_dev, "nw_delay_flt_type_evo_chart_y2d.json"))
+# this saves and archives the dev file. line above temporary til v3 release
+save_json(nw_delay_flt_y2d_j, "nw_delay_flt_type_evo_chart_y2d")
 
 ## punctuality ----
 nw_punct_evo_app <- nw_punct_data_raw %>%
@@ -1099,8 +1096,8 @@ nw_punct_evo_app_v2_long <- nw_punct_evo_app %>%
 nw_punct_evo_v2_j <- nw_punct_evo_app_v2_long %>% toJSON(., pretty = TRUE)
 
 write(nw_punct_evo_v2_j, here(nw_local_data_folder_prod, "nw_punct_evo_chart.json"))
-write(nw_punct_evo_v2_j, here(nw_local_data_folder_dev, "nw_punct_evo_chart.json"))
-
+# this saves and archives the dev file. line above temporary til v3 release
+save_json(nw_punct_evo_v2_j, "nw_punct_evo_chart")
 
 ## billing ----
 nw_billing_evo <- nw_billing %>%
@@ -1155,7 +1152,8 @@ nw_billing_evo_v2_long <- nw_billing_evo %>%
 nw_billing_evo_v2_j <- nw_billing_evo_v2_long %>% toJSON(., pretty = TRUE)
 
 write(nw_billing_evo_v2_j, here(nw_local_data_folder_prod, "nw_billing_evo_chart.json"))
-write(nw_billing_evo_v2_j, here(nw_local_data_folder_dev, "nw_billing_evo_chart.json"))
+# this saves and archives the dev file. line above temporary til v3 release
+save_json(nw_billing_evo_v2_j, "nw_billing_evo_chart")
 
 
 ## co2 emissions ----
@@ -1205,7 +1203,8 @@ nw_co2_evo_v2_long <- nw_co2_evo %>%
 
 nw_co2_evo_v2_j <- nw_co2_evo_v2_long %>% toJSON(., pretty = TRUE)
 write(nw_co2_evo_v2_j, here(nw_local_data_folder_prod, "nw_co2_evo_chart.json"))
-write(nw_co2_evo_v2_j, here(nw_local_data_folder_dev, "nw_co2_evo_chart.json"))
+# this saves and archives the dev file. line above temporary til v3 release
+save_json(nw_co2_evo_v2_j, "nw_co2_evo_chart")
 
 
 # jsons for ranking tables ----
@@ -1410,7 +1409,7 @@ ao_data_j <- ao_data %>% toJSON(., pretty = TRUE)
 write(ao_data_j, here(nw_local_data_folder_prod, "ao_ranking_traffic.json"))
 
 # we duplicate the files while the app is being remapped
-write(ao_data_j, here(nw_local_data_folder_dev, "nw_ao_ranking_traffic.json"))
+save_json(ao_data_j, "nw_ao_ranking_traffic")
 
 
 ## Airport traffic ----
@@ -1605,8 +1604,7 @@ apt_data_j <- apt_data %>% toJSON(., pretty = TRUE)
 write(apt_data_j, here(nw_local_data_folder_prod, "apt_ranking_traffic.json"))
 
 # we duplicate the files while the app is being remapped
-write(apt_data_j, here(nw_local_data_folder_dev, "nw_apt_ranking_traffic.json"))
-
+save_json(apt_data_j, "nw_apt_ranking_traffic")
 
 ## Country traffic DAI ----
 ### day----
@@ -1822,8 +1820,7 @@ st_dai_data_j <- st_dai_data %>% toJSON(., pretty = TRUE)
 write(st_dai_data_j, here(nw_local_data_folder_prod, "ctry_ranking_traffic_DAI.json"))
 
 # we duplicate the files while the app is being remapped
-write(st_dai_data_j, here(nw_local_data_folder_dev, "nw_ctry_ranking_traffic_DAI.json"))
-
+save_json(st_dai_data_j, "nw_ctry_ranking_traffic_DAI")
 
 ## Airport delay -----
 ### raw data
@@ -1949,8 +1946,7 @@ apt_rank_data_j <- apt_rank_data %>% toJSON(., pretty = TRUE)
 write(apt_rank_data_j, here(nw_local_data_folder_prod, "apt_ranking_delay.json"))
 
 # we duplicate the files while the app is being remapped
-write(apt_rank_data_j, here(nw_local_data_folder_dev, "nw_apt_ranking_delay.json"))
-
+save_json(apt_rank_data_j, "nw_apt_ranking_delay")
 
 ## ACC delay ----
 ### day ----
@@ -2137,8 +2133,7 @@ acc_rank_data_j <- acc_rank_data %>% toJSON(., pretty = TRUE)
 write(acc_rank_data_j, here(nw_local_data_folder_prod, "acc_ranking_delay.json"))
 
 # we duplicate the file while the app is being remapped
-write(acc_rank_data_j, here(nw_local_data_folder_dev, "nw_acc_ranking_delay.json"))
-
+save_json(acc_rank_data_j, "nw_acc_ranking_delay")
 
 ## Country delay ----
 ### day ----
@@ -2334,8 +2329,7 @@ st_rank_delay_j <- st_rank_delay %>% toJSON(., pretty = TRUE)
 write(st_rank_delay_j, here(nw_local_data_folder_prod, "ctry_ranking_delay.json"))
 
 # we duplicate the files while the app is being remapped
-write(st_rank_delay_j, here(nw_local_data_folder_dev, "nw_ctry_ranking_delay.json"))
-
+save_json(st_rank_delay_j, "nw_ctry_ranking_delay")
 
 ## Airport punctuality ----
 query <- "
@@ -2637,8 +2631,7 @@ apt_punct_data_j <- apt_punct_data %>% toJSON(., pretty = TRUE)
 write(apt_punct_data_j, here(nw_local_data_folder_prod, "apt_ranking_punctuality.json"))
 
 # we duplicate the files while the app is being remapped
-write(apt_punct_data_j, here(nw_local_data_folder_dev, "nw_apt_ranking_punctuality.json"))
-
+save_json(apt_punct_data_j, "nw_apt_ranking_punctuality")
 
 ## Country punctuality ----
 ##### NOte: the time series for each country is not full. At some point it needs to be fixed either here or in the initial query so the lag functions yield the right result
@@ -2928,4 +2921,5 @@ st_punct_data_j <- st_punct_data %>% toJSON(., pretty = TRUE)
 write(st_punct_data_j, here(nw_local_data_folder_prod, "ctry_ranking_punctuality.json"))
 
 # we duplicate the files while the app is being remapped
-write(st_punct_data_j, here(nw_local_data_folder_dev, "nw_ctry_ranking_punctuality.json"))
+save_json(st_punct_data_j, "nw_ctry_ranking_punctuality")
+

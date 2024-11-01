@@ -47,9 +47,12 @@ export_query <- function(query, schema = "PRU_DEV") {
   #   tibble::as_tibble()
 }
 
+
 # save json file
-save_json <- function(data_day_date, df, filename) {
-  data_day_text_dash <- data_day_date %>% format("%Y-%m-%d")
+save_json <- function(df, filename, mydate = data_day_date) {
+  data_day_text_dash <- mydate %>% format("%Y-%m-%d")
+
+  # nw_status_test <- list("prod", "dev")
 
   # df <-st_ao_data_j
   # filename <- "st_ao_ranking_traffic"

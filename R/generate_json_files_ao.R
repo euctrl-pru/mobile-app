@@ -673,7 +673,7 @@ ao_json_app_j <- ao_json_app_j %>%   group_by(AO_GRP_CODE, AO_GRP_NAME)
 ao_json_app <- ao_json_app_j %>%
   toJSON(., pretty = TRUE)
 
-save_json(data_day_date, ao_json_app, "ao_json_app")
+save_json(ao_json_app, "ao_json_app")
 
 # ____________________________________________________________________________________________
 #
@@ -942,7 +942,7 @@ ao_st_des_data <- ao_grp_icao_ranking %>%
 # covert to json and save in app data folder and archive
 ao_st_des_data_j <- ao_st_des_data %>% toJSON(., pretty = TRUE)
 
-save_json(data_day_date, ao_st_des_data_j, "ao_st_ranking_traffic")
+save_json(ao_st_des_data_j, "ao_st_ranking_traffic")
 
 
 ### Departure airport ----
@@ -1204,7 +1204,7 @@ ao_apt_dep_data <- ao_grp_icao_ranking %>%
 # covert to json and save in app data folder and archive
 ao_apt_dep_data_j <- ao_apt_dep_data %>% toJSON(., pretty = TRUE)
 
-save_json(data_day_date, ao_apt_dep_data_j, "ao_apt_ranking_traffic")
+save_json(ao_apt_dep_data_j, "ao_apt_ranking_traffic")
 
 ### Airport pair ----
 #### day ----
@@ -1467,7 +1467,7 @@ ao_apt_pair_data <- ao_grp_icao_ranking %>%
 # covert to json and save in app data folder and archive
 ao_apt_pair_data_j <- ao_apt_pair_data %>% toJSON(., pretty = TRUE)
 
-save_json(data_day_date, ao_apt_pair_data_j, "ao_apt_pair_ranking_traffic")
+save_json(ao_apt_pair_data_j, "ao_apt_pair_ranking_traffic")
 
 
 ## DELAY ----
@@ -1596,7 +1596,7 @@ ao_apt_arr_delay_data <- ao_grp_icao_ranking %>%
 # covert to json and save in app data folder and archive
 ao_apt_arr_delay_data_j <- ao_apt_arr_delay_data %>% toJSON(., pretty = TRUE)
 
-save_json(data_day_date, ao_apt_arr_delay_data_j, "ao_apt_arr_ranking_delay")
+save_json(ao_apt_arr_delay_data_j, "ao_apt_arr_ranking_delay")
 
 
 # ____________________________________________________________________________________________
@@ -1632,7 +1632,7 @@ ao_traffic_evo_long <- ao_traffic_evo %>%
 
 ao_traffic_evo_j <- ao_traffic_evo_long %>% toJSON(., pretty = TRUE)
 
-save_json(data_day_date, ao_traffic_evo_j, "ao_traffic_evo_chart_daily")
+save_json(ao_traffic_evo_j, "ao_traffic_evo_chart_daily")
 
 
 ## DELAY ----
@@ -1668,7 +1668,7 @@ ao_delay_flt_evo_long <- ao_delay_flt_evo %>%
 ###convert to json and save
 ao_delay_flt_evo_j <- ao_delay_flt_evo_long %>% toJSON(., pretty = TRUE)
 
-save_json(data_day_date, ao_delay_flt_evo_j, "ao_delay_per_flight_evo_chart_daily")
+save_json(ao_delay_flt_evo_j, "ao_delay_per_flight_evo_chart_daily")
 
 
 ### 7-day % of delayed flights ----
@@ -1715,7 +1715,7 @@ ao_delayed_flights_evo_long <- ao_delayed_flights_evo %>%
 
 ao_delayed_flights_evo_j <- ao_delayed_flights_evo_long %>% toJSON(., pretty = TRUE)
 
-save_json(data_day_date, ao_delayed_flights_evo_j, "ao_delayed_flights_evo_chart_daily")
+save_json(ao_delayed_flights_evo_j, "ao_delayed_flights_evo_chart_daily")
 
 
 ## PUNCTUALITY ----
@@ -1764,7 +1764,7 @@ ao_punct_evo_long <- ao_punct_evo %>%
 
 ao_punct_evo_j <- ao_punct_evo_long %>% toJSON(., pretty = TRUE)
 
-save_json(data_day_date, ao_punct_evo_j, "ao_punct_evo_chart")
+save_json(ao_punct_evo_j, "ao_punct_evo_chart")
 
 
 ## BILLING ----
@@ -1824,7 +1824,7 @@ ao_billing_evo_long <- ao_billing_evo %>%
 
 ao_billing_evo_j <- ao_billing_evo_long %>% toJSON(., pretty = TRUE)
 
-save_json(data_day_date, ao_billing_evo_j, "ao_billing_evo")
+save_json(ao_billing_evo_j, "ao_billing_evo")
 
 ## CO2 ----
 ao_co2_evo <- ao_co2_data %>%
@@ -1863,6 +1863,6 @@ ao_co2_evo_long <- ao_co2_evo %>%
 
 ao_co2_evo_j <- ao_co2_evo_long %>% toJSON(., pretty = TRUE)
 
-save_json(data_day_date, ao_co2_evo_j, "ao_co2_evo")
+ao_co2_evo_j, "ao_co2_evo")
 
 
