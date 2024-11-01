@@ -29,6 +29,11 @@ if (exists("data_day_date") == FALSE) {
 data_day_text <- data_day_date %>% format("%Y%m%d")
 data_day_year <- as.numeric(format(data_day_date,'%Y'))
 
+# common data ----
+if (exists("state_crco") == FALSE) {
+  source(here("..", "mobile-app", "R", "get_common_data.R")) # so it can be launched from the checkupdates script in grounded aircraft
+}
+
 st_json_app <-""
 
 # ____________________________________________________________________________________________
@@ -49,7 +54,7 @@ st_billed_clean <- billed_raw %>%
   mutate(billing_period_start_date = as.Date(billing_period_start_date, format = "%d-%m-%Y"))
 
 last_billing_date <- min(max(st_billed_clean$billing_period_start_date),
-                         floor_date(data_day_date + months(-1), 'month)'))
+                         floor_date(data_day_date, 'month)')+ months(-1))
 last_billing_year <- year(last_billing_date)
 last_billing_month <- month(last_billing_date)
 

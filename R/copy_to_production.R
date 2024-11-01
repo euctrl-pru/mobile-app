@@ -17,8 +17,8 @@ destination_dir <- '//ihx-vdm05/LIVE_var_www_performance$/briefing'
 archive_mode <- FALSE
 
 if (archive_mode) {
-  wef <- "2024-09-15"  #included in output
-  til <- "2024-10-14"  #included in output
+  wef <- "2024-09-01"  #included in output
+  til <- "2024-09-14"  #included in output
   data_day_date <- seq(ymd(wef), ymd(til), by = "day")
 } else {
   data_day_date <- lubridate::today(tzone = "") +  days(-1)
@@ -90,7 +90,7 @@ if(archive_mode | (nw_file_status == "OK" & st_file_status == "OK" & ao_file_sta
 
   #temporary for loop until I can get the purr setup properly
   data_day_date_temp <- data_day_date
-  for (i in 1:length(data_day_date_temp)) {
+  for (i in length(data_day_date_temp):1) {
     data_day_date <- data_day_date_temp[[i]]
     # generate and copy data for date sequence ----
     walk(data_day_date, .f = process_app_data)
