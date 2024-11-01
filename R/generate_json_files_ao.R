@@ -48,8 +48,9 @@ ao_json_app <-""
 # ____________________________________________________________________________________________
 
 #### Billing data ----
-## we do this first to avoid 'R fatal error'
-billed_ao_raw <- get_ao_billing_data()
+if (exists("billed_ao_raw") == FALSE) {
+  billed_ao_raw <- get_ao_billing_data()
+}
 
 ## process billing data
 ao_billed_clean <- billed_ao_raw  %>%

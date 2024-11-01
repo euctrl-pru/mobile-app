@@ -17,8 +17,8 @@ destination_dir <- '//ihx-vdm05/LIVE_var_www_performance$/briefing'
 archive_mode <- FALSE
 
 if (archive_mode) {
-  wef <- "2024-01-02"  #included in output
-  til <- "2024-01-02"  #included in output
+  wef <- "2024-09-15"  #included in output
+  til <- "2024-10-14"  #included in output
   data_day_date <- seq(ymd(wef), ymd(til), by = "day")
 } else {
   data_day_date <- lubridate::today(tzone = "") +  days(-1)
@@ -52,12 +52,12 @@ copy_app_data <- function(data_day_date) {
   network_data_folder_v3 <- here(destination_dir, "data", "v3", data_day_text_dash)
 
   # copy files to the V2 network folder ----
-  st_prod_files_to_copy <- list.files(st_local_data_folder_prod, full.names = TRUE)
+  st_files_to_copy <- list.files(st_local_data_folder_prod, full.names = TRUE)
   nw_prod_files_to_copy <- list.files(nw_local_data_folder_prod, full.names = TRUE)
 
   if (archive_mode == FALSE) {
     file.copy(from = nw_prod_files_to_copy, to = network_data_folder_v2, overwrite = TRUE)
-    file.copy(from = st_prod_files_to_copy, to = network_data_folder_v2, overwrite = TRUE)
+    file.copy(from = st_files_to_copy, to = network_data_folder_v2, overwrite = TRUE)
   }
 
   # check if v3 date folder already exists ----
@@ -66,13 +66,13 @@ copy_app_data <- function(data_day_date) {
   }
 
   # copy files to the V3 network folder ----
+  file.copy(from = st_files_to_copy, to = network_data_folder_v3, overwrite = TRUE)
+
   nw_dev_files_to_copy <- list.files(nw_local_data_folder_dev, full.names = TRUE)
   file.copy(from = nw_dev_files_to_copy, to = network_data_folder_v3, overwrite = TRUE)
-  file.copy(from = st_prod_files_to_copy, to = network_data_folder_v3, overwrite = TRUE)
 
-  ### copy the v3 test files
-  ao_dev_files_to_copy <- list.files(ao_local_data_folder_dev, full.names = TRUE)
-  file.copy(from = ao_dev_files_to_copy, to = network_data_folder_v3, overwrite = TRUE)
+  ao_files_to_copy <- list.files(ao_local_data_folder_dev, full.names = TRUE)
+  file.copy(from = ao_files_to_copy, to = network_data_folder_v3, overwrite = TRUE)
 }
 
 # Define a combined function
