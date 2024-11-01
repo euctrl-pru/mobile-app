@@ -674,7 +674,6 @@ ao_json_app <- ao_json_app_j %>%
   toJSON(., pretty = TRUE)
 
 write(ao_json_app, here(ao_local_data_folder, "ao_json_app.json"))
-write(ao_json_app, here(archive_dir_raw_backup, "ao", "ao_json_app.json"))
 
 # ____________________________________________________________________________________________
 #
@@ -944,7 +943,6 @@ ao_st_des_data <- ao_grp_icao_ranking %>%
 ao_st_des_data_j <- ao_st_des_data %>% toJSON(., pretty = TRUE)
 
 write(ao_st_des_data_j, here(ao_local_data_folder ,"ao_st_ranking_traffic.json"))
-write(ao_st_des_data_j, here(archive_dir_raw_backup, "ao" ,"ao_st_ranking_traffic.json"))
 
 
 ### Departure airport ----
@@ -1207,7 +1205,6 @@ ao_apt_dep_data <- ao_grp_icao_ranking %>%
 ao_apt_dep_data_j <- ao_apt_dep_data %>% toJSON(., pretty = TRUE)
 
 write(ao_apt_dep_data_j, here(ao_local_data_folder ,"ao_apt_ranking_traffic.json"))
-write(ao_apt_dep_data_j, here(archive_dir_raw_backup, "ao" ,"ao_apt_ranking_traffic.json"))
 
 
 ### Airport pair ----
@@ -1472,7 +1469,6 @@ ao_apt_pair_data <- ao_grp_icao_ranking %>%
 ao_apt_pair_data_j <- ao_apt_pair_data %>% toJSON(., pretty = TRUE)
 
 write(ao_apt_pair_data_j, here(ao_local_data_folder ,"ao_apt_pair_ranking_traffic.json"))
-write(ao_apt_pair_data_j, here(archive_dir_raw_backup, "ao" ,"ao_apt_pair_ranking_traffic.json"))
 
 ## DELAY ----
 ### Arrival airport ----
@@ -1601,7 +1597,6 @@ ao_apt_arr_delay_data <- ao_grp_icao_ranking %>%
 ao_apt_arr_delay_data_j <- ao_apt_arr_delay_data %>% toJSON(., pretty = TRUE)
 
 write(ao_apt_arr_delay_data_j, here(ao_local_data_folder ,"ao_apt_arr_ranking_delay.json"))
-write(ao_apt_arr_delay_data_j, here(archive_dir_raw_backup, "ao" ,"ao_apt_arr_ranking_delay.json"))
 
 
 # ____________________________________________________________________________________________
@@ -1638,7 +1633,6 @@ ao_traffic_evo_long <- ao_traffic_evo %>%
 ao_traffic_evo_j <- ao_traffic_evo_long %>% toJSON(., pretty = TRUE)
 
 write(ao_traffic_evo_j, here(ao_local_data_folder ,"ao_traffic_evo_chart_daily.json"))
-write(ao_traffic_evo_j, here(archive_dir_raw_backup, "ao" ,"ao_traffic_evo_chart_daily.json"))
 
 
 ## DELAY ----
@@ -1675,7 +1669,6 @@ ao_delay_flt_evo_long <- ao_delay_flt_evo %>%
 ao_delay_flt_evo_j <- ao_delay_flt_evo_long %>% toJSON(., pretty = TRUE)
 
 write(ao_delay_flt_evo_j, here(ao_local_data_folder ,"ao_delay_per_flight_evo_chart_daily.json"))
-write(ao_delay_flt_evo_j, here(archive_dir_raw_backup, "ao" ,"ao_delay_per_flight_evo_chart_daily.json"))
 
 
 ### 7-day % of delayed flights ----
@@ -1723,7 +1716,6 @@ ao_delayed_flights_evo_long <- ao_delayed_flights_evo %>%
 ao_delayed_flights_evo_j <- ao_delayed_flights_evo_long %>% toJSON(., pretty = TRUE)
 
 write(ao_delayed_flights_evo_j, here(ao_local_data_folder ,"ao_delayed_flights_evo_chart_daily.json"))
-write(ao_delayed_flights_evo_j, here(archive_dir_raw_backup, "ao" ,"ao_delayed_flights_evo_chart_daily.json"))
 
 
 ## PUNCTUALITY ----
@@ -1773,7 +1765,6 @@ ao_punct_evo_long <- ao_punct_evo %>%
 ao_punct_evo_j <- ao_punct_evo_long %>% toJSON(., pretty = TRUE)
 
 write(ao_punct_evo_j, here(ao_local_data_folder ,"ao_punct_evo_chart.json"))
-write(ao_punct_evo_j, here(archive_dir_raw_backup, "ao" ,"ao_punct_evo_chart.json"))
 
 
 ## BILLING ----
@@ -1834,7 +1825,6 @@ ao_billing_evo_long <- ao_billing_evo %>%
 ao_billing_evo_j <- ao_billing_evo_long %>% toJSON(., pretty = TRUE)
 
 write(ao_billing_evo_j, here(ao_local_data_folder ,"ao_billing_evo.json"))
-write(ao_billing_evo_j, here(archive_dir_raw_backup, "ao" ,"ao_billing_evo.json"))
 
 ## CO2 ----
 ao_co2_evo <- ao_co2_data %>%
@@ -1874,6 +1864,5 @@ ao_co2_evo_long <- ao_co2_evo %>%
 ao_co2_evo_j <- ao_co2_evo_long %>% toJSON(., pretty = TRUE)
 
 write(ao_co2_evo_j, here(ao_local_data_folder ,"ao_co2_evo.json"))
-write(ao_co2_evo_j, here(archive_dir_raw_backup, "ao" ,"ao_co2_evo.json"))
 
 
