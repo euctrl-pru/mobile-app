@@ -673,9 +673,7 @@ ao_json_app_j <- ao_json_app_j %>%   group_by(AO_GRP_CODE, AO_GRP_NAME)
 ao_json_app <- ao_json_app_j %>%
   toJSON(., pretty = TRUE)
 
-write(ao_json_app, here(ao_local_data_folder_dev, "ao_json_app.json"))
-write(ao_json_app, paste0(archive_dir, "ao_json_app.json"))
-write(ao_json_app, paste0(archive_dir, data_day_text, "_ao_json_app.json"))
+write(ao_json_app, here(ao_local_data_folder, "ao_json_app.json"))
 
 # ____________________________________________________________________________________________
 #
@@ -943,9 +941,9 @@ ao_st_des_data <- ao_grp_icao_ranking %>%
 
 # covert to json and save in app data folder and archive
 ao_st_des_data_j <- ao_st_des_data %>% toJSON(., pretty = TRUE)
-write(ao_st_des_data_j, here(ao_local_data_folder_dev ,"ao_st_ranking_traffic.json"))
-write(ao_st_des_data_j, paste0(archive_dir, data_day_text, "_ao_st_ranking_traffic.json"))
-write(ao_st_des_data_j, paste0(archive_dir, "ao_st_ranking_traffic.json"))
+
+write(ao_st_des_data_j, here(ao_local_data_folder ,"ao_st_ranking_traffic.json"))
+
 
 ### Departure airport ----
 #### day ----
@@ -1205,9 +1203,9 @@ ao_apt_dep_data <- ao_grp_icao_ranking %>%
 
 # covert to json and save in app data folder and archive
 ao_apt_dep_data_j <- ao_apt_dep_data %>% toJSON(., pretty = TRUE)
-write(ao_apt_dep_data_j, here(ao_local_data_folder_dev ,"ao_apt_ranking_traffic.json"))
-write(ao_apt_dep_data_j, paste0(archive_dir, data_day_text, "_ao_apt_ranking_traffic.json"))
-write(ao_apt_dep_data_j, paste0(archive_dir, "ao_apt_ranking_traffic.json"))
+
+write(ao_apt_dep_data_j, here(ao_local_data_folder ,"ao_apt_ranking_traffic.json"))
+
 
 ### Airport pair ----
 #### day ----
@@ -1469,9 +1467,8 @@ ao_apt_pair_data <- ao_grp_icao_ranking %>%
 
 # covert to json and save in app data folder and archive
 ao_apt_pair_data_j <- ao_apt_pair_data %>% toJSON(., pretty = TRUE)
-write(ao_apt_pair_data_j, here(ao_local_data_folder_dev ,"ao_apt_pair_ranking_traffic.json"))
-write(ao_apt_pair_data_j, paste0(archive_dir, data_day_text, "_ao_apt_pair_ranking_traffic.json"))
-write(ao_apt_pair_data_j, paste0(archive_dir, "ao_apt_pair_ranking_traffic.json"))
+
+write(ao_apt_pair_data_j, here(ao_local_data_folder ,"ao_apt_pair_ranking_traffic.json"))
 
 ## DELAY ----
 ### Arrival airport ----
@@ -1598,9 +1595,8 @@ ao_apt_arr_delay_data <- ao_grp_icao_ranking %>%
 
 # covert to json and save in app data folder and archive
 ao_apt_arr_delay_data_j <- ao_apt_arr_delay_data %>% toJSON(., pretty = TRUE)
-write(ao_apt_arr_delay_data_j, here(ao_local_data_folder_dev ,"ao_apt_arr_ranking_delay.json"))
-write(ao_apt_arr_delay_data_j, paste0(archive_dir, data_day_text, "_ao_apt_arr_ranking_delay.json"))
-write(ao_apt_arr_delay_data_j, paste0(archive_dir, "ao_apt_arr_ranking_delay.json"))
+
+write(ao_apt_arr_delay_data_j, here(ao_local_data_folder ,"ao_apt_arr_ranking_delay.json"))
 
 
 # ____________________________________________________________________________________________
@@ -1635,9 +1631,9 @@ ao_traffic_evo_long <- ao_traffic_evo %>%
 
 
 ao_traffic_evo_j <- ao_traffic_evo_long %>% toJSON(., pretty = TRUE)
-write(ao_traffic_evo_j, here(ao_local_data_folder_dev ,"ao_traffic_evo_chart_daily.json"))
-write(ao_traffic_evo_j, paste0(archive_dir, data_day_text, "_ao_traffic_chart_daily.json"))
-write(ao_traffic_evo_j, paste0(archive_dir, "ao_traffic_chart_daily.json"))
+
+write(ao_traffic_evo_j, here(ao_local_data_folder ,"ao_traffic_evo_chart_daily.json"))
+
 
 ## DELAY ----
 ### 7-day % of delay per flight ----
@@ -1671,9 +1667,9 @@ ao_delay_flt_evo_long <- ao_delay_flt_evo %>%
 
 ###convert to json and save
 ao_delay_flt_evo_j <- ao_delay_flt_evo_long %>% toJSON(., pretty = TRUE)
-write(ao_delay_flt_evo_j, here(ao_local_data_folder_dev ,"ao_delay_per_flight_evo_chart_daily.json"))
-write(ao_delay_flt_evo_j, paste0(archive_dir, data_day_text, "_ao_delay_per_flight_chart_daily.json"))
-write(ao_delay_flt_evo_j, paste0(archive_dir, "ao_delay_per_flight_chart_daily.json"))
+
+write(ao_delay_flt_evo_j, here(ao_local_data_folder ,"ao_delay_per_flight_evo_chart_daily.json"))
+
 
 ### 7-day % of delayed flights ----
 ao_delayed_flights_evo <- ao_traffic_delay_data  %>%
@@ -1718,9 +1714,8 @@ ao_delayed_flights_evo_long <- ao_delayed_flights_evo %>%
 
 
 ao_delayed_flights_evo_j <- ao_delayed_flights_evo_long %>% toJSON(., pretty = TRUE)
-write(ao_delayed_flights_evo_j, here(ao_local_data_folder_dev ,"ao_delayed_flights_evo_chart_daily.json"))
-write(ao_delayed_flights_evo_j, paste0(archive_dir, data_day_text, "_ao_delayed_flights_chart_daily.json"))
-write(ao_delayed_flights_evo_j, paste0(archive_dir, "ao_delayed_flights_chart_daily.json"))
+
+write(ao_delayed_flights_evo_j, here(ao_local_data_folder ,"ao_delayed_flights_evo_chart_daily.json"))
 
 
 ## PUNCTUALITY ----
@@ -1768,9 +1763,9 @@ ao_punct_evo_long <- ao_punct_evo %>%
 
 
 ao_punct_evo_j <- ao_punct_evo_long %>% toJSON(., pretty = TRUE)
-write(ao_punct_evo_j, here(ao_local_data_folder_dev ,"ao_punct_evo_chart.json"))
-write(ao_punct_evo_j, paste0(archive_dir, data_day_text, "_ao_punct_evo_chart.json"))
-write(ao_punct_evo_j, paste0(archive_dir, "ao_punct_evo_chart.json"))
+
+write(ao_punct_evo_j, here(ao_local_data_folder ,"ao_punct_evo_chart.json"))
+
 
 ## BILLING ----
 ao_billing_evo <- ao_billing %>%
@@ -1828,9 +1823,8 @@ ao_billing_evo_long <- ao_billing_evo %>%
 
 
 ao_billing_evo_j <- ao_billing_evo_long %>% toJSON(., pretty = TRUE)
-write(ao_billing_evo_j, here(ao_local_data_folder_dev ,"ao_billing_evo.json"))
-write(ao_billing_evo_j, paste0(archive_dir, data_day_text, "_ao_billing_evo.json"))
-write(ao_billing_evo_j, paste0(archive_dir, "ao_billing_evo.json"))
+
+write(ao_billing_evo_j, here(ao_local_data_folder ,"ao_billing_evo.json"))
 
 ## CO2 ----
 ao_co2_evo <- ao_co2_data %>%
@@ -1868,8 +1862,7 @@ ao_co2_evo_long <- ao_co2_evo %>%
   nest_legacy(.key = "statistics")
 
 ao_co2_evo_j <- ao_co2_evo_long %>% toJSON(., pretty = TRUE)
-write(ao_co2_evo_j, here(ao_local_data_folder_dev ,"ao_co2_evo.json"))
-write(ao_co2_evo_j, paste0(archive_dir, "ao_co2_evo.json"))
-write(ao_co2_evo_j, paste0(archive_dir, data_day_text, "_ao_co2_evo.json"))
+
+write(ao_co2_evo_j, here(ao_local_data_folder ,"ao_co2_evo.json"))
 
 

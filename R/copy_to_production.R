@@ -52,7 +52,7 @@ copy_app_data <- function(data_day_date) {
   network_data_folder_v3 <- here(destination_dir, "data", "v3", data_day_text_dash)
 
   # copy files to the V2 network folder ----
-  st_files_to_copy <- list.files(st_local_data_folder_prod, full.names = TRUE)
+  st_files_to_copy <- list.files(st_local_data_folder, full.names = TRUE)
   nw_prod_files_to_copy <- list.files(nw_local_data_folder_prod, full.names = TRUE)
 
   if (archive_mode == FALSE) {
@@ -71,7 +71,7 @@ copy_app_data <- function(data_day_date) {
   nw_dev_files_to_copy <- list.files(nw_local_data_folder_dev, full.names = TRUE)
   file.copy(from = nw_dev_files_to_copy, to = network_data_folder_v3, overwrite = TRUE)
 
-  ao_files_to_copy <- list.files(ao_local_data_folder_dev, full.names = TRUE)
+  ao_files_to_copy <- list.files(ao_local_data_folder, full.names = TRUE)
   file.copy(from = ao_files_to_copy, to = network_data_folder_v3, overwrite = TRUE)
 }
 
