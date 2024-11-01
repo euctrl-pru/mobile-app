@@ -76,7 +76,7 @@ copy_app_data <- function(data_day_date) {
 
   # backup json files
   file.copy(network_data_folder_v3,
-            here(archive_dir),
+            archive_dir,
             recursive = TRUE, overwrite = TRUE)
   }
 
