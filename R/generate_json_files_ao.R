@@ -59,7 +59,7 @@ ao_billed_clean <- billed_ao_raw  %>%
   rename(AO_GRP_NAME = ao_grp_last_name)
 
 last_billing_date <- min(max(ao_billed_clean$billing_period_start_date),
-                         floor_date(data_day_date + months(-1), 'month)'))
+                         floor_date(data_day_date, 'month)') + months(-1))
 last_billing_year <- year(last_billing_date)
 last_billing_month <- month(last_billing_date)
 

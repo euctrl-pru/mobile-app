@@ -23,7 +23,7 @@ nw_json_app <- function(data_day_date){
 
   # extract date parameters
   last_billing_date <- min(max(nw_billing$billing_period_start_date),
-                           floor_date(data_day_date + months(-1), 'month)'))
+                           floor_date(data_day_date, 'month)') + months(-1))
   last_billing_year <- year(last_billing_date)
   last_billing_month <- month(last_billing_date)
 
