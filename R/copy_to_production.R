@@ -13,7 +13,10 @@ source(here("..", "mobile-app", "R", "params.R"))
 
 destination_dir <- '//ihx-vdm05/LIVE_var_www_performance$/briefing'
 
-# current day = FALSE, past days = TRUE
+# set the archive_mode to FALSE to run the scripts for day-1.
+# set the archive_mode to TRUE to run the scripts
+# for the sequence of dates set below.
+
 archive_mode <- FALSE
 
 if (archive_mode) {
@@ -89,11 +92,11 @@ process_app_data <- function(data_day_date) {
 
 # generate and copy app files ----
 if(archive_mode | (nw_file_status == "OK" & st_file_status == "OK" & ao_file_status == "OK")){
-  # get helper functions and large data sets ----
+  # get helper functions and common data sets ----
   source(here("..", "mobile-app", "R", "helpers.R"))
   source(here("..", "mobile-app", "R", "get_common_data.R"))
 
-  #temporary for loop until I can get the purr setup properly
+  #temporary cheating for loop until I can get the purr setup properly
   data_day_date_temp <- data_day_date
   for (i in length(data_day_date_temp):1) {
     data_day_date <- data_day_date_temp[[i]]
