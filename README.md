@@ -164,7 +164,7 @@ Let’s get some internal data
 today <- (lubridate::now() +  days(-1)) |> format("%Y%m%d")
 base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/'
 base_file <- '99_Traffic_Landing_Page_dataset_new_{today}.xlsx'
-archive_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/web_daily_json_files/app/'
+
 last_day <-  (lubridate::now() +  days(-1))
 last_year <- as.numeric(format(last_day,'%Y'))
 
