@@ -73,7 +73,12 @@ copy_app_data <- function(data_day_date) {
 
   ao_files_to_copy <- list.files(ao_local_data_folder, full.names = TRUE)
   file.copy(from = ao_files_to_copy, to = network_data_folder_v3, overwrite = TRUE)
-}
+
+  # backup json files
+  file.copy(network_data_folder_v3,
+            here(archive_dir),
+            recursive = TRUE)
+  }
 
 # Define a combined function
 process_app_data <- function(data_day_date) {
