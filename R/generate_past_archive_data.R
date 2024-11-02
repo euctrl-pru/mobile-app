@@ -5,9 +5,9 @@ library(purrr)
 library(stringr)
 
 source(here("..", "mobile-app", "R", "helpers.R"))
-source(here("..", "mobile-app", "R", "state_queries.R"))
-source(here("..", "mobile-app", "R", "ao_queries.R"))
-source(here("..", "mobile-app", "R", "nw_queries.R"))
+source(here("..", "mobile-app", "R", "queries_st.R"))
+source(here("..", "mobile-app", "R", "queries_ao.R"))
+source(here("..", "mobile-app", "R", "queries_nw.R"))
 
 test_archive_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Project/DDP/AIU app/data_archive'
 # set period
