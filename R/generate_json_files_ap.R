@@ -67,3 +67,9 @@ save_json(ap_json_app, "ap_json_app", archive_file = FALSE)
 ## TRAFFIC ----
 ### Aircraft operator ----
 #### day ----
+
+
+
+# last line of this seciton
+save_json(ap_ao_traffic_j, "ap_ao_traffic", archive_file = FALSE)
+
