@@ -76,7 +76,6 @@ save_json <- function(df, filename, mydate = data_day_date, archive_file = TRUE)
   }
 }
 
-
 # get values for the day before `tdy`
 network_traffic_full_latest <- function(today = lubridate::today()) {
   yesterday <- today |> magrittr::subtract(days(1))
