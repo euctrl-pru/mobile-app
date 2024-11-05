@@ -20,11 +20,12 @@ source(here::here("..", "mobile-app", "R", "helpers.R"))
 # Parameters ----
 source(here("..", "mobile-app", "R", "params.R"))
 
-if (exists("ao_grp_icao") == FALSE) {
-  ao_grp_icao <-  read_xlsx(
+# airport dimension table
+if (exists("apt_icao") == FALSE) {
+  apt_icao <-  read_xlsx(
     path  = fs::path_abs(
-      str_glue(ao_base_file),
-      start = ao_base_dir),
+      str_glue(ap_base_file),
+      start = ap_base_dir),
     sheet = "lists",
     range = cell_limits(c(1, 1), c(NA, NA))) %>%
     as_tibble()
