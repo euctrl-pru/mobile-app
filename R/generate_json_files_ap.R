@@ -54,3 +54,15 @@ ap_json_app <-""
 
 # last line of this section
 save_json(ap_json_app, "ap_json_app", archive_file = FALSE)
+
+
+
+# ____________________________________________________________________________________________
+#
+#    APT ranking tables -----
+#
+# ____________________________________________________________________________________________
+
+## TRAFFIC ----
+### Aircraft operator ----
+#### day ----
