@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 
 this repo has scripts to prepare the data for the EUROCONTROL Data mobile app.
 
-## Current live production procedure (json files on netork folder)
+## Current live production procedure (json files on network folder)
 
 The scripts prepare a set of json files saved in the network folder:
 `//ihx-vdm05/LIVE_var_www_performance$/briefing`
