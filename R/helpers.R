@@ -49,7 +49,7 @@ export_query <- function(query, schema = "PRU_DEV") {
 
 
 # save json file
-save_json <- function(df, filename, mydate = data_day_date) {
+save_json <- function(df, filename, mydate = data_day_date, archive_file = TRUE) {
   data_day_text_dash <- mydate %>% format("%Y-%m-%d")
 
   # nw_status_test <- list("prod", "dev")
@@ -57,22 +57,24 @@ save_json <- function(df, filename, mydate = data_day_date) {
   # df <-st_ao_data_j
   # filename <- "st_ao_ranking_traffic"
 
+  # save in local data folder
   stakeholder_prefix <- stringr::str_sub(filename, 1,
                                          regexpr("_", substr(filename, 1, nchar(filename)))-1)
 
   target_dir <- get(paste0(stakeholder_prefix, "_","local_data_folder"))
   write(df, here(target_dir, paste0(filename,".json")))
 
-  # check if date folder already exists ----
-  archive_dir_date <- here(archive_dir, data_day_text_dash)
-  if (!dir.exists(archive_dir_date)) {
-    dir.create(archive_dir_date)
+  # save in archive
+  if (archive_file){
+    # check if date folder already exists
+    archive_dir_date <- here(archive_dir, data_day_text_dash)
+    if (!dir.exists(archive_dir_date)) {
+      dir.create(archive_dir_date)
+    }
+
+    write(df, here(archive_dir_date, paste0(filename,".json")))
   }
-
-  write(df, here(archive_dir_date, paste0(filename,".json")))
-
 }
-
 
 
 # get values for the day before `tdy`
@@ -741,4 +743,67 @@ where (substr(ADEP, 1,2) in ('GC', 'GE', 'LE') or substr(ADES, 1,2) in ('GC', 'G
 
   return(punct_data_spain_raw)
 }
+
+get_punct_data_apt <- function() {
+  query <- "
+     WITH
+        DIM_AIRPORT as (
+          SELECT
+            a.code as arp_code, a.id as arp_id, a.dashboard_name as arp_name,
+            a.ISO_COUNTRY_CODE
+          FROM prudev.pru_airport a
+        )
+
+      , LIST_AIRPORT as (
+            select distinct
+                a.ICAO_CODE as arp_code,
+                b.arp_name,
+                b.iso_country_code
+            from LDW_VDM.VIEW_FAC_PUNCTUALITY_AP_DAY a
+            left join DIM_AIRPORT b on a.icao_code = b.arp_code
+            order by 1
+
+        ),
+
+        LIST_STATE as (
+          SELECT distinct
+            AIU_ISO_COUNTRY_NAME as EC_ISO_CT_NAME,
+            AIU_ISO_COUNTRY_CODE AS EC_ISO_CT_CODE
+          FROM prudev.pru_country_iso
+          WHERE till > TRUNC(SYSDATE)-1
+        ),
+
+        APT_DAY AS (
+          SELECT
+                  a.arp_code,
+                  a.arp_name,
+                  a.ISO_COUNTRY_CODE,
+                  t.year,
+                  t.month,
+                  t.week,
+                  t.week_nb_year,
+                  t.day_type,
+                  t.day_of_week_nb AS day_of_week,
+                  t.day_date
+          FROM LIST_AIRPORT a, pru_time_references t
+          WHERE
+             t.day_date >= to_date('24-12-2018','DD-MM-YYYY')
+             AND t.day_date < trunc(sysdate)
+          )
+
+          SELECT
+            a.* , b.*
+          FROM APT_DAY a
+          left join LDW_VDM.VIEW_FAC_PUNCTUALITY_AP_DAY b on a.day_date = b.\"DATE\" and a.arp_code = b.icao_code
+          where a.arp_code not in ('LTBA', 'UKBB')
+          order by a.ARP_CODE, b.\"DATE\"
+   "
+
+  apt_punct_raw <- export_query(query) %>%
+    as_tibble() %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+  return(apt_punct_raw)
+}
+
 

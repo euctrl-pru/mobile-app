@@ -129,3 +129,11 @@ ao_grp_icao <-  read_xlsx(
   sheet = "lists",
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   as_tibble()
+
+apt_icao <-  read_xlsx(
+  path  = fs::path_abs(
+    str_glue(ap_base_file),
+    start = ap_base_dir),
+  sheet = "lists",
+  range = cell_limits(c(1, 1), c(NA, NA))) %>%
+  as_tibble()

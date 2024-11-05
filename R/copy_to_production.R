@@ -96,7 +96,7 @@ if(archive_mode | (nw_file_status == "OK" & st_file_status == "OK" & ao_file_sta
   source(here("..", "mobile-app", "R", "helpers.R"))
   source(here("..", "mobile-app", "R", "get_common_data.R"))
 
-  #temporary cheating for loop until I can get the purr setup properly
+  #temporary cheating "for" loop until I can get the purr setup properly
   data_day_date_temp <- data_day_date
   for (i in length(data_day_date_temp):1) {
     data_day_date <- data_day_date_temp[[i]]
