@@ -21,18 +21,21 @@ this repo has scripts to prepare the data for the EUROCONTROL Data mobile app.
 ## Current live production procedure (json files on netork folder)
 
 The scripts prepare a set of json files saved in the network folder:
-`r paste0(destination_dir,"/data")`
+`//ihx-vdm05/LIVE_var_www_performance$/briefing`
 
 The **main scripts** are:
+
 - `copy_to_production`: Main script executing all the other necessary ones. It's the one automated to be run every morning.
 - `generate_json_files_nw/ao/states/ap`: Retrieve the raw data, generate the json files and saves them locally in the repo's data folder.
  
 Support scripts:
+
 - `helpers`: contains the functions used in other scripts.
 - `params`: sets the necessary parameters.
 - `get_common_data`: retrieves some datasets used for other scripts to avoid loading them multiple times, a.o. the dimension tables.
 
 Generation of archive csvs:
+
 - `generate_archive_data`: Generates source csv files necessary to generate json files for past dates. Only needs to be run if further dates are needed.
 - `nw/ao/state_queries`: Contains SQL queries with the date as a parameter used by the previous script to generate past csv viles.
 
