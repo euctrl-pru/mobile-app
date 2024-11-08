@@ -25,6 +25,8 @@ if (exists("data_day_date") == FALSE) {
   data_day_date <- lubridate::today(tzone = "") +  days(-1)
   }
 
+# data_day_date <- ymd("2024-09-01")
+
 data_day_text <- data_day_date %>% format("%Y%m%d")
 data_day_year <- as.numeric(format(data_day_date,'%Y'))
 
@@ -56,6 +58,7 @@ nw_billed_for_json <- nw_billing %>%
   arrange(year, billing_period_start_date) %>%
   mutate(
     BILLING_DATE = (billing_period_start_date + days(1) + months(1)) + days(-1),
+    BILLING_DATE_BOM = floor_date(BILLING_DATE, 'month)'),
     Year = year,
     MONTH_F = format(billing_period_start_date + days(1), "%B"),
     BILL_MONTH_PY = lag(total_billing, 12),
@@ -76,7 +79,7 @@ nw_billed_for_json <- nw_billing %>%
     DIF_BILL_Y2D_2019 = total_billing_y2d / BILL_Y2D_2019 - 1,
     BILLED_Y2D = round(total_billing_y2d / 1000000, 0)
   ) %>%
-  filter(billing_period_start_date == last_billing_date) %>%
+  filter(BILLING_DATE_BOM == last_billing_date) %>%
   select(
     BILLING_DATE,
     MONTH_F,
