@@ -53,7 +53,7 @@ st_billed_clean <- billed_raw %>%
   janitor::clean_names() %>%
   mutate(billing_period_start_date = as.Date(billing_period_start_date, format = "%d-%m-%Y"))
 
-last_billing_date <- min(max(st_billed_clean$billing_period_start_date),
+last_billing_date <- min(max(st_billed_clean$billing_period_start_date + days(1)),
                          floor_date(data_day_date, 'month)')+ months(-1))
 last_billing_year <- year(last_billing_date)
 last_billing_month <- month(last_billing_date)
@@ -70,7 +70,6 @@ st_billed_for_json <- st_billing %>%
   arrange(iso_2letter, year, billing_period_start_date) %>%
   mutate(
          BILLING_DATE = (billing_period_start_date + days(1) + months(1)) + days(-1),
-         BILLING_DATE_BOM = floor_date(BILLING_DATE, 'month)'),
          Year = year,
          MONTH_TEXT = format(billing_period_start_date + days(1),'%B'),
          MM_BILLED_PY = lag(total_billing, 12),
@@ -91,7 +90,8 @@ st_billed_for_json <- st_billing %>%
     Y2D_BILLED_DIF_2019 = total_billing_y2d / Y2D_BILLED_2019 -1,
     Y2D_BILLED = round(total_billing_y2d / 1000000, 1)
   ) %>%
-  filter(BILLING_DATE_BOM == last_billing_date) %>%
+  filter(Year == last_billing_year,
+         month == last_billing_month) %>%
   select(iso_2letter,
          BILLING_DATE,
          MONTH_TEXT,
