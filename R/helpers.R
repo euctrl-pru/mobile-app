@@ -654,6 +654,9 @@ get_ao_billing_data <- function() {
 }
 
 get_punct_data_spain <- function() {
+
+  temp_data_archive <-'//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Project/DDP/AIU app/data_archive/'
+
   query1 <- str_glue("
 select
       a.*,
@@ -671,9 +674,9 @@ select
 from LDW_VDM.V_DELAY_TRACKER_ARCHIVE_TURN a
 where (substr(ADEP, 1,2) in ('GC', 'GE', 'LE') or substr(ADES, 1,2) in ('GC', 'GE', 'LE'))
    and (
-        trunc(a.ACTUAL_DEP_TIME - 3 / 24) >= to_date('24-12-2018','DD-MM-YYYY')
+        trunc(a.ACTUAL_DEP_TIME - 3 / 24) >= trunc(sysdate) -7
         or
-        trunc(a.ACTUAL_ARR_TIME - 3 / 24) >= to_date('24-12-2018','DD-MM-YYYY')
+        trunc(a.ACTUAL_ARR_TIME - 3 / 24) >= trunc(sysdate) -7
         )
 "
   )
@@ -716,7 +719,7 @@ where (substr(ADEP, 1,2) in ('GC', 'GE', 'LE') or substr(ADES, 1,2) in ('GC', 'G
               DEP_SCHEDULE_FLIGHT = sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE),
               DEP_FLIGHTS = n())
 
-  start_date <- as.Date("2018-12-24")
+  start_date <- min(min(punct_data_arr$ARR_DATE, na.rm = TRUE), min(punct_data_dep$DEP_DATE, na.rm = TRUE)) +days(2)
   end_date <- lubridate::today() + days(-1)
 
   date_seq <- seq(from = start_date, to = end_date, by = "day")
@@ -726,19 +729,19 @@ where (substr(ADEP, 1,2) in ('GC', 'GE', 'LE') or substr(ADES, 1,2) in ('GC', 'G
   country_day <- data.frame(DAY_DATE = repeated_dates, ISO_2LETTER = repeated_values) |>
     arrange(ISO_2LETTER, DAY_DATE)
 
-  punct_data_spain_raw <- country_day |>
+  punct_data_spain_joined <- country_day |>
     left_join(punct_data_arr, by = c("DAY_DATE" = "ARR_DATE", "ISO_2LETTER" = "ISO_CT_CODE_DES")) |>
     left_join(punct_data_dep, by = c("DAY_DATE" = "DEP_DATE", "ISO_2LETTER" = "ISO_CT_CODE_DEP"))
 
-  # checktable <- punct_data_spain_raw |>
-  #   group_by(DAY_DATE) |>
-  #   summarise(DEP_PUNCTUAL_FLIGHTS = sum(DEP_PUNCTUAL_FLIGHTS, na.rm = TRUE),
-  #             DEP_SCHEDULE_FLIGHT = sum(DEP_SCHEDULE_FLIGHT, na.rm = TRUE),
-  #             ARR_PUNCTUAL_FLIGHTS = sum(ARR_PUNCTUAL_FLIGHTS, na.rm = TRUE),
-  #             ARR_SCHEDULE_FLIGHT = sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE)
-  #   ) |>
-  #   filter(DAY_DATE >= as.Date("2022-01-01"))
-  rm(punct_data_raw_raw, punct_data_raw_calc)
+  punct_data_spain_prev <- read_csv(paste0(temp_data_archive, 'punct_data_spain.csv'))
+
+  punct_data_spain_raw <- punct_data_spain_prev %>%
+    filter(DAY_DATE < start_date) %>%
+    rbind(punct_data_spain_joined)
+
+  punct_data_spain_raw %>% write_csv(paste0(temp_data_archive, 'punct_data_spain.csv'))
+  punct_data_spain_raw %>% write_csv(paste0('G:/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/app/csv/',
+                                            format(end_date, "%Y%m%d"), '_punct_data_spain.csv'))
 
   return(punct_data_spain_raw)
 }
