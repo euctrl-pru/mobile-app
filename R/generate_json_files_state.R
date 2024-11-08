@@ -70,6 +70,7 @@ st_billed_for_json <- st_billing %>%
   arrange(iso_2letter, year, billing_period_start_date) %>%
   mutate(
          BILLING_DATE = (billing_period_start_date + days(1) + months(1)) + days(-1),
+         BILLING_DATE_BOM = floor_date(BILLING_DATE, 'month)'),
          Year = year,
          MONTH_TEXT = format(billing_period_start_date + days(1),'%B'),
          MM_BILLED_PY = lag(total_billing, 12),
@@ -90,7 +91,7 @@ st_billed_for_json <- st_billing %>%
     Y2D_BILLED_DIF_2019 = total_billing_y2d / Y2D_BILLED_2019 -1,
     Y2D_BILLED = round(total_billing_y2d / 1000000, 1)
   ) %>%
-  filter(billing_period_start_date == last_billing_date) %>%
+  filter(BILLING_DATE_BOM == last_billing_date) %>%
   select(iso_2letter,
          BILLING_DATE,
          MONTH_TEXT,
