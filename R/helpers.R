@@ -737,7 +737,8 @@ where (substr(ADEP, 1,2) in ('GC', 'GE', 'LE') or substr(ADES, 1,2) in ('GC', 'G
 
   punct_data_spain_raw <- punct_data_spain_prev %>%
     filter(DAY_DATE < start_date) %>%
-    rbind(punct_data_spain_joined)
+    rbind(punct_data_spain_joined) %>%
+    arrange(DAY_DATE, ISO_2LETTER)
 
   punct_data_spain_raw %>% write_csv(paste0(temp_data_archive, 'punct_data_spain.csv'))
   punct_data_spain_raw %>% write_csv(paste0('G:/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/app/csv/',
