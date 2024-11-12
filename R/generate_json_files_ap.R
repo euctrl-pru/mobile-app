@@ -74,43 +74,30 @@ apt_traffic_delay_last_day <- apt_traffic_delay_data %>%
   ) %>%
   arrange(ARP_NAME, FLIGHT_DATE)
 
-#selecting columns and renaming 
+#selecting columns and renaming
 apt_traffic_for_json <- apt_traffic_delay_last_day %>%
   select(
     ARP_NAME,
     ARP_CODE,
     FLIGHT_DATE,
-    DAY_DEP_ARR, #arrival and departure traffic
-    DAY_DEP,
-    DAY_ARR,
-    DAY_DEP_ARR_DIF_PREV_YEAR_PERC,
-    DAY_DEP_ARR_DIF_2019_PERC,
-    RWK_AVG_DEP_ARR,
-    RWK_AVG_DEP_ARR_PREV_YEAR,
-    #DIF_WEEK_PREV_YEAR_PERC,
-    RWK_DEP_ARR_DIF_2019_PERC,
-    Y2D_DEP_ARR_YEAR,
-    Y2D_AVG_DEP_ARR_YEAR,
-    Y2D_DEP_ARR_DIF_PREV_YEAR_PERC,
-    Y2D_DEP_ARR_DIF_2019_PERC
-  ) %>%
-  rename(
-    APT_NAME = ARP_NAME,
-    APT_CODE = ARP_CODE,
-    DY_TFC = DAY_DEP_ARR,
+    #totals
+    DY_TFC = DAY_DEP_ARR, #arrival and departure traffic
     DY_TFC_DIF_PREV_YEAR_PERC = DAY_DEP_ARR_DIF_PREV_YEAR_PERC,
     DY_TFC_DIF_2019_PERC = DAY_DEP_ARR_DIF_2019_PERC,
+    #week average
     WK_TFC_AVG_ROLLING = RWK_AVG_DEP_ARR,
-    WK_TFC_DIF_PREV_YEAR_PERC = RWK_AVG_DEP_ARR_PREV_YEAR,
+    WK_TFC_DIF_PREV_YEAR_PERC = RWK_DEP_ARR_DIF_PREV_YEAR_PERC,
     WK_TFC_DIF_2019_PERC = RWK_DEP_ARR_DIF_2019_PERC,
+    #year to date
     Y2D_TFC = Y2D_DEP_ARR_YEAR,
-    Y2D_TFC_AVG = Y2D_AVG_DEP_ARR_YEAR
+    Y2D_TFC_AVG = Y2D_AVG_DEP_ARR_YEAR,
+    Y2D_TFC_DIF_PREV_YEAR_PERC = Y2D_DEP_ARR_DIF_PREV_YEAR_PERC,
+    Y2D_TFC_DIF_2019_PERC = Y2D_DEP_ARR_DIF_2019_PERC
   )
 
+
+
 #### Delay data ----
-
-
-#library(zoo)
 
 #arrival delay
 #reading the delay cause sheet
@@ -126,7 +113,7 @@ apt_delay_data <-  read_xlsx(
 #adding columns to the delay data
 
 #adding rolling week average and year-to-date(Y2D)
-apt_delay_data_ <- apt_delay_data %>% 
+apt_delay_data_ <- apt_delay_data %>%
   arrange(FLIGHT_DATE) %>%
   group_by(ARP_CODE) %>%
   mutate(AVG_DLY_ROLLING_WEEK = rollmean( TDM_ARP , 7, align = "right", fill = NA),
@@ -137,7 +124,6 @@ apt_delay_data_ <- apt_delay_data %>%
          Y2D_AVG_DLY = cummean( coalesce( TDM_ARP , 0)),
          Y2D_AVG_TFC = cummean( coalesce( DAY_ARR , 0))) %>%
   ungroup()
-
 
 #adding previous year and 2019 values
 apt_delay_last_day <- apt_delay_data_ %>%
@@ -151,25 +137,25 @@ apt_delay_last_day <- apt_delay_data_ %>%
          DATE_2019 = FLIGHT_DATE-(year ( FLIGHT_DATE ) - 2019)*364 - round((year ( FLIGHT_DATE) - 2019) / 4) * 7) %>%
   arrange(ARP_CODE, FLIGHT_DATE) %>%
   #obtaining data for previous year
-  left_join(apt_delay_data_ %>% select(ARP_CODE, 
-                                       FLIGHT_DATE, 
-                                       DAY_ARR, TDM_ARP, 
-                                       AVG_DLY_ROLLING_WEEK, 
-                                       AVG_TFC_ROLLING_WEEK, 
-                                       Y2D_DLY_YEAR, Y2D_TFC_YEAR, 
-                                       Y2D_AVG_DLY, 
+  left_join(apt_delay_data_ %>% select(ARP_CODE,
+                                       FLIGHT_DATE,
+                                       DAY_ARR, TDM_ARP,
+                                       AVG_DLY_ROLLING_WEEK,
+                                       AVG_TFC_ROLLING_WEEK,
+                                       Y2D_DLY_YEAR, Y2D_TFC_YEAR,
+                                       Y2D_AVG_DLY,
                                        Y2D_AVG_TFC),
             by = join_by(DATE_PREV_YEAR == FLIGHT_DATE, ARP_CODE == ARP_CODE),
             suffix = c("", "_PREV_YEAR"))  %>%
   #obtaining data for 2019
-  left_join(apt_delay_data_ %>% select(ARP_CODE, 
-                                       FLIGHT_DATE, DAY_ARR, 
-                                       TDM_ARP, 
-                                       AVG_DLY_ROLLING_WEEK, 
-                                       AVG_TFC_ROLLING_WEEK, 
-                                       Y2D_DLY_YEAR, 
-                                       Y2D_TFC_YEAR, 
-                                       Y2D_AVG_DLY, 
+  left_join(apt_delay_data_ %>% select(ARP_CODE,
+                                       FLIGHT_DATE, DAY_ARR,
+                                       TDM_ARP,
+                                       AVG_DLY_ROLLING_WEEK,
+                                       AVG_TFC_ROLLING_WEEK,
+                                       Y2D_DLY_YEAR,
+                                       Y2D_TFC_YEAR,
+                                       Y2D_AVG_DLY,
                                        Y2D_AVG_TFC),
             by = join_by(DATE_2019 == FLIGHT_DATE, ARP_CODE == ARP_CODE),
             suffix = c("", "_2019"))
@@ -226,51 +212,33 @@ apt_delay_for_json  <- apt_delay_last_day %>%
     Y2D_DLY_FLT_DIF_2019_PERC = if_else(
       Y2D_DLY_FLT_2019 == 0, NA , Y2D_DLY_FLT / Y2D_DLY_FLT_2019 -1
     )
-    
+
   ) %>%
   select(
     ARP_CODE,
     ARP_NAME,
     FLIGHT_DATE,
-    
-    DAY_DLY,
-    DAY_DLY_DIF_PREV_YEAR_PERC,
-    DAY_DLY_DIF_2019_PERC,
-    DAY_DLY_FLT,
-    DAY_DLY_FLT_DIF_PY_PERC,
-    DAY_DLY_FLT_DIF_2019_PERC,
-    
-    AVG_DLY_ROLLING_WEEK,
-    DIF_DLY_ROLLING_WEEK_PREV_YEAR_PERC,
-    DIF_DLY_ROLLING_WEEK_2019_PERC,
-    WEEK_DLY_FLT,
-    WEEK_DLY_FLT_DIF_PY_PERC,
-    WEEK_DLY_FLT_DIF_2019_PERC,
-    
-    Y2D_AVG_DLY_YEAR,
-    Y2D_DLY_DIF_PREV_YEAR_PERC,
-    Y2D_DLY_DIF_2019_PERC,
-    Y2D_DLY_FLT,
-    Y2D_DLY_FLT_DIF_PY_PERC,
-    Y2D_DLY_FLT_DIF_2019_PERC
-  ) %>%
-  rename(
+
     DY_DLY = DAY_DLY,
     DY_DLY_DIF_PREV_YEAR_PERC = DAY_DLY_DIF_PREV_YEAR_PERC,
     DY_DLY_DIF_2019_PERC = DAY_DLY_DIF_2019_PERC,
-    DY_DLY_FLT = DAY_DLY_FLT,
+    DAY_DLY_FLT,
     DY_DLY_FLT_DIF_PREV_YEAR_PERC = DAY_DLY_FLT_DIF_PY_PERC,
     DY_DLY_FLT_DIF_2019_PERC = DAY_DLY_FLT_DIF_2019_PERC,
-    
+
     WK_DLY_AVG_ROLLING = AVG_DLY_ROLLING_WEEK,
     WK_DLY_DIF_PREV_YEAR_PERC = DIF_DLY_ROLLING_WEEK_PREV_YEAR_PERC,
     WK_DLY_DIF_2019_PERC = DIF_DLY_ROLLING_WEEK_2019_PERC,
     WK_DLY_FLT = WEEK_DLY_FLT,
     WK_DLY_FLT_DIF_PREV_YEAR_PERC = WEEK_DLY_FLT_DIF_PY_PERC,
     WK_DLY_FLT_DIF_2019_PERC = WEEK_DLY_FLT_DIF_2019_PERC,
-    
+
     Y2D_DLY_AVG = Y2D_AVG_DLY_YEAR,
-    Y2D_DLY_FLT_DIF_PREV_YEAR_PERC = Y2D_DLY_FLT_DIF_PY_PERC
+    Y2D_DLY_DIF_PREV_YEAR_PERC,
+    Y2D_DLY_DIF_2019_PERC,
+    Y2D_DLY_FLT,
+    Y2D_DLY_FLT_DIF_PREV_YEAR_PERC = Y2D_DLY_FLT_DIF_PY_PERC,
+    Y2D_DLY_FLT_DIF_2019_PERC
   ) %>%
   arrange(ARP_CODE,
           ARP_NAME)
@@ -280,11 +248,12 @@ apt_delay_for_json  <- apt_delay_last_day %>%
 
 query <- "WITH
   --Getting the list of airports
-  AP_LIST AS ( 
-  SELECT distinct ICAO_CODE as icao_code
+  AP_LIST AS (
+  SELECT
+              distinct ICAO_CODE as icao_code
   FROM LDW_VDM.VIEW_FAC_PUNCTUALITY_AP_DAY
   order by ICAO_CODE
-  ), 
+  ),
   --creating a table with the airport codes and dates since 2019
   AP_DAY AS
   (SELECT
@@ -299,27 +268,29 @@ query <- "WITH
       FROM AP_LIST a, pru_time_references t
       WHERE
          t.day_date >= to_date('24-12-2018','DD-MM-YYYY')
-         AND t.day_date < trunc(sysdate))
-    --Joining the airport dates table with the aiport punctuality table    
-    SELECT a.*,
-    AP_DESC, 
-    DEP_PUNCTUALITY_PERCENTAGE ,
-    DEPARTURE_FLIGHTS , 
-    AVG_DEPARTURE_SCHEDULE_DELAY ,
-    ARR_PUNCTUALITY_PERCENTAGE ,
-    ARRIVAL_FLIGHTS , 
-    AVG_ARRIVAL_SCHEDULE_DELAY , 
-    MISSING_SCHEDULES_PERCENTAGE ,
-    DEP_PUNCTUAL_FLIGHTS, 
-    ARR_PUNCTUAL_FLIGHTS , 
-    DEP_SCHED_DELAY , 
-    ARR_SCHED_DELAY ,
-    MISSING_SCHED_FLIGHTS , 
-    DEP_SCHEDULE_FLIGHT , 
-    ARR_SCHEDULE_FLIGHT , 
-    DEP_FLIGHTS_NO_OVERFLIGHTS 
+         AND t.day_date < trunc(sysdate)
+         )
+    --Joining the airport dates table with the aiport punctuality table
+    SELECT
+              a.*,
+              AP_DESC,
+              DEP_PUNCTUALITY_PERCENTAGE ,
+              DEPARTURE_FLIGHTS ,
+              AVG_DEPARTURE_SCHEDULE_DELAY ,
+              ARR_PUNCTUALITY_PERCENTAGE ,
+              ARRIVAL_FLIGHTS ,
+              AVG_ARRIVAL_SCHEDULE_DELAY ,
+              MISSING_SCHEDULES_PERCENTAGE ,
+              DEP_PUNCTUAL_FLIGHTS,
+              ARR_PUNCTUAL_FLIGHTS ,
+              DEP_SCHED_DELAY ,
+              ARR_SCHED_DELAY ,
+              MISSING_SCHED_FLIGHTS ,
+              DEP_SCHEDULE_FLIGHT ,
+              ARR_SCHEDULE_FLIGHT ,
+              DEP_FLIGHTS_NO_OVERFLIGHTS
       FROM AP_DAY a
-      left join LDW_VDM.VIEW_FAC_PUNCTUALITY_AP_DAY b 
+      left join LDW_VDM.VIEW_FAC_PUNCTUALITY_AP_DAY b
       on a.ICAO_CODE = b.\"ICAO_CODE\" AND a.day_date = b.\"DATE\"
 "
 
@@ -334,6 +305,8 @@ last_day_punct <-  min(max(ap_punct_raw$DAY_DATE),
 #selecting the year for which we have the latest traffic data
 last_year_punct <- as.numeric(format(last_day_punct,'%Y'))
 
+
+##### Punctuality data totals----
 #preparing the data
 ap_punct_data <- ap_punct_raw %>%
   group_by(ICAO_CODE, DAY_DATE) %>%
@@ -342,13 +315,13 @@ ap_punct_data <- ap_punct_raw %>%
     ARR_SCHEDULE_FLIGHT = sum( ARR_SCHEDULE_FLIGHT , na.rm = TRUE),
     DEP_PUNCTUAL_FLIGHTS = sum( DEP_PUNCTUAL_FLIGHTS , na.rm = TRUE),
     DEP_SCHEDULE_FLIGHT = sum( DEP_SCHEDULE_FLIGHT , na.rm = TRUE)
-  ) %>% 
+  ) %>%
   arrange( ICAO_CODE, DAY_DATE ) %>%
   mutate(
     YEAR = lubridate::year(DAY_DATE),
     #ARR_PUNCTUAL_FLIGHTS = 0,  ## to hide the figures
     #DEP_PUNCTUAL_FLIGHTS = 0,  ## to hide the figures
-    
+
     DAY_ARR_PUNCT = if_else(
       ARR_SCHEDULE_FLIGHT == 0 , 0 , ARR_PUNCTUAL_FLIGHTS / ARR_SCHEDULE_FLIGHT * 100
       ),
@@ -358,10 +331,10 @@ ap_punct_data <- ap_punct_raw %>%
     #previous year
     DAY_ARR_PUNCT_PY = lag( DAY_ARR_PUNCT , 364),
     DAY_DEP_PUNCT_PY = lag( DAY_DEP_PUNCT , 364),
-    DAY_ARR_PUNCT_2019 =if_else(
-      YEAR == last_year_punct , lag( DAY_ARR_PUNCT ,  364 * (last_year_punct - 2019) + floor((last_year_punct - 2019) / 4) * 7), NA 
-      ),
     #2019
+    DAY_ARR_PUNCT_2019 =if_else(
+      YEAR == last_year_punct , lag( DAY_ARR_PUNCT ,  364 * (last_year_punct - 2019) + floor((last_year_punct - 2019) / 4) * 7), NA
+      ),
     DAY_DEP_PUNCT_2019 =if_else(
       YEAR == last_year_punct , lag(DAY_DEP_PUNCT, 364 * (last_year_punct - 2019) + floor((last_year_punct - 2019) / 4) * 7), NA
       ),
@@ -393,26 +366,11 @@ ap_punct_data <- ap_punct_raw %>%
          WEEK_DEP_PUNCT_DIF_2019 = WEEK_DEP_PUNCT - WEEK_DEP_PUNCT_2019
   )
 
-#filtering the data and selecting aqnd renaming columns
+#filtering the data and selecting and renaming columns
 ap_punct_d_w <- ap_punct_data %>%
   filter (DAY_DATE == last_day_punct) %>%
   select(
     ICAO_CODE,
-    DAY_DATE,
-    DAY_ARR_PUNCT,
-    DAY_DEP_PUNCT,
-    DAY_ARR_PUNCT_DIF_PY,
-    DAY_DEP_PUNCT_DIF_PY,
-    DAY_ARR_PUNCT_DIF_2019,
-    DAY_DEP_PUNCT_DIF_2019,
-    WEEK_ARR_PUNCT,
-    WEEK_DEP_PUNCT,
-    WEEK_ARR_PUNCT_DIF_PY,
-    WEEK_DEP_PUNCT_DIF_PY,
-    WEEK_ARR_PUNCT_DIF_2019,
-    WEEK_DEP_PUNCT_DIF_2019
-  ) %>%
-  rename(
     FLIGHT_DATE = DAY_DATE,
     DY_ARR_PUN = DAY_ARR_PUNCT,
     DY_DEP_PUN = DAY_DEP_PUNCT,
@@ -428,6 +386,9 @@ ap_punct_d_w <- ap_punct_data %>%
     WK_DEP_PUN_DIF_2019 = WEEK_DEP_PUNCT_DIF_2019
   )
 
+
+
+##### Punctuality data Year to Date----
 ap_punct_y2d <- ap_punct_raw %>%
   arrange(ICAO_CODE, DAY_DATE) %>%
   mutate(
@@ -459,17 +420,16 @@ ap_punct_y2d <- ap_punct_raw %>%
          Y2D_DEP_PUN_DIF_2019
   )
 
+#merging the totals and the year to date data
 apt_punct_for_json <- merge(ap_punct_d_w, ap_punct_y2d, by= c("ICAO_CODE", "ICAO_CODE"))
 #selecting only the airports in the excel list (i.e. the 40 main airports)
-apt_punct_for_json <- ap_punct_for_json %>% 
-  inner_join(apt_icao, by = join_by(ICAO_CODE==apt_icao_code),keep=FALSE) 
-
-#### CO2 data ----
+apt_punct_for_json <- apt_punct_for_json %>%
+  inner_join(apt_icao, by = join_by(ICAO_CODE==apt_icao_code),keep=FALSE)
 
 #### Join strings and save  ----
-apt_json_app_j <- apt_icao %>% arrange(apt_name) 
-apt_json_app_j$apt_traffic <- select(arrange(apt_traffic_for_json, APT_NAME), -c(APT_NAME, APT_CODE))
-#ao_json_app_j$ao_delay <- select(arrange(ao_delay_for_json, AO_GRP_NAME), -c(AO_GRP_CODE, AO_GRP_NAME))
+apt_json_app_j <- apt_icao %>% arrange(apt_name)
+apt_json_app_j$apt_traffic <- select(arrange(apt_traffic_for_json, ARP_NAME), -c(ARP_NAME, ARP_CODE))
+apt_json_app_j$apt_delay <- select(arrange(apt_delay_for_json, ARP_NAME), -c(ARP_NAME, ARP_CODE))
 apt_json_app_j$apt_punct <- select(arrange(apt_punct_for_json, apt_name), -c(ICAO_CODE,  apt_name))
 
 #ao_json_app_j$ao_billed <- select(arrange(ao_billed_for_json, AO_GRP_NAME), -c(AO_GRP_CODE, AO_GRP_NAME))
@@ -486,12 +446,12 @@ apt_json_app_j <- apt_json_app_j %>%   group_by(apt_icao_code, apt_name)
 apt_json_app <- apt_json_app_j %>%
   toJSON(., pretty = TRUE)
 
-save_json(apt_json_app, "ao_json_app")
+save_json(apt_json_app, "apt_json_app")
 
 
 
 # last line of this section
-save_json(apt_json_app, "apt_json_app", archive_file = FALSE)
+#save_json(apt_json_app, "apt_json_app", archive_file = FALSE)
 
 
 
@@ -508,5 +468,5 @@ save_json(apt_json_app, "apt_json_app", archive_file = FALSE)
 
 
 # last line of this seciton
-save_json(ap_ao_traffic_j, "ap_ao_traffic", archive_file = FALSE)
+#save_json(ap_ao_traffic_j, "ap_ao_traffic", archive_file = FALSE)
 
