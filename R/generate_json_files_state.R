@@ -646,7 +646,7 @@ if (exists("co2_data_raw") == FALSE) {co2_data_raw <- get_co2_data()}
 st_co2_data_filtered <- co2_data_raw %>%
   mutate(co2_state = STATE_NAME) %>%
   right_join(state_co2, by = "co2_state") %>%
-  select(-c(STATE_NAME, STATE_CODE, co2_state, CREA_DATE) )
+  select(-c(STATE_NAME, STATE_CODE, co2_state) )
 
 st_co2_data <- st_co2_data_filtered %>%
   select(iso_2letter,
