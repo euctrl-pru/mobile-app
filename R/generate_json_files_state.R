@@ -2986,7 +2986,7 @@ st_co2_data_filtered <- co2_data_raw %>%
   mutate(co2_state = STATE_NAME) %>%
   right_join(state_co2, by = "co2_state") %>%
   left_join(state_iso, by = "iso_2letter") %>%
-  select(-c(STATE_NAME, STATE_CODE, co2_state, CREA_DATE) )
+  select(-c(STATE_NAME, STATE_CODE, co2_state))
 
 st_co2_evo <- st_co2_data_filtered %>%
   filter(YEAR >= 2019,
