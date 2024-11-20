@@ -16,15 +16,16 @@ library(RODBC)
 
 
 # functions ----
-source(here::here("R", "helpers.R"))
+source(here::here("..", "mobile-app", "R", "helpers.R"))
+
 
 
 # Parameters ----
-source(here("R", "params.R"))
+source(here("..", "mobile-app", "R", "params.R"))
 
 
 # Queries ----
-source(here("R", "queries_ap.R"))
+source(here("..", "mobile-app", "R", "queries_ap.R"))
 
 
 # airport dimension table (lists the airports and their ICAO codes)
