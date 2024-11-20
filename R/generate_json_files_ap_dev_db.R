@@ -38,8 +38,6 @@ if (exists("apt_icao") == FALSE) {
     as_tibble()
 }
 
-apt_icao
-
 # archive mode for past dates
 if (exists("archive_mode") == FALSE) {archive_mode <- FALSE}
 if (exists("data_day_date") == FALSE) {
@@ -109,7 +107,7 @@ apt_ao_data_day_int <- apt_ao_day |>
     APT_TFC_AO_GRP_DIF = CURRENT_DAY - DAY_PREV_WEEK
   )
 
-ap_apt_data_day <- ap_ao_data_day_int |>
+ap_apt_data_day <- apt_ao_data_day_int |>
   select(
     APT_RANK,
     DY_RANK_DIF_PREV_WEEK,
