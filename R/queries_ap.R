@@ -41,7 +41,7 @@ as
  from LIST_AIRPORT a, pru_time_references t
 where
       t.day_date >= to_date('24-12-2018','dd-mm-yyyy')
- -- AND t.day_date < TRUNC (SYSDATE)
+ -- AND t.day_date < ", mydate, "
 ),
 
 
@@ -371,13 +371,13 @@ AIRP_CALC as
             THEN Y2D_AVG_DEP_ARR_YEAR / Y2D_AVG_DEP_ARR_2019 -1
             ELSE NULL
        END Y2D_DEP_ARR_DIF_2019_PERC,
-       trunc(sysdate) - 1 as LAST_DATA_DAY
+       ", mydate, " - 1 as LAST_DATA_DAY
 
 
      FROM AIRP_CACL_PREV
 --      where flight_date >=to_date('30-12-2018','DD-MM-YYYY')
-     where flight_DATE >=to_date('01-01-'|| extract(year from (trunc(sysdate)-1)),'dd-mm-yyyy') AND
-     flight_DATE <=to_date('31-12-'|| extract(year from (trunc(sysdate)-1)),'dd-mm-yyyy')")
+     where flight_DATE >=to_date('01-01-'|| extract(year from (", mydate, "-1)),'dd-mm-yyyy') AND
+     flight_DATE <=to_date('31-12-'|| extract(year from (", mydate, "-1)),'dd-mm-yyyy')")
 
 
 
@@ -410,7 +410,7 @@ as
   from LIST_AIRPORT a, pru_time_references t
   where
   t.day_date >= to_date('24-12-2018','dd-mm-yyyy')
---  AND t.day_date < TRUNC (SYSDATE)
+--  AND t.day_date < ", mydate, "
 ),
 
 arp_SYN_ARR
@@ -1127,7 +1127,7 @@ query_ap_punct <- paste0("WITH
       FROM LIST_AIRPORT a, pru_time_references t
       WHERE
          t.day_date >= to_date('24-12-2018','DD-MM-YYYY')
-         AND t.day_date < trunc(sysdate)
+         AND t.day_date < ", mydate, "
          )
     --Joining the airport dates table with the aiport punctuality table
     SELECT
@@ -1154,6 +1154,7 @@ query_ap_punct <- paste0("WITH
 ")
 
 
+
 #check how long the query takes (must have generate_json_file open to install libraries)
 #start.time <- Sys.time()
 #aptt_punct_raw <- export_query(query_ap_punct) %>%
@@ -1163,3 +1164,1376 @@ query_ap_punct <- paste0("WITH
 #time.taken <- end.time - start.time
 #time.taken
 
+# apt ao ----
+## day ----
+query_ap_ao_data_day_raw <- function(mydate_string) {
+  mydate <- date_sql_string(mydate_string)
+  paste0 ("
+WITH
+
+DIM_AO
+ as ( select  ao_code, ao_name, ao_grp_code, ao_grp_name, ao_nm_group_code, ao_nm_group_name  from  prudev.v_covid_dim_ao) ,
+
+DIM_APT as
+(select code as arp_code,
+        id as arp_id ,
+       dashboard_name as arp_name
+ from pru_airport where code in ('",paste0(apt_icao$apt_icao_code, collapse = "','"),"'
+          )
+ )
+
+
+, DATA_SOURCE as (
+SELECT
+        A.flt_dep_ad as dep_ARP_CODE
+        ,A.flt_ctfm_ades as arr_ARP_CODE,
+        b.arp_name  as dep_arp_name,
+        c.arp_name as arr_arp_name,
+        nvl(d.ao_grp_code,'Unidentified')ao_grp_code, nvl(d.ao_grp_name,'Unidentified') ao_grp_name,
+        TRUNC(A.flt_a_asp_prof_time_entry) ENTRY_DATE,
+        A.flt_uid
+FROM v_aiu_flt A
+     left outer  join DIM_APT b ON  ( A.flt_dep_ad=  b.arp_code)
+     left outer join DIM_APT C  ON  (A.flt_ctfm_ades = C.arp_code)
+     left outer join DIM_AO d  on ( (a.ao_icao_id = d.ao_code ) )
+WHERE
+     (  (  A.flt_lobt >=  ", mydate, " - 1 -2
+    AND A.flt_lobt <  ", mydate, " + 2
+    AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -  1
+    AND A.flt_a_asp_prof_time_entry <  ", mydate, " )
+ OR
+ (  A.flt_lobt >=  ", mydate, "-1 - 2 -  ((extract (year from (", mydate, "-1))-2019) *364) - floor((extract (year from (", mydate, "-1))-2019)/4)*7
+    AND A.flt_lobt <   ", mydate, " +2 - ((extract (year from (", mydate, "-1))-2019) *364) - floor((extract (year from (", mydate, "-1))-2019)/4)*7
+    AND A.flt_a_asp_prof_time_entry >=   ", mydate, " - 1 - ((extract (year from (", mydate, "-1))-2019) *364) - floor((extract (year from (", mydate, "-1))-2019)/4)*7
+    AND A.flt_a_asp_prof_time_entry <   ", mydate, " - ((extract (year from (", mydate, "-1))-2019) *364) - floor((extract (year from (", mydate, "-1))-2019)/4)*7
+ )
+OR
+ (  A.flt_lobt >=  ", mydate, " -364 -1 -2
+    AND A.flt_lobt <   ", mydate, " - 364 + 2
+    AND A.flt_a_asp_prof_time_entry >=   ", mydate, " - 364 -  1
+    AND A.flt_a_asp_prof_time_entry <   ", mydate, " - 364
+  )
+  OR
+ (  A.flt_lobt >=  ", mydate, " -7 -1 -2
+    AND A.flt_lobt <   ", mydate, " - 7 + 2
+    AND A.flt_a_asp_prof_time_entry >=   ", mydate, " - 1 -  7
+    AND A.flt_a_asp_prof_time_entry <   ", mydate, " - 7
+  )
+
+)
+    AND A.flt_state IN ('TE','TA','AA')
+
+),
+
+
+
+DATA_DEP AS (
+(SELECT
+        dep_ARP_CODE as ARP_CODE,
+        dep_arp_name as arp_name ,
+        a.ENTRY_DATE,
+        ao_grp_code,ao_grp_name,
+        COUNT(a.flt_uid) DEP_ARR
+FROM DATA_SOURCE a
+GROUP BY
+        dep_ARP_CODE,
+        dep_arp_name  ,
+        ENTRY_DATE,
+        ao_grp_code,ao_grp_name
+)
+),
+
+DATA_ARR AS (
+SELECT
+       arr_ARP_CODE as ARP_CODE,
+        ARR_arp_name as arp_name ,
+        ENTRY_DATE,
+        ao_grp_code,ao_grp_name,
+        COUNT(a.flt_uid) DEP_ARR
+FROM DATA_SOURCE a
+WHERE ARR_arp_name is not null
+GROUP BY  arr_ARP_CODE,
+          ARR_arp_name  ,
+          ENTRY_DATE,
+          ao_grp_code,ao_grp_name
+),
+
+
+DATA_DAY as
+(SELECT
+          coalesce(a.entry_date, b.entry_date) as entry_date,
+          coalesce(a.ARP_CODE,b.ARP_CODE) as ARP_CODE,
+          coalesce( a.arp_name,b.arp_name) as arp_name,
+          coalesce(  a.ao_grp_code,b.ao_grp_code) as ao_grp_code, coalesce(  a.ao_grp_name,b.ao_grp_name) as ao_grp_name,
+          coalesce(a.DEP_ARR,0)  + coalesce( b.DEP_ARR,0)  as DEP_ARR
+FROM DATA_DEP a full outer join DATA_ARR b  on (a.ARP_CODE = b.ARP_CODE  and a.entry_date = b.entry_date and a.ao_grp_code = b.ao_grp_code)
+
+),
+
+DATA_PERIOD as
+ (
+ SELECT
+      entry_date,
+      ao_grp_code, ao_grp_name,
+      ARP_CODE,
+      arp_name,
+      case
+                     when (a.entry_date >= ", mydate, "-1  AND a.entry_date < ", mydate, ") then 'CURRENT_DAY'
+                     when  (a.entry_date >= ", mydate, " -1 - ((extract (year from (", mydate, "-1))-2019) *364) - floor((extract (year from (", mydate, "-1))-2019)/4)*7
+                           AND a.entry_date <  ", mydate, " - ((extract (year from (", mydate, "-1))-2019) *364)- floor((extract (year from (", mydate, "-1))-2019)/4)*7 )
+                        then 'DAY_2019'
+                     when  (a.entry_date >= ", mydate, " - 1 - 364    AND a.entry_date <  ", mydate, " - 364) then 'DAY_PREV_YEAR'
+                     when   (a.entry_date >= ", mydate, " - 1 - 7    AND a.entry_date <  ", mydate, " - 7) then  'DAY_PREV_WEEK'
+        end FLAG_DAY,
+     DEP_ARR
+  FROM DATA_DAY a
+
+  ),
+
+DATA_GRP as
+(
+SELECT
+      a.FLAG_DAY
+      ,max(entry_date) as to_date
+      , a.ao_grp_code, a.ao_grp_name
+      ,a.ARP_CODE
+      ,a.arp_name
+     ,SUM (DEP_ARR)  DEP_ARR
+   --  ,SUM (DEP_ARR) / 7 as avg_DEP_ARR
+
+FROM DATA_PERIOD a
+WHERE a.ARP_CODE in (select arp_code from DIM_APT) AND a.ao_grp_name <> 'Unidentified'
+GROUP BY a.FLAG_DAY
+      , ARP_CODE
+      , arp_name
+       , a.ao_grp_code, a.ao_grp_name
+),
+
+APT_AO_RANK as
+(
+SELECT
+  ARP_CODE, FLAG_DAY, ao_grp_code,
+        ROW_NUMBER() OVER (PARTITION BY  ARP_CODE, FLAG_DAY
+                ORDER BY DEP_ARR DESC, ao_grp_name) R_RANK,
+        RANK() OVER (PARTITION BY  ARP_CODE, FLAG_DAY
+                ORDER BY DEP_ARR DESC, ao_grp_name) RANK
+FROM DATA_GRP
+where FLAG_DAY = 'CURRENT_DAY'
+),
+
+APT_AO_RANK_PREV as
+(
+SELECT
+  ARP_CODE, FLAG_DAY, ao_grp_code,
+        ROW_NUMBER() OVER (PARTITION BY  ARP_CODE, FLAG_DAY
+                ORDER BY DEP_ARR DESC, ao_grp_name) RANK_PREV
+ FROM DATA_GRP
+where FLAG_DAY = 'DAY_PREV_WEEK'
+)
+
+SELECT
+      a.ARP_CODE
+      ,a.arp_name
+      , a.FLAG_DAY
+      ,to_date
+      ,", mydate, "-1 as last_data_day
+      , a.ao_grp_code, a.ao_grp_name
+     ,DEP_ARR
+     , R_RANK,rank, rank_prev
+
+FROM DATA_GRP a
+ left join APT_AO_RANK b on a.ARP_CODE = b.ARP_CODE AND a.ao_grp_code = b.ao_grp_code
+ left join APT_AO_RANK_PREV c on a.ARP_CODE = c.ARP_CODE AND a.ao_grp_code = c.ao_grp_code
+where R_RANK <=10
+order by ARP_CODE, flag_day, R_RANK
+
+")}
+
+## week ----
+query_ap_ao_data_week_raw <- function(mydate_string) {
+  mydate <- date_sql_string(mydate_string)
+  paste0 ("
+  WITH
+
+DIM_AO
+ as ( select  ao_code, ao_name, ao_grp_code, ao_grp_name, ao_nm_group_code, ao_nm_group_name  from  prudev.v_covid_dim_ao) ,
+
+DIM_APT as
+(select code as arp_code,
+        id as arp_id ,
+       dashboard_name as arp_name
+ from pru_airport where code in ('",paste0(apt_icao$apt_icao_code, collapse = "','"),"'
+          )
+ )
+
+, DATA_SOURCE as (
+SELECT
+        A.flt_dep_ad as dep_ARP_CODE
+        ,A.flt_ctfm_ades as arr_ARP_CODE,
+        b.arp_name  as dep_arp_name,
+        c.arp_name as arr_arp_name,
+        nvl(d.ao_grp_code,'Unidentified')ao_grp_code, nvl(d.ao_grp_name,'Unidentified') ao_grp_name,
+        TRUNC(A.flt_a_asp_prof_time_entry) ENTRY_DATE,
+        A.flt_uid
+FROM v_aiu_flt A
+     left outer  join DIM_APT b ON  ( A.flt_dep_ad=  b.arp_code)
+     left outer join DIM_APT C  ON  (A.flt_ctfm_ades = C.arp_code)
+     left outer join DIM_AO d  on ( (a.ao_icao_id = d.ao_code ) )
+WHERE
+     (  (  A.flt_lobt >=  ", mydate, " - 7 -2
+    AND A.flt_lobt <  ", mydate, " + 2
+    AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -  7
+    AND A.flt_a_asp_prof_time_entry <  ", mydate, " )
+ OR
+ (  A.flt_lobt >=  ", mydate, "-7 - 2 -  ((extract (year from (", mydate, "-1))-2019) *364) - floor((extract (year from (", mydate, "-1))-2019)/4)*7
+    AND A.flt_lobt <   ", mydate, " +2 - ((extract (year from (", mydate, "-1))-2019) *364) - floor((extract (year from (", mydate, "-1))-2019)/4)*7
+    AND A.flt_a_asp_prof_time_entry >=   ", mydate, " - 7 - ((extract (year from (", mydate, "-1))-2019) *364) - floor((extract (year from (", mydate, "-1))-2019)/4)*7
+    AND A.flt_a_asp_prof_time_entry <   ", mydate, " - ((extract (year from (", mydate, "-1))-2019) *364) - floor((extract (year from (", mydate, "-1))-2019)/4)*7
+ )
+OR
+ (  A.flt_lobt >=  ", mydate, " -364 -7 -2
+    AND A.flt_lobt <   ", mydate, " - 364 + 2
+    AND A.flt_a_asp_prof_time_entry >=   ", mydate, " - 364 -  7
+    AND A.flt_a_asp_prof_time_entry <   ", mydate, " - 364
+  )
+OR
+ (  A.flt_lobt >=  ", mydate, " -7 -7 -2
+    AND A.flt_lobt <   ", mydate, " - 7 + 2
+    AND A.flt_a_asp_prof_time_entry >=   ", mydate, " - 7 -  7
+    AND A.flt_a_asp_prof_time_entry <   ", mydate, " - 7
+  )
+
+)
+    AND A.flt_state IN ('TE','TA','AA')
+
+),
+
+
+
+
+DATA_DEP AS (
+(SELECT
+        dep_ARP_CODE as ARP_CODE,
+        dep_arp_name as arp_name ,
+        a.ENTRY_DATE,
+        ao_grp_code,ao_grp_name,
+        COUNT(a.flt_uid) DEP_ARR
+FROM DATA_SOURCE a
+GROUP BY
+        dep_ARP_CODE,
+        dep_arp_name  ,
+        ENTRY_DATE,
+        ao_grp_code,ao_grp_name
+)
+),
+
+DATA_ARR AS (
+SELECT
+       arr_ARP_CODE as ARP_CODE,
+        ARR_arp_name as arp_name ,
+        ENTRY_DATE,
+        ao_grp_code,ao_grp_name,
+        COUNT(a.flt_uid) DEP_ARR
+FROM DATA_SOURCE a
+WHERE ARR_arp_name is not null
+GROUP BY  arr_ARP_CODE,
+          ARR_arp_name  ,
+          ENTRY_DATE,
+          ao_grp_code,ao_grp_name
+),
+
+
+DATA_DAY as
+(SELECT
+          coalesce(a.entry_date, b.entry_date) as entry_date,
+          coalesce(a.ARP_CODE,b.ARP_CODE) as ARP_CODE,
+          coalesce( a.arp_name,b.arp_name) as arp_name,
+          coalesce(  a.ao_grp_code,b.ao_grp_code) as ao_grp_code, coalesce(  a.ao_grp_name,b.ao_grp_name) as ao_grp_name,
+          coalesce(a.DEP_ARR,0)  + coalesce( b.DEP_ARR,0)  as DEP_ARR
+FROM DATA_DEP a full outer join DATA_ARR b  on (a.ARP_CODE = b.ARP_CODE  and a.entry_date = b.entry_date and a.ao_grp_code = b.ao_grp_code)
+
+),
+
+DATA_PERIOD as
+ (
+ SELECT
+      entry_date,
+      ao_grp_code, ao_grp_name,
+      ARP_CODE,
+      arp_name,
+      case
+                     when (a.entry_date >= ", mydate, "-7  AND a.entry_date < ", mydate, ") then 'CURRENT_ROLLING_WEEK'
+                     when  (a.entry_date >= ", mydate, " -7 - ((extract (year from (", mydate, "-1))-2019) *364) - floor((extract (year from (", mydate, "-1))-2019)/4)*7
+                           AND a.entry_date <  ", mydate, " - ((extract (year from (", mydate, "-1))-2019) *364)- floor((extract (year from (", mydate, "-1))-2019)/4)*7 )
+                        then 'ROLLING_WEEK_2019'
+                     when  (a.entry_date >= ", mydate, " - 7 - 364    AND a.entry_date <  ", mydate, " - 364) then 'ROLLING_WEEK_PREV_YEAR'
+                     when   (a.entry_date >= ", mydate, " - 7 - 7    AND a.entry_date <  ", mydate, " - 7) then  'PREV_ROLLING_WEEK'
+        end PERIOD_TYPE,
+     DEP_ARR
+  FROM DATA_DAY a
+
+  ),
+
+DATA_GRP as
+(
+SELECT
+      a.period_type
+      ,min(entry_date) as from_date
+      ,max(entry_date) as to_date
+      , a.ao_grp_code, a.ao_grp_name
+      ,a.ARP_CODE
+      ,a.arp_name
+     ,SUM (DEP_ARR)  DEP_ARR
+   --  ,SUM (DEP_ARR) / 7 as avg_DEP_ARR
+
+FROM DATA_PERIOD a
+WHERE a.ARP_CODE in (select arp_code from DIM_APT) AND a.ao_grp_name <> 'Unidentified'
+GROUP BY a.period_type
+      , ARP_CODE
+      , arp_name
+       , a.ao_grp_code, a.ao_grp_name
+),
+
+APT_AO_RANK as
+(
+SELECT
+  ARP_CODE, period_type, ao_grp_code,
+        ROW_NUMBER() OVER (PARTITION BY  ARP_CODE, period_type
+                ORDER BY DEP_ARR DESC, ao_grp_name) R_RANK,
+        RANK() OVER (PARTITION BY  ARP_CODE, period_type
+                ORDER BY DEP_ARR DESC, ao_grp_name) RANK
+FROM DATA_GRP
+where period_type = 'CURRENT_ROLLING_WEEK'
+),
+
+APT_AO_RANK_PREV as
+(
+SELECT
+  ARP_CODE, period_type, ao_grp_code,
+        RANK() OVER (PARTITION BY  ARP_CODE, period_type
+                ORDER BY DEP_ARR DESC, ao_grp_name) RANK_PREV
+ FROM DATA_GRP
+where period_type = 'PREV_ROLLING_WEEK'
+)
+
+SELECT
+      a.ARP_CODE
+      ,a.arp_name
+      , a.period_type
+      ,from_date
+      ,to_date
+      ,", mydate, "-1 as last_data_day
+      , a.ao_grp_code, a.ao_grp_name
+     ,DEP_ARR
+     , R_RANK, rank, rank_prev
+
+FROM DATA_GRP a
+ left join APT_AO_RANK b on a.ARP_CODE = b.ARP_CODE AND a.ao_grp_code = b.ao_grp_code
+ left join APT_AO_RANK_PREV c on a.ARP_CODE = c.ARP_CODE AND a.ao_grp_code = c.ao_grp_code
+where R_RANK <=10
+order by ARP_CODE, period_type, R_RANK
+"
+  )
+  }
+
+## y2d ----
+query_ap_ao_data_y2d_raw <- function(mydate_string) {
+  mydate <- date_sql_string(mydate_string)
+  paste0 ("
+  WITH
+
+DIM_AO
+ as ( select  ao_code, ao_name, ao_grp_code, ao_grp_name, ao_nm_group_code, ao_nm_group_name  from  prudev.v_covid_dim_ao) ,
+
+DIM_APT as
+(select code as arp_code,
+        id as arp_id ,
+       dashboard_name as arp_name
+ from pru_airport where code in ('",paste0(apt_icao$apt_icao_code, collapse = "','"),"'
+          )
+),
+
+
+DATA_DAY as
+(SELECT
+        A.flt_dep_ad as dep_arp_code
+        ,A.flt_ctfm_ades as arr_arp_code,
+        b.arp_name  as dep_arp_name,
+        c.arp_name as arr_arp_name,
+        nvl(d.ao_grp_code,'UNKNOWN')ao_grp_code, nvl(d.ao_grp_name,'UNKNOWN') ao_grp_name,
+        TRUNC(A.flt_a_asp_prof_time_entry) ENTRY_DATE,
+        A.flt_uid
+FROM v_aiu_flt A
+     left outer  join DIM_APT b ON  ( A.flt_dep_ad=  b.arp_code)
+     left outer join DIM_APT C  ON  (A.flt_ctfm_ades = C.arp_code)
+     left outer join DIM_AO d  on ( (a.ao_icao_id = d.ao_code ) )
+WHERE
+     A.flt_lobt>= TO_DATE ('01-01-2019', 'dd-mm-yyyy') -1   AND A.flt_lobt < ", mydate, "
+    --  AND TO_NUMBER (TO_CHAR (TRUNC ( A.flt_lobt), 'mmdd')) <   TO_NUMBER (TO_CHAR (TRUNC (SYSDATE+1), 'mmdd'))
+     AND flt_a_asp_prof_time_entry >= TO_DATE ('01-01-2019', 'dd-mm-yyyy')
+     AND TO_NUMBER (TO_CHAR (TRUNC (flt_a_asp_prof_time_entry), 'mmdd')) <=   TO_NUMBER (TO_CHAR (", mydate, "-1, 'mmdd'))
+       and extract (year from flt_a_asp_prof_time_entry) <= extract(year from (", mydate, "-1))
+     AND A.flt_state IN ('TE', 'TA', 'AA')
+),
+
+
+DATA_DEP AS (
+(SELECT
+        dep_arp_code as arp_code,
+        dep_arp_name as arp_name ,
+        a.ENTRY_DATE,
+        ao_grp_code,ao_grp_name,
+        COUNT(a.flt_uid) DEP_ARR
+FROM DATA_DAY a
+GROUP BY
+        dep_arp_code,
+        dep_arp_name  ,
+        ENTRY_DATE,
+        ao_grp_code,ao_grp_name
+)
+),
+
+DATA_ARR AS (
+SELECT
+       arr_arp_code as arp_code,
+        ARR_arp_name as arp_name ,
+        ENTRY_DATE,
+        ao_grp_code,ao_grp_name,
+        COUNT(a.flt_uid) DEP_ARR
+FROM DATA_DAY a
+WHERE ARR_arp_name is not null
+GROUP BY  arr_arp_code,
+          ARR_arp_name  ,
+          ENTRY_DATE,
+          ao_grp_code,ao_grp_name
+),
+
+
+ALL_DAY_DATA as
+(SELECT
+          coalesce(extract(year from a.entry_date),extract (year from b.entry_date)) as year,
+          coalesce(a.entry_date, b.entry_date) as entry_date,
+          coalesce(a.arp_code,b.arp_code) as arp_code,
+          coalesce( a.arp_name,b.arp_name) as arp_name,
+          coalesce(  a.ao_grp_code,b.ao_grp_code) as ao_grp_code, coalesce(  a.ao_grp_name,b.ao_grp_name) as ao_grp_name,
+          coalesce(a.DEP_ARR,0)  + coalesce( b.DEP_ARR,0)  as DEP_ARR
+FROM DATA_DEP a full outer join DATA_ARR b  on (a.arp_code = b.arp_code  and a.entry_date = b.entry_date and a.ao_grp_code = b.ao_grp_code)
+
+),
+
+DATA_GRP as
+(
+SELECT
+      year, ao_grp_code,ao_grp_name
+    , arp_code, arp_name
+    ,SUM (DEP_ARR)  DEP_ARR
+    ,min(entry_Date) as from_date
+    ,max(entry_date) as to_date
+    ,to_date(  TO_CHAR (", mydate, "-1, 'dd-mm-') || year ,'dd-mm-yyyy') as last_data_date
+
+FROM ALL_DAY_DATA
+WHERE arp_code in (select arp_code from  DIM_APT) AND ao_grp_name <> 'UNKNOWN' AND ao_grp_code <> 'ZZZ'
+GROUP BY year, arp_code, arp_name, ao_grp_code,ao_grp_name
+),
+
+APT_AO_RANK as
+(
+SELECT
+  arp_code, year, ao_grp_code,
+        ROW_NUMBER() OVER (PARTITION BY  arp_code, year
+                ORDER BY DEP_ARR DESC, ao_grp_name) R_RANK,
+        RANK() OVER (PARTITION BY  arp_code, year
+                ORDER BY DEP_ARR DESC, ao_grp_name) RANK
+FROM DATA_GRP
+where year = extract (year from (", mydate, "-1))
+),
+
+APT_AO_RANK_PREV as
+(
+SELECT
+  arp_code, year, ao_grp_code,
+        ROW_NUMBER() OVER (PARTITION BY  arp_code, year
+                ORDER BY DEP_ARR DESC, ao_grp_name) RANK_PY
+ FROM DATA_GRP
+where year = extract (year from (", mydate, "-1)) - 1
+)
+
+
+SELECT
+      a.arp_code, a.arp_name
+      ,a.year, a.ao_grp_code, a.ao_grp_name
+    ,DEP_ARR
+    ,from_date
+    ,to_date
+    , last_data_date
+     , R_RANK, rank , RANK_PY
+FROM DATA_GRP a
+ left join APT_AO_RANK b on a.arp_code = b.arp_code AND a.ao_grp_code = b.ao_grp_code
+ left join APT_AO_RANK_PREV c on a.arp_code = c.arp_code AND a.ao_grp_code = c.ao_grp_code
+where R_RANK <=10
+order by ARP_CODE, year desc, R_RANK
+          "
+  )
+  }
+
+# apt state des ----
+## day ----
+query_ap_st_des_data_day_raw <- function(mydate_string) {
+  mydate <- date_sql_string(mydate_string)
+  paste0 ("
+          with
+
+DIM_AO
+ as ( select  ao_code, ao_name, ao_nm_group_code, ao_nm_group_name  from  prudev.v_covid_dim_ao) ,
+
+DIM_APT
+ as ( select code as arp_code, dashboard_name as arp_name,  b.aiu_iso_country_name as iso_ct_name, a.iso_country_code as iso_ct_code
+ from  pru_airport a
+ left join pru_country_iso b on a.iso_country_code = b.ec_iso_country_code
+ ),
+
+LIST_APT as
+(select code as arp_code,
+       dashboard_name as arp_name
+ from pru_airport where code in ('",paste0(apt_icao$apt_icao_code, collapse = "','"),"'
+          )
+ ),
+
+
+
+
+AIRP_FLIGHT as (
+
+SELECT flt_uid,
+       TRUNC (flt_a_asp_prof_time_entry) AS entry_day,
+       a.flt_dep_ad dep_ap ,a.flt_ctfm_ades arr_ap,
+       A.ao_icao_id
+
+  FROM v_aiu_flt a
+ WHERE       (
+                     (     A.flt_lobt >= ", mydate, " -1 -1
+                        AND A.flt_lobt < ", mydate, "-0
+                        AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -1
+                        AND A.flt_a_asp_prof_time_entry < ", mydate, "-0
+                        )
+                        or
+                     (     A.flt_lobt >= ", mydate, " -1 -1-7
+                        AND A.flt_lobt < ", mydate, "-0-7
+                        AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -1-7
+                        AND A.flt_a_asp_prof_time_entry < ", mydate, "-0-7
+                        )
+                        or
+                     (     A.flt_lobt >= ", mydate, " -1 -1-364
+                        AND A.flt_lobt < ", mydate, "-0-364
+                        AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -1 -364
+                        AND A.flt_a_asp_prof_time_entry < ", mydate, "-0 -364
+                        )
+                        or
+                        (     A.flt_lobt >= ", mydate, " -((extract (year from (", mydate, "-1))-2019) *364)-1 -1- floor((extract (year from (", mydate, "-1))-2019)/4)*7
+                        AND A.flt_lobt < ", mydate, "-((extract (year from (", mydate, "-1))-2019) *364)- floor((extract (year from (", mydate, "-1))-2019)/4)*7
+                        AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -((extract (year from (", mydate, "-1))-2019) *364)-1- floor((extract (year from (", mydate, "-1))-2019)/4)*7
+                        AND A.flt_a_asp_prof_time_entry < ", mydate, "-((extract (year from (", mydate, "-1))-2019) *364) - floor((extract (year from (", mydate, "-1))-2019)/4)*7
+                         )
+                     )
+       AND A.flt_state IN ('TE', 'TA', 'AA')
+       AND  flt_dep_ad IS NOT NULL
+       AND    flt_ctfm_ades  IS NOT NULL
+     ),
+
+
+ AP_PAIR_SELECTION as
+ (SELECT  a.dep_ap, a.arr_ap, a.entry_day, a.flt_uid,a.ao_icao_id, b.arp_name as arp_name_dep, b.iso_ct_name as iso_ct_name_dep, b.iso_ct_code as iso_ct_code_dep
+  FROM  AIRP_FLIGHT A , DIM_APT b
+  WHERE  b.arp_code = a.dep_ap
+        and dep_ap in (select arp_code  from LIST_APT))
+,
+
+
+AP_PAIR_AREA as (
+SELECT entry_day,
+       flt_uid,
+        a.dep_ap, a.arp_name_dep, a.iso_ct_name_dep, a.iso_ct_code_dep,
+        a.arr_ap,  b.arp_name as arp_name_arr,
+        b.iso_ct_name as iso_ct_name_arr,
+        b.iso_ct_code as iso_ct_code_arr
+ FROM  AP_PAIR_SELECTION A , DIM_APT b
+  WHERE  b.arp_code = a.arr_ap),
+
+
+AO_AIRPORT_FLIGHT as
+(
+SELECT entry_day,
+       flt_uid,
+       dep_ap, arp_name_dep, iso_ct_name_Dep, iso_ct_code_Dep,
+       arr_ap, arp_name_arr, iso_ct_name_arr, iso_ct_code_arr,
+   case
+     when entry_day >= ", mydate, " -1 and entry_day < ", mydate, "  then 'CURRENT_DAY'
+     when entry_day >= ", mydate, " -1-7 and entry_day < ", mydate, "  then 'DAY_PREV_WEEK'
+     when entry_day >= ", mydate, " -1-364 and entry_day < ", mydate, "  then 'DAY_PREV_YEAR'
+     when entry_day >= ", mydate, " -((extract (year from (", mydate, "-1))-2019) *364)-1- floor((extract (year from (", mydate, "-1))-2019)/4)*7
+            and entry_day < ", mydate, " -((extract (year from (", mydate, "-1))-2019) *364) - floor((extract (year from (", mydate, "-1))-2019)/4)*7
+        then 'DAY_2019'
+     else '-'
+   end  flag_period
+FROM  AP_PAIR_AREA a
+  ),
+
+DATA_GRP as
+(
+SELECT
+   flag_period,
+   entry_day,
+   dep_ap, arp_name_dep, iso_ct_name_Dep, iso_ct_code_Dep,
+       iso_ct_name_arr, iso_ct_code_arr,
+   count(flt_uid) as dep
+
+FROM AO_AIRPORT_FLIGHT a
+group by flag_period, dep_ap, arp_name_dep,entry_day, iso_ct_name_Dep, iso_ct_name_arr, iso_ct_code_Dep, iso_ct_code_arr
+),
+
+APT_CTRY_RANK as
+(
+SELECT
+  dep_ap, flag_period, iso_ct_name_arr,
+        RANK() OVER (PARTITION BY  dep_ap, flag_period
+                ORDER BY dep DESC, iso_ct_name_arr) RANK,
+        ROW_NUMBER() OVER (PARTITION BY  dep_ap, flag_period
+                ORDER BY dep DESC, iso_ct_name_arr) R_RANK
+FROM DATA_GRP
+where flag_period = 'CURRENT_DAY'
+),
+
+APT_CTRY_RANK_PREV as
+(
+SELECT
+  dep_ap, flag_period, iso_ct_name_arr,
+        RANK() OVER (PARTITION BY  dep_ap, flag_period
+                ORDER BY dep DESC, iso_ct_name_arr) as RANK_PREV
+FROM DATA_GRP
+where  flag_period = 'DAY_PREV_WEEK'
+)
+
+
+ SELECT
+   a.flag_period,
+   a.dep_ap as arp_code, arp_name_dep as arp_name, a.iso_ct_name_arr, a.iso_ct_code_arr,
+   dep,
+   entry_day as to_date,
+     to_date(  TO_CHAR (", mydate, "-1, 'dd-mm-yyyy'),'dd-mm-yyyy') as last_data_day,
+     r_rank, rank,  rank_prev
+
+FROM DATA_GRP a
+left join APT_CTRY_RANK b on a.iso_ct_name_arr = b.iso_ct_name_arr AND a.dep_ap = b.dep_ap
+left join APT_CTRY_RANK_PREV c on a.iso_ct_name_arr = c.iso_ct_name_arr AND a.dep_ap = c.dep_ap
+where r_rank<= '10'
+order by a.dep_ap, flag_period, r_rank
+"
+  )
+}
+
+## week ----
+query_ap_st_des_data_week_raw <- function(mydate_string) {
+  mydate <- date_sql_string(mydate_string)
+  paste0 (
+"with
+
+DIM_AO
+ as ( select  ao_code, ao_name, ao_nm_group_code, ao_nm_group_name  from  prudev.v_covid_dim_ao) ,
+
+DIM_APT
+ as ( select code as arp_code, dashboard_name as arp_name,  b.aiu_iso_country_name as iso_ct_name, a.iso_country_code as iso_ct_code
+ from  pru_airport a
+ left join pru_country_iso b on a.iso_country_code = b.ec_iso_country_code
+ ),
+
+LIST_APT as
+(select code as arp_code,
+       dashboard_name as arp_name
+ from pru_airport where code in ('",paste0(apt_icao$apt_icao_code, collapse = "','"),"'
+          )
+),
+
+
+AIRP_FLIGHT as (
+
+SELECT flt_uid,
+       TRUNC (flt_a_asp_prof_time_entry) AS entry_day,
+       a.flt_dep_ad dep_ap ,a.flt_ctfm_ades arr_ap,
+       A.ao_icao_id
+
+  FROM v_aiu_flt a
+ WHERE       (
+                     (     A.flt_lobt >= ", mydate, " -7 -1
+                        AND A.flt_lobt < ", mydate, "-0
+                        AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -7
+                        AND A.flt_a_asp_prof_time_entry < ", mydate, "-0
+                        )
+                        or
+                     (     A.flt_lobt >= ", mydate, " -7 -1-7
+                        AND A.flt_lobt < ", mydate, "-0-7
+                        AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -7-7
+                        AND A.flt_a_asp_prof_time_entry < ", mydate, "-0-7
+                        )
+                        or
+                     (     A.flt_lobt >= ", mydate, " -7 -1-364
+                        AND A.flt_lobt < ", mydate, "-0-364
+                        AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -7 -364
+                        AND A.flt_a_asp_prof_time_entry < ", mydate, "-0 -364
+                        )
+                        or
+                        (     A.flt_lobt >= ", mydate, " -((extract (year from (", mydate, "-1))-2019) *364)-7 -1- floor((extract (year from (", mydate, "-1))-2019)/4)*7
+                        AND A.flt_lobt < ", mydate, "-((extract (year from (", mydate, "-1))-2019) *364)- floor((extract (year from (", mydate, "-1))-2019)/4)*7
+                        AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -((extract (year from (", mydate, "-1))-2019) *364)-7- floor((extract (year from (", mydate, "-1))-2019)/4)*7
+                        AND A.flt_a_asp_prof_time_entry < ", mydate, "-((extract (year from (", mydate, "-1))-2019) *364) - floor((extract (year from (", mydate, "-1))-2019)/4)*7
+                         )
+                     )
+       AND A.flt_state IN ('TE', 'TA', 'AA')
+       AND  flt_dep_ad IS NOT NULL
+       AND    flt_ctfm_ades  IS NOT NULL
+     ),
+
+
+ AP_PAIR_SELECTION as
+ (SELECT  a.dep_ap, a.arr_ap, a.entry_day, a.flt_uid,a.ao_icao_id, b.arp_name as arp_name_dep, b.iso_ct_name as iso_ct_name_dep, b.iso_ct_code as iso_ct_code_dep
+  FROM  AIRP_FLIGHT A , DIM_APT b
+  WHERE  b.arp_code = a.dep_ap
+        and dep_ap in (select arp_code  from LIST_APT))
+,
+
+
+AP_PAIR_AREA as (
+SELECT entry_day,
+       flt_uid,
+        a.dep_ap, a.arp_name_dep, a.iso_ct_name_dep, a.iso_ct_code_dep,
+        a.arr_ap,  b.arp_name as arp_name_arr,
+        b.iso_ct_name as iso_ct_name_arr,
+        b.iso_ct_code as iso_ct_code_arr
+ FROM  AP_PAIR_SELECTION A , DIM_APT b
+  WHERE  b.arp_code = a.arr_ap),
+
+
+AO_AIRPORT_FLIGHT as
+(
+SELECT entry_day,
+       flt_uid,
+       dep_ap, arp_name_dep, iso_ct_name_Dep, iso_ct_code_Dep,
+       arr_ap, arp_name_arr, iso_ct_name_arr, iso_ct_code_arr,
+   case
+     when entry_day >= ", mydate, " -7 and entry_day < ", mydate, "  then 'CURRENT_ROLLING_WEEK'
+     when entry_day >= ", mydate, " -7-7 and entry_day < ", mydate, "  then 'PREV_ROLLING_WEEK'
+     when entry_day >= ", mydate, " -7-364 and entry_day < ", mydate, "  then 'ROLLING_WEEK_PREV_YEAR'
+     when entry_day >= ", mydate, " -((extract (year from (", mydate, "-1))-2019) *364)-7- floor((extract (year from (", mydate, "-1))-2019)/4)*7
+            and entry_day < ", mydate, " -((extract (year from (", mydate, "-1))-2019) *364) - floor((extract (year from (", mydate, "-1))-2019)/4)*7
+        then 'ROLLING_WEEK_2019'
+     else '-'
+   end  flag_period
+FROM  AP_PAIR_AREA a
+  ),
+
+DATA_GRP as
+(
+SELECT
+   flag_period,
+   min(entry_day) as from_date,
+   max(entry_day) as to_date,
+   dep_ap, arp_name_dep, iso_ct_name_Dep, iso_ct_code_Dep,
+       iso_ct_name_arr, iso_ct_code_arr,
+   count(flt_uid) as dep
+
+FROM AO_AIRPORT_FLIGHT a
+group by flag_period, dep_ap, arp_name_dep, iso_ct_name_Dep, iso_ct_name_arr, iso_ct_code_Dep, iso_ct_code_arr
+),
+
+APT_CTRY_RANK as
+(
+SELECT
+  dep_ap, flag_period, iso_ct_name_arr,
+        RANK() OVER (PARTITION BY  dep_ap, flag_period
+                ORDER BY dep DESC, iso_ct_name_arr) RANK,
+        ROW_NUMBER() OVER (PARTITION BY  dep_ap, flag_period
+                ORDER BY dep DESC, iso_ct_name_arr) R_RANK
+FROM DATA_GRP
+where flag_period = 'CURRENT_ROLLING_WEEK'
+),
+
+APT_CTRY_RANK_PREV as
+(
+SELECT
+  dep_ap, flag_period, iso_ct_name_arr,
+        RANK() OVER (PARTITION BY  dep_ap, flag_period
+                ORDER BY dep DESC, iso_ct_name_arr) as RANK_PREV
+FROM DATA_GRP
+where  flag_period = 'PREV_ROLLING_WEEK'
+)
+
+
+ SELECT
+   a.flag_period,
+   a.dep_ap as arp_code, arp_name_dep as arp_name, a.iso_ct_name_arr, a.iso_ct_code_arr,
+   dep,
+   from_date,
+   to_date,
+     to_date(  TO_CHAR (", mydate, "-1, 'dd-mm-yyyy'),'dd-mm-yyyy') as last_data_day,
+     r_rank, rank,  rank_prev
+
+FROM DATA_GRP a
+left join APT_CTRY_RANK b on a.iso_ct_name_arr = b.iso_ct_name_arr AND a.dep_ap = b.dep_ap
+left join APT_CTRY_RANK_PREV c on a.iso_ct_name_arr = c.iso_ct_name_arr AND a.dep_ap = c.dep_ap
+where r_rank<= '10'
+order by a.dep_ap, flag_period, r_rank
+"
+  )
+}
+
+## y2d ----
+query_ap_st_des_data_y2d_raw <- function(mydate_string) {
+  mydate <- date_sql_string(mydate_string)
+  paste0 (
+    "
+    with
+
+DIM_AO
+ as ( select  ao_code, ao_name, ao_nm_group_code, ao_nm_group_name  from  prudev.v_covid_dim_ao) ,
+
+DIM_APT
+ as ( select code as arp_code, dashboard_name as arp_name,  b.aiu_iso_country_name as iso_ct_name, a.iso_country_code as iso_ct_code
+ from  pru_airport a
+ left join pru_country_iso b on a.iso_country_code = b.ec_iso_country_code
+ ),
+
+LIST_APT as
+(select code as arp_code,
+       dashboard_name as arp_name
+ from pru_airport where code in ('",paste0(apt_icao$apt_icao_code, collapse = "','"),"'
+          )
+
+ ),
+
+
+
+
+AIRP_FLIGHT as (
+
+SELECT flt_uid,
+       TRUNC (flt_a_asp_prof_time_entry) AS entry_day,
+       a.flt_dep_ad dep_ap ,a.flt_ctfm_ades arr_ap,
+       A.ao_icao_id
+
+  FROM v_aiu_flt a
+ WHERE
+     A.flt_lobt>= TO_DATE ('01-01-2019', 'dd-mm-yyyy') -1  AND A.flt_lobt < ", mydate, "
+     AND a.flt_a_asp_prof_time_entry >= TO_DATE ('01-01-2019', 'dd-mm-yyyy')
+     AND TO_NUMBER (TO_CHAR (TRUNC (flt_a_asp_prof_time_entry), 'mmdd')) <=   TO_NUMBER (TO_CHAR (", mydate, "-1, 'mmdd'))
+     and extract (year from flt_a_asp_prof_time_entry) <= extract(year from (", mydate, "-1))
+       AND A.flt_state IN ('TE', 'TA', 'AA')
+       AND  flt_dep_ad IS NOT NULL
+       AND    flt_ctfm_ades  IS NOT NULL
+     ),
+
+
+ AP_PAIR_SELECTION as
+ (SELECT  a.dep_ap, a.arr_ap, a.entry_day, a.flt_uid,a.ao_icao_id, b.arp_name as arp_name_dep, b.iso_ct_name as iso_ct_name_dep, b.iso_ct_code as iso_ct_code_dep
+  FROM  AIRP_FLIGHT A , DIM_APT b
+  WHERE  b.arp_code = a.dep_ap
+        and dep_ap in (select arp_code  from LIST_APT))
+,
+
+
+AP_PAIR_AREA as (
+SELECT entry_day,
+       extract (year from entry_day) as year,
+       flt_uid,
+        a.dep_ap, a.arp_name_dep, a.iso_ct_name_dep, a.iso_ct_code_dep,
+        a.arr_ap,  b.arp_name as arp_name_arr,
+        b.iso_ct_name as iso_ct_name_arr,
+        b.iso_ct_code as iso_ct_code_arr
+ FROM  AP_PAIR_SELECTION A , DIM_APT b
+  WHERE  b.arp_code = a.arr_ap),
+
+
+
+DATA_GRP as
+(
+SELECT
+   year,
+   min(entry_day) as from_date,
+   max(entry_day) as to_date,
+   dep_ap, arp_name_dep, iso_ct_name_Dep, iso_ct_code_Dep,
+       iso_ct_name_arr, iso_ct_code_arr,
+   count(flt_uid) as dep
+
+FROM AP_PAIR_AREA a
+group by year, dep_ap, arp_name_dep, iso_ct_name_Dep, iso_ct_name_arr, iso_ct_code_Dep, iso_ct_code_arr
+),
+
+APT_CTRY_RANK as
+(
+SELECT
+  dep_ap, year, iso_ct_name_arr,
+        RANK() OVER (PARTITION BY  dep_ap, year
+                ORDER BY dep DESC, iso_ct_name_arr) RANK,
+        ROW_NUMBER() OVER (PARTITION BY  dep_ap, year
+                ORDER BY dep DESC, iso_ct_name_arr) R_RANK
+FROM DATA_GRP
+where year = extract (year from (", mydate, "-1))
+),
+
+APT_CTRY_RANK_PREV as
+(
+SELECT
+  dep_ap, year, iso_ct_name_arr,
+        RANK() OVER (PARTITION BY  dep_ap, year
+                ORDER BY dep DESC, iso_ct_name_arr) as RANK_PREV
+FROM DATA_GRP
+where  year = extract (year from (", mydate, "-1)) -1
+)
+
+
+ SELECT
+   a.year,
+   a.dep_ap as arp_code, arp_name_dep as arp_name, a.iso_ct_name_arr, a.iso_ct_code_arr,
+   dep,
+   from_date,
+   to_date,
+     to_date(  TO_CHAR (", mydate, "-1, 'dd-mm-yyyy'),'dd-mm-yyyy') as last_data_day,
+     r_rank, rank,  rank_prev
+
+FROM DATA_GRP a
+left join APT_CTRY_RANK b on a.iso_ct_name_arr = b.iso_ct_name_arr AND a.dep_ap = b.dep_ap
+left join APT_CTRY_RANK_PREV c on a.iso_ct_name_arr = c.iso_ct_name_arr AND a.dep_ap = c.dep_ap
+where r_rank<= '10'
+order by a.dep_ap, year desc, r_rank
+"
+  )
+}
+
+# apt airport des ----
+## day ----
+query_ap_ap_des_data_day_raw <- function(mydate_string) {
+  mydate <- date_sql_string(mydate_string)
+  paste0 (
+    "with
+
+DIM_AO
+ as ( select  ao_code, ao_name, ao_nm_group_code, ao_nm_group_name  from  prudev.v_covid_dim_ao) ,
+
+DIM_APT
+ as ( select code as arp_code, dashboard_name as arp_name
+ from  pru_airport a
+ ),
+
+LIST_APT as
+(select code as arp_code,
+       dashboard_name as arp_name
+ from pru_airport where code in ('",paste0(apt_icao$apt_icao_code, collapse = "','"),"'
+          )
+ ),
+
+
+AIRP_FLIGHT as (
+
+SELECT flt_uid,
+       TRUNC (flt_a_asp_prof_time_entry) AS entry_day,
+       a.flt_dep_ad dep_ap ,a.flt_ctfm_ades arr_ap,
+       A.ao_icao_id
+
+  FROM v_aiu_flt a
+ WHERE       (
+                     (     A.flt_lobt >= ", mydate, " -1 -1
+                        AND A.flt_lobt < ", mydate, "-0
+                        AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -1
+                        AND A.flt_a_asp_prof_time_entry < ", mydate, "-0
+                        )
+                        or
+                     (     A.flt_lobt >= ", mydate, " -1 -1-7
+                        AND A.flt_lobt < ", mydate, "-0-7
+                        AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -1-7
+                        AND A.flt_a_asp_prof_time_entry < ", mydate, "-0-7
+                        )
+                        or
+                     (     A.flt_lobt >= ", mydate, " -1 -1-364
+                        AND A.flt_lobt < ", mydate, "-0-364
+                        AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -1 -364
+                        AND A.flt_a_asp_prof_time_entry < ", mydate, "-0 -364
+                        )
+                        or
+                        (     A.flt_lobt >= ", mydate, " -((extract (year from (", mydate, "-1))-2019) *364)-1 -1- floor((extract (year from (", mydate, "-1))-2019)/4)*7
+                        AND A.flt_lobt < ", mydate, "-((extract (year from (", mydate, "-1))-2019) *364)- floor((extract (year from (", mydate, "-1))-2019)/4)*7
+                        AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -((extract (year from (", mydate, "-1))-2019) *364)-1- floor((extract (year from (", mydate, "-1))-2019)/4)*7
+                        AND A.flt_a_asp_prof_time_entry < ", mydate, "-((extract (year from (", mydate, "-1))-2019) *364) - floor((extract (year from (", mydate, "-1))-2019)/4)*7
+                         )
+                     )
+       AND A.flt_state IN ('TE', 'TA', 'AA')
+       AND  flt_dep_ad IS NOT NULL
+       AND    flt_ctfm_ades  IS NOT NULL
+     ),
+
+
+ AP_PAIR_SELECTION as
+ (SELECT  a.dep_ap, a.arr_ap, a.entry_day, a.flt_uid,a.ao_icao_id, b.arp_name as arp_name_dep
+  FROM  AIRP_FLIGHT A , DIM_APT b
+  WHERE  b.arp_code = a.dep_ap
+        and dep_ap in (select arp_code  from LIST_APT))
+,
+
+
+AP_PAIR_AREA as (
+SELECT entry_day,
+       flt_uid,
+        a.dep_ap, a.arp_name_dep,
+        a.arr_ap,  b.arp_name as arp_name_arr
+ FROM  AP_PAIR_SELECTION A , DIM_APT b
+  WHERE  b.arp_code = a.arr_ap),
+
+
+AO_AIRPORT_FLIGHT as
+(
+SELECT entry_day,
+       flt_uid,
+       dep_ap, arp_name_dep,
+       arr_ap, arp_name_arr,
+   case
+     when entry_day >= ", mydate, " -1 and entry_day < ", mydate, "  then 'CURRENT_DAY'
+     when entry_day >= ", mydate, " -1-7 and entry_day < ", mydate, "  then 'DAY_PREV_WEEK'
+     when entry_day >= ", mydate, " -1-364 and entry_day < ", mydate, "  then 'DAY_PREV_YEAR'
+     when entry_day >= ", mydate, " -((extract (year from (", mydate, "-1))-2019) *364)-1- floor((extract (year from (", mydate, "-1))-2019)/4)*7
+            and entry_day < ", mydate, " -((extract (year from (", mydate, "-1))-2019) *364) - floor((extract (year from (", mydate, "-1))-2019)/4)*7
+        then 'DAY_2019'
+     else '-'
+   end  flag_period
+FROM  AP_PAIR_AREA a
+  ),
+
+DATA_GRP as
+(
+SELECT
+   flag_period,
+   entry_day,
+   dep_ap, arp_name_dep,
+       arr_ap, arp_name_arr,
+   count(flt_uid) as dep
+
+FROM AO_AIRPORT_FLIGHT a
+group by flag_period, dep_ap, arp_name_dep,entry_day, arr_ap, arp_name_arr
+),
+
+APT_CTRY_RANK as
+(
+SELECT
+  dep_ap, flag_period, arp_name_arr,
+        RANK() OVER (PARTITION BY  dep_ap, flag_period
+                ORDER BY dep DESC, arp_name_arr) RANK,
+        ROW_NUMBER() OVER (PARTITION BY  dep_ap, flag_period
+                ORDER BY dep DESC, arp_name_arr) R_RANK
+FROM DATA_GRP
+where flag_period = 'CURRENT_DAY'
+),
+
+APT_CTRY_RANK_PREV as
+(
+SELECT
+  dep_ap, flag_period, arp_name_arr,
+        RANK() OVER (PARTITION BY  dep_ap, flag_period
+                ORDER BY dep DESC, arp_name_arr) as RANK_PREV
+FROM DATA_GRP
+where  flag_period = 'DAY_PREV_WEEK'
+)
+
+
+ SELECT
+   a.flag_period,
+   a.dep_ap as arp_code_dep, a.arp_name_dep,
+   a.arr_ap as arp_code_arr, a.arp_name_arr,
+   a.dep,
+   entry_day as to_date,
+     to_date(  TO_CHAR (", mydate, "-1, 'dd-mm-yyyy'),'dd-mm-yyyy') as last_data_day,
+     r_rank, rank,  rank_prev
+
+FROM DATA_GRP a
+left join APT_CTRY_RANK b on a.arp_name_arr = b.arp_name_arr AND a.dep_ap = b.dep_ap
+left join APT_CTRY_RANK_PREV c on a.arp_name_arr = c.arp_name_arr AND a.dep_ap = c.dep_ap
+where r_rank<= '10'
+order by a.dep_ap, flag_period, r_rank
+"
+  )}
+
+## week ----
+query_ap_ap_des_data_week_raw <- function(mydate_string) {
+  mydate <- date_sql_string(mydate_string)
+  paste0 (
+  "
+  with
+
+DIM_AO
+ as ( select  ao_code, ao_name, ao_nm_group_code, ao_nm_group_name  from  prudev.v_covid_dim_ao) ,
+
+DIM_APT
+ as ( select code as arp_code, dashboard_name as arp_name
+ from  pru_airport a
+ ),
+
+LIST_APT as
+(select code as arp_code,
+       dashboard_name as arp_name
+ from pru_airport where code in ('",paste0(apt_icao$apt_icao_code, collapse = "','"),"'
+          )
+ ),
+
+
+AIRP_FLIGHT as (
+
+SELECT flt_uid,
+       TRUNC (flt_a_asp_prof_time_entry) AS entry_day,
+       a.flt_dep_ad dep_ap ,a.flt_ctfm_ades arr_ap,
+       A.ao_icao_id
+
+  FROM v_aiu_flt a
+ WHERE       (
+                     (     A.flt_lobt >= ", mydate, " -7 -1
+                        AND A.flt_lobt < ", mydate, "-0
+                        AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -7
+                        AND A.flt_a_asp_prof_time_entry < ", mydate, "-0
+                        )
+                        or
+                     (     A.flt_lobt >= ", mydate, " -7 -1-7
+                        AND A.flt_lobt < ", mydate, "-0-7
+                        AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -7-7
+                        AND A.flt_a_asp_prof_time_entry < ", mydate, "-0-7
+                        )
+                        or
+                     (     A.flt_lobt >= ", mydate, " -7 -1-364
+                        AND A.flt_lobt < ", mydate, "-0-364
+                        AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -7 -364
+                        AND A.flt_a_asp_prof_time_entry < ", mydate, "-0 -364
+                        )
+                        or
+                        (     A.flt_lobt >= ", mydate, " -((extract (year from (", mydate, "-1))-2019) *364)-7 -1- floor((extract (year from (", mydate, "-1))-2019)/4)*7
+                        AND A.flt_lobt < ", mydate, "-((extract (year from (", mydate, "-1))-2019) *364)- floor((extract (year from (", mydate, "-1))-2019)/4)*7
+                        AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -((extract (year from (", mydate, "-1))-2019) *364)-7- floor((extract (year from (", mydate, "-1))-2019)/4)*7
+                        AND A.flt_a_asp_prof_time_entry < ", mydate, "-((extract (year from (", mydate, "-1))-2019) *364) - floor((extract (year from (", mydate, "-1))-2019)/4)*7
+                         )
+                     )
+       AND A.flt_state IN ('TE', 'TA', 'AA')
+       AND  flt_dep_ad IS NOT NULL
+       AND    flt_ctfm_ades  IS NOT NULL
+     ),
+
+
+ AP_PAIR_SELECTION as
+ (SELECT  a.dep_ap, a.arr_ap, a.entry_day, a.flt_uid,a.ao_icao_id, b.arp_name as arp_name_dep
+  FROM  AIRP_FLIGHT A , DIM_APT b
+  WHERE  b.arp_code = a.dep_ap
+        and dep_ap in (select arp_code  from LIST_APT))
+,
+
+
+AP_PAIR_AREA as (
+SELECT entry_day,
+       flt_uid,
+        a.dep_ap, a.arp_name_dep,
+        a.arr_ap,  b.arp_name as arp_name_arr
+ FROM  AP_PAIR_SELECTION A , DIM_APT b
+  WHERE  b.arp_code = a.arr_ap),
+
+
+AO_AIRPORT_FLIGHT as
+(
+SELECT entry_day,
+       flt_uid,
+       dep_ap, arp_name_dep,
+       arr_ap, arp_name_arr,
+   case
+     when entry_day >= ", mydate, " -7 and entry_day < ", mydate, "  then 'CURRENT_ROLLING_WEEK'
+     when entry_day >= ", mydate, " -7-7 and entry_day < ", mydate, "  then 'PREV_ROLLING_WEEK'
+     when entry_day >= ", mydate, " -7-364 and entry_day < ", mydate, "  then 'ROLLING_WEEK_PREV_YEAR'
+     when entry_day >= ", mydate, " -((extract (year from (", mydate, "-1))-2019) *364)-7- floor((extract (year from (", mydate, "-1))-2019)/4)*7
+            and entry_day < ", mydate, " -((extract (year from (", mydate, "-1))-2019) *364) - floor((extract (year from (", mydate, "-1))-2019)/4)*7
+        then 'ROLLING_WEEK_2019'
+     else '-'
+   end  flag_period
+FROM  AP_PAIR_AREA a
+  ),
+
+DATA_GRP as
+(
+SELECT
+   flag_period,
+  min(entry_day) as from_date,
+   max(entry_day) as to_date,
+   dep_ap, arp_name_dep,
+       arr_ap, arp_name_arr,
+   count(flt_uid) as dep
+
+FROM AO_AIRPORT_FLIGHT a
+group by flag_period, dep_ap, arp_name_dep, arr_ap, arp_name_arr
+),
+
+APT_CTRY_RANK as
+(
+SELECT
+  dep_ap, flag_period, arp_name_arr,
+        RANK() OVER (PARTITION BY  dep_ap, flag_period
+                ORDER BY dep DESC, arp_name_arr) RANK,
+        ROW_NUMBER() OVER (PARTITION BY  dep_ap, flag_period
+                ORDER BY dep DESC, arp_name_arr) R_RANK
+FROM DATA_GRP
+where flag_period = 'CURRENT_ROLLING_WEEK'
+),
+
+APT_CTRY_RANK_PREV as
+(
+SELECT
+  dep_ap, flag_period, arp_name_arr,
+        RANK() OVER (PARTITION BY  dep_ap, flag_period
+                ORDER BY dep DESC, arp_name_arr) as RANK_PREV
+FROM DATA_GRP
+where  flag_period = 'PREV_ROLLING_WEEK'
+)
+
+
+ SELECT
+   a.flag_period,
+   a.dep_ap as arp_code_dep, a.arp_name_dep,
+   a.arr_ap as arp_code_arr, a.arp_name_arr,
+   a.dep,
+   from_date,
+   to_date,
+     to_date(  TO_CHAR (", mydate, "-1, 'dd-mm-yyyy'),'dd-mm-yyyy') as last_data_day,
+     r_rank, rank,  rank_prev
+
+FROM DATA_GRP a
+left join APT_CTRY_RANK b on a.arp_name_arr = b.arp_name_arr AND a.dep_ap = b.dep_ap
+left join APT_CTRY_RANK_PREV c on a.arp_name_arr = c.arp_name_arr AND a.dep_ap = c.dep_ap
+where r_rank<= '10'
+order by a.dep_ap, flag_period, r_rank
+  "
+    )
+  }
+
+
+## y2d ----
+query_ap_ap_des_data_week_raw <- function(mydate_string) {
+  mydate <- date_sql_string(mydate_string)
+  paste0 (
+  "
+  with
+
+DIM_AO
+ as ( select  ao_code, ao_name, ao_nm_group_code, ao_nm_group_name  from  prudev.v_covid_dim_ao) ,
+
+DIM_APT
+ as ( select code as arp_code, dashboard_name as arp_name
+ from  pru_airport a
+ ),
+
+LIST_APT as
+(select code as arp_code,
+       dashboard_name as arp_name
+ from pru_airport where code in ('",paste0(apt_icao$apt_icao_code, collapse = "','"),"'
+          )
+),
+
+
+AIRP_FLIGHT as (
+
+SELECT flt_uid,
+       TRUNC (flt_a_asp_prof_time_entry) AS entry_day,
+       a.flt_dep_ad dep_ap ,a.flt_ctfm_ades arr_ap,
+       A.ao_icao_id
+
+  FROM v_aiu_flt a
+ WHERE
+     A.flt_lobt>= TO_DATE ('01-01-2019', 'dd-mm-yyyy') -1  AND A.flt_lobt < ", mydate, "
+     AND a.flt_a_asp_prof_time_entry >= TO_DATE ('01-01-2019', 'dd-mm-yyyy')
+     AND TO_NUMBER (TO_CHAR (TRUNC (flt_a_asp_prof_time_entry), 'mmdd')) <=   TO_NUMBER (TO_CHAR (", mydate, "-1, 'mmdd'))
+       and extract (year from flt_a_asp_prof_time_entry) <= extract(year from (", mydate, "-1))
+       AND A.flt_state IN ('TE', 'TA', 'AA')
+       AND  flt_dep_ad IS NOT NULL
+       AND    flt_ctfm_ades  IS NOT NULL
+     ),
+
+
+
+ AP_PAIR_SELECTION as
+ (SELECT  a.dep_ap, a.arr_ap, a.entry_day, a.flt_uid,a.ao_icao_id, b.arp_name as arp_name_dep
+  FROM  AIRP_FLIGHT A , DIM_APT b
+  WHERE  b.arp_code = a.dep_ap
+        and dep_ap in (select arp_code  from LIST_APT))
+,
+
+
+AP_PAIR_AREA as (
+SELECT entry_day,
+       flt_uid,
+        a.dep_ap, a.arp_name_dep,
+        a.arr_ap,  b.arp_name as arp_name_arr
+ FROM  AP_PAIR_SELECTION A , DIM_APT b
+  WHERE  b.arp_code = a.arr_ap),
+
+
+AO_AIRPORT_FLIGHT as
+(
+SELECT entry_day,
+       flt_uid,
+       dep_ap, arp_name_dep,
+       arr_ap, arp_name_arr,
+       extract (year from entry_day) as year
+
+FROM  AP_PAIR_AREA a
+  ),
+
+DATA_GRP as
+(
+SELECT
+   year,
+  min(entry_day) as from_date,
+   max(entry_day) as to_date,
+   dep_ap, arp_name_dep,
+       arr_ap, arp_name_arr,
+   count(flt_uid) as dep
+
+FROM AO_AIRPORT_FLIGHT a
+group by year, dep_ap, arp_name_dep, arr_ap, arp_name_arr
+),
+
+APT_CTRY_RANK as
+(
+SELECT
+  dep_ap, year, arp_name_arr,
+        RANK() OVER (PARTITION BY  dep_ap, year
+                ORDER BY dep DESC, arp_name_arr) RANK,
+        ROW_NUMBER() OVER (PARTITION BY  dep_ap, year
+                ORDER BY dep DESC, arp_name_arr) R_RANK
+FROM DATA_GRP
+where year = extract (year from (", mydate, "-1))
+),
+
+APT_CTRY_RANK_PREV as
+(
+SELECT
+  dep_ap, year, arp_name_arr,
+        RANK() OVER (PARTITION BY  dep_ap, year
+                ORDER BY dep DESC, arp_name_arr) as RANK_PREV
+FROM DATA_GRP
+where  year = extract (year from (", mydate, "-1))-1
+)
+
+
+ SELECT
+   a.year,
+   a.dep_ap as arp_code_dep, a.arp_name_dep,
+   a.arr_ap as arp_code_arr, a.arp_name_arr,
+   a.dep,
+   from_date,
+   to_date,
+     to_date(  TO_CHAR (", mydate, "-1, 'dd-mm-yyyy'),'dd-mm-yyyy') as last_data_day,
+     r_rank, rank,  rank_prev
+
+FROM DATA_GRP a
+left join APT_CTRY_RANK b on a.arp_name_arr = b.arp_name_arr AND a.dep_ap = b.dep_ap
+left join APT_CTRY_RANK_PREV c on a.arp_name_arr = c.arp_name_arr AND a.dep_ap = c.dep_ap
+where r_rank<= '10'
+order by a.dep_ap, year desc, r_rank
+  "
+    )
+  }
