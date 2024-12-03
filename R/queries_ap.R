@@ -1165,7 +1165,7 @@ query_ap_punct <- paste0("WITH
 #time.taken
 
 # apt ao ----
-## day ----
+### day ----
 query_ap_ao_data_day_raw <- function(mydate_string) {
   mydate <- date_sql_string(mydate_string)
   paste0 ("
@@ -1349,7 +1349,7 @@ order by ARP_CODE, flag_day, R_RANK
 
 ")}
 
-## week ----
+### week ----
 query_ap_ao_data_week_raw <- function(mydate_string) {
   mydate <- date_sql_string(mydate_string)
   paste0 ("
@@ -1536,7 +1536,7 @@ order by ARP_CODE, period_type, R_RANK
   )
   }
 
-## y2d ----
+### y2d ----
 query_ap_ao_data_y2d_raw <- function(mydate_string) {
   mydate <- date_sql_string(mydate_string)
   paste0 ("
@@ -1677,7 +1677,7 @@ order by ARP_CODE, year desc, R_RANK
   }
 
 # apt state des ----
-## day ----
+### day ----
 query_ap_st_des_data_day_raw <- function(mydate_string) {
   mydate <- date_sql_string(mydate_string)
   paste0 ("
@@ -1831,7 +1831,7 @@ order by a.dep_ap, flag_period, r_rank
   )
 }
 
-## week ----
+### week ----
 query_ap_st_des_data_week_raw <- function(mydate_string) {
   mydate <- date_sql_string(mydate_string)
   paste0 (
@@ -1985,7 +1985,7 @@ order by a.dep_ap, flag_period, r_rank
   )
 }
 
-## y2d ----
+### y2d ----
 query_ap_st_des_data_y2d_raw <- function(mydate_string) {
   mydate <- date_sql_string(mydate_string)
   paste0 (
@@ -2108,7 +2108,7 @@ order by a.dep_ap, year desc, r_rank
 }
 
 # apt airport des ----
-## day ----
+### day ----
 query_ap_ap_des_data_day_raw <- function(mydate_string) {
   mydate <- date_sql_string(mydate_string)
   paste0 (
@@ -2257,7 +2257,7 @@ order by a.dep_ap, flag_period, r_rank
 "
   )}
 
-## week ----
+### week ----
 query_ap_ap_des_data_week_raw <- function(mydate_string) {
   mydate <- date_sql_string(mydate_string)
   paste0 (
@@ -2411,7 +2411,7 @@ order by a.dep_ap, flag_period, r_rank
   }
 
 
-## y2d ----
+### y2d ----
 query_ap_ap_des_data_week_raw <- function(mydate_string) {
   mydate <- date_sql_string(mydate_string)
   paste0 (
@@ -2537,3 +2537,601 @@ order by a.dep_ap, year desc, r_rank
   "
     )
   }
+
+# apt market segment ----
+### day ----
+query_ap_ms_data_day_raw <- function(mydate_string) {
+  mydate <- date_sql_string(mydate_string)
+  paste0 (
+    "
+    WITH
+
+dim_market_segment as
+
+(select SK_FLT_TYPE_RULE_ID,
+ rule_description as market_segment
+ from  SWH_FCT.DIM_FLIGHT_TYPE_RULE
+where SK_FLT_TYPE_RULE_ID <> 5
+ ),
+
+DIM_APT as
+(select code as arp_code,
+        id as arp_id ,
+       dashboard_name as arp_name
+ from pru_airport where code in ('",paste0(apt_icao$apt_icao_code, collapse = "','"),"'
+          )
+ )
+
+
+
+, DATA_SOURCE as (
+SELECT
+        A.flt_dep_ad as dep_ARP_CODE
+        ,A.flt_ctfm_ades as arr_ARP_CODE,
+        b.arp_name  as dep_arp_name,
+        c.arp_name as arr_arp_name,
+        TRUNC(A.flt_a_asp_prof_time_entry) ENTRY_DATE,
+        coalesce(d.market_segment,'Other Types') market_segment,
+        A.flt_uid
+FROM v_aiu_flt_mark_seg A
+     left outer  join DIM_APT b ON  ( A.flt_dep_ad=  b.arp_code)
+     left outer join DIM_APT C  ON  (A.flt_ctfm_ades = C.arp_code)
+     left outer join dim_market_segment   d  ON (a.SK_FLT_TYPE_RULE_ID = d.SK_FLT_TYPE_RULE_ID )
+WHERE
+     (  (  A.flt_lobt >=  ", mydate, " - 1 -2
+    AND A.flt_lobt <  ", mydate, " + 2
+    AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -  1
+    AND A.flt_a_asp_prof_time_entry <  ", mydate, " )
+ OR
+ (  A.flt_lobt >=  ", mydate, "-1 - 2 -  ((extract (year from (", mydate, "-1))-2019) *364) - floor((extract (year from (", mydate, "-1))-2019)/4)*7
+    AND A.flt_lobt <   ", mydate, " +2 - ((extract (year from (", mydate, "-1))-2019) *364) - floor((extract (year from (", mydate, "-1))-2019)/4)*7
+    AND A.flt_a_asp_prof_time_entry >=   ", mydate, " - 1 - ((extract (year from (", mydate, "-1))-2019) *364) - floor((extract (year from (", mydate, "-1))-2019)/4)*7
+    AND A.flt_a_asp_prof_time_entry <   ", mydate, " - ((extract (year from (", mydate, "-1))-2019) *364) - floor((extract (year from (", mydate, "-1))-2019)/4)*7
+ )
+OR
+ (  A.flt_lobt >=  ", mydate, " -364 -1 -2
+    AND A.flt_lobt <   ", mydate, " - 364 + 2
+    AND A.flt_a_asp_prof_time_entry >=   ", mydate, " - 364 -  1
+    AND A.flt_a_asp_prof_time_entry <   ", mydate, " - 364
+  )
+  OR
+ (  A.flt_lobt >=  ", mydate, " -7 -1 -2
+    AND A.flt_lobt <   ", mydate, " - 7 + 2
+    AND A.flt_a_asp_prof_time_entry >=   ", mydate, " - 1 -  7
+    AND A.flt_a_asp_prof_time_entry <   ", mydate, " - 7
+  )
+
+)
+    AND A.flt_state IN ('TE','TA','AA')
+
+),
+
+
+
+DATA_DEP AS (
+(SELECT
+        dep_ARP_CODE as ARP_CODE,
+        dep_arp_name as arp_name ,
+        a.ENTRY_DATE,
+        market_segment,
+        COUNT(a.flt_uid) DEP_ARR
+FROM DATA_SOURCE a
+GROUP BY
+        dep_ARP_CODE,
+        dep_arp_name  ,
+        ENTRY_DATE,
+        market_segment
+)
+),
+
+DATA_ARR AS (
+SELECT
+       arr_ARP_CODE as ARP_CODE,
+        ARR_arp_name as arp_name ,
+        ENTRY_DATE,
+        market_segment,
+        COUNT(a.flt_uid) DEP_ARR
+FROM DATA_SOURCE a
+WHERE ARR_arp_name is not null
+GROUP BY  arr_ARP_CODE,
+          ARR_arp_name  ,
+          ENTRY_DATE,
+        market_segment
+),
+
+
+DATA_DAY as
+(SELECT
+          coalesce(a.entry_date, b.entry_date) as entry_date,
+          coalesce(a.ARP_CODE,b.ARP_CODE) as ARP_CODE,
+          coalesce( a.arp_name,b.arp_name) as arp_name,
+          coalesce(  a.market_segment,b.market_segment) as market_segment,
+          coalesce(a.DEP_ARR,0)  + coalesce( b.DEP_ARR,0)  as DEP_ARR
+FROM DATA_DEP a full outer join DATA_ARR b  on (a.ARP_CODE = b.ARP_CODE  and a.entry_date = b.entry_date and a.market_segment = b.market_segment)
+
+),
+
+DATA_PERIOD as
+ (
+ SELECT
+      entry_date,
+      case when market_segment = 'Military' then 'Other Types'
+          else market_segment
+      end market_segment,
+      ARP_CODE,
+      arp_name,
+      case
+                     when (a.entry_date >= ", mydate, "-1  AND a.entry_date < ", mydate, ") then 'CURRENT_DAY'
+                     when  (a.entry_date >= ", mydate, " -1 - ((extract (year from (", mydate, "-1))-2019) *364) - floor((extract (year from (", mydate, "-1))-2019)/4)*7
+                           AND a.entry_date <  ", mydate, " - ((extract (year from (", mydate, "-1))-2019) *364)- floor((extract (year from (", mydate, "-1))-2019)/4)*7 )
+                        then 'DAY_2019'
+                     when  (a.entry_date >= ", mydate, " - 1 - 364    AND a.entry_date <  ", mydate, " - 364) then 'DAY_PREV_YEAR'
+                     when   (a.entry_date >= ", mydate, " - 1 - 7    AND a.entry_date <  ", mydate, " - 7) then  'DAY_PREV_WEEK'
+        end flag_period,
+     DEP_ARR
+  FROM DATA_DAY a
+
+  ),
+
+DATA_GRP as
+(
+SELECT
+      a.flag_period
+      ,max(entry_date) as to_date
+      , a.market_segment
+      ,a.ARP_CODE
+      ,a.arp_name
+     ,SUM (DEP_ARR)  DEP_ARR
+   --  ,SUM (DEP_ARR) / 7 as avg_DEP_ARR
+
+FROM DATA_PERIOD a
+WHERE a.ARP_CODE in (select arp_code from DIM_APT)
+GROUP BY a.flag_period
+      , ARP_CODE
+      , arp_name
+       , a.market_segment
+),
+
+APT_AO_RANK as
+(
+SELECT
+  ARP_CODE, flag_period, market_segment,
+        ROW_NUMBER() OVER (PARTITION BY  ARP_CODE, flag_period
+                ORDER BY DEP_ARR DESC, market_segment) R_RANK,
+        RANK() OVER (PARTITION BY  ARP_CODE, flag_period
+                ORDER BY DEP_ARR DESC, market_segment) RANK
+FROM DATA_GRP
+where flag_period = 'CURRENT_DAY'
+),
+
+APT_AO_RANK_PREV as
+(
+SELECT
+  ARP_CODE, flag_period, market_segment,
+        ROW_NUMBER() OVER (PARTITION BY  ARP_CODE, flag_period
+                ORDER BY DEP_ARR DESC, market_segment) RANK_PREV
+ FROM DATA_GRP
+where flag_period = 'DAY_PREV_WEEK'
+)
+
+SELECT
+      a.ARP_CODE
+      ,a.arp_name
+      , a.flag_period
+      ,to_date
+      ,", mydate, "-1 as last_data_day
+      , a.market_segment
+     ,DEP_ARR
+     , R_RANK,rank, rank_prev
+
+FROM DATA_GRP a
+ left join APT_AO_RANK b on a.ARP_CODE = b.ARP_CODE AND a.market_segment = b.market_segment
+ left join APT_AO_RANK_PREV c on a.ARP_CODE = c.ARP_CODE AND a.market_segment = c.market_segment
+order by ARP_CODE, flag_period, R_RANK
+"
+  )}
+
+### week ----
+query_ap_ms_data_week_raw <- function(mydate_string) {
+  mydate <- date_sql_string(mydate_string)
+  paste0 (
+    "
+    WITH
+
+dim_market_segment as
+
+(select SK_FLT_TYPE_RULE_ID,
+ rule_description as market_segment
+ from  SWH_FCT.DIM_FLIGHT_TYPE_RULE
+where SK_FLT_TYPE_RULE_ID <> 5
+ ),
+
+DIM_APT as
+(select code as arp_code,
+        id as arp_id ,
+       dashboard_name as arp_name
+ from pru_airport where code in ('",paste0(apt_icao$apt_icao_code, collapse = "','"),"'
+          )
+ )
+
+
+
+, DATA_SOURCE as (
+SELECT
+        A.flt_dep_ad as dep_ARP_CODE
+        ,A.flt_ctfm_ades as arr_ARP_CODE,
+        b.arp_name  as dep_arp_name,
+        c.arp_name as arr_arp_name,
+        TRUNC(A.flt_a_asp_prof_time_entry) ENTRY_DATE,
+        coalesce(d.market_segment,'Other Types') market_segment,
+        A.flt_uid
+FROM v_aiu_flt_mark_seg A
+     left outer  join DIM_APT b ON  ( A.flt_dep_ad=  b.arp_code)
+     left outer join DIM_APT C  ON  (A.flt_ctfm_ades = C.arp_code)
+     left outer join dim_market_segment   d  ON (a.SK_FLT_TYPE_RULE_ID = d.SK_FLT_TYPE_RULE_ID )
+ WHERE       (
+                     (     A.flt_lobt >= ", mydate, " -7 -1
+                        AND A.flt_lobt < ", mydate, "-0
+                        AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -7
+                        AND A.flt_a_asp_prof_time_entry < ", mydate, "-0
+                        )
+                        or
+                     (     A.flt_lobt >= ", mydate, " -7 -1-7
+                        AND A.flt_lobt < ", mydate, "-0-7
+                        AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -7-7
+                        AND A.flt_a_asp_prof_time_entry < ", mydate, "-0-7
+                        )
+                        or
+                     (     A.flt_lobt >= ", mydate, " -7 -1-364
+                        AND A.flt_lobt < ", mydate, "-0-364
+                        AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -7 -364
+                        AND A.flt_a_asp_prof_time_entry < ", mydate, "-0 -364
+                        )
+                        or
+                        (     A.flt_lobt >= ", mydate, " -((extract (year from (", mydate, "-1))-2019) *364)-7 -1- floor((extract (year from (", mydate, "-1))-2019)/4)*7
+                        AND A.flt_lobt < ", mydate, "-((extract (year from (", mydate, "-1))-2019) *364)- floor((extract (year from (", mydate, "-1))-2019)/4)*7
+                        AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -((extract (year from (", mydate, "-1))-2019) *364)-7- floor((extract (year from (", mydate, "-1))-2019)/4)*7
+                        AND A.flt_a_asp_prof_time_entry < ", mydate, "-((extract (year from (", mydate, "-1))-2019) *364) - floor((extract (year from (", mydate, "-1))-2019)/4)*7
+                         )
+                     )
+
+    AND A.flt_state IN ('TE','TA','AA')
+
+),
+
+
+
+DATA_DEP AS (
+(SELECT
+        dep_ARP_CODE as ARP_CODE,
+        dep_arp_name as arp_name ,
+        a.ENTRY_DATE,
+        market_segment,
+        COUNT(a.flt_uid) DEP_ARR
+FROM DATA_SOURCE a
+GROUP BY
+        dep_ARP_CODE,
+        dep_arp_name  ,
+        ENTRY_DATE,
+        market_segment
+)
+),
+
+DATA_ARR AS (
+SELECT
+       arr_ARP_CODE as ARP_CODE,
+        ARR_arp_name as arp_name ,
+        ENTRY_DATE,
+        market_segment,
+        COUNT(a.flt_uid) DEP_ARR
+FROM DATA_SOURCE a
+WHERE ARR_arp_name is not null
+GROUP BY  arr_ARP_CODE,
+          ARR_arp_name  ,
+          ENTRY_DATE,
+        market_segment
+),
+
+
+DATA_DAY as
+(SELECT
+          coalesce(a.entry_date, b.entry_date) as entry_date,
+          coalesce(a.ARP_CODE,b.ARP_CODE) as ARP_CODE,
+          coalesce( a.arp_name,b.arp_name) as arp_name,
+          coalesce(  a.market_segment,b.market_segment) as market_segment,
+          coalesce(a.DEP_ARR,0)  + coalesce( b.DEP_ARR,0)  as DEP_ARR
+FROM DATA_DEP a full outer join DATA_ARR b  on (a.ARP_CODE = b.ARP_CODE  and a.entry_date = b.entry_date and a.market_segment = b.market_segment)
+
+),
+
+DATA_PERIOD as
+ (
+ SELECT
+      entry_date,
+      case when market_segment = 'Military' then 'Other Types'
+          else market_segment
+      end market_segment,
+      ARP_CODE,
+      arp_name,
+   case
+     when entry_date >= ", mydate, " -7 and entry_date < ", mydate, "  then 'CURRENT_ROLLING_WEEK'
+     when entry_date >= ", mydate, " -7-7 and entry_date < ", mydate, "  then 'PREV_ROLLING_WEEK'
+     when entry_date >= ", mydate, " -7-364 and entry_date < ", mydate, "  then 'ROLLING_WEEK_PREV_YEAR'
+     when entry_date >= ", mydate, " -((extract (year from (", mydate, "-1))-2019) *364)-7- floor((extract (year from (", mydate, "-1))-2019)/4)*7
+            and entry_date < ", mydate, " -((extract (year from (", mydate, "-1))-2019) *364) - floor((extract (year from (", mydate, "-1))-2019)/4)*7
+        then 'ROLLING_WEEK_2019'
+     else '-'
+   end  flag_period,
+     DEP_ARR
+  FROM DATA_DAY a
+
+  ),
+
+DATA_GRP as
+(
+SELECT
+      a.flag_period
+      , min(entry_date) as from_date
+      , max(entry_date) as to_date
+      , a.market_segment
+      ,a.ARP_CODE
+      ,a.arp_name
+     ,SUM (DEP_ARR) as DEP_ARR
+   --  ,SUM (DEP_ARR) / 7 as avg_DEP_ARR
+
+FROM DATA_PERIOD a
+WHERE a.ARP_CODE in (select arp_code from DIM_APT)
+GROUP BY a.flag_period
+      , ARP_CODE
+      , arp_name
+       , a.market_segment
+),
+
+APT_AO_RANK as
+(
+SELECT
+  ARP_CODE, flag_period, market_segment,
+        ROW_NUMBER() OVER (PARTITION BY  ARP_CODE, flag_period
+                ORDER BY DEP_ARR DESC, market_segment) R_RANK,
+        RANK() OVER (PARTITION BY  ARP_CODE, flag_period
+                ORDER BY DEP_ARR DESC, market_segment) RANK
+FROM DATA_GRP
+where flag_period = 'CURRENT_ROLLING_WEEK'
+),
+
+APT_AO_RANK_PREV as
+(
+SELECT
+  ARP_CODE, flag_period, market_segment,
+        ROW_NUMBER() OVER (PARTITION BY  ARP_CODE, flag_period
+                ORDER BY DEP_ARR DESC, market_segment) RANK_PREV
+ FROM DATA_GRP
+where flag_period = 'PREV_ROLLING_WEEK'
+)
+
+SELECT
+      a.ARP_CODE
+      ,a.arp_name
+      , a.flag_period
+      , a.from_date
+      , a.to_date
+      ,", mydate, "-1 as last_data_day
+      , a.market_segment
+     ,DEP_ARR
+     , R_RANK,rank, rank_prev
+
+FROM DATA_GRP a
+ left join APT_AO_RANK b on a.ARP_CODE = b.ARP_CODE AND a.market_segment = b.market_segment
+ left join APT_AO_RANK_PREV c on a.ARP_CODE = c.ARP_CODE AND a.market_segment = c.market_segment
+order by ARP_CODE, flag_period, R_RANK
+"
+)}
+
+### y2d ----
+query_ap_ms_data_y2d_raw <- function(mydate_string) {
+  mydate <- date_sql_string(mydate_string)
+  paste0 (
+    "
+    WITH
+
+dim_market_segment as
+
+(select SK_FLT_TYPE_RULE_ID,
+ rule_description as market_segment
+ from  SWH_FCT.DIM_FLIGHT_TYPE_RULE
+where SK_FLT_TYPE_RULE_ID <> 5
+ ),
+
+DIM_APT as
+(select code as arp_code,
+        id as arp_id ,
+       dashboard_name as arp_name
+ from pru_airport where code in (
+         -- top 40 airports in 2023
+         'LTFM',
+         'EHAM',
+         'EGLL',
+         'LFPG',
+         'EDDF',
+         'LEMD',
+         'LEBL',
+         'EDDM',
+         'LIRF',
+         'EGKK',
+         'LSZH',
+         'EIDW',
+         'LGAV',
+         'LOWW',
+         'LEPA',
+         'EKCH',
+         'LPPT',
+         'LTFJ',
+         'LTAI',
+         'ENGM',
+         'LFPO',
+         'LIMC',
+         'EGSS',
+         'ESSA',
+         'EBBR',
+         'EGCC',
+         'EDDB',
+         'LSGG',
+         'EPWA',
+         'LEMG',
+         'LLBG',
+         'EDDL',
+         'LFMN',
+         'EFHK',
+         'EGGW',
+         'GCLP',
+         'EDDK',
+         'EGPH',
+         'EDDH',
+         'LKPR'
+          )
+ )
+
+
+
+, DATA_SOURCE as (
+SELECT
+        A.flt_dep_ad as dep_ARP_CODE
+        ,A.flt_ctfm_ades as arr_ARP_CODE,
+        b.arp_name  as dep_arp_name,
+        c.arp_name as arr_arp_name,
+        TRUNC(A.flt_a_asp_prof_time_entry) ENTRY_DATE,
+        coalesce(d.market_segment,'Other Types') market_segment,
+        A.flt_uid
+FROM v_aiu_flt_mark_seg A
+     left outer  join DIM_APT b ON  ( A.flt_dep_ad=  b.arp_code)
+     left outer join DIM_APT C  ON  (A.flt_ctfm_ades = C.arp_code)
+     left outer join dim_market_segment   d  ON (a.SK_FLT_TYPE_RULE_ID = d.SK_FLT_TYPE_RULE_ID )
+ WHERE
+         A.flt_lobt>= TO_DATE ('01-01-2019', 'dd-mm-yyyy') -1  AND A.flt_lobt < ", mydate, "
+     AND a.flt_a_asp_prof_time_entry >= TO_DATE ('01-01-2019', 'dd-mm-yyyy')
+     AND TO_NUMBER (TO_CHAR (TRUNC (flt_a_asp_prof_time_entry), 'mmdd')) <=   TO_NUMBER (TO_CHAR (", mydate, "-1, 'mmdd'))
+       and extract (year from flt_a_asp_prof_time_entry) <= extract(year from (", mydate, "-1))
+
+    AND A.flt_state IN ('TE','TA','AA')
+
+),
+
+
+
+DATA_DEP AS (
+(SELECT
+        dep_ARP_CODE as ARP_CODE,
+        dep_arp_name as arp_name ,
+        a.ENTRY_DATE,
+        market_segment,
+        COUNT(a.flt_uid) DEP_ARR
+FROM DATA_SOURCE a
+GROUP BY
+        dep_ARP_CODE,
+        dep_arp_name  ,
+        ENTRY_DATE,
+        market_segment
+)
+),
+
+DATA_ARR AS (
+SELECT
+       arr_ARP_CODE as ARP_CODE,
+        ARR_arp_name as arp_name ,
+        ENTRY_DATE,
+        market_segment,
+        COUNT(a.flt_uid) DEP_ARR
+FROM DATA_SOURCE a
+WHERE ARR_arp_name is not null
+GROUP BY  arr_ARP_CODE,
+          ARR_arp_name  ,
+          ENTRY_DATE,
+        market_segment
+),
+
+
+DATA_DAY as
+(SELECT
+          coalesce(a.entry_date, b.entry_date) as entry_date,
+          coalesce(a.ARP_CODE,b.ARP_CODE) as ARP_CODE,
+          coalesce( a.arp_name,b.arp_name) as arp_name,
+          coalesce(  a.market_segment,b.market_segment) as market_segment,
+          coalesce(a.DEP_ARR,0)  + coalesce( b.DEP_ARR,0)  as DEP_ARR
+FROM DATA_DEP a full outer join DATA_ARR b  on (a.ARP_CODE = b.ARP_CODE  and a.entry_date = b.entry_date and a.market_segment = b.market_segment)
+
+),
+
+DATA_PERIOD as
+ (
+ SELECT
+      entry_date,
+      case when market_segment = 'Military' then 'Other Types'
+          else market_segment
+      end market_segment,
+      ARP_CODE,
+      arp_name,
+     extract (year from entry_date) as year,
+     DEP_ARR
+  FROM DATA_DAY a
+
+  ),
+
+DATA_GRP as
+(
+SELECT
+      a.year
+      , min(entry_date) as from_date
+      , max(entry_date) as to_date
+      , a.market_segment
+      ,a.ARP_CODE
+      ,a.arp_name
+     ,SUM (DEP_ARR) as DEP_ARR
+   --  ,SUM (DEP_ARR) / 7 as avg_DEP_ARR
+
+FROM DATA_PERIOD a
+WHERE a.ARP_CODE in (select arp_code from DIM_APT)
+GROUP BY a.year
+      , ARP_CODE
+      , arp_name
+       , a.market_segment
+),
+
+APT_AO_RANK as
+(
+SELECT
+  ARP_CODE, year, market_segment,
+        ROW_NUMBER() OVER (PARTITION BY  ARP_CODE, year
+                ORDER BY DEP_ARR DESC, market_segment) R_RANK,
+        RANK() OVER (PARTITION BY  ARP_CODE, year
+                ORDER BY DEP_ARR DESC, market_segment) RANK
+FROM DATA_GRP
+where year = extract (year from (", mydate, "-1))
+),
+
+APT_AO_RANK_PREV as
+(
+SELECT
+  ARP_CODE, year, market_segment,
+        ROW_NUMBER() OVER (PARTITION BY  ARP_CODE, year
+                ORDER BY DEP_ARR DESC, market_segment) RANK_PREV
+ FROM DATA_GRP
+where year = extract (year from (", mydate, "-1))-1
+)
+
+SELECT
+      a.ARP_CODE
+      ,a.arp_name
+      , a.year
+      , a.from_date
+      , a.to_date
+      ,", mydate, "-1 as last_data_day
+      , a.market_segment
+     ,DEP_ARR
+     , R_RANK,rank, rank_prev
+
+FROM DATA_GRP a
+ left join APT_AO_RANK b on a.ARP_CODE = b.ARP_CODE AND a.market_segment = b.market_segment
+ left join APT_AO_RANK_PREV c on a.ARP_CODE = c.ARP_CODE AND a.market_segment = c.market_segment
+order by ARP_CODE, year desc, R_RANK
+    "
+    )}
