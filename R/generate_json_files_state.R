@@ -2066,7 +2066,7 @@ query <- "
       FROM APT_DAY a
       left join LDW_VDM.VIEW_FAC_PUNCTUALITY_AP_DAY b on a.day_date = b.\"DATE\" and a.apt_code = b.icao_code
       left join LIST_STATE c on a.ISO_COUNTRY_CODE = c.EC_ISO_CT_CODE
-      where a.apt_code<>'LTBA'
+        where a.arp_code not in ('BIKF', 'BIRK', 'LTBA', 'UKBB')
       order by a.apt_CODE, b.\"DATE\"
 "
 
