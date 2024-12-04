@@ -53,7 +53,7 @@ st_billed_clean <- billed_raw %>%
   janitor::clean_names() %>%
   mutate(billing_period_start_date = as.Date(billing_period_start_date, format = "%d-%m-%Y"))
 
-last_billing_date <- min(max(st_billed_clean$billing_period_start_date),
+last_billing_date <- min(max(st_billed_clean$billing_period_start_date + days(1)),
                          floor_date(data_day_date, 'month)')+ months(-1))
 last_billing_year <- year(last_billing_date)
 last_billing_month <- month(last_billing_date)
@@ -90,7 +90,8 @@ st_billed_for_json <- st_billing %>%
     Y2D_BILLED_DIF_2019 = total_billing_y2d / Y2D_BILLED_2019 -1,
     Y2D_BILLED = round(total_billing_y2d / 1000000, 1)
   ) %>%
-  filter(billing_period_start_date == last_billing_date) %>%
+  filter(Year == last_billing_year,
+         month == last_billing_month) %>%
   select(iso_2letter,
          BILLING_DATE,
          MONTH_TEXT,
@@ -474,6 +475,7 @@ query <- "
 
   FROM CTRY_DAY a
   left join LDW_VDM.VIEW_FAC_PUNCTUALITY_CT_DAY b on a.ISO_2LETTER = b.ISO_CT_CODE and a.day_date = b.\"DATE\"
+  where a.ISO_CT_CODE != 'IS'
 "
 
 st_punct_raw <- export_query(query) %>%
@@ -645,7 +647,7 @@ if (exists("co2_data_raw") == FALSE) {co2_data_raw <- get_co2_data()}
 st_co2_data_filtered <- co2_data_raw %>%
   mutate(co2_state = STATE_NAME) %>%
   right_join(state_co2, by = "co2_state") %>%
-  select(-c(STATE_NAME, STATE_CODE, co2_state, CREA_DATE) )
+  select(-c(STATE_NAME, STATE_CODE, co2_state) )
 
 st_co2_data <- st_co2_data_filtered %>%
   select(iso_2letter,
@@ -2064,7 +2066,7 @@ query <- "
       FROM APT_DAY a
       left join LDW_VDM.VIEW_FAC_PUNCTUALITY_AP_DAY b on a.day_date = b.\"DATE\" and a.apt_code = b.icao_code
       left join LIST_STATE c on a.ISO_COUNTRY_CODE = c.EC_ISO_CT_CODE
-      where a.apt_code<>'LTBA'
+      where a.apt_code not in ('BIKF', 'BIRK', 'LTBA', 'UKBB')
       order by a.apt_CODE, b.\"DATE\"
 "
 
@@ -2985,7 +2987,7 @@ st_co2_data_filtered <- co2_data_raw %>%
   mutate(co2_state = STATE_NAME) %>%
   right_join(state_co2, by = "co2_state") %>%
   left_join(state_iso, by = "iso_2letter") %>%
-  select(-c(STATE_NAME, STATE_CODE, co2_state, CREA_DATE) )
+  select(-c(STATE_NAME, STATE_CODE, co2_state))
 
 st_co2_evo <- st_co2_data_filtered %>%
   filter(YEAR >= 2019,
