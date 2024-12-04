@@ -2387,6 +2387,7 @@ query <- "
         FROM APT_DAY a
         left join LDW_VDM.VIEW_FAC_PUNCTUALITY_AP_DAY b on a.day_date = b.\"DATE\" and a.arp_code = b.icao_code
         where a.arp_code not in ('LTBA', 'UKBB')
+              and a.ISO_COUNTRY_CODE != 'IS'
         order by a.ARP_CODE, b.\"DATE\"
  "
 
@@ -2657,6 +2658,7 @@ SELECT
   b.EC_ISO_CT_NAME
 FROM LDW_VDM.VIEW_FAC_PUNCTUALITY_CT_DAY a
 LEFT JOIN LIST_STATE b on a.ISO_CT_CODE = b.EC_ISO_CT_CODE
+where a.ISO_CT_CODE != 'IS'
 ORDER BY b.EC_ISO_CT_NAME
  "
 
