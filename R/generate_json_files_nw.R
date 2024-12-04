@@ -2162,63 +2162,9 @@ st_rank_delay_j <- st_rank_delay %>% toJSON(., pretty = TRUE)
 save_json(st_rank_delay_j, "nw_ctry_ranking_delay")
 
 ## Airport punctuality ----
-query <- "
-   WITH
-      DIM_AIRPORT as (
-        SELECT
-          a.code as arp_code, a.id as arp_id, a.dashboard_name as arp_name,
-          a.ISO_COUNTRY_CODE
-        FROM prudev.pru_airport a
-      )
-
-    , LIST_AIRPORT as (
-          select distinct
-              a.ICAO_CODE as arp_code,
-              b.arp_name,
-              b.iso_country_code
-          from LDW_VDM.VIEW_FAC_PUNCTUALITY_AP_DAY a
-          left join DIM_AIRPORT b on a.icao_code = b.arp_code
-          order by 1
-
-      ),
-
-      LIST_STATE as (
-        SELECT distinct
-          AIU_ISO_COUNTRY_NAME as EC_ISO_CT_NAME,
-          AIU_ISO_COUNTRY_CODE AS EC_ISO_CT_CODE
-        FROM prudev.pru_country_iso
-        WHERE till > TRUNC(SYSDATE)-1
-      ),
-
-      APT_DAY AS (
-        SELECT
-                a.arp_code,
-                a.arp_name,
-                a.ISO_COUNTRY_CODE,
-                t.year,
-                t.month,
-                t.week,
-                t.week_nb_year,
-                t.day_type,
-                t.day_of_week_nb AS day_of_week,
-                t.day_date
-        FROM LIST_AIRPORT a, pru_time_references t
-        WHERE
-           t.day_date >= to_date('24-12-2018','DD-MM-YYYY')
-           AND t.day_date < trunc(sysdate)
-        )
-
-        SELECT
-          a.* , b.*
-        FROM APT_DAY a
-        left join LDW_VDM.VIEW_FAC_PUNCTUALITY_AP_DAY b on a.day_date = b.\"DATE\" and a.arp_code = b.icao_code
-        where a.arp_code not in ('BIKF', 'BIRK', 'LTBA', 'UKBB')
-        order by a.ARP_CODE, b.\"DATE\"
- "
-
-apt_punct_raw <- export_query(query) %>%
-  as_tibble() %>%
-  mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+if(exists("apt_punct_raw") == FALSE) {
+  apt_punct_raw <- get_punct_data_apt()
+}
 
 last_punctuality_day <- min(max(apt_punct_raw$DAY_DATE),
                             data_day_date, na.rm = TRUE)
