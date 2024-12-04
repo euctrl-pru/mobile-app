@@ -475,6 +475,7 @@ query <- "
 
   FROM CTRY_DAY a
   left join LDW_VDM.VIEW_FAC_PUNCTUALITY_CT_DAY b on a.ISO_2LETTER = b.ISO_CT_CODE and a.day_date = b.\"DATE\"
+  where a.ISO_CT_CODE != 'IS'
 "
 
 st_punct_raw <- export_query(query) %>%

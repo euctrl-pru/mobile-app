@@ -821,6 +821,7 @@ get_punct_data_apt <- function() {
           FROM APT_DAY a
           left join LDW_VDM.VIEW_FAC_PUNCTUALITY_AP_DAY b on a.day_date = b.\"DATE\" and a.arp_code = b.icao_code
           where a.arp_code not in ('LTBA', 'UKBB')
+              and a.ISO_COUNTRY_CODE != 'IS'
           order by a.ARP_CODE, b.\"DATE\"
    "
 
