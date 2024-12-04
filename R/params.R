@@ -15,8 +15,7 @@ st_local_data_folder_dev <- here::here("..", "mobile-app", "data", "dev", "st")
 ao_local_data_folder_dev <- here::here("..", "mobile-app", "data", "dev", "ao")
 ap_local_data_folder_dev <- here::here("..", "mobile-app", "data", "dev", "ap")
 
-# nw hardcoded as this is what we want to archive
-nw_local_data_folder <- here::here("..", "mobile-app", "data", "dev", "nw")
+nw_local_data_folder <- here::here("..", "mobile-app", "data", nw_status, "nw")
 st_local_data_folder <- here::here("..", "mobile-app", "data", st_status, "st")
 ao_local_data_folder <- here::here("..", "mobile-app", "data", ao_status, "ao")
 ap_local_data_folder <- here::here("..", "mobile-app", "data", ao_status, "ap")
