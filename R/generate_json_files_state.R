@@ -445,42 +445,9 @@ st_delay_for_json  <- st_delay_last_day %>%
   arrange(iso_2letter)
 
 #### Punctuality data ----
-query <- "
-  WITH
-
-  LIST_COUNTRY AS (
-  SELECT distinct ISO_CT_CODE as iso_2letter
-  FROM LDW_VDM.VIEW_FAC_PUNCTUALITY_CT_DAY
-  group by ISO_CT_CODE
-  order by ISO_CT_CODE
-  )
-
-  , CTRY_DAY AS (
-  SELECT
-          a.iso_2letter,
-          t.year,
-          t.month,
-          t.week,
-          t.week_nb_year,
-          t.day_type,
-          t.day_of_week_nb AS day_of_week,
-          t.day_date
-  FROM LIST_COUNTRY a, pru_time_references t
-  WHERE
-     t.day_date >= to_date('24-12-2018','DD-MM-YYYY')
-     AND t.day_date < trunc(sysdate)
-  )
-
-  SELECT a.*, b.*
-
-  FROM CTRY_DAY a
-  left join LDW_VDM.VIEW_FAC_PUNCTUALITY_CT_DAY b on a.ISO_2LETTER = b.ISO_CT_CODE and a.day_date = b.\"DATE\"
-  where a.ISO_CT_CODE != 'IS'
-"
-
-st_punct_raw <- export_query(query) %>%
-  as_tibble() %>%
-  mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+if(exists("st_punct_raw") == FALSE) {
+  st_punct_raw <- get_punct_data_state()
+}
 
 last_day_punct <-  min(max(st_punct_raw$DAY_DATE),
                        data_day_date, na.rm = TRUE)
