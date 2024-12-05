@@ -76,7 +76,8 @@ nw_billed_for_json <- nw_billing %>%
     DIF_BILL_Y2D_2019 = total_billing_y2d / BILL_Y2D_2019 - 1,
     BILLED_Y2D = round(total_billing_y2d / 1000000, 0)
   ) %>%
-  filter(billing_period_start_date == last_billing_date) %>%
+  filter(Year == last_billing_year,
+         month == last_billing_month) %>%
   select(
     BILLING_DATE,
     MONTH_TEXT = MONTH_F,
@@ -2407,30 +2408,11 @@ apt_punct_data_j <- apt_punct_data %>% toJSON(., pretty = TRUE)
 save_json(apt_punct_data_j, "nw_apt_ranking_punctuality")
 
 ## Country punctuality ----
-##### NOte: the time series for each country is not full. At some point it needs to be fixed either here or in the initial query so the lag functions yield the right result
+if(exists("st_punct_raw") == FALSE) {
+  st_punct_raw <- get_punct_data_state()
+}
 
-### we need data from 2019 so I'm using the source view instead of the excel file
-
-query <- "
-WITH
-LIST_STATE as (
-  SELECT distinct
-    AIU_ISO_COUNTRY_NAME as EC_ISO_CT_NAME,
-    AIU_ISO_COUNTRY_CODE AS EC_ISO_CT_CODE
-  FROM prudev.pru_country_iso
-  WHERE till > TRUNC(SYSDATE)-1
-)
-
-SELECT
-  a.*,
-  b.EC_ISO_CT_NAME
-FROM LDW_VDM.VIEW_FAC_PUNCTUALITY_CT_DAY a
-LEFT JOIN LIST_STATE b on a.ISO_CT_CODE = b.EC_ISO_CT_CODE
-where a.ISO_CT_CODE != 'IS'
-ORDER BY b.EC_ISO_CT_NAME
- "
-
-st_punct_raw <- export_query(query) %>%
+st_punct_raw <- st_punct_raw %>%
   as_tibble() %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
   filter(
