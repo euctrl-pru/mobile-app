@@ -87,7 +87,7 @@ apt_ao_day <- read_xlsx(
 
 # process data
 apt_ao_data_day_int <- apt_ao_day |>
-  mutate(TO_DATE = max(TO_DATE)) |>
+  select(-TO_DATE) |>
   spread(key = FLAG_DAY, value = DEP_ARR) |>
   arrange(ARP_CODE, R_RANK) |>
   mutate(
@@ -113,7 +113,7 @@ ap_apt_data_day <- apt_ao_data_day_int |>
     RANK = R_RANK,
     DY_RANK_DIF_PREV_WEEK,
     DY_AO_GRP_NAME = AO_GRP_NAME,
-    DY_TO_DATE = TO_DATE,
+    DY_TO_DATE = LAST_DATA_DAY,
     DY_DEP_ARR = CURRENT_DAY,
     DY_DEP_ARR_DIF_PREV_WEEK_PERC,
     DY_DEP_ARR_DIF_PREV_YEAR_PERC
@@ -140,17 +140,17 @@ ap_apt_data_week <- apt_ao_week |>
   arrange(ARP_CODE, R_RANK) |>
   mutate(
     WK_RANK_DIF_PREV_WEEK =  case_when(
-        is.na(RANK_PREV) ~ RANK,
-        .default = RANK_PREV - RANK
-      ),
+      is.na(RANK_PREV) ~ RANK,
+      .default = RANK_PREV - RANK
+    ),
     WK_DEP_ARR_DIF_PREV_WEEK_PERC =   case_when(
-        PREV_ROLLING_WEEK == 0 | is.na(PREV_ROLLING_WEEK) ~ NA,
-        .default = round((CURRENT_ROLLING_WEEK / PREV_ROLLING_WEEK - 1), 3)
-      ),
+      PREV_ROLLING_WEEK == 0 | is.na(PREV_ROLLING_WEEK) ~ NA,
+      .default = round((CURRENT_ROLLING_WEEK / PREV_ROLLING_WEEK - 1), 3)
+    ),
     WK_DEP_ARR_DIF_PREV_YEAR_PERC = case_when(
-        ROLLING_WEEK_PREV_YEAR == 0 | is.na(ROLLING_WEEK_PREV_YEAR) ~ NA,
-        .default = round((CURRENT_ROLLING_WEEK / ROLLING_WEEK_PREV_YEAR - 1), 3)
-      ),
+      ROLLING_WEEK_PREV_YEAR == 0 | is.na(ROLLING_WEEK_PREV_YEAR) ~ NA,
+      .default = round((CURRENT_ROLLING_WEEK / ROLLING_WEEK_PREV_YEAR - 1), 3)
+    ),
     WK_DEP_ARR_AVG = round((CURRENT_ROLLING_WEEK/7), 2)
   ) |>
   select(
@@ -181,9 +181,9 @@ ap_apt_data_year <- apt_ao_y2d |>
   mutate(
     Y2D_RANK_DIF_PREV_YEAR =  RANK_PY - RANK,
     Y2D_DEP_ARR_DIF_PREV_YEAR_PERC = ifelse(YEAR == "2024",
-                                        round((DEP_ARR/lag(DEP_ARR)-1), 3), NA),
+                                            round((DEP_ARR/lag(DEP_ARR)-1), 3), NA),
     Y2D_DEP_ARR_DIF_2019_PERC = ifelse(YEAR == "2024",
-                                        round(DEP_ARR/lag(DEP_ARR, 5)-1, 3), NA)
+                                       round((DEP_ARR/lag(DEP_ARR, 5)-1), 3), NA)
   ) |>
   filter(YEAR == 2024) |>
   mutate(TO_DATE = max(TO_DATE)) |>
@@ -252,17 +252,210 @@ apt_ao_main_traffic_dif <- apt_ao_data_day_int |>
 
 #### join tables ----
 ap_apt_traffic <- apt_ao_main_traffic |>
-  left_join(apt_ao_main_traffic_dif, by = c("RANK", "ARP_CODE", "ARP_NAME")) |>
-  left_join(ap_apt_data_day, by = c("RANK", "ARP_CODE", "ARP_NAME")) |>
-  left_join(ap_apt_data_week, by = c("RANK", "ARP_CODE", "ARP_NAME")) |>
-  left_join(ap_apt_data_year, by = c("RANK", "ARP_CODE", "ARP_NAME")) |>
-  arrange(ARP_CODE, ARP_NAME, RANK)
+  left_join(apt_ao_main_traffic_dif, by = c("RANK", "ARP_CODE", "ARP_NAME"),
+            relationship = "many-to-many") |>
+  left_join(ap_apt_data_day, by = c("RANK", "ARP_CODE", "ARP_NAME"),
+            relationship = "many-to-many") |>
+  left_join(ap_apt_data_week, by = c("RANK", "ARP_CODE", "ARP_NAME"),
+            relationship = "many-to-many") |>
+  left_join(ap_apt_data_year, by = c("RANK", "ARP_CODE", "ARP_NAME"),
+            relationship = "many-to-many") |>
+  arrange(ARP_CODE, ARP_NAME, RANK) |>
+  distinct(RANK, ARP_CODE, ARP_NAME, .keep_all = TRUE)
 
 # convert to json and save in app data folder
 ap_apt_traffic_j <- ap_apt_traffic |> toJSON(pretty = TRUE)
 
 save_json(ap_apt_traffic_j, "ap_apt_traffic", archive_file = FALSE)
 
+
+# ____________________________________________________________________________________________
+#
+#    APT market segments -----
+#
+# ____________________________________________________________________________________________
+
+
+#### day ----
+apt_ms_day <- read_xlsx(
+  path  = fs::path_abs(
+    str_glue(ap_base_file),
+    start = ap_base_dir),
+  sheet = "apt_ms_day",
+  range = cell_limits(c(1, 1), c(NA, NA))) |>
+  mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+# process data
+apt_ms_data_day_int <- apt_ms_day |>
+  select(-TO_DATE) |>
+  spread(key = FLAG_PERIOD, value = DEP_ARR) |>
+  arrange(ARP_CODE, R_RANK) |>
+  mutate(
+    DY_RANK_DIF_PREV_WEEK = case_when(
+      is.na(RANK_PREV) ~ RANK,
+      .default = RANK_PREV - RANK
+    ),
+    DY_DEP_ARR_DIF_PREV_WEEK_PERC =   case_when(
+      DAY_PREV_WEEK == 0 | is.na(DAY_PREV_WEEK) ~ NA,
+      .default = CURRENT_DAY / DAY_PREV_WEEK - 1
+    ),
+    DY_DEP_ARR_DIF_PREV_YEAR_PERC = case_when(
+      DAY_PREV_YEAR == 0 | is.na(DAY_PREV_YEAR) ~ NA,
+      .default = CURRENT_DAY / DAY_PREV_YEAR - 1
+    ),
+    APT_TFC_MS_DIF = CURRENT_DAY - DAY_PREV_WEEK
+  )
+
+ap_apt_ms_data_day <- apt_ms_data_day_int |>
+  select(
+    ARP_CODE,
+    ARP_NAME,
+    RANK = R_RANK,
+    DY_RANK_DIF_PREV_WEEK,
+    DY_MARKET_SEGMENT = MARKET_SEGMENT,
+    DY_TO_DATE = LAST_DATA_DAY,
+    DY_DEP_ARR = CURRENT_DAY,
+    DY_DEP_ARR_DIF_PREV_WEEK_PERC,
+    DY_DEP_ARR_DIF_PREV_YEAR_PERC
+  )
+
+
+#### week ----
+apt_ms_week <- read_xlsx(
+  path  = fs::path_abs(
+    str_glue(ap_base_file),
+    start = ap_base_dir),
+  sheet = "apt_ms_week",
+  range = cell_limits(c(1, 1), c(NA, NA))) |>
+  mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+# process data
+ap_apt_ms_data_week <- apt_ms_week |>
+  mutate(
+    WK_FROM_DATE = max(FROM_DATE),
+    WK_TO_DATE = max(TO_DATE)
+  ) |>
+  select(-FROM_DATE, -TO_DATE, -LAST_DATA_DAY) |>
+  spread(key = FLAG_PERIOD, value = DEP_ARR) |>
+  arrange(ARP_CODE, R_RANK) |>
+  mutate(
+    WK_RANK_DIF_PREV_WEEK =  case_when(
+      is.na(RANK_PREV) ~ RANK,
+      .default = RANK_PREV - RANK
+    ),
+    WK_DEP_ARR_DIF_PREV_WEEK_PERC =   case_when(
+      PREV_ROLLING_WEEK == 0 | is.na(PREV_ROLLING_WEEK) ~ NA,
+      .default = round((CURRENT_ROLLING_WEEK / PREV_ROLLING_WEEK - 1), 3)
+    ),
+    WK_DEP_ARR_DIF_PREV_YEAR_PERC = case_when(
+      ROLLING_WEEK_PREV_YEAR == 0 | is.na(ROLLING_WEEK_PREV_YEAR) ~ NA,
+      .default = round((CURRENT_ROLLING_WEEK / ROLLING_WEEK_PREV_YEAR - 1), 3)
+    ),
+    WK_DEP_ARR_AVG = round((CURRENT_ROLLING_WEEK/7), 2)
+  ) |>
+  select(
+    ARP_CODE,
+    ARP_NAME,
+    RANK = R_RANK,
+    WK_RANK_DIF_PREV_WEEK,
+    WK_MARKET_SEGMENT = MARKET_SEGMENT,
+    WK_FROM_DATE,
+    WK_TO_DATE,
+    WK_DEP_ARR_AVG,
+    WK_DEP_ARR_DIF_PREV_WEEK_PERC,
+    WK_DEP_ARR_DIF_PREV_YEAR_PERC
+  )
+
+
+#### y2d ----
+apt_ms_y2d <- read_xlsx(
+  path  = fs::path_abs(
+    str_glue(ap_base_file),
+    start = ap_base_dir),
+  sheet = "apt_ms_y2d",
+  range = cell_limits(c(1, 1), c(NA, NA))) |>
+  mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+# process data
+ap_apt_ms_data_year <- apt_ms_y2d |>
+  arrange(ARP_CODE, MARKET_SEGMENT, YEAR) |>
+  mutate(
+    Y2D_RANK_DIF_PREV_YEAR =  RANK_PREV - RANK,
+    Y2D_DEP_ARR_DIF_PREV_YEAR_PERC = ifelse(YEAR == "2024",
+                                            round((DEP_ARR/lag(DEP_ARR)-1), 3), NA),
+    Y2D_DEP_ARR_DIF_2019_PERC = ifelse(YEAR == "2024",
+                                       round((DEP_ARR/lag(DEP_ARR, 5)-1), 3), NA)
+  ) |>
+  filter(YEAR == 2024) |>
+  arrange(ARP_CODE, ARP_NAME, R_RANK) |>
+  select(
+    ARP_CODE,
+    ARP_NAME,
+    RANK = R_RANK,
+    Y2D_RANK_DIF_PREV_YEAR,
+    Y2D_MARKET_SEGMENT = MARKET_SEGMENT,
+    Y2D_TO_DATE = LAST_DATA_DAY,
+    Y2D_DEP_ARR_AVG = DEP_ARR,
+    Y2D_DEP_ARR_DIF_PREV_YEAR_PERC,
+    Y2D_DEP_ARR_DIF_2019_PERC
+  )
+
+#### main card ----
+apt_ms_main_traffic <- apt_ms_data_day_int |>
+  mutate(
+    MAIN_TFC_MS = if_else(
+      R_RANK <= 4,
+      MARKET_SEGMENT,
+      NA
+    ),
+    MAIN_TFC_MS_DEP_ARR = if_else(
+      R_RANK <= 4,
+      CURRENT_DAY,
+      NA
+    )
+  ) |>
+  select(ARP_CODE, ARP_NAME, RANK = R_RANK, MAIN_TFC_MS, MAIN_TFC_MS_DEP_ARR)
+
+apt_ms_main_traffic_dif <- apt_ms_data_day_int |>
+  arrange(ARP_CODE, desc(abs(APT_TFC_MS_DIF))) |>
+  group_by(ARP_CODE) |>
+  mutate(RANK_DIF_MS_TFC = row_number()) |>
+  ungroup() |>
+  arrange(ARP_CODE, R_RANK) |>
+  mutate(
+    MAIN_TFC_DIF_MS = if_else(
+      RANK_DIF_MS_TFC <= 4,
+      MARKET_SEGMENT,
+      NA
+    ),
+    MAIN_TFC_DIF_MS_DEP_ARR_DIF = if_else(
+      RANK_DIF_MS_TFC <= 4,
+      APT_TFC_MS_DIF,
+      NA
+    )
+  ) |>
+  arrange(ARP_CODE, RANK_DIF_MS_TFC) |>
+  select(ARP_CODE, ARP_NAME, RANK = RANK_DIF_MS_TFC, MAIN_TFC_DIF_MS,
+         MAIN_TFC_DIF_MS_DEP_ARR_DIF)
+
+
+#### join tables ----
+ap_apt_ms_traffic <- apt_ms_main_traffic |>
+  left_join(apt_ms_main_traffic_dif, by = c("RANK", "ARP_CODE", "ARP_NAME"),
+            relationship = "many-to-many") |>
+  left_join(ap_apt_ms_data_day, by = c("RANK", "ARP_CODE", "ARP_NAME"),
+            relationship = "many-to-many") |>
+  left_join(ap_apt_ms_data_week, by = c("RANK", "ARP_CODE", "ARP_NAME"),
+            relationship = "many-to-many") |>
+  left_join(ap_apt_ms_data_year, by = c("RANK", "ARP_CODE", "ARP_NAME"),
+            relationship = "many-to-many") |>
+  arrange(ARP_CODE, ARP_NAME, RANK) |>
+  distinct(RANK, ARP_CODE, ARP_NAME, .keep_all = TRUE)
+
+# convert to json and save in app data folder
+ap_apt_ms_traffic_j <- ap_apt_ms_traffic |> toJSON(pretty = TRUE)
+
+save_json(ap_apt_ms_traffic_j, "ap_apt_traffic", archive_file = FALSE)
 
 
 
