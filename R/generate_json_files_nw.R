@@ -46,7 +46,7 @@ nw_billing <- nw_billed_per_cz %>%
   ungroup()
 
 # extract date parameters
-last_billing_date <- min(max(nw_billing$billing_period_start_date),
+last_billing_date <- min(max(nw_billing$billing_period_start_date + days(1)),
                          floor_date(data_day_date, 'month)') + months(-1))
 last_billing_year <- year(last_billing_date)
 last_billing_month <- month(last_billing_date)
@@ -90,7 +90,7 @@ nw_billed_for_json <- nw_billing %>%
   )
 
 
-# app v2 json
+# app json
 nw_billed_json <- nw_billed_for_json %>%
   toJSON(., pretty = TRUE) %>%
   substr(., 1, nchar(.) - 1) %>%
