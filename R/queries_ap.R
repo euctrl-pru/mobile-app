@@ -1629,7 +1629,7 @@ SELECT
     ,SUM (DEP_ARR)  DEP_ARR
     ,min(entry_Date) as from_date
     ,max(entry_date) as to_date
-    ,to_date(  TO_CHAR (", mydate, "-1, 'dd-mm-') || year ,'dd-mm-yyyy') as last_data_date
+    ,", mydate, " -1 as last_data_date
 
 FROM ALL_DAY_DATA
 WHERE arp_code in (select arp_code from  DIM_APT) AND ao_grp_name <> 'UNKNOWN' AND ao_grp_code <> 'ZZZ'
