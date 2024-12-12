@@ -697,23 +697,22 @@ apt_ms_data_day <- apt_ms_day |>
       .default = CURRENT_DAY / DAY_PREV_YEAR - 1
     )
   ) |>
+  group_by(ARP_CODE) |>
+  mutate(DY_MS_SHARE = ifelse(CURRENT_DAY == 0, 0,
+                              CURRENT_DAY/sum(CURRENT_DAY, na.rm = TRUE))) |>
+  ungroup() |>
   select(
     APT_CODE = ARP_CODE,
     APT_NAME = ARP_NAME,
     RANK = R_RANK,
     DY_RANK_DIF_PREV_WEEK,
     DY_MARKET_SEGMENT = MARKET_SEGMENT,
+    DY_MS_SHARE,
     DY_TO_DATE = LAST_DATA_DAY,
     DY_FLT = CURRENT_DAY,
     DY_FLT_DIF_PREV_WEEK_PERC,
     DY_FLT_DIF_PREV_YEAR_PERC
   )
-
-apt_ms_share_day <- apt_ms_data_day |>
-  group_by(APT_CODE) |>
-  mutate(DY_MS_SHARE = ifelse(DY_FLT == 0, 0, DY_FLT/sum(DY_FLT))) |>
-  ungroup() |>
-  select(APT_CODE, APT_NAME, RANK, DY_MARKET_SEGMENT, DY_MS_SHARE)
 
 
 #### week ----
@@ -749,24 +748,24 @@ apt_ms_data_week <- apt_ms_week |>
     ),
     WK_FLT_AVG = round((CURRENT_ROLLING_WEEK/7), 2)
   ) |>
+  group_by(ARP_CODE) |>
+  mutate(WK_MS_SHARE = ifelse(CURRENT_ROLLING_WEEK == 0, 0,
+                              CURRENT_ROLLING_WEEK/sum(CURRENT_ROLLING_WEEK,
+                                                       na.rm = TRUE))) |>
+  ungroup() |>
   select(
     APT_CODE = ARP_CODE,
     APT_NAME = ARP_NAME,
     RANK = R_RANK,
     WK_RANK_DIF_PREV_WEEK,
     WK_MARKET_SEGMENT = MARKET_SEGMENT,
+    WK_MS_SHARE,
     WK_FROM_DATE,
     WK_TO_DATE,
     WK_FLT_AVG,
     WK_FLT_DIF_PREV_WEEK_PERC,
     WK_FLT_DIF_PREV_YEAR_PERC
   )
-
-apt_ms_share_week <- apt_ms_data_week |>
-  group_by(APT_CODE) |>
-  mutate(WK_MS_SHARE = ifelse(WK_FLT_AVG == 0, 0, WK_FLT_AVG/sum(WK_FLT_AVG))) |>
-  ungroup() |>
-  select(APT_CODE, APT_NAME, RANK, WK_MARKET_SEGMENT, WK_MS_SHARE)
 
 
 #### y2d ----
@@ -789,6 +788,10 @@ apt_ms_data_year <- apt_ms_y2d |>
                                        round((DEP_ARR/lag(DEP_ARR, 5)-1), 3), NA)
   ) |>
   filter(YEAR == 2024) |>
+  group_by(ARP_CODE) |>
+  mutate(Y2D_MS_SHARE = ifelse(DEP_ARR == 0, 0,
+                               DEP_ARR/sum(DEP_ARR, na.rm = TRUE))) |>
+  ungroup() |>
   arrange(ARP_CODE, ARP_NAME, R_RANK) |>
   select(
     APT_CODE = ARP_CODE,
@@ -796,39 +799,19 @@ apt_ms_data_year <- apt_ms_y2d |>
     RANK = R_RANK,
     Y2D_RANK_DIF_PREV_YEAR,
     Y2D_MARKET_SEGMENT = MARKET_SEGMENT,
+    Y2D_MS_SHARE,
     Y2D_TO_DATE = LAST_DATA_DAY,
     Y2D_FLT_AVG = DEP_ARR,
     Y2D_FLT_DIF_PREV_YEAR_PERC,
     Y2D_FLT_DIF_2019_PERC
   )
 
-apt_ms_share_y2d <- apt_ms_data_year |>
-  group_by(APT_CODE) |>
-  mutate(Y2D_MS_SHARE = ifelse(Y2D_FLT_AVG == 0, 0, Y2D_FLT_AVG/sum(Y2D_FLT_AVG))) |>
-  ungroup() |>
-  select(APT_CODE, APT_NAME, RANK, Y2D_MARKET_SEGMENT, Y2D_MS_SHARE)
-
-
-####main card ----
-apt_ms_share <- apt_ms_share_day |>
-  left_join(apt_ms_share_week, by = c("RANK", "APT_CODE", "APT_NAME"),
-            relationship = "many-to-many") |>
-  left_join(apt_ms_share_y2d, by = c("RANK", "APT_CODE", "APT_NAME"),
-            relationship = "many-to-many") |>
-  arrange(APT_CODE, APT_NAME, RANK) |>
-  distinct(RANK, APT_CODE, APT_NAME, .keep_all = TRUE)
-
 
 #### join tables ----
-apt_ms_ranking_traffic <- apt_ms_share |>
-  left_join(apt_ms_data_day, by = c("RANK", "APT_CODE", "APT_NAME",
-                                    "DY_MARKET_SEGMENT"),
+apt_ms_ranking_traffic <- apt_ms_data_day |>
+  left_join(apt_ms_data_week, by = c("RANK", "APT_CODE", "APT_NAME"),
             relationship = "many-to-many") |>
-  left_join(apt_ms_data_week, by = c("RANK", "APT_CODE", "APT_NAME",
-                                     "WK_MARKET_SEGMENT"),
-            relationship = "many-to-many") |>
-  left_join(apt_ms_data_year, by = c("RANK", "APT_CODE", "APT_NAME",
-                                     "Y2D_MARKET_SEGMENT"),
+  left_join(apt_ms_data_year, by = c("RANK", "APT_CODE", "APT_NAME"),
             relationship = "many-to-many") |>
   arrange(APT_CODE, APT_NAME, RANK) |>
   distinct(RANK, APT_CODE, APT_NAME, .keep_all = TRUE)
