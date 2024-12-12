@@ -53,7 +53,7 @@ st_billed_clean <- billed_raw %>%
   janitor::clean_names() %>%
   mutate(billing_period_start_date = as.Date(billing_period_start_date, format = "%d-%m-%Y"))
 
-last_billing_date <- min(max(st_billed_clean$billing_period_start_date),
+last_billing_date <- min(max(st_billed_clean$billing_period_start_date + days(1)),
                          floor_date(data_day_date, 'month)')+ months(-1))
 last_billing_year <- year(last_billing_date)
 last_billing_month <- month(last_billing_date)
@@ -90,7 +90,8 @@ st_billed_for_json <- st_billing %>%
     Y2D_BILLED_DIF_2019 = total_billing_y2d / Y2D_BILLED_2019 -1,
     Y2D_BILLED = round(total_billing_y2d / 1000000, 1)
   ) %>%
-  filter(billing_period_start_date == last_billing_date) %>%
+  filter(Year == last_billing_year,
+         month == last_billing_month) %>%
   select(iso_2letter,
          BILLING_DATE,
          MONTH_TEXT,
@@ -444,41 +445,9 @@ st_delay_for_json  <- st_delay_last_day %>%
   arrange(iso_2letter)
 
 #### Punctuality data ----
-query <- "
-  WITH
-
-  LIST_COUNTRY AS (
-  SELECT distinct ISO_CT_CODE as iso_2letter
-  FROM LDW_VDM.VIEW_FAC_PUNCTUALITY_CT_DAY
-  group by ISO_CT_CODE
-  order by ISO_CT_CODE
-  )
-
-  , CTRY_DAY AS (
-  SELECT
-          a.iso_2letter,
-          t.year,
-          t.month,
-          t.week,
-          t.week_nb_year,
-          t.day_type,
-          t.day_of_week_nb AS day_of_week,
-          t.day_date
-  FROM LIST_COUNTRY a, pru_time_references t
-  WHERE
-     t.day_date >= to_date('24-12-2018','DD-MM-YYYY')
-     AND t.day_date < trunc(sysdate)
-  )
-
-  SELECT a.*, b.*
-
-  FROM CTRY_DAY a
-  left join LDW_VDM.VIEW_FAC_PUNCTUALITY_CT_DAY b on a.ISO_2LETTER = b.ISO_CT_CODE and a.day_date = b.\"DATE\"
-"
-
-st_punct_raw <- export_query(query) %>%
-  as_tibble() %>%
-  mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+if(exists("st_punct_raw") == FALSE) {
+  st_punct_raw <- get_punct_data_state()
+}
 
 last_day_punct <-  min(max(st_punct_raw$DAY_DATE),
                        data_day_date, na.rm = TRUE)
@@ -645,7 +614,7 @@ if (exists("co2_data_raw") == FALSE) {co2_data_raw <- get_co2_data()}
 st_co2_data_filtered <- co2_data_raw %>%
   mutate(co2_state = STATE_NAME) %>%
   right_join(state_co2, by = "co2_state") %>%
-  select(-c(STATE_NAME, STATE_CODE, co2_state, CREA_DATE) )
+  select(-c(STATE_NAME, STATE_CODE, co2_state) )
 
 st_co2_data <- st_co2_data_filtered %>%
   select(iso_2letter,
@@ -2013,77 +1982,22 @@ save_json(st_apt_delay_j, "st_apt_ranking_delay")
 ## PUNTCUALITY ----
 ### Airport ----
 # raw data
-query <- "
- WITH
-    DIM_AIRPORT as (
-      SELECT
-        a.code as apt_code, a.id as apt_id, a.dashboard_name as apt_name,
-        a.ISO_COUNTRY_CODE
-      FROM prudev.pru_airport a
-    )
-
-  , LIST_AIRPORT as (
-        select distinct
-            a.ICAO_CODE as apt_code,
-            b.apt_name,
-            b.iso_country_code
-        from LDW_VDM.VIEW_FAC_PUNCTUALITY_AP_DAY a
-        left join DIM_AIRPORT b on a.icao_code = b.apt_code
-        order by 1
-
-    ),
-
-    LIST_STATE as (
-      SELECT DISTINCT
-        AIU_ISO_COUNTRY_NAME as EC_ISO_CT_NAME,
-        AIU_ISO_COUNTRY_CODE AS EC_ISO_CT_CODE
-      FROM prudev.pru_country_iso
-      WHERE till > TRUNC(SYSDATE)-1
-    ),
-
-    APT_DAY AS (
-      SELECT
-              a.apt_code,
-              a.apt_name,
-              a.ISO_COUNTRY_CODE,
-              t.year,
-              t.month,
-              t.week,
-              t.week_nb_year,
-              t.day_type,
-              t.day_of_week_nb AS day_of_week,
-              t.day_date
-      FROM LIST_AIRPORT a, pru_time_references t
-      WHERE
-         t.day_date >= to_date('24-12-2018','DD-MM-YYYY')
-         AND t.day_date < trunc(sysdate)
-      )
-
-      SELECT
-        a.* , b.*, c.EC_ISO_CT_NAME
-      FROM APT_DAY a
-      left join LDW_VDM.VIEW_FAC_PUNCTUALITY_AP_DAY b on a.day_date = b.\"DATE\" and a.apt_code = b.icao_code
-      left join LIST_STATE c on a.ISO_COUNTRY_CODE = c.EC_ISO_CT_CODE
-      where a.apt_code<>'LTBA'
-      order by a.apt_CODE, b.\"DATE\"
-"
-
-st_apt_punct_raw <- export_query(query) %>%
-  as_tibble() %>%
-  mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+if(exists("apt_punct_raw") == FALSE) {
+  apt_punct_raw <- get_punct_data_apt()
+}
 
 # calc
-st_apt_punct_calc <- st_apt_punct_raw %>%
-  mutate(ISO_COUNTRY_CODE = if_else(substr(APT_CODE, 1,2) == 'GC',
+st_apt_punct_calc <- apt_punct_raw %>%
+  mutate(ISO_COUNTRY_CODE = if_else(substr(ARP_CODE, 1,2) == 'GC',
                                     'IC',
                                     ISO_COUNTRY_CODE ),
          EC_ISO_CT_NAME = case_when (
-           substr(APT_CODE, 1,2) == 'GC' ~ 'Spain Canaries',
-           substr(APT_CODE, 1,2) == 'LE' ~ 'Spain Continental',
+           substr(ARP_CODE, 1,2) == 'GC' ~ 'Spain Canaries',
+           substr(ARP_CODE, 1,2) == 'LE' ~ 'Spain Continental',
            .default = EC_ISO_CT_NAME )
          ) %>%
   # select(DAY_DATE, APT_NAME, DAY_ARR_PUNCT, RANK)
-  group_by(APT_NAME) %>%
+  group_by(ARP_NAME) %>%
   arrange(DAY_DATE) %>%
   mutate(
     DY_APT_ARR_PUNCT = ARR_PUNCTUALITY_PERCENTAGE / 100,
@@ -2099,17 +2013,17 @@ st_apt_punct_calc <- st_apt_punct_raw %>%
 #### day ----
 st_apt_punct_dy_all <- st_apt_punct_calc %>%
   group_by(iso_2letter, DAY_DATE) %>%
-  arrange(iso_2letter, desc(DY_APT_ARR_PUNCT), APT_NAME) %>%
+  arrange(iso_2letter, desc(DY_APT_ARR_PUNCT), ARP_NAME) %>%
   mutate(
     ST_RANK = row_number(),
     ST_RANK = paste0(tolower(state), ST_RANK)     #index for joining tables later
     ) %>%
   ungroup() %>%
-  group_by(APT_NAME) %>%
+  group_by(ARP_NAME) %>%
   arrange(DAY_DATE) %>%
   mutate(
          # DY_RANK_DIF_PREV_WEEK = lag(RANK, 7) - RANK,          #not used anymore
-         DY_APT_NAME = APT_NAME,
+         DY_APT_NAME = ARP_NAME,
          DY_TO_DATE = round_date(DAY_DATE, "day")
          ) %>%
   ungroup() %>%
@@ -2133,17 +2047,17 @@ st_apt_punct_dy <- st_apt_punct_dy_all %>%
 #### week ----
 st_apt_punct_wk <- st_apt_punct_calc %>%
   group_by(iso_2letter, DAY_DATE) %>%
-  arrange(iso_2letter, desc(WK_APT_ARR_PUNCT), APT_NAME) %>%
+  arrange(iso_2letter, desc(WK_APT_ARR_PUNCT), ARP_NAME) %>%
   mutate(
     ST_RANK = row_number(),
     ST_RANK = paste0(tolower(state), ST_RANK)     #index for joining tables later
   ) %>%
   ungroup() %>%
-  group_by(APT_NAME) %>%
+  group_by(ARP_NAME) %>%
   arrange(DAY_DATE) %>%
   mutate(
     # WK_RANK_DIF_PREV_WEEK = lag(RANK, 7) - RANK,            #not used anymore
-    WK_APT_NAME = APT_NAME,
+    WK_APT_NAME = ARP_NAME,
     WK_TO_DATE = round_date(DAY_DATE, "day"),
     WK_FROM_DATE = round_date(DAY_DATE, "day") + days(-7),
     WK_APT_ARR_PUNCT_DIF_PREV_WEEK = (WK_APT_ARR_PUNCT - lag(WK_APT_ARR_PUNCT, 7)),
@@ -2171,18 +2085,18 @@ st_apt_punct_y2d <- st_apt_punct_calc %>%
   mutate(MONTH_DAY = as.numeric(format(DAY_DATE, format = "%m%d"))) %>%
   filter(MONTH_DAY <= as.numeric(format(last_day_punct, format = "%m%d"))) %>%
   mutate(YEAR = as.numeric(format(DAY_DATE, format="%Y"))) %>%
-  group_by(state, APT_NAME, ICAO_CODE, YEAR) %>%
+  group_by(state, ARP_NAME, ICAO_CODE, YEAR) %>%
   summarise (Y2D_APT_ARR_PUNCT = sum(ARR_PUNCTUAL_FLIGHTS, na.rm=TRUE) / sum(ARR_SCHEDULE_FLIGHT, na.rm=TRUE)
   ) %>%
   ungroup() %>%
   group_by(state, YEAR) %>%
-  arrange(desc(Y2D_APT_ARR_PUNCT), APT_NAME) %>%
+  arrange(desc(Y2D_APT_ARR_PUNCT), ARP_NAME) %>%
   mutate(
     ST_RANK = row_number(),
     ST_RANK = paste0(tolower(state), ST_RANK)     #index for joining tables later
     ) %>%
   ungroup() %>%
-  group_by(APT_NAME) %>%
+  group_by(ARP_NAME) %>%
   arrange(YEAR) %>%
   mutate(
     # Y2D_RANK_DIF_PREV_YEAR = lag(RANK, 1) - RANK,
@@ -2192,7 +2106,7 @@ st_apt_punct_y2d <- st_apt_punct_calc %>%
   ungroup() %>%
   filter(YEAR == max(YEAR)) %>%
   mutate(Y2D_RANK = rank(desc(Y2D_APT_ARR_PUNCT), ties.method = "max")) %>%
-  mutate(Y2D_APT_NAME = APT_NAME) %>%
+  mutate(Y2D_APT_NAME = ARP_NAME) %>%
   group_by(state) %>%
   arrange(Y2D_RANK, Y2D_APT_NAME) %>%
   mutate(
@@ -2985,7 +2899,7 @@ st_co2_data_filtered <- co2_data_raw %>%
   mutate(co2_state = STATE_NAME) %>%
   right_join(state_co2, by = "co2_state") %>%
   left_join(state_iso, by = "iso_2letter") %>%
-  select(-c(STATE_NAME, STATE_CODE, co2_state, CREA_DATE) )
+  select(-c(STATE_NAME, STATE_CODE, co2_state))
 
 st_co2_evo <- st_co2_data_filtered %>%
   filter(YEAR >= 2019,
