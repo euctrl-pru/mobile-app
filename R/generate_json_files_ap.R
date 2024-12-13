@@ -25,8 +25,10 @@ source(here("..", "mobile-app", "R", "params.R"))
 
 
 # Queries ----
-source(here("..", "mobile-app", "R", "queries_ap - older version.R"))
-
+if (exists("mydate") == FALSE) {
+  mydate <- ''
+  source(here("..", "mobile-app", "R", "queries_ap.R"))
+}
 
 # airport dimension table (lists the airports and their ICAO codes)
 if (exists("apt_icao") == FALSE) {
