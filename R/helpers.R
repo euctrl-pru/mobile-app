@@ -58,8 +58,10 @@ save_json <- function(df, filename, mydate = data_day_date, archive_file = TRUE)
   # filename <- "st_ao_ranking_traffic"
 
   # save in local data folder
-  stakeholder_prefix <- stringr::str_sub(filename, 1,
-                                         regexpr("_", substr(filename, 1, nchar(filename)))-1)
+  # stakeholder_prefix <- stringr::str_sub(filename, 1,
+  #                                        regexpr("_", substr(filename, 1, nchar(filename)))-1)
+
+  stakeholder_prefix <- stringr::str_sub(filename, 1, 2)
 
   target_dir <- get(paste0(stakeholder_prefix, "_","local_data_folder"))
   write(df, here(target_dir, paste0(filename,".json")))

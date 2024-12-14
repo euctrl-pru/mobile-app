@@ -13,7 +13,8 @@ if (exists("apt_icao") == FALSE) {
 
 
 ## traffic ----
-query_ap_traffic <- paste0("with LIST_AIRPORT as
+query_ap_traffic <- paste0("
+with LIST_AIRPORT as
 (select code as arp_code,
         id as arp_id ,
        dashboard_name as arp_name,
@@ -41,7 +42,7 @@ as
  from LIST_AIRPORT a, pru_time_references t
 where
       t.day_date >= to_date('24-12-2018','dd-mm-yyyy')
- -- AND t.day_date < ", mydate, "
+      and t.year <= extract(year from TRUNC(SYSDATE)-1)
 ),
 
 
@@ -371,18 +372,20 @@ AIRP_CALC as
             THEN Y2D_AVG_DEP_ARR_YEAR / Y2D_AVG_DEP_ARR_2019 -1
             ELSE NULL
        END Y2D_DEP_ARR_DIF_2019_PERC,
-       ", mydate, " - 1 as LAST_DATA_DAY
+       TRUNC(SYSDATE) - 1 as LAST_DATA_DAY
 
 
      FROM AIRP_CACL_PREV
---      where flight_date >=to_date('30-12-2018','DD-MM-YYYY')
-     where flight_DATE >=to_date('01-01-'|| extract(year from (", mydate, "-1)),'dd-mm-yyyy') AND
-     flight_DATE <=to_date('31-12-'|| extract(year from (", mydate, "-1)),'dd-mm-yyyy')")
+     where flight_DATE >=to_date('01-01-'|| extract(year from (TRUNC(SYSDATE)-1)),'dd-mm-yyyy') AND
+     flight_DATE <=to_date('31-12-'|| extract(year from (TRUNC(SYSDATE)-1)),'dd-mm-yyyy')"
+
+)
 
 
 
 ## delay ----
-query_ap_delay <- paste0("with LIST_AIRPORT as
+query_ap_delay <- paste0("
+with LIST_AIRPORT as
 (select code as arp_code,
   id as arp_id ,
   dashboard_name as arp_name,
@@ -410,7 +413,6 @@ as
   from LIST_AIRPORT a, pru_time_references t
   where
   t.day_date >= to_date('24-12-2018','dd-mm-yyyy')
---  AND t.day_date < ", mydate, "
 ),
 
 arp_SYN_ARR
@@ -1097,12 +1099,13 @@ sum(TDM_15_ARP_DEP_W) as TDM_15_ARP_DEP_W,
 sum(TDM_15_ARP_DEP_NA) as TDM_15_ARP_DEP_NA
 FROM ALL_DAY_DATA
 GROUP BY flight_date, arp_code, arp_name, icao2letter
-order by arp_code,  flight_date")
-
-
+order by arp_code,  flight_date
+"
+)
 
 ##punctuality ----
-query_ap_punct <- paste0("WITH
+query_ap_punct <- paste0(
+"WITH
   --Getting the list of airports
   LIST_AIRPORT as (
   SELECT code as arp_code,
@@ -1127,7 +1130,7 @@ query_ap_punct <- paste0("WITH
       FROM LIST_AIRPORT a, pru_time_references t
       WHERE
          t.day_date >= to_date('24-12-2018','DD-MM-YYYY')
-         AND t.day_date < ", mydate, "
+         AND t.day_date < TRUNC(SYSDATE)
          )
     --Joining the airport dates table with the aiport punctuality table
     SELECT
@@ -1151,7 +1154,8 @@ query_ap_punct <- paste0("WITH
       FROM AP_DAY a
       left join LDW_VDM.VIEW_FAC_PUNCTUALITY_AP_DAY b
       on a.arp_code = b.\"ICAO_CODE\" AND a.day_date = b.\"DATE\"
-")
+"
+)
 
 
 
