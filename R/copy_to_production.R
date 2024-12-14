@@ -20,8 +20,8 @@ destination_dir <- '//ihx-vdm05/LIVE_var_www_performance$/briefing'
 archive_mode <- FALSE
 
 if (archive_mode) {
-  wef <- "2024-09-01"  #included in output
-  til <- "2024-09-10"  #included in output
+  wef <- "2024-03-02"  #included in output
+  til <- "2024-03-12"  #included in output
   data_day_date <- seq(ymd(wef), ymd(til), by = "day")
 } else {
   data_day_date <- lubridate::today(tzone = "") +  days(-1)
