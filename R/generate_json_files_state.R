@@ -539,6 +539,9 @@ st_punct_data <- st_punct_data_joined %>%
          WEEK_DEP_PUNCT_DIF_PY = WEEK_DEP_PUNCT - WEEK_DEP_PUNCT_PY,
          WEEK_ARR_PUNCT_DIF_2019 = WEEK_ARR_PUNCT - WEEK_ARR_PUNCT_2019,
          WEEK_DEP_PUNCT_DIF_2019 = WEEK_DEP_PUNCT - WEEK_DEP_PUNCT_2019
+         , test_date = if_else(YEAR == last_year_punct,
+                               lag(DAY_DATE, 364 * (last_year_punct - 2019) + floor((last_year_punct - 2019) / 4) * 7),
+                               NA)
   )
 
 st_punct_d_w <- st_punct_data %>%

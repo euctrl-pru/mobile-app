@@ -2,7 +2,7 @@
 # this will set in which folder data is saved locally in the repo
 nw_status <- "prod"
 st_status <- "prod"
-ao_status <- "dev"
+ao_status <- "prod"
 ap_status <- "dev"
 
 nw_local_data_folder_prod <- here::here("..", "mobile-app", "data", "prod", "nw")

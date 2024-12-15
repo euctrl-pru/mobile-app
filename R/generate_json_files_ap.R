@@ -1273,7 +1273,7 @@ apt_ms_ranking_traffic <- apt_ms_data_day |>
 # convert to json and save in app data folder
 apt_ms_ranking_traffic_j <- apt_ms_ranking_traffic |> toJSON(pretty = TRUE)
 
-save_json(apt_ms_traffic_j, "apt_ms_ranking_traffic", archive_file = FALSE)
+save_json(apt_ms_ranking_traffic_j, "apt_ms_ranking_traffic", archive_file = FALSE)
 
 
 

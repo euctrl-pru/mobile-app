@@ -841,14 +841,22 @@ DIM_STATE as (
   WHERE
      t.day_date >= to_date('24-12-2018','DD-MM-YYYY')
      AND t.day_date < trunc(sysdate)
-  )
+  ),
 
-  SELECT a.*, b.*, c.EC_ISO_CT_NAME
+  COUNTRY_DAY_DATA as (
+  SELECT a.*, b.*
 
   FROM CTRY_DAY a
   left join LDW_VDM.VIEW_FAC_PUNCTUALITY_CT_DAY b on a.ISO_2LETTER = b.ISO_CT_CODE and a.day_date = b.\"DATE\"
+  )
+
+  SELECT
+      a.*,
+      c.EC_ISO_CT_NAME
+  FROM COUNTRY_DAY_DATA a
   left join DIM_STATE c on a.ISO_2LETTER = c.EC_ISO_CT_CODE
   where a.ISO_2LETTER != 'IS'
+
 "
 
 
