@@ -20,8 +20,8 @@ destination_dir <- '//ihx-vdm05/LIVE_var_www_performance$/briefing'
 archive_mode <- FALSE
 
 if (archive_mode) {
-  wef <- "2024-09-01"  #included in output
-  til <- "2024-09-10"  #included in output
+  wef <- "2024-03-02"  #included in output
+  til <- "2024-03-12"  #included in output
   data_day_date <- seq(ymd(wef), ymd(til), by = "day")
 } else {
   data_day_date <- lubridate::today(tzone = "") +  days(-1)
@@ -46,22 +46,14 @@ generate_app_data <- function(data_day_date) {
   source(here("..", "mobile-app", "R", "generate_json_files_nw.R"))
   source(here("..", "mobile-app", "R", "generate_json_files_state.R"))
   source(here("..", "mobile-app", "R", "generate_json_files_ao.R"))
+  source(here("..", "mobile-app", "R", "generate_json_files_ap.R"))
 }
 
 copy_app_data <- function(data_day_date) {
   # parameters ----
   data_day_text_dash <- data_day_date %>% format("%Y-%m-%d")
-  network_data_folder_v2 <- here(destination_dir, "data", "v2")
   network_data_folder_v3 <- here(destination_dir, "data", "v3", data_day_text_dash)
-
-  # copy files to the V2 network folder ----
-  st_files_to_copy <- list.files(st_local_data_folder, full.names = TRUE)
-  nw_prod_files_to_copy <- list.files(nw_local_data_folder_prod, full.names = TRUE)
-
-  if (archive_mode == FALSE) {
-    file.copy(from = nw_prod_files_to_copy, to = network_data_folder_v2, overwrite = TRUE)
-    file.copy(from = st_files_to_copy, to = network_data_folder_v2, overwrite = TRUE)
-  }
+  network_data_folder_v4 <- here(destination_dir, "data", "v4", data_day_text_dash)
 
   # check if v3 date folder already exists ----
   if (!dir.exists(network_data_folder_v3)) {
@@ -69,18 +61,38 @@ copy_app_data <- function(data_day_date) {
   }
 
   # copy files to the V3 network folder ----
-  file.copy(from = st_files_to_copy, to = network_data_folder_v3, overwrite = TRUE)
-
-  nw_dev_files_to_copy <- list.files(nw_local_data_folder_dev, full.names = TRUE)
-  file.copy(from = nw_dev_files_to_copy, to = network_data_folder_v3, overwrite = TRUE)
-
+  st_files_to_copy <- list.files(st_local_data_folder, full.names = TRUE)
+  nw_files_to_copy <- list.files(nw_local_data_folder, full.names = TRUE)
   ao_files_to_copy <- list.files(ao_local_data_folder, full.names = TRUE)
+
+  file.copy(from = st_files_to_copy, to = network_data_folder_v3, overwrite = TRUE)
+  file.copy(from = nw_files_to_copy, to = network_data_folder_v3, overwrite = TRUE)
   file.copy(from = ao_files_to_copy, to = network_data_folder_v3, overwrite = TRUE)
 
   # backup json files
   file.copy(network_data_folder_v3,
             archive_dir,
             recursive = TRUE, overwrite = TRUE)
+
+  # check if v4 date folder already exists ----
+  if (!dir.exists(network_data_folder_v4)) {
+    dir.create(network_data_folder_v4)
+  }
+
+  # copy production files into v4 folder
+  v3_files_to_copy <- list.files(network_data_folder_v3, full.names = TRUE)
+
+  file.copy(v3_files_to_copy,
+            network_data_folder_v4,
+            recursive = TRUE, overwrite = TRUE)
+
+  # development files to copy
+  ap_files_to_copy <- list.files(ap_local_data_folder, full.names = TRUE)
+
+  # copy development files
+  file.copy(from = ap_files_to_copy, to = network_data_folder_v4, overwrite = TRUE)
+
+
   }
 
 # Define a combined function
@@ -119,12 +131,12 @@ if (nw_file_status == "OK" & st_file_status == "OK" & ao_file_status == "OK") {
 
 from    <- "oscar.alfaro@eurocontrol.int"
 to      <- c("oscar.alfaro@eurocontrol.int"
-             ,
-             "quinten.goens@eurocontrol.int",
-             "enrico.spinielli@eurocontrol.int",
-             "delia.budulan@eurocontrol.int",
-             "nora.cashman@eurocontrol.int"
-             ,  "denis.huet@eurocontrol.int"
+             # ,
+             # "quinten.goens@eurocontrol.int",
+             # "enrico.spinielli@eurocontrol.int",
+             # "delia.budulan@eurocontrol.int",
+             # "nora.cashman@eurocontrol.int"
+             # ,  "denis.huet@eurocontrol.int"
 )
 # cc      <- c("enrico.spinielli@eurocontrol.int")
 control <- list(smtpServer="mailservices.eurocontrol.int")

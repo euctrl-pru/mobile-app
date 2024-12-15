@@ -58,8 +58,10 @@ save_json <- function(df, filename, mydate = data_day_date, archive_file = TRUE)
   # filename <- "st_ao_ranking_traffic"
 
   # save in local data folder
-  stakeholder_prefix <- stringr::str_sub(filename, 1,
-                                         regexpr("_", substr(filename, 1, nchar(filename)))-1)
+  # stakeholder_prefix <- stringr::str_sub(filename, 1,
+  #                                        regexpr("_", substr(filename, 1, nchar(filename)))-1)
+
+  stakeholder_prefix <- stringr::str_sub(filename, 1, 2)
 
   target_dir <- get(paste0(stakeholder_prefix, "_","local_data_folder"))
   write(df, here(target_dir, paste0(filename,".json")))
@@ -817,10 +819,11 @@ get_punct_data_apt <- function() {
           )
 
           SELECT
-            a.* , b.*
+            a.* , b.*, c.EC_ISO_CT_NAME
           FROM APT_DAY a
           left join LDW_VDM.VIEW_FAC_PUNCTUALITY_AP_DAY b on a.day_date = b.\"DATE\" and a.arp_code = b.icao_code
-         where a.arp_code not in ('BIKF', 'BIRK', 'LTBA', 'UKBB')
+          left join LIST_STATE c on a.ISO_COUNTRY_CODE = c.EC_ISO_CT_CODE
+          where a.arp_code not in ('BIKF', 'BIRK', 'LTBA', 'UKBB')
           order by a.ARP_CODE, b.\"DATE\"
    "
 
@@ -829,6 +832,65 @@ get_punct_data_apt <- function() {
     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
   return(apt_punct_raw)
+}
+
+get_punct_data_state <- function() {
+  query <- "
+  WITH
+
+DIM_STATE as (
+  SELECT distinct
+    AIU_ISO_COUNTRY_NAME as EC_ISO_CT_NAME,
+    AIU_ISO_COUNTRY_CODE AS EC_ISO_CT_CODE
+  FROM prudev.pru_country_iso
+  WHERE till > TRUNC(SYSDATE)-1
+),
+
+  LIST_COUNTRY AS (
+  SELECT distinct ISO_CT_CODE as iso_2letter
+  FROM LDW_VDM.VIEW_FAC_PUNCTUALITY_CT_DAY
+  group by ISO_CT_CODE
+  order by ISO_CT_CODE
+  )
+
+  , CTRY_DAY AS (
+  SELECT
+          a.iso_2letter,
+          t.year,
+          t.month,
+          t.week,
+          t.week_nb_year,
+          t.day_type,
+          t.day_of_week_nb AS day_of_week,
+          t.day_date
+  FROM LIST_COUNTRY a, pru_time_references t
+  WHERE
+     t.day_date >= to_date('24-12-2018','DD-MM-YYYY')
+     AND t.day_date < trunc(sysdate)
+  ),
+
+  COUNTRY_DAY_DATA as (
+  SELECT a.*, b.*
+
+  FROM CTRY_DAY a
+  left join LDW_VDM.VIEW_FAC_PUNCTUALITY_CT_DAY b on a.ISO_2LETTER = b.ISO_CT_CODE and a.day_date = b.\"DATE\"
+  )
+
+  SELECT
+      a.*,
+      c.EC_ISO_CT_NAME
+  FROM COUNTRY_DAY_DATA a
+  left join DIM_STATE c on a.ISO_2LETTER = c.EC_ISO_CT_CODE
+  where a.ISO_2LETTER != 'IS'
+
+"
+
+
+  st_punct_raw <- export_query(query) %>%
+    as_tibble() %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+  return(st_punct_raw)
 }
 
 

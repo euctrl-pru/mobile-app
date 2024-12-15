@@ -83,27 +83,18 @@ nw_billed_for_json <- nw_billing %>%
          month == last_billing_month) %>%
   select(
     BILLING_DATE,
-    MONTH_F,
-    BILLED,
-    DIF_BILL_MONTH_PY,
-    DIF_BILL_MONTH_2019,
-    BILLED_Y2D,
-    DIF_BILL_Y2D_PY,
-    DIF_BILL_Y2D_2019
+    MONTH_TEXT = MONTH_F,
+    MM_BILLED = BILLED,
+    MM_BILLED_DIF_PREV_YEAR = DIF_BILL_MONTH_PY,
+    MM_BILLED_DIF_2019 = DIF_BILL_MONTH_2019,
+    Y2D_BILLED = BILLED_Y2D,
+    Y2D_BILLED_DIF_PREV_YEAR = DIF_BILL_Y2D_PY,
+    Y2D_BILLED_DIF_2019 = DIF_BILL_Y2D_2019
   )
 
-# rename some fields for app v2
-nw_billed_for_json_v2 <- nw_billed_for_json %>%
-  rename(MONTH_TEXT = MONTH_F,
-         MM_BILLED = BILLED,
-         MM_BILLED_DIF_PREV_YEAR = DIF_BILL_MONTH_PY,
-         MM_BILLED_DIF_2019 = DIF_BILL_MONTH_2019,
-         Y2D_BILLED = BILLED_Y2D,
-         Y2D_BILLED_DIF_PREV_YEAR = DIF_BILL_Y2D_PY,
-         Y2D_BILLED_DIF_2019 = DIF_BILL_Y2D_2019)
 
-# app v2 json
-nw_billed_json_v2 <- nw_billed_for_json_v2 %>%
+# app json
+nw_billed_json <- nw_billed_for_json %>%
   toJSON(., pretty = TRUE) %>%
   substr(., 1, nchar(.) - 1) %>%
   substr(., 2, nchar(.))
@@ -132,21 +123,6 @@ nw_traffic_last_day <- nw_traffic_data %>%
 nw_traffic_for_json <- nw_traffic_last_day %>%
   select(
     FLIGHT_DATE,
-    DAY_TFC,
-    DAY_DIFF_PREV_YEAR_PERC,
-    DAY_TFC_DIFF_2019_PERC,
-    AVG_ROLLING_WEEK,
-    DIF_WEEK_PREV_YEAR_PERC,
-    DIF_ROLLING_WEEK_2019_PERC,
-    Y2D_TFC_YEAR,
-    Y2D_AVG_TFC_YEAR,
-    Y2D_DIFF_PREV_YEAR_PERC,
-    Y2D_DIFF_2019_PERC
-  )
-
-# rename some fields for app v2
-nw_traffic_for_json_v2 <- nw_traffic_for_json %>%
-  rename(
     DY_TFC = DAY_TFC,
     DY_TFC_DIF_PREV_YEAR_PERC = DAY_DIFF_PREV_YEAR_PERC,
     DY_TFC_DIF_2019_PERC = DAY_TFC_DIFF_2019_PERC,
@@ -157,10 +133,10 @@ nw_traffic_for_json_v2 <- nw_traffic_for_json %>%
     Y2D_TFC_AVG = Y2D_AVG_TFC_YEAR,
     Y2D_TFC_DIF_PREV_YEAR_PERC = Y2D_DIFF_PREV_YEAR_PERC,
     Y2D_TFC_DIF_2019_PERC = Y2D_DIFF_2019_PERC
-    )
+  )
 
-# app v2 json
-nw_traffic_json_v2 <- nw_traffic_for_json_v2 %>%
+# app json
+nw_traffic_json <- nw_traffic_for_json %>%
   toJSON(., pretty = TRUE, digits = 10) %>%
   substr(., 1, nchar(.) - 1) %>%
   substr(., 2, nchar(.))
@@ -214,29 +190,6 @@ nw_delay_for_json <- nw_delay_data %>%
   ) %>%
   select(
     FLIGHT_DATE,
-    DAY_DLY,
-    DAY_DIFF_PREV_YEAR_PERC,
-    DAY_DLY_DIFF_2019_PERC,
-    DAY_DLY_FLT,
-    DAY_DLY_FLT_DIF_PY_PERC,
-    DAY_DLY_FLT_DIF_2019_PERC,
-    AVG_ROLLING_WEEK,
-    DIF_WEEK_PREV_YEAR_PERC,
-    DIF_ROLLING_WEEK_2019_PERC,
-    RWEEK_DLY_FLT,
-    RWEEK_DLY_FLT_DIF_PY_PERC,
-    RWEEK_DLY_FLT_DIF_2019_PERC,
-    Y2D_AVG_DLY_YEAR,
-    Y2D_DIFF_PREV_YEAR_PERC,
-    Y2D_DIFF_2019_PERC,
-    Y2D_DLY_FLT,
-    Y2D_DLY_FLT_DIF_PY_PERC,
-    Y2D_DLY_FLT_DIF_2019_PERC
-  )
-
-# rename some fields for app v2
-nw_delay_for_json_v2 <- nw_delay_for_json %>%
-  rename(
     DY_DLY = DAY_DLY,
     DY_DLY_DIF_PREV_YEAR_PERC = DAY_DIFF_PREV_YEAR_PERC,
     DY_DLY_DIF_2019_PERC = DAY_DLY_DIFF_2019_PERC,
@@ -252,11 +205,13 @@ nw_delay_for_json_v2 <- nw_delay_for_json %>%
     Y2D_DLY_AVG = Y2D_AVG_DLY_YEAR,
     Y2D_DLY_DIF_PREV_YEAR_PERC = Y2D_DIFF_PREV_YEAR_PERC,
     Y2D_DLY_DIF_2019_PERC = Y2D_DIFF_2019_PERC,
+    Y2D_DLY_FLT,
     Y2D_DLY_FLT_DIF_PREV_YEAR_PERC = Y2D_DLY_FLT_DIF_PY_PERC,
-    )
+    Y2D_DLY_FLT_DIF_2019_PERC
+  )
 
-# app V2 json
-nw_delay_json_v2 <- nw_delay_for_json_v2 %>%
+# app json
+nw_delay_json <- nw_delay_for_json %>%
   toJSON(., pretty = TRUE) %>%
   substr(., 1, nchar(.) - 1) %>%
   substr(., 2, nchar(.))
@@ -333,18 +288,18 @@ nw_punct_data_d_w <- nw_punct_data_raw %>%
   mutate(FLIGHT_DATE = DATE) %>%
   select(
     FLIGHT_DATE,
-    ARR_PUNCTUALITY_PERCENTAGE,
-    DEP_PUNCTUALITY_PERCENTAGE,
-    DAY_ARR_PUN_DIF_PY_PERC,
-    DAY_DEP_PUN_DIF_PY_PERC,
-    DAY_ARR_PUN_DIF_2019_PERC,
-    DAY_DEP_PUN_DIF_2019_PERC,
-    ARR_PUN_WK,
-    DEP_PUN_WK,
-    WK_ARR_PUN_DIF_PY_PERC,
-    WK_DEP_PUN_DIF_PY_PERC,
-    WK_ARR_PUN_DIF_2019_PERC,
-    WK_DEP_PUN_DIF_2019_PERC
+    DY_ARR_PUN = ARR_PUNCTUALITY_PERCENTAGE,
+    DY_DEP_PUN = DEP_PUNCTUALITY_PERCENTAGE,
+    DY_ARR_PUN_DIF_PREV_YEAR = DAY_ARR_PUN_DIF_PY_PERC,
+    DY_DEP_PUN_DIF_PREV_YEAR = DAY_DEP_PUN_DIF_PY_PERC,
+    DY_ARR_PUN_DIF_2019 = DAY_ARR_PUN_DIF_2019_PERC,
+    DY_DEP_PUN_DIF_2019 = DAY_DEP_PUN_DIF_2019_PERC,
+    WK_ARR_PUN = ARR_PUN_WK,
+    WK_DEP_PUN = DEP_PUN_WK,
+    WK_ARR_PUN_DIF_PREV_YEAR = WK_ARR_PUN_DIF_PY_PERC,
+    WK_DEP_PUN_DIF_PREV_YEAR = WK_DEP_PUN_DIF_PY_PERC,
+    WK_ARR_PUN_DIF_2019 = WK_ARR_PUN_DIF_2019_PERC,
+    WK_DEP_PUN_DIF_2019 = WK_DEP_PUN_DIF_2019_PERC
   ) %>%
   mutate(INDEX = 1)
 
@@ -372,12 +327,12 @@ nw_punct_data_y2d <- nw_punct_data_raw %>%
     ) %>%
   filter(YEAR == as.numeric(format(last_day_punct, format = "%Y"))) %>%
   select(
-    ARR_PUN_Y2D,
-    DEP_PUN_Y2D,
-    Y2D_ARR_PUN_DIF_PY_PERC,
-    Y2D_DEP_PUN_DIF_PY_PERC,
-    Y2D_ARR_PUN_DIF_2019_PERC,
-    Y2D_DEP_PUN_DIF_2019_PERC
+    Y2D_ARR_PUN = ARR_PUN_Y2D,
+    Y2D_DEP_PUN = DEP_PUN_Y2D,
+    Y2D_ARR_PUN_DIF_PREV_YEAR = Y2D_ARR_PUN_DIF_PY_PERC,
+    Y2D_DEP_PUN_DIF_PREV_YEAR = Y2D_DEP_PUN_DIF_PY_PERC,
+    Y2D_ARR_PUN_DIF_2019 = Y2D_ARR_PUN_DIF_2019_PERC,
+    Y2D_DEP_PUN_DIF_2019 = Y2D_DEP_PUN_DIF_2019_PERC
     ) %>%
   mutate(INDEX = 1)
 
@@ -385,37 +340,9 @@ nw_punct_data_y2d <- nw_punct_data_raw %>%
 nw_punct_for_json <- merge(nw_punct_data_d_w, nw_punct_data_y2d, by = "INDEX") %>%
   select(-INDEX)
 
-# rename some fields for app v2
-nw_punct_for_json_v2 <- nw_punct_for_json %>%
-  rename(
-    DY_ARR_PUN = ARR_PUNCTUALITY_PERCENTAGE,
-    DY_DEP_PUN = DEP_PUNCTUALITY_PERCENTAGE,
-    DY_ARR_PUN_DIF_PREV_YEAR = DAY_ARR_PUN_DIF_PY_PERC,
-    DY_DEP_PUN_DIF_PREV_YEAR = DAY_DEP_PUN_DIF_PY_PERC,
-    DY_ARR_PUN_DIF_2019 = DAY_ARR_PUN_DIF_2019_PERC,
-    DY_DEP_PUN_DIF_2019 = DAY_DEP_PUN_DIF_2019_PERC,
-    WK_ARR_PUN = ARR_PUN_WK,
-    WK_DEP_PUN = DEP_PUN_WK,
-    WK_ARR_PUN_DIF_PREV_YEAR = WK_ARR_PUN_DIF_PY_PERC,
-    WK_DEP_PUN_DIF_PREV_YEAR = WK_DEP_PUN_DIF_PY_PERC,
-    WK_ARR_PUN_DIF_2019 = WK_ARR_PUN_DIF_2019_PERC,
-    WK_DEP_PUN_DIF_2019 = WK_DEP_PUN_DIF_2019_PERC,
-    Y2D_ARR_PUN = ARR_PUN_Y2D,
-    Y2D_DEP_PUN = DEP_PUN_Y2D,
-    Y2D_ARR_PUN_DIF_PREV_YEAR = Y2D_ARR_PUN_DIF_PY_PERC,
-    Y2D_DEP_PUN_DIF_PREV_YEAR = Y2D_DEP_PUN_DIF_PY_PERC,
-    Y2D_ARR_PUN_DIF_2019 = Y2D_ARR_PUN_DIF_2019_PERC,
-    Y2D_DEP_PUN_DIF_2019 = Y2D_DEP_PUN_DIF_2019_PERC
-    )
 
-# app v1 json
+# app json
 nw_punct_json <- nw_punct_for_json %>%
-  toJSON(., pretty = TRUE) %>%
-  substr(., 1, nchar(.) - 1) %>%
-  substr(., 2, nchar(.))
-
-# app v2 json
-nw_punct_json_v2 <- nw_punct_for_json_v2 %>%
   toJSON(., pretty = TRUE) %>%
   substr(., 1, nchar(.) - 1) %>%
   substr(., 2, nchar(.))
@@ -513,25 +440,9 @@ co2_for_json <- co2_data_evo_nw %>%
     FLIGHT_MONTH,
     MONTH_TEXT,
     MM_CO2,
-    DIF_CO2_MONTH_PREV_YEAR,
-    DIF_CO2_MONTH_2019,
-    MM_CO2_DEP,
-    DIF_CO2_DEP_MONTH_PREV_YEAR,
-    DIF_CO2_DEP_MONTH_2019,
-    YTD_CO2,
-    YTD_DIF_CO2_PREV_YEAR,
-    YTD_DIF_CO2_2019,
-    YTD_CO2_DEP,
-    YTD_DIF_CO2_DEP_PREV_YEAR,
-    YTD_DIF_CO2_DEP_2019
-    ) %>%
-  filter(FLIGHT_MONTH == co2_last_date)
-
-# rename some fields for app v2
-co2_for_json_v2 <- co2_for_json %>%
-  rename(
     MM_CO2_DIF_PREV_YEAR = DIF_CO2_MONTH_PREV_YEAR,
     MM_CO2_DIF_2019 = DIF_CO2_MONTH_2019,
+    MM_CO2_DEP,
     MM_CO2_DEP_DIF_PREV_YEAR = DIF_CO2_DEP_MONTH_PREV_YEAR,
     MM_CO2_DEP_DIF_2019 = DIF_CO2_DEP_MONTH_2019
     , Y2D_CO2 = YTD_CO2
@@ -540,10 +451,11 @@ co2_for_json_v2 <- co2_for_json %>%
     , Y2D_CO2_DEP = YTD_CO2_DEP
     , Y2D_CO2_DEP_DIF_PREV_YEAR = YTD_DIF_CO2_DEP_PREV_YEAR
     , Y2D_CO2_DEP_DIF_2019 = YTD_DIF_CO2_DEP_2019
-    )
+  ) %>%
+  filter(FLIGHT_MONTH == co2_last_date)
 
-# app v2 json
-nw_co2_json_v2 <- co2_for_json_v2 %>%
+# app json
+nw_co2_json <- co2_for_json %>%
   toJSON(., pretty = TRUE) %>%
   substr(., 1, nchar(.) - 1) %>%
   substr(., 2, nchar(.))
@@ -561,31 +473,24 @@ update_day_json <- update_day %>%
   substr(., 1, nchar(.) - 1) %>%
   substr(., 2, nchar(.))
 
-# app v2 json
-nw_json_app_v2 <- paste0(
+# app json
+nw_json_app <- paste0(
   "{",
-  '"nw_traffic":', nw_traffic_json_v2,
-  ', "nw_delay":', nw_delay_json_v2,
-  ', "nw_punct":', nw_punct_json_v2,
-  ', "nw_co2":', nw_co2_json_v2,
-  ', "nw_billed":', nw_billed_json_v2,
+  '"nw_traffic":', nw_traffic_json,
+  ', "nw_delay":', nw_delay_json,
+  ', "nw_punct":', nw_punct_json,
+  ', "nw_co2":', nw_co2_json,
+  ', "nw_billed":', nw_billed_json,
   ', "app_update":', update_day_json,
   "}"
 )
 
-
-write(nw_json_app_v2, here(nw_local_data_folder_prod, "nw_json_app.json"))
-
-# this saves and archives the dev file. line above temporary til v3 release
-save_json(nw_json_app_v2, "nw_json_app")
+save_json(nw_json_app, "nw_json_app")
 
 
 # jsons for graphs -------
 ## traffic -----
-
-### 7-day average daily ----
-#### app v1
-nw_traffic_evo_app <- nw_traffic_data %>%
+nw_traffic_evo <- nw_traffic_data %>%
   mutate(AVG_ROLLING_WEEK = if_else(FLIGHT_DATE > min(data_day_date,
                                                       max(LAST_DATA_DAY, na.rm = TRUE),na.rm = TRUE), NA, AVG_ROLLING_WEEK)
   ) %>%
@@ -595,40 +500,20 @@ nw_traffic_evo_app <- nw_traffic_data %>%
   )
 
 column_names <- c("FLIGHT_DATE", data_day_year, data_day_year - 1, 2020, 2019)
-colnames(nw_traffic_evo_app) <- column_names
+colnames(nw_traffic_evo) <- column_names
 
-#### app v2
-nw_traffic_evo_v2 <- nw_traffic_evo_app
 
 ### nest data
-nw_traffic_evo_v2_long <- nw_traffic_evo_v2 %>%
+nw_traffic_evo_long <- nw_traffic_evo %>%
   pivot_longer(-c(FLIGHT_DATE), names_to = 'metric', values_to = 'value') %>%
   group_by(FLIGHT_DATE) %>%
   nest_legacy(.key = "statistics")
 
-nw_traffic_evo_v2_j <- nw_traffic_evo_v2_long %>% toJSON(., pretty = TRUE)
+### create json
+nw_traffic_evo_j <- nw_traffic_evo_long %>% toJSON(., pretty = TRUE)
 
-write(nw_traffic_evo_v2_j, here(nw_local_data_folder_prod, "nw_traffic_evo_chart_daily.json"))
-
-# this saves and archives the dev file. line above temporary til v3 release
-save_json(nw_traffic_evo_v2_j, "nw_traffic_evo_chart_daily")
-
-### monthly ----
-# this graph has been discontinued but we keep it here just in case
-# it has not been adapted for past data so, if back in use, it needs to be redone
-
-nw_traffic_month_data <- read_xlsx(
-  path = fs::path_abs(
-    str_glue(nw_base_file),
-    start = nw_base_dir
-  ),
-  sheet = "NM_Monthly_traffic",
-  range = cell_limits(c(5, 10), c(NA, NA))
-) %>%
-  as_tibble()
-
-# nw_traffic_month_data_j <- nw_traffic_month_data %>% toJSON(., pretty = TRUE)
-# write(nw_traffic_month_data_j, here(nw_local_data_folder_prod , "nw_traffic_evo_chart_monthly.json"))
+### save and archive
+save_json(nw_traffic_evo_j, "nw_traffic_evo_chart_daily")
 
 ## delay ----
 nw_delay_raw <- read_xlsx(
@@ -725,10 +610,6 @@ nw_delay_cause_day_long <- cbind(nw_delay_value_day_long, nw_delay_share_day_lon
 
 #### convert to json and save in data folder and archive
 nw_delay_cause_evo_dy_j <- nw_delay_cause_day_long %>% toJSON(., pretty = TRUE)
-
-write(nw_delay_cause_evo_dy_j, here(nw_local_data_folder_prod, "nw_delay_category_evo_chart_dy.json"))
-
-# this saves and archives the dev file. line above temporary til v3 release
 save_json(nw_delay_cause_evo_dy_j, "nw_delay_category_evo_chart_dy")
 
 #### week ----
@@ -790,10 +671,6 @@ nw_delay_cause_wk_long <- cbind(nw_delay_value_wk_long, nw_delay_share_wk_long) 
 
 #### convert to json and save in data folder and archive
 nw_delay_cause_evo_wk_j <- nw_delay_cause_wk_long %>% toJSON(., pretty = TRUE)
-
-write(nw_delay_cause_evo_wk_j, here(nw_local_data_folder_prod, "nw_delay_category_evo_chart_wk.json"))
-
-# this saves and archives the dev file. line above temporary til v3 release
 save_json(nw_delay_cause_evo_wk_j, "nw_delay_category_evo_chart_wk")
 
 #### y2d ----
@@ -854,10 +731,6 @@ nw_delay_cause_y2d_long <- cbind(nw_delay_value_y2d_long, nw_delay_share_y2d_lon
 
 #### convert to json and save in data folder and archive
 nw_delay_cause_evo_y2d_j <- nw_delay_cause_y2d_long %>% toJSON(., pretty = TRUE)
-
-#new name for v2 in line with delay per category
-write(nw_delay_cause_evo_y2d_j, here(nw_local_data_folder_prod, "nw_delay_category_evo_chart_y2d.json"))
-# this saves and archives the dev file. line above temporary til v3 release
 save_json(nw_delay_cause_evo_y2d_j, "nw_delay_category_evo_chart_y2d")
 
 
@@ -964,9 +837,6 @@ nw_delay_flt_day_long <- cbind(nw_delay_flt_value_day_long, nw_delay_flt_share_d
 
 #### convert to json and save in data folder and archive
 nw_delay_flt_day_j <- nw_delay_flt_day_long %>% toJSON(., pretty = TRUE)
-
-write(nw_delay_flt_day_j, here(nw_local_data_folder_prod, "nw_delay_flt_type_evo_chart_dy.json"))
-# this saves and archives the dev file. line above temporary til v3 release
 save_json(nw_delay_flt_day_j, "nw_delay_flt_type_evo_chart_dy")
 
 #### week ----
@@ -1014,9 +884,6 @@ nw_delay_flt_wk_long <- cbind(nw_delay_flt_value_wk_long, nw_delay_flt_share_wk_
 
 #### convert to json and save in data folder and archive
 nw_delay_flt_wk_j <- nw_delay_flt_wk_long %>% toJSON(., pretty = TRUE)
-
-write(nw_delay_flt_wk_j, here(nw_local_data_folder_prod , "nw_delay_flt_type_evo_chart_wk.json"))
-# this saves and archives the dev file. line above temporary til v3 release
 save_json(nw_delay_flt_wk_j, "nw_delay_flt_type_evo_chart_wk")
 
 #### y2d ----
@@ -1063,10 +930,6 @@ nw_delay_flt_y2d_long <- cbind(nw_delay_flt_value_y2d_long, nw_delay_flt_share_y
 
 #### convert to json and save in data folder and archive
 nw_delay_flt_y2d_j <- nw_delay_flt_y2d_long %>% toJSON(., pretty = TRUE)
-
-#new name for v2 in line with delay per category
-write(nw_delay_flt_y2d_j, here(nw_local_data_folder_prod, "nw_delay_flt_type_evo_chart_y2d.json"))
-# this saves and archives the dev file. line above temporary til v3 release
 save_json(nw_delay_flt_y2d_j, "nw_delay_flt_type_evo_chart_y2d")
 
 ## punctuality ----
@@ -1098,9 +961,6 @@ nw_punct_evo_app_v2_long <- nw_punct_evo_app %>%
   nest_legacy(.key = "statistics")
 
 nw_punct_evo_v2_j <- nw_punct_evo_app_v2_long %>% toJSON(., pretty = TRUE)
-
-write(nw_punct_evo_v2_j, here(nw_local_data_folder_prod, "nw_punct_evo_chart.json"))
-# this saves and archives the dev file. line above temporary til v3 release
 save_json(nw_punct_evo_v2_j, "nw_punct_evo_chart")
 
 ## billing ----
@@ -1154,9 +1014,6 @@ nw_billing_evo_v2_long <- nw_billing_evo %>%
   nest_legacy(.key = "statistics")
 
 nw_billing_evo_v2_j <- nw_billing_evo_v2_long %>% toJSON(., pretty = TRUE)
-
-write(nw_billing_evo_v2_j, here(nw_local_data_folder_prod, "nw_billing_evo_chart.json"))
-# this saves and archives the dev file. line above temporary til v3 release
 save_json(nw_billing_evo_v2_j, "nw_billing_evo_chart")
 
 
@@ -1206,8 +1063,6 @@ nw_co2_evo_v2_long <- nw_co2_evo %>%
   nest_legacy(.key = "statistics")
 
 nw_co2_evo_v2_j <- nw_co2_evo_v2_long %>% toJSON(., pretty = TRUE)
-write(nw_co2_evo_v2_j, here(nw_local_data_folder_prod, "nw_co2_evo_chart.json"))
-# this saves and archives the dev file. line above temporary til v3 release
 save_json(nw_co2_evo_v2_j, "nw_co2_evo_chart")
 
 
@@ -1409,10 +1264,6 @@ ao_data <- ao_data %>%
 
 ### covert to json and save in app data folder and archive ----
 ao_data_j <- ao_data %>% toJSON(., pretty = TRUE)
-
-write(ao_data_j, here(nw_local_data_folder_prod, "ao_ranking_traffic.json"))
-
-# we duplicate the files while the app is being remapped
 save_json(ao_data_j, "nw_ao_ranking_traffic")
 
 
@@ -1604,10 +1455,6 @@ apt_data <- apt_data %>%
 
 ### covert to json and save in app data folder and archive ----
 apt_data_j <- apt_data %>% toJSON(., pretty = TRUE)
-
-write(apt_data_j, here(nw_local_data_folder_prod, "apt_ranking_traffic.json"))
-
-# we duplicate the files while the app is being remapped
 save_json(apt_data_j, "nw_apt_ranking_traffic")
 
 ## Country traffic DAI ----
@@ -1819,11 +1666,6 @@ st_dai_data <- st_dai_data %>%
 
 ### covert to json and save in app data folder and archive ----
 st_dai_data_j <- st_dai_data %>% toJSON(., pretty = TRUE)
-
-# write(st_dai_data_j, here(data_folder, "ctry_ranking_traffic_DAI.json"))
-write(st_dai_data_j, here(nw_local_data_folder_prod, "ctry_ranking_traffic_DAI.json"))
-
-# we duplicate the files while the app is being remapped
 save_json(st_dai_data_j, "nw_ctry_ranking_traffic_DAI")
 
 ## Airport delay -----
@@ -1946,10 +1788,6 @@ apt_rank_data <- apt_rank_data %>%
 
 ### covert to json and save in app data folder and archive ----
 apt_rank_data_j <- apt_rank_data %>% toJSON(., pretty = TRUE)
-
-write(apt_rank_data_j, here(nw_local_data_folder_prod, "apt_ranking_delay.json"))
-
-# we duplicate the files while the app is being remapped
 save_json(apt_rank_data_j, "nw_apt_ranking_delay")
 
 ## ACC delay ----
@@ -2133,10 +1971,6 @@ acc_rank_data <- acc_rank_data %>%
 
 ### covert to json and save in app data folder and archive ----
 acc_rank_data_j <- acc_rank_data %>% toJSON(., pretty = TRUE)
-
-write(acc_rank_data_j, here(nw_local_data_folder_prod, "acc_ranking_delay.json"))
-
-# we duplicate the file while the app is being remapped
 save_json(acc_rank_data_j, "nw_acc_ranking_delay")
 
 ## Country delay ----
@@ -2329,70 +2163,12 @@ st_rank_delay <- st_rank_delay %>%
 
 ### covert to json and save in app data folder and archive ----
 st_rank_delay_j <- st_rank_delay %>% toJSON(., pretty = TRUE)
-
-write(st_rank_delay_j, here(nw_local_data_folder_prod, "ctry_ranking_delay.json"))
-
-# we duplicate the files while the app is being remapped
 save_json(st_rank_delay_j, "nw_ctry_ranking_delay")
 
 ## Airport punctuality ----
-query <- "
-   WITH
-      DIM_AIRPORT as (
-        SELECT
-          a.code as arp_code, a.id as arp_id, a.dashboard_name as arp_name,
-          a.ISO_COUNTRY_CODE
-        FROM prudev.pru_airport a
-      )
-
-    , LIST_AIRPORT as (
-          select distinct
-              a.ICAO_CODE as arp_code,
-              b.arp_name,
-              b.iso_country_code
-          from LDW_VDM.VIEW_FAC_PUNCTUALITY_AP_DAY a
-          left join DIM_AIRPORT b on a.icao_code = b.arp_code
-          order by 1
-
-      ),
-
-      LIST_STATE as (
-        SELECT distinct
-          AIU_ISO_COUNTRY_NAME as EC_ISO_CT_NAME,
-          AIU_ISO_COUNTRY_CODE AS EC_ISO_CT_CODE
-        FROM prudev.pru_country_iso
-        WHERE till > TRUNC(SYSDATE)-1
-      ),
-
-      APT_DAY AS (
-        SELECT
-                a.arp_code,
-                a.arp_name,
-                a.ISO_COUNTRY_CODE,
-                t.year,
-                t.month,
-                t.week,
-                t.week_nb_year,
-                t.day_type,
-                t.day_of_week_nb AS day_of_week,
-                t.day_date
-        FROM LIST_AIRPORT a, pru_time_references t
-        WHERE
-           t.day_date >= to_date('24-12-2018','DD-MM-YYYY')
-           AND t.day_date < trunc(sysdate)
-        )
-
-        SELECT
-          a.* , b.*
-        FROM APT_DAY a
-        left join LDW_VDM.VIEW_FAC_PUNCTUALITY_AP_DAY b on a.day_date = b.\"DATE\" and a.arp_code = b.icao_code
-        where a.arp_code not in ('BIKF', 'BIRK', 'LTBA', 'UKBB')
-        order by a.ARP_CODE, b.\"DATE\"
- "
-
-apt_punct_raw <- export_query(query) %>%
-  as_tibble() %>%
-  mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+if(exists("apt_punct_raw") == FALSE) {
+  apt_punct_raw <- get_punct_data_apt()
+}
 
 last_punctuality_day <- min(max(apt_punct_raw$DAY_DATE),
                             data_day_date, na.rm = TRUE)
@@ -2632,36 +2408,14 @@ relocate (Y2D_TO_DATE_BOTTOM, .before = Y2D_APT_ARR_PUNCT_BOTTOM)
 
 ### covert to json and save in app data folder and archive ----
 apt_punct_data_j <- apt_punct_data %>% toJSON(., pretty = TRUE)
-write(apt_punct_data_j, here(nw_local_data_folder_prod, "apt_ranking_punctuality.json"))
-
-# we duplicate the files while the app is being remapped
 save_json(apt_punct_data_j, "nw_apt_ranking_punctuality")
 
 ## Country punctuality ----
-##### NOte: the time series for each country is not full. At some point it needs to be fixed either here or in the initial query so the lag functions yield the right result
+if(exists("st_punct_raw") == FALSE) {
+  st_punct_raw <- get_punct_data_state()
+}
 
-### we need data from 2019 so I'm using the source view instead of the excel file
-
-query <- "
-WITH
-LIST_STATE as (
-  SELECT distinct
-    AIU_ISO_COUNTRY_NAME as EC_ISO_CT_NAME,
-    AIU_ISO_COUNTRY_CODE AS EC_ISO_CT_CODE
-  FROM prudev.pru_country_iso
-  WHERE till > TRUNC(SYSDATE)-1
-)
-
-SELECT
-  a.*,
-  b.EC_ISO_CT_NAME
-FROM LDW_VDM.VIEW_FAC_PUNCTUALITY_CT_DAY a
-LEFT JOIN LIST_STATE b on a.ISO_CT_CODE = b.EC_ISO_CT_CODE
-where a.ISO_CT_CODE != 'IS'
-ORDER BY b.EC_ISO_CT_NAME
- "
-
-st_punct_raw <- export_query(query) %>%
+st_punct_raw <- st_punct_raw %>%
   as_tibble() %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
   filter(
@@ -2923,8 +2677,5 @@ relocate (Y2D_TO_DATE_BOTTOM, .before = Y2D_CTRY_ARR_PUNCT_BOTTOM)
 
 ### covert to json and save in app data folder and archive ----
 st_punct_data_j <- st_punct_data %>% toJSON(., pretty = TRUE)
-write(st_punct_data_j, here(nw_local_data_folder_prod, "ctry_ranking_punctuality.json"))
-
-# we duplicate the files while the app is being remapped
 save_json(st_punct_data_j, "nw_ctry_ranking_punctuality")
 
