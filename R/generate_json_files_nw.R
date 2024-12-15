@@ -25,6 +25,9 @@ if (exists("data_day_date") == FALSE) {
   data_day_date <- lubridate::today(tzone = "") +  days(-1)
   }
 
+# archive_mode <- TRUE
+# data_day_date <- ymd("2024-10-31")
+
 data_day_text <- data_day_date %>% format("%Y%m%d")
 data_day_year <- as.numeric(format(data_day_date,'%Y'))
 

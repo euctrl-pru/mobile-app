@@ -1,3 +1,4 @@
+
 library(here)
 library(withr)
 library(DBI)
@@ -866,5 +867,3 @@ DIM_STATE as (
 
   return(st_punct_raw)
 }
-
-
