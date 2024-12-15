@@ -629,17 +629,30 @@ apt_ao_y2d <- read_xlsx(
   range = cell_limits(c(1, 1), c(NA, NA))) |>
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
+# get max year from dataset
+apt_ao_y2d_max_year <-  max(apt_ao_y2d$YEAR, na.rm = TRUE)
+
 # process data
 apt_ao_data_year <- apt_ao_y2d |>
+  # calculate number of days to date
+  group_by(YEAR) |>
+  mutate(Y2D_DAYS = as.numeric(max(TO_DATE, na.rm = TRUE) - min(FROM_DATE, na.rm = TRUE) +1)) |>
+  ungroup() |>
   arrange(ARP_CODE, AO_GRP_CODE, YEAR) |>
   mutate(
     Y2D_RANK_DIF_PREV_YEAR =  RANK_PY - RANK,
-    Y2D_FLT_DIF_PREV_YEAR_PERC = ifelse(YEAR == "2024",
-                                        round((DEP_ARR/lag(DEP_ARR)-1), 3), NA),
-    Y2D_FLT_DIF_2019_PERC = ifelse(YEAR == "2024",
-                                   round((DEP_ARR/lag(DEP_ARR, 5)-1), 3), NA)
+    # Y2D_FLT_DIF_PREV_YEAR_PERC = ifelse(YEAR == "2024",
+    #                                     round((DEP_ARR/lag(DEP_ARR)-1), 3), NA),
+    # Y2D_FLT_DIF_2019_PERC = ifelse(YEAR == "2024",
+    #                                round((DEP_ARR/lag(DEP_ARR, 5)-1), 3), NA)
+    Y2D_FLT_AVG = DEP_ARR / Y2D_DAYS,
+    Y2D_FLT_DIF_PREV_YEAR_PERC = ifelse(YEAR == apt_ao_y2d_max_year,
+                                        Y2D_FLT_AVG / lag(Y2D_FLT_AVG)-1, NA),
+    Y2D_FLT_DIF_2019_PERC = ifelse(YEAR == apt_ao_y2d_max_year,
+                                   Y2D_FLT_AVG / lag(Y2D_FLT_AVG, apt_ao_y2d_max_year - 2019)-1, NA)
+
   ) |>
-  filter(YEAR == 2024) |>
+  filter(YEAR == apt_ao_y2d_max_year) |>
   mutate(TO_DATE = max(TO_DATE)) |>
   arrange(ARP_CODE, ARP_NAME, R_RANK) |>
   select(
@@ -649,7 +662,7 @@ apt_ao_data_year <- apt_ao_y2d |>
     Y2D_RANK_DIF_PREV_YEAR,
     Y2D_AO_GRP_NAME = AO_GRP_NAME,
     Y2D_TO_DATE = TO_DATE,
-    Y2D_FLT_AVG = DEP_ARR,
+    Y2D_FLT_AVG,
     Y2D_FLT_DIF_PREV_YEAR_PERC,
     Y2D_FLT_DIF_2019_PERC
   )
@@ -826,17 +839,29 @@ apt_apt_y2d <- read_xlsx(
   range = cell_limits(c(1, 1), c(NA, NA))) |>
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
+# get max year from dataset
+apt_apt_y2d_max_year <-  max(apt_apt_y2d$YEAR, na.rm = TRUE)
+
 # process data
 apt_apt_data_year <- apt_apt_y2d |>
+  # calculate number of days to date
+  group_by(YEAR) |>
+  mutate(Y2D_DAYS = as.numeric(max(TO_DATE, na.rm = TRUE) - min(FROM_DATE, na.rm = TRUE) +1)) |>
+  ungroup() |>
   arrange(ARP_CODE_DEP, ARP_NAME_ARR, YEAR) |>
   mutate(
     Y2D_RANK_DIF_PREV_YEAR =  RANK_PREV - RANK,
-    Y2D_FLT_DIF_PREV_YEAR_PERC = ifelse(YEAR == "2024",
-                                        round((DEP/lag(DEP)-1), 3), NA),
-    Y2D_FLT_DIF_2019_PERC = ifelse(YEAR == "2024",
-                                   round((DEP/lag(DEP, 5)-1), 3), NA)
+    # Y2D_FLT_DIF_PREV_YEAR_PERC = ifelse(YEAR == "2024",
+    #                                     round((DEP/lag(DEP)-1), 3), NA),
+    # Y2D_FLT_DIF_2019_PERC = ifelse(YEAR == "2024",
+    #                                round((DEP/lag(DEP, 5)-1), 3), NA)
+    Y2D_FLT_AVG = DEP / Y2D_DAYS,
+    Y2D_FLT_DIF_PREV_YEAR_PERC = ifelse(YEAR == apt_apt_y2d_max_year,
+                                        Y2D_FLT_AVG / lag(Y2D_FLT_AVG)-1, NA),
+    Y2D_FLT_DIF_2019_PERC = ifelse(YEAR == apt_apt_y2d_max_year,
+                                   Y2D_FLT_AVG / lag(Y2D_FLT_AVG, apt_apt_y2d_max_year - 2019)-1, NA)
   ) |>
-  filter(YEAR == 2024) |>
+  filter(YEAR == apt_apt_y2d_max_year) |>
   arrange(ARP_CODE_DEP, ARP_NAME_DEP, R_RANK) |>
   select(
     APT_CODE = ARP_CODE_DEP,
@@ -845,7 +870,7 @@ apt_apt_data_year <- apt_apt_y2d |>
     Y2D_RANK_DIF_PREV_YEAR,
     Y2D_APT_DES_NAME = ARP_NAME_ARR,
     Y2D_TO_DATE = LAST_DATA_DAY,
-    Y2D_FLT_AVG = DEP,
+    Y2D_FLT_AVG,
     Y2D_FLT_DIF_PREV_YEAR_PERC,
     Y2D_FLT_DIF_2019_PERC
   )
@@ -1021,17 +1046,29 @@ apt_st_y2d <- read_xlsx(
   range = cell_limits(c(1, 1), c(NA, NA))) |>
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
+# get max year from dataset
+apt_st_y2d_max_year <-  max(apt_st_y2d$YEAR, na.rm = TRUE)
+
 # process data
 apt_st_data_year <- apt_st_y2d |>
+  # calculate number of days to date
+  group_by(YEAR) |>
+  mutate(Y2D_DAYS = as.numeric(max(TO_DATE, na.rm = TRUE) - min(FROM_DATE, na.rm = TRUE) +1)) |>
+  ungroup() |>
   arrange(ARP_CODE, ISO_CT_NAME_ARR, YEAR) |>
   mutate(
     Y2D_RANK_DIF_PREV_YEAR =  RANK_PREV - RANK,
-    Y2D_FLT_DIF_PREV_YEAR_PERC = ifelse(YEAR == "2024",
-                                        round((DEP/lag(DEP)-1), 3), NA),
-    Y2D_FLT_DIF_2019_PERC = ifelse(YEAR == "2024",
-                                   round((DEP/lag(DEP, 5)-1), 3), NA)
+    # Y2D_FLT_DIF_PREV_YEAR_PERC = ifelse(YEAR == "2024",
+    #                                     round((DEP/lag(DEP)-1), 3), NA),
+    # Y2D_FLT_DIF_2019_PERC = ifelse(YEAR == "2024",
+    #                                round((DEP/lag(DEP, 5)-1), 3), NA)
+    Y2D_FLT_AVG = DEP / Y2D_DAYS,
+    Y2D_FLT_DIF_PREV_YEAR_PERC = ifelse(YEAR == apt_st_y2d_max_year,
+                                        Y2D_FLT_AVG / lag(Y2D_FLT_AVG)-1, NA),
+    Y2D_FLT_DIF_2019_PERC = ifelse(YEAR == apt_st_y2d_max_year,
+                                   Y2D_FLT_AVG / lag(Y2D_FLT_AVG, apt_st_y2d_max_year - 2019)-1, NA)
   ) |>
-  filter(YEAR == 2024) |>
+  filter(YEAR == apt_st_y2d_max_year) |>
   arrange(ARP_CODE, ISO_CT_NAME_ARR, R_RANK) |>
   select(
     APT_CODE = ARP_CODE,
@@ -1040,7 +1077,7 @@ apt_st_data_year <- apt_st_y2d |>
     Y2D_RANK_DIF_PREV_YEAR,
     Y2D_ST_DES_NAME = ISO_CT_NAME_ARR,
     Y2D_TO_DATE = LAST_DATA_DAY,
-    Y2D_FLT_AVG = DEP,
+    Y2D_FLT_AVG,
     Y2D_FLT_DIF_PREV_YEAR_PERC,
     Y2D_FLT_DIF_2019_PERC
   )
@@ -1231,17 +1268,29 @@ apt_ms_y2d <- read_xlsx(
   range = cell_limits(c(1, 1), c(NA, NA))) |>
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
+# get max year from dataset
+apt_ms_y2d_max_year <-  max(apt_ms_y2d$YEAR, na.rm = TRUE)
+
 # process data
 apt_ms_data_year <- apt_ms_y2d |>
+  # calculate number of days to date
+  group_by(YEAR) |>
+  mutate(Y2D_DAYS = as.numeric(max(TO_DATE, na.rm = TRUE) - min(FROM_DATE, na.rm = TRUE) +1)) |>
+  ungroup() |>
   arrange(ARP_CODE, MARKET_SEGMENT, YEAR) |>
   mutate(
     Y2D_RANK_DIF_PREV_YEAR =  RANK_PREV - RANK,
-    Y2D_FLT_DIF_PREV_YEAR_PERC = ifelse(YEAR == "2024",
-                                        round((DEP_ARR/lag(DEP_ARR)-1), 3), NA),
-    Y2D_FLT_DIF_2019_PERC = ifelse(YEAR == "2024",
-                                   round((DEP_ARR/lag(DEP_ARR, 5)-1), 3), NA)
+    # Y2D_FLT_DIF_PREV_YEAR_PERC = ifelse(YEAR == "2024",
+    #                                     round((DEP_ARR/lag(DEP_ARR)-1), 3), NA),
+    # Y2D_FLT_DIF_2019_PERC = ifelse(YEAR == "2024",
+    #                                round((DEP_ARR/lag(DEP_ARR, 5)-1), 3), NA)
+    Y2D_FLT_AVG = DEP_ARR / Y2D_DAYS,
+    Y2D_FLT_DIF_PREV_YEAR_PERC = ifelse(YEAR == apt_ms_y2d_max_year,
+                                        Y2D_FLT_AVG / lag(Y2D_FLT_AVG)-1, NA),
+    Y2D_FLT_DIF_2019_PERC = ifelse(YEAR == apt_ms_y2d_max_year,
+                                   Y2D_FLT_AVG / lag(Y2D_FLT_AVG, apt_ms_y2d_max_year - 2019)-1, NA)
   ) |>
-  filter(YEAR == 2024) |>
+  filter(YEAR == apt_ms_y2d_max_year) |>
   group_by(ARP_CODE) |>
   mutate(Y2D_MS_SHARE = ifelse(DEP_ARR == 0, 0,
                                DEP_ARR/sum(DEP_ARR, na.rm = TRUE))) |>
@@ -1255,7 +1304,7 @@ apt_ms_data_year <- apt_ms_y2d |>
     Y2D_MARKET_SEGMENT = MARKET_SEGMENT,
     Y2D_MS_SHARE,
     Y2D_TO_DATE = LAST_DATA_DAY,
-    Y2D_FLT_AVG = DEP_ARR,
+    Y2D_FLT_AVG,
     Y2D_FLT_DIF_PREV_YEAR_PERC,
     Y2D_FLT_DIF_2019_PERC
   )
