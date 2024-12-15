@@ -51,17 +51,8 @@ generate_app_data <- function(data_day_date) {
 copy_app_data <- function(data_day_date) {
   # parameters ----
   data_day_text_dash <- data_day_date %>% format("%Y-%m-%d")
-  network_data_folder_v2 <- here(destination_dir, "data", "v2")
   network_data_folder_v3 <- here(destination_dir, "data", "v3", data_day_text_dash)
-
-  # copy files to the V2 network folder ----
-  st_files_to_copy <- list.files(st_local_data_folder, full.names = TRUE)
-  nw_prod_files_to_copy <- list.files(nw_local_data_folder_prod, full.names = TRUE)
-
-  if (archive_mode == FALSE) {
-    file.copy(from = nw_prod_files_to_copy, to = network_data_folder_v2, overwrite = TRUE)
-    file.copy(from = st_files_to_copy, to = network_data_folder_v2, overwrite = TRUE)
-  }
+  network_data_folder_v4 <- here(destination_dir, "data", "v4", data_day_text_dash)
 
   # check if v3 date folder already exists ----
   if (!dir.exists(network_data_folder_v3)) {
@@ -69,18 +60,30 @@ copy_app_data <- function(data_day_date) {
   }
 
   # copy files to the V3 network folder ----
-  file.copy(from = st_files_to_copy, to = network_data_folder_v3, overwrite = TRUE)
-
-  nw_dev_files_to_copy <- list.files(nw_local_data_folder_dev, full.names = TRUE)
-  file.copy(from = nw_dev_files_to_copy, to = network_data_folder_v3, overwrite = TRUE)
-
+  st_files_to_copy <- list.files(st_local_data_folder, full.names = TRUE)
+  nw_files_to_copy <- list.files(nw_local_data_folder, full.names = TRUE)
   ao_files_to_copy <- list.files(ao_local_data_folder, full.names = TRUE)
+
+  file.copy(from = st_files_to_copy, to = network_data_folder_v3, overwrite = TRUE)
+  file.copy(from = nw_files_to_copy, to = network_data_folder_v3, overwrite = TRUE)
   file.copy(from = ao_files_to_copy, to = network_data_folder_v3, overwrite = TRUE)
 
   # backup json files
   file.copy(network_data_folder_v3,
             archive_dir,
             recursive = TRUE, overwrite = TRUE)
+
+  # check if v4 date folder already exists ----
+  if (!dir.exists(network_data_folder_v4)) {
+    dir.create(network_data_folder_v4)
+  }
+
+  # copy files into v4 folder
+  file.copy(network_data_folder_v3,
+            network_data_folder_v4,
+            recursive = TRUE, overwrite = TRUE)
+
+
   }
 
 # Define a combined function
