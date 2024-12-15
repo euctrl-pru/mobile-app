@@ -43,8 +43,8 @@ ao_file_status <- read_xlsx(path = fs::path_abs(str_glue(ao_base_file),start = a
 
 # define functions for data generation & copy ----
 generate_app_data <- function(data_day_date) {
-  source(here("..", "mobile-app", "R", "generate_json_files_nw.R"))
   source(here("..", "mobile-app", "R", "generate_json_files_state.R"))
+  source(here("..", "mobile-app", "R", "generate_json_files_nw.R"))
   source(here("..", "mobile-app", "R", "generate_json_files_ao.R"))
   # source(here("..", "mobile-app", "R", "generate_json_files_ap.R"))
 }
@@ -131,12 +131,12 @@ if (nw_file_status == "OK" & st_file_status == "OK" & ao_file_status == "OK") {
 
 from    <- "oscar.alfaro@eurocontrol.int"
 to      <- c("oscar.alfaro@eurocontrol.int"
-             # ,
-             # "quinten.goens@eurocontrol.int",
-             # "enrico.spinielli@eurocontrol.int",
-             # "delia.budulan@eurocontrol.int",
-             # "nora.cashman@eurocontrol.int"
-             # ,  "denis.huet@eurocontrol.int"
+             ,
+             "quinten.goens@eurocontrol.int",
+             "enrico.spinielli@eurocontrol.int",
+             "delia.budulan@eurocontrol.int",
+             "nora.cashman@eurocontrol.int"
+             ,  "denis.huet@eurocontrol.int"
 )
 # cc      <- c("enrico.spinielli@eurocontrol.int")
 control <- list(smtpServer="mailservices.eurocontrol.int")
