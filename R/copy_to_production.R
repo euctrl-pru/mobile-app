@@ -46,6 +46,7 @@ generate_app_data <- function(data_day_date) {
   source(here("..", "mobile-app", "R", "generate_json_files_nw.R"))
   source(here("..", "mobile-app", "R", "generate_json_files_state.R"))
   source(here("..", "mobile-app", "R", "generate_json_files_ao.R"))
+  source(here("..", "mobile-app", "R", "generate_json_files_ap.R"))
 }
 
 copy_app_data <- function(data_day_date) {
@@ -78,10 +79,18 @@ copy_app_data <- function(data_day_date) {
     dir.create(network_data_folder_v4)
   }
 
-  # copy files into v4 folder
-  file.copy(network_data_folder_v3,
+  # copy production files into v4 folder
+  v3_files_to_copy <- list.files(network_data_folder_v3, full.names = TRUE)
+
+  file.copy(v3_files_to_copy,
             network_data_folder_v4,
             recursive = TRUE, overwrite = TRUE)
+
+  # development files to copy
+  ap_files_to_copy <- list.files(ap_local_data_folder, full.names = TRUE)
+
+  # copy development files
+  file.copy(from = ap_files_to_copy, to = network_data_folder_v4, overwrite = TRUE)
 
 
   }
@@ -122,12 +131,12 @@ if (nw_file_status == "OK" & st_file_status == "OK" & ao_file_status == "OK") {
 
 from    <- "oscar.alfaro@eurocontrol.int"
 to      <- c("oscar.alfaro@eurocontrol.int"
-             ,
-             "quinten.goens@eurocontrol.int",
-             "enrico.spinielli@eurocontrol.int",
-             "delia.budulan@eurocontrol.int",
-             "nora.cashman@eurocontrol.int"
-             ,  "denis.huet@eurocontrol.int"
+             # ,
+             # "quinten.goens@eurocontrol.int",
+             # "enrico.spinielli@eurocontrol.int",
+             # "delia.budulan@eurocontrol.int",
+             # "nora.cashman@eurocontrol.int"
+             # ,  "denis.huet@eurocontrol.int"
 )
 # cc      <- c("enrico.spinielli@eurocontrol.int")
 control <- list(smtpServer="mailservices.eurocontrol.int")
