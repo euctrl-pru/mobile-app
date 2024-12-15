@@ -776,7 +776,7 @@ apt_apt_data_day <- apt_apt_data_day_int |>
     APT_NAME = ARP_NAME_DEP,
     RANK = R_RANK,
     DY_RANK_DIF_PREV_WEEK,
-    DY_APT_DES_NAME = ARP_NAME_ARR,
+    DY_APT_NAME = ARP_NAME_ARR,
     DY_TO_DATE = LAST_DATA_DAY,
     DY_FLT = CURRENT_DAY,
     DY_FLT_DIF_PREV_WEEK_PERC,
@@ -822,7 +822,7 @@ apt_apt_data_week <- apt_apt_week |>
     APT_NAME = ARP_NAME_DEP,
     RANK = R_RANK,
     WK_RANK_DIF_PREV_WEEK,
-    WK_APT_DES_NAME = ARP_NAME_ARR,
+    WK_APT_NAME = ARP_NAME_ARR,
     WK_FROM_DATE,
     WK_TO_DATE,
     WK_FLT_AVG,
@@ -868,7 +868,7 @@ apt_apt_data_year <- apt_apt_y2d |>
     APT_NAME = ARP_NAME_DEP,
     RANK = R_RANK,
     Y2D_RANK_DIF_PREV_YEAR,
-    Y2D_APT_DES_NAME = ARP_NAME_ARR,
+    Y2D_APT_NAME = ARP_NAME_ARR,
     Y2D_TO_DATE = LAST_DATA_DAY,
     Y2D_FLT_AVG,
     Y2D_FLT_DIF_PREV_YEAR_PERC,
@@ -878,24 +878,24 @@ apt_apt_data_year <- apt_apt_y2d |>
 #### main card ----
 apt_apt_main_traffic <- apt_apt_data_day_int |>
   mutate(
-    MAIN_TFC_APT_DES_NAME = if_else(
+    MAIN_TFC_APT_NAME = if_else(
       R_RANK <= 4,
       ARP_NAME_ARR,
       NA
     ),
-    MAIN_TFC_APT_DES_CODE = if_else(
+    MAIN_TFC_APT_CODE = if_else(
       R_RANK <= 4,
       ARP_CODE_ARR,
       NA
     ),
-    MAIN_TFC_APT_DES_FLT = if_else(
+    MAIN_TFC_APT_FLT = if_else(
       R_RANK <= 4,
       CURRENT_DAY,
       NA
     )
   ) |>
   select(APT_CODE = ARP_CODE_DEP, APT_NAME = ARP_NAME_DEP, RANK = R_RANK,
-         MAIN_TFC_APT_DES_NAME, MAIN_TFC_APT_DES_CODE, MAIN_TFC_APT_DES_FLT)
+         MAIN_TFC_APT_NAME, MAIN_TFC_APT_CODE, MAIN_TFC_APT_FLT)
 
 apt_apt_main_traffic_dif <- apt_apt_data_day_int |>
   arrange(ARP_CODE_DEP, desc(abs(APT_TFC_APT_DIF))) |>
@@ -904,17 +904,17 @@ apt_apt_main_traffic_dif <- apt_apt_data_day_int |>
   ungroup() |>
   arrange(ARP_CODE_DEP, R_RANK) |>
   mutate(
-    MAIN_TFC_DIF_APT_DES_NAME = if_else(
+    MAIN_TFC_DIF_APT_NAME = if_else(
       RANK_DIF_APT_TFC <= 4,
       ARP_NAME_ARR,
       NA
     ),
-    MAIN_TFC_DIF_APT_DES_CODE = if_else(
+    MAIN_TFC_DIF_APT_CODE = if_else(
       RANK_DIF_APT_TFC <= 4,
       ARP_CODE_ARR,
       NA
     ),
-    MAIN_TFC_DIF_APT_DES_FLT_DIF = if_else(
+    MAIN_TFC_DIF_APT_FLT_DIF = if_else(
       RANK_DIF_APT_TFC <= 4,
       APT_TFC_APT_DIF,
       NA
@@ -922,8 +922,8 @@ apt_apt_main_traffic_dif <- apt_apt_data_day_int |>
   ) |>
   arrange(ARP_CODE_DEP, RANK_DIF_APT_TFC) |>
   select(APT_CODE = ARP_CODE_DEP, APT_NAME = ARP_NAME_DEP, RANK = RANK_DIF_APT_TFC,
-         MAIN_TFC_DIF_APT_DES_NAME, MAIN_TFC_DIF_APT_DES_CODE,
-         MAIN_TFC_DIF_APT_DES_FLT_DIF)
+         MAIN_TFC_DIF_APT_NAME, MAIN_TFC_DIF_APT_CODE,
+         MAIN_TFC_DIF_APT_FLT_DIF)
 
 
 #### join tables ----
