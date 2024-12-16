@@ -46,7 +46,7 @@ generate_app_data <- function(data_day_date) {
   source(here("..", "mobile-app", "R", "generate_json_files_state.R"))
   source(here("..", "mobile-app", "R", "generate_json_files_nw.R"))
   source(here("..", "mobile-app", "R", "generate_json_files_ao.R"))
-  # source(here("..", "mobile-app", "R", "generate_json_files_ap.R"))
+  source(here("..", "mobile-app", "R", "generate_json_files_ap.R"))
 }
 
 copy_app_data <- function(data_day_date) {
