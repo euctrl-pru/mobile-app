@@ -69,6 +69,11 @@ copy_app_data <- function(data_day_date) {
   file.copy(from = nw_files_to_copy, to = network_data_folder_v3, overwrite = TRUE)
   file.copy(from = ao_files_to_copy, to = network_data_folder_v3, overwrite = TRUE)
 
+  # copy also one file in the root folder for the checkupdates script to verify
+  file.copy(from = here(nw_local_data_folder, "nw_json_app.json"),
+            to = here(destination_dir, "data", "v3"),
+            overwrite = TRUE)
+
   # backup json files
   file.copy(network_data_folder_v3,
             archive_dir,
