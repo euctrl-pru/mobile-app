@@ -31,13 +31,13 @@ source(here("..", "mobile-app", "R", "queries_ap.R"))
 
 # airport dimension table (lists the airports and their ICAO codes)
 if (exists("apt_icao") == FALSE) {
-  apt_icao <-  read_xlsx(
-    path  = fs::path_abs(
-      str_glue(ap_base_file),
-      start = ap_base_dir),
-    sheet = "lists",
-    range = cell_limits(c(1, 1), c(NA, NA))) %>%
-    as_tibble()
+  query <- "SELECT
+arp_code AS apt_icao_code,
+arp_name AS apt_name
+FROM pruprod.v_aiu_app_dim_airport"
+
+  apt_icao <- export_query(query) %>%
+    janitor::clean_names()
 }
 
 # archive mode for past dates
