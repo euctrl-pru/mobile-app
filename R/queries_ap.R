@@ -14,15 +14,10 @@ if (exists("apt_icao") == FALSE) {
 
 ## traffic ----
 query_ap_traffic <- paste0("
-with LIST_AIRPORT as
-(select code as arp_code,
-        id as arp_id ,
-       dashboard_name as arp_name,
-       SUBSTR (CODE, 1, 2) AS ICAO2LETTER
- from pru_airport where code in ('",paste0(apt_icao$apt_icao_code, collapse = "','"),"'
-          )
- ),
+with
 
+LIST_AIRPORT  as
+(select * from pruprod.v_aiu_app_dim_airport ),
 
 AIRPORT_DAY
 as
@@ -385,15 +380,10 @@ AIRP_CALC as
 
 ## delay ----
 query_ap_delay <- paste0("
-with LIST_AIRPORT as
-(select code as arp_code,
-  id as arp_id ,
-  dashboard_name as arp_name,
-  SUBSTR (CODE, 1, 2) AS ICAO2LETTER
-  from pru_airport where code in ('",paste0(apt_icao$apt_icao_code, collapse = "','"),"'
-  )
-),
+with
 
+LIST_AIRPORT  as
+(select * from pruprod.v_aiu_app_dim_airport ),
 
 AIRPORT_DAY
 as
@@ -1107,15 +1097,10 @@ order by arp_code,  flight_date
 query_ap_punct <- paste0(
 "WITH
   --Getting the list of airports
-  LIST_AIRPORT as (
-  SELECT code as arp_code,
-         id as arp_id ,
-         dashboard_name as arp_name,
-  SUBSTR (CODE, 1, 2) AS ICAO2LETTER
-  from pru_airport where code in ('",paste0(apt_icao$apt_icao_code, collapse = "','"),"'
-  )
-  ),
-  --creating a table with the airport codes and dates since 2019
+LIST_AIRPORT  as
+(select * from pruprod.v_aiu_app_dim_airport ),
+
+--creating a table with the airport codes and dates since 2019
   AP_DAY AS
   (SELECT
               a.arp_code,
@@ -1179,13 +1164,7 @@ DIM_AO
  as ( select  ao_code, ao_name, ao_grp_code, ao_grp_name, ao_nm_group_code, ao_nm_group_name  from  prudev.v_covid_dim_ao) ,
 
 DIM_APT as
-(select code as arp_code,
-        id as arp_id ,
-       dashboard_name as arp_name
- from pru_airport where code in ('",paste0(apt_icao$apt_icao_code, collapse = "','"),"'
-          )
- )
-
+(select * from pruprod.v_aiu_app_dim_airport )
 
 , DATA_SOURCE as (
 SELECT
@@ -1363,12 +1342,7 @@ DIM_AO
  as ( select  ao_code, ao_name, ao_grp_code, ao_grp_name, ao_nm_group_code, ao_nm_group_name  from  prudev.v_covid_dim_ao) ,
 
 DIM_APT as
-(select code as arp_code,
-        id as arp_id ,
-       dashboard_name as arp_name
- from pru_airport where code in ('",paste0(apt_icao$apt_icao_code, collapse = "','"),"'
-          )
- )
+(select * from pruprod.v_aiu_app_dim_airport )
 
 , DATA_SOURCE as (
 SELECT
@@ -1550,12 +1524,7 @@ DIM_AO
  as ( select  ao_code, ao_name, ao_grp_code, ao_grp_name, ao_nm_group_code, ao_nm_group_name  from  prudev.v_covid_dim_ao) ,
 
 DIM_APT as
-(select code as arp_code,
-        id as arp_id ,
-       dashboard_name as arp_name
- from pru_airport where code in ('",paste0(apt_icao$apt_icao_code, collapse = "','"),"'
-          )
-),
+(select * from pruprod.v_aiu_app_dim_airport ),
 
 
 DATA_DAY as
@@ -1697,13 +1666,7 @@ DIM_APT
  ),
 
 LIST_APT as
-(select code as arp_code,
-       dashboard_name as arp_name
- from pru_airport where code in ('",paste0(apt_icao$apt_icao_code, collapse = "','"),"'
-          )
- ),
-
-
+(select * from pruprod.v_aiu_app_dim_airport ),
 
 
 AIRP_FLIGHT as (
@@ -1851,12 +1814,7 @@ DIM_APT
  ),
 
 LIST_APT as
-(select code as arp_code,
-       dashboard_name as arp_name
- from pru_airport where code in ('",paste0(apt_icao$apt_icao_code, collapse = "','"),"'
-          )
-),
-
+(select * from pruprod.v_aiu_app_dim_airport ),
 
 AIRP_FLIGHT as (
 
@@ -2006,14 +1964,7 @@ DIM_APT
  ),
 
 LIST_APT as
-(select code as arp_code,
-       dashboard_name as arp_name
- from pru_airport where code in ('",paste0(apt_icao$apt_icao_code, collapse = "','"),"'
-          )
-
- ),
-
-
+(select * from pruprod.v_aiu_app_dim_airport ),
 
 
 AIRP_FLIGHT as (
@@ -2127,11 +2078,7 @@ DIM_APT
  ),
 
 LIST_APT as
-(select code as arp_code,
-       dashboard_name as arp_name
- from pru_airport where code in ('",paste0(apt_icao$apt_icao_code, collapse = "','"),"'
-          )
- ),
+(select * from pruprod.v_aiu_app_dim_airport ),
 
 
 AIRP_FLIGHT as (
@@ -2277,11 +2224,7 @@ DIM_APT
  ),
 
 LIST_APT as
-(select code as arp_code,
-       dashboard_name as arp_name
- from pru_airport where code in ('",paste0(apt_icao$apt_icao_code, collapse = "','"),"'
-          )
- ),
+(select * from pruprod.v_aiu_app_dim_airport ),
 
 
 AIRP_FLIGHT as (
@@ -2431,11 +2374,7 @@ DIM_APT
  ),
 
 LIST_APT as
-(select code as arp_code,
-       dashboard_name as arp_name
- from pru_airport where code in ('",paste0(apt_icao$apt_icao_code, collapse = "','"),"'
-          )
-),
+(select * from pruprod.v_aiu_app_dim_airport ),
 
 
 AIRP_FLIGHT as (
@@ -2559,13 +2498,7 @@ where SK_FLT_TYPE_RULE_ID <> 5
  ),
 
 DIM_APT as
-(select code as arp_code,
-        id as arp_id ,
-       dashboard_name as arp_name
- from pru_airport where code in ('",paste0(apt_icao$apt_icao_code, collapse = "','"),"'
-          )
- )
-
+(select * from pruprod.v_aiu_app_dim_airport )
 
 
 , DATA_SOURCE as (
@@ -2751,13 +2684,7 @@ where SK_FLT_TYPE_RULE_ID <> 5
  ),
 
 DIM_APT as
-(select code as arp_code,
-        id as arp_id ,
-       dashboard_name as arp_name
- from pru_airport where code in ('",paste0(apt_icao$apt_icao_code, collapse = "','"),"'
-          )
- )
-
+(select * from pruprod.v_aiu_app_dim_airport )
 
 
 , DATA_SOURCE as (
@@ -2947,54 +2874,7 @@ where SK_FLT_TYPE_RULE_ID <> 5
  ),
 
 DIM_APT as
-(select code as arp_code,
-        id as arp_id ,
-       dashboard_name as arp_name
- from pru_airport where code in (
-         -- top 40 airports in 2023
-         'LTFM',
-         'EHAM',
-         'EGLL',
-         'LFPG',
-         'EDDF',
-         'LEMD',
-         'LEBL',
-         'EDDM',
-         'LIRF',
-         'EGKK',
-         'LSZH',
-         'EIDW',
-         'LGAV',
-         'LOWW',
-         'LEPA',
-         'EKCH',
-         'LPPT',
-         'LTFJ',
-         'LTAI',
-         'ENGM',
-         'LFPO',
-         'LIMC',
-         'EGSS',
-         'ESSA',
-         'EBBR',
-         'EGCC',
-         'EDDB',
-         'LSGG',
-         'EPWA',
-         'LEMG',
-         'LLBG',
-         'EDDL',
-         'LFMN',
-         'EFHK',
-         'EGGW',
-         'GCLP',
-         'EDDK',
-         'EGPH',
-         'EDDH',
-         'LKPR'
-          )
- )
-
+(select * from pruprod.v_aiu_app_dim_airport ),
 
 
 , DATA_SOURCE as (
