@@ -136,4 +136,5 @@ apt_icao <-  read_xlsx(
     start = ap_base_dir),
   sheet = "lists",
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
-  as_tibble()
+  as_tibble() %>%
+  janitor::clean_names()
