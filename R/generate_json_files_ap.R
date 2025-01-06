@@ -370,12 +370,12 @@ apt_delay_for_json  <- apt_delay_last_day %>%
 #### Punctuality data ----
 
 #querying the data in SQL
-apt_punct_raw <- export_query(query_ap_punct) %>%
+ap_apt_punct_raw <- export_query(query_ap_punct) %>%
   as_tibble() %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
 #selecting the date for which we have the latest traffic data
-last_day_punct <-  min(max(apt_punct_raw$DAY_DATE),
+last_day_punct <-  min(max(ap_apt_punct_raw$DAY_DATE),
                        data_day_date, na.rm = TRUE)
 #selecting the year for which we have the latest traffic data
 last_year_punct <- as.numeric(format(last_day_punct,'%Y'))
@@ -383,7 +383,7 @@ last_year_punct <- as.numeric(format(last_day_punct,'%Y'))
 
 #####  Data totals----
 #preparing the data
-apt_punct_data <- apt_punct_raw %>%
+apt_punct_data <- ap_apt_punct_raw %>%
   group_by(ARP_CODE, ARP_NAME, DAY_DATE) %>%
   summarise(
     ARR_PUNCTUAL_FLIGHTS = sum( ARR_PUNCTUAL_FLIGHTS , na.rm = TRUE),
@@ -467,7 +467,7 @@ apt_punct_d_w <- apt_punct_data %>%
 
 
 ##### Year to Date----
-apt_punct_y2d <- apt_punct_raw %>%
+apt_punct_y2d <- ap_apt_punct_raw %>%
   arrange(ARP_CODE, DAY_DATE) %>%
   mutate(
     MONTH_DAY = as.numeric(format(DAY_DATE, format="%m%d"))
@@ -1370,7 +1370,7 @@ save_json(apt_traffic_evo_j, "apt_traffic_evo_chart_daily")
 ## PUNCTUALITY ----
 ### 7-day punctuality avg ----
 
-apt_punct_evo <- apt_punct_raw %>%
+apt_punct_evo <- ap_apt_punct_raw %>%
   filter(DAY_DATE >= as.Date(paste0("01-01-", data_day_year-2), format = "%d-%m-%Y")) %>%
   arrange(ARP_CODE, DAY_DATE) %>%
   mutate(
