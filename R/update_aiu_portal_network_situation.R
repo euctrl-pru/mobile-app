@@ -116,9 +116,10 @@ retrieve_from_excell <- function(wef = today(tzone = "UTC") - dweeks(weeks_back)
 
 retrieve_from_api <- function(wef = today(tzone = "UTC") - dweeks(weeks_back)) {
   base_url <- "https://aiu-portal.pockethost.io/api/collections/"
+  filter_param <- URLencode(stringr::str_glue("(date>'{wef}')"))
   url <- str_c(base_url,
                "network_situation/records",
-               stringr::str_glue("?perPage=200&filter=(date>'{wef}')")) |>
+               "?perPage=200&filter=", filter_param) |>
     url()
 
   cols <- c(
