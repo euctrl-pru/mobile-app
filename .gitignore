@@ -6,6 +6,7 @@ sqlnet.log
 copy_to_production.bat
 copy_to_production.log
 update_daily_traffic.log
+R/update_pockethost_data.log
 .Rproj.user/
 
 /data/
