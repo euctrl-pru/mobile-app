@@ -609,6 +609,31 @@ get_co2_data <- function() {
         ORDER BY 2, 3, 4
        ")
 
+  check_co2 <- try({
+    co2_data_raw <- export_query(query) %>%
+      mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+  })
+
+  # # Check if an error occurred
+  # if (inherits(check_co2, "try-error")) {
+  #   co2_data_raw <- read_xlsx(
+  #     path = fs::path_abs(
+  #       str_glue("CO2_backup.xlsx"),
+  #       start = '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Project/DDP/AIU app/data_archive'
+  #     ),
+  #     sheet = "All Data vs Y(-1)",
+  #     range = cell_limits(c(3, 1), c(NA, NA))
+  #   ) %>%
+  #     as_tibble() %>%
+  #     mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
+  #     filter(YEAR>=2019, STATE_NAME != 'LIECHTENSTEIN') %>%
+  #     arrange(2, 3, 4)
+  #
+  # } else {
+  #   co2_data_raw <- export_query(query) %>%
+  #     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+  # }
+
   co2_data_raw <- export_query(query) %>%
     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
