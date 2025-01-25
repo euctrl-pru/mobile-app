@@ -615,49 +615,14 @@ get_co2_data <- function() {
   return(co2_data_raw)
 }
 
-get_ao_billing_data <- function() {
-
-  # ## https://leowong.ca/blog/connect-to-microsoft-access-database-via-r/
-  # ## Set up driver info and database path
-  # DRIVERINFO <- "Driver={Microsoft Access Driver (*.mdb, *.accdb)};"
-  # MDBPATH <- "G:/HQ/dgof-pru/Data/DataProcessing/Crco - Billing/CRCO_BILL.accdb"
-  # PATH <- paste0(DRIVERINFO, "DBQ=", MDBPATH)
-  #
-  # channel <- odbcDriverConnect(PATH)
-  #
-  # query_bill <- paste0("SELECT AO_GRP_LAST_NAME, Billing_period_start_date, FLAG_YTD,
-  #   [Billing Zone Name], [Route Charges], Year, Month
-  #   FROM V_CRCO_BILL_PER_AO_CZ_GRP_ACTUAL
-  #   where (Year = ", last_year, " or Year = ", last_year-1," or Year = ", 2019,") and FLAG_YTD = 'Y'
-  # ")
-  #
-  # ## Load data into R dataframe
-  # billed_ao_raw <- sqlQuery(channel,
-  #                        query_bill,
-  #                        stringsAsFactors = FALSE)
-  #
-  # ## Close and remove channel
-  # close(channel)
-  # rm(channel)
-
-  billed_ao_raw <-  read_xlsx(
-    path  = fs::path_abs(
-      str_glue("billing per cz_ao_app.xlsx"),
-      start = "G:/HQ/dgof-pru/Data/DataProcessing/Covid19/Oscar/Develop"),
-    sheet = "cz",
-    range = cell_limits(c(4, 1), c(NA, NA))) %>%
-    as_tibble() %>%
-    mutate(across(.cols = where(is.instant), ~ as.Date(.x))) |>
-    clean_names()
-
-  billed_ao_raw <- billed_ao_raw |>
-    mutate(month = as.numeric(month)) |>
-    rename(route_charges = total)
-  return(billed_ao_raw)
-}
-
 get_punct_data_spain <- function() {
-  query1 <- str_glue("
+
+  temp_data_archive <-'//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Project/DDP/AIU app/data_archive/'
+  punct_data_spain_prev <- read_csv(paste0(temp_data_archive, 'punct_data_spain.csv'))
+
+  max_date_prev <- max(punct_data_spain_prev$DAY_DATE, na.rm = TRUE)
+
+  query1 <- paste0("
 select
       a.*,
       trunc(a.ACTUAL_DEP_TIME - 3 / 24) as dep_date,
@@ -674,9 +639,9 @@ select
 from LDW_VDM.V_DELAY_TRACKER_ARCHIVE_TURN a
 where (substr(ADEP, 1,2) in ('GC', 'GE', 'LE') or substr(ADES, 1,2) in ('GC', 'GE', 'LE'))
    and (
-        trunc(a.ACTUAL_DEP_TIME - 3 / 24) >= to_date('24-12-2018','DD-MM-YYYY')
+        trunc(a.ACTUAL_DEP_TIME - 3 / 24) >= TO_DATE('", max_date_prev ,"', 'yyyy-mm-dd') -7
         or
-        trunc(a.ACTUAL_ARR_TIME - 3 / 24) >= to_date('24-12-2018','DD-MM-YYYY')
+        trunc(a.ACTUAL_ARR_TIME - 3 / 24) >= TO_DATE('", max_date_prev ,"', 'yyyy-mm-dd') -7
         )
 "
   )
@@ -719,7 +684,7 @@ where (substr(ADEP, 1,2) in ('GC', 'GE', 'LE') or substr(ADES, 1,2) in ('GC', 'G
               DEP_SCHEDULE_FLIGHT = sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE),
               DEP_FLIGHTS = n())
 
-  start_date <- as.Date("2018-12-24")
+  start_date <- min(min(punct_data_arr$ARR_DATE, na.rm = TRUE), min(punct_data_dep$DEP_DATE, na.rm = TRUE)) +days(2)
   end_date <- lubridate::today() + days(-1)
 
   date_seq <- seq(from = start_date, to = end_date, by = "day")
@@ -729,84 +694,23 @@ where (substr(ADEP, 1,2) in ('GC', 'GE', 'LE') or substr(ADES, 1,2) in ('GC', 'G
   country_day <- data.frame(DAY_DATE = repeated_dates, ISO_2LETTER = repeated_values) |>
     arrange(ISO_2LETTER, DAY_DATE)
 
-  punct_data_spain_raw <- country_day |>
+  punct_data_spain_joined <- country_day |>
     left_join(punct_data_arr, by = c("DAY_DATE" = "ARR_DATE", "ISO_2LETTER" = "ISO_CT_CODE_DES")) |>
     left_join(punct_data_dep, by = c("DAY_DATE" = "DEP_DATE", "ISO_2LETTER" = "ISO_CT_CODE_DEP"))
 
-  # checktable <- punct_data_spain_raw |>
-  #   group_by(DAY_DATE) |>
-  #   summarise(DEP_PUNCTUAL_FLIGHTS = sum(DEP_PUNCTUAL_FLIGHTS, na.rm = TRUE),
-  #             DEP_SCHEDULE_FLIGHT = sum(DEP_SCHEDULE_FLIGHT, na.rm = TRUE),
-  #             ARR_PUNCTUAL_FLIGHTS = sum(ARR_PUNCTUAL_FLIGHTS, na.rm = TRUE),
-  #             ARR_SCHEDULE_FLIGHT = sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE)
-  #   ) |>
-  #   filter(DAY_DATE >= as.Date("2022-01-01"))
-  rm(punct_data_raw_raw, punct_data_raw_calc)
+
+  punct_data_spain_raw <- punct_data_spain_prev %>%
+    filter(DAY_DATE < start_date) %>%
+    rbind(punct_data_spain_joined) %>%
+    arrange(DAY_DATE, ISO_2LETTER)
+
+  punct_data_spain_raw %>% write_csv(paste0(temp_data_archive, 'punct_data_spain.csv'))
+  punct_data_spain_raw %>% write_csv(paste0('G:/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/app/csv/',
+                                            format(end_date, "%Y%m%d"), '_punct_data_spain.csv'))
+
+  punct_data_spain_raw_prev %>% write_csv(paste0(temp_data_archive, 'punct_data_spain_prev.csv'))
 
   return(punct_data_spain_raw)
-}
-
-get_punct_data_apt <- function() {
-  query <- "
-     WITH
-        DIM_AIRPORT as (
-          SELECT
-            a.code as arp_code, a.id as arp_id, a.dashboard_name as arp_name,
-            a.ISO_COUNTRY_CODE
-          FROM prudev.pru_airport a
-        )
-
-      , LIST_AIRPORT as (
-            select distinct
-                a.ICAO_CODE as arp_code,
-                b.arp_name,
-                b.iso_country_code
-            from LDW_VDM.VIEW_FAC_PUNCTUALITY_AP_DAY a
-            left join DIM_AIRPORT b on a.icao_code = b.arp_code
-            order by 1
-
-        ),
-
-        LIST_STATE as (
-          SELECT distinct
-            AIU_ISO_COUNTRY_NAME as EC_ISO_CT_NAME,
-            AIU_ISO_COUNTRY_CODE AS EC_ISO_CT_CODE
-          FROM prudev.pru_country_iso
-          WHERE till > TRUNC(SYSDATE)-1
-        ),
-
-        APT_DAY AS (
-          SELECT
-                  a.arp_code,
-                  a.arp_name,
-                  a.ISO_COUNTRY_CODE,
-                  t.year,
-                  t.month,
-                  t.week,
-                  t.week_nb_year,
-                  t.day_type,
-                  t.day_of_week_nb AS day_of_week,
-                  t.day_date
-          FROM LIST_AIRPORT a, pru_time_references t
-          WHERE
-             t.day_date >= to_date('24-12-2018','DD-MM-YYYY')
-             AND t.day_date < trunc(sysdate)
-          )
-
-          SELECT
-            a.* , b.*, c.EC_ISO_CT_NAME
-          FROM APT_DAY a
-          left join LDW_VDM.VIEW_FAC_PUNCTUALITY_AP_DAY b on a.day_date = b.\"DATE\" and a.arp_code = b.icao_code
-          left join LIST_STATE c on a.ISO_COUNTRY_CODE = c.EC_ISO_CT_CODE
-          where a.arp_code not in ('BIKF', 'BIRK', 'LTBA', 'UKBB')
-          order by a.ARP_CODE, b.\"DATE\"
-   "
-
-  apt_punct_raw <- export_query(query) %>%
-    as_tibble() %>%
-    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-
-  return(apt_punct_raw)
 }
 
 get_punct_data_state <- function() {
