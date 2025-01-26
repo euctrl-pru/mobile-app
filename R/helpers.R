@@ -640,6 +640,47 @@ get_co2_data <- function() {
   return(co2_data_raw)
 }
 
+get_ao_billing_data <- function() {
+
+  # ## https://leowong.ca/blog/connect-to-microsoft-access-database-via-r/
+  # ## Set up driver info and database path
+  # DRIVERINFO <- "Driver={Microsoft Access Driver (*.mdb, *.accdb)};"
+  # MDBPATH <- "G:/HQ/dgof-pru/Data/DataProcessing/Crco - Billing/CRCO_BILL.accdb"
+  # PATH <- paste0(DRIVERINFO, "DBQ=", MDBPATH)
+  #
+  # channel <- odbcDriverConnect(PATH)
+  #
+  # query_bill <- paste0("SELECT AO_GRP_LAST_NAME, Billing_period_start_date, FLAG_YTD,
+  #   [Billing Zone Name], [Route Charges], Year, Month
+  #   FROM V_CRCO_BILL_PER_AO_CZ_GRP_ACTUAL
+  #   where (Year = ", last_year, " or Year = ", last_year-1," or Year = ", 2019,") and FLAG_YTD = 'Y'
+  # ")
+  #
+  # ## Load data into R dataframe
+  # billed_ao_raw <- sqlQuery(channel,
+  #                        query_bill,
+  #                        stringsAsFactors = FALSE)
+  #
+  # ## Close and remove channel
+  # close(channel)
+  # rm(channel)
+
+  billed_ao_raw <-  read_xlsx(
+    path  = fs::path_abs(
+      str_glue("billing per cz_ao_app.xlsx"),
+      start = "G:/HQ/dgof-pru/Data/DataProcessing/Covid19/Oscar/Develop"),
+    sheet = "cz",
+    range = cell_limits(c(4, 1), c(NA, NA))) %>%
+    as_tibble() %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x))) |>
+    clean_names()
+
+  billed_ao_raw <- billed_ao_raw |>
+    mutate(month = as.numeric(month)) |>
+    rename(route_charges = total)
+  return(billed_ao_raw)
+}
+
 get_punct_data_spain <- function() {
 
   temp_data_archive <-'//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Project/DDP/AIU app/data_archive/'
@@ -733,7 +774,7 @@ where (substr(ADEP, 1,2) in ('GC', 'GE', 'LE') or substr(ADES, 1,2) in ('GC', 'G
   punct_data_spain_raw %>% write_csv(paste0('G:/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/app/csv/',
                                             format(end_date, "%Y%m%d"), '_punct_data_spain.csv'))
 
-  punct_data_spain_raw_prev %>% write_csv(paste0(temp_data_archive, 'punct_data_spain_prev.csv'))
+  # punct_data_spain_raw_prev %>% write_csv(paste0(temp_data_archive, 'punct_data_spain_prev.csv'))
 
   return(punct_data_spain_raw)
 }
@@ -795,4 +836,62 @@ DIM_STATE as (
     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
   return(st_punct_raw)
+}
+
+get_punct_data_apt <- function() {
+  query <- "
+     WITH
+        DIM_AIRPORT as (
+          SELECT
+            a.code as arp_code, a.id as arp_id, a.dashboard_name as arp_name,
+            a.ISO_COUNTRY_CODE
+          FROM prudev.pru_airport a
+        )
+              , LIST_AIRPORT as (
+            select distinct
+                a.ICAO_CODE as arp_code,
+                b.arp_name,
+                b.iso_country_code
+            from LDW_VDM.VIEW_FAC_PUNCTUALITY_AP_DAY a
+            left join DIM_AIRPORT b on a.icao_code = b.arp_code
+            order by 1
+        ),
+        LIST_STATE as (
+          SELECT distinct
+            AIU_ISO_COUNTRY_NAME as EC_ISO_CT_NAME,
+            AIU_ISO_COUNTRY_CODE AS EC_ISO_CT_CODE
+          FROM prudev.pru_country_iso
+          WHERE till > TRUNC(SYSDATE)-1
+        ),
+        APT_DAY AS (
+          SELECT
+                  a.arp_code,
+                  a.arp_name,
+                  a.ISO_COUNTRY_CODE,
+                  t.year,
+                  t.month,
+                  t.week,
+                  t.week_nb_year,
+                  t.day_type,
+                  t.day_of_week_nb AS day_of_week,
+                  t.day_date
+          FROM LIST_AIRPORT a, pru_time_references t
+          WHERE
+             t.day_date >= to_date('24-12-2018','DD-MM-YYYY')
+             AND t.day_date < trunc(sysdate)
+          )
+          SELECT
+            a.* , b.*, c.EC_ISO_CT_NAME
+          FROM APT_DAY a
+          left join LDW_VDM.VIEW_FAC_PUNCTUALITY_AP_DAY b on a.day_date = b.\"DATE\" and a.arp_code = b.icao_code
+          left join LIST_STATE c on a.ISO_COUNTRY_CODE = c.EC_ISO_CT_CODE
+          where a.arp_code not in ('BIKF', 'BIRK', 'LTBA', 'UKBB')
+          order by a.ARP_CODE, b.\"DATE\"
+   "
+
+  apt_punct_raw <- export_query(query) %>%
+    as_tibble() %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+   return(apt_punct_raw)
 }
