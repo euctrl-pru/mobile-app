@@ -31,13 +31,12 @@ source(here("..", "mobile-app", "R", "queries_ap.R"))
 
 # airport dimension table (lists the airports and their ICAO codes)
 if (exists("apt_icao") == FALSE) {
-  apt_icao <-  read_xlsx(
-    path  = fs::path_abs(
-      str_glue(ap_base_file),
-      start = ap_base_dir),
-    sheet = "lists",
-    range = cell_limits(c(1, 1), c(NA, NA))) %>%
-    as_tibble() %>%
+  query <- "SELECT
+arp_code AS apt_icao_code,
+arp_name AS apt_name
+FROM pruprod.v_aiu_app_dim_airport"
+
+  apt_icao <- export_query(query) %>%
     janitor::clean_names()
 }
 
@@ -113,32 +112,32 @@ apt_delay_data <- apt_delay_data %>%
   arrange(FLIGHT_DATE) %>%
   group_by(ARP_CODE) %>%
   mutate(#delay minutes
-         DAY_DLY = TDM_ARP,
-         AVG_DLY_ROLLING_WEEK = rollmean( DAY_DLY , 7, align = "right", fill = NA),
-         #number of flights
-         DAY_TFC = DAY_ARR,
-         AVG_TFC_ROLLING_WEEK = rollmean( DAY_TFC , 7, align = "right", fill = NA),
-         #number of delayed flights
-         DAY_DELAYED_TFC = TDF_ARP_ARR,
-         AVG_DELAYED_TFC_ROLLING_WEEK = rollmean( TDF_ARP_ARR , 7, align = "right", fill = NA),
-         #number delayed flights >15 minutes'
-         DAY_DELAYED_TFC_15 = TDF_15_ARP_ARR,
-         AVG_DELAYED_TFC_15_ROLLING_WEEK = rollmean( TDF_15_ARP_ARR , 7, align = "right", fill = NA)
-         ) %>%
+    DAY_DLY = TDM_ARP,
+    AVG_DLY_ROLLING_WEEK = rollmean( DAY_DLY , 7, align = "right", fill = NA),
+    #number of flights
+    DAY_TFC = DAY_ARR,
+    AVG_TFC_ROLLING_WEEK = rollmean( DAY_TFC , 7, align = "right", fill = NA),
+    #number of delayed flights
+    DAY_DELAYED_TFC = TDF_ARP_ARR,
+    AVG_DELAYED_TFC_ROLLING_WEEK = rollmean( TDF_ARP_ARR , 7, align = "right", fill = NA),
+    #number delayed flights >15 minutes'
+    DAY_DELAYED_TFC_15 = TDF_15_ARP_ARR,
+    AVG_DELAYED_TFC_15_ROLLING_WEEK = rollmean( TDF_15_ARP_ARR , 7, align = "right", fill = NA)
+  ) %>%
   group_by( year( FLIGHT_DATE), ARP_CODE) %>%
   mutate(#year to date
-         #delay
-         Y2D_DLY_YEAR = cumsum( coalesce( DAY_DLY , 0)),
-         Y2D_AVG_DLY = cummean( coalesce( DAY_DLY , 0)),
-         #number of flights
-         Y2D_TFC_YEAR = cumsum( coalesce( DAY_TFC , 0)),
-         Y2D_AVG_TFC = cummean( coalesce( DAY_TFC , 0)),
-         #number of delayed flights
-         Y2D_DELAYED_TFC_YEAR = cumsum( coalesce( DAY_DELAYED_TFC , 0)),
-         Y2D_AVG_DELAYED_TFC = cummean( coalesce( DAY_DELAYED_TFC , 0)),
-         #number delayed flights >15 minutes'
-         Y2D_DELAYED_TFC_15_YEAR = cumsum( coalesce( DAY_DELAYED_TFC_15 , 0)),
-         Y2D_AVG_DELAYED_TFC_15 = cummean( coalesce( DAY_DELAYED_TFC_15 , 0))) %>%
+    #delay
+    Y2D_DLY_YEAR = cumsum( coalesce( DAY_DLY , 0)),
+    Y2D_AVG_DLY = cummean( coalesce( DAY_DLY , 0)),
+    #number of flights
+    Y2D_TFC_YEAR = cumsum( coalesce( DAY_TFC , 0)),
+    Y2D_AVG_TFC = cummean( coalesce( DAY_TFC , 0)),
+    #number of delayed flights
+    Y2D_DELAYED_TFC_YEAR = cumsum( coalesce( DAY_DELAYED_TFC , 0)),
+    Y2D_AVG_DELAYED_TFC = cummean( coalesce( DAY_DELAYED_TFC , 0)),
+    #number delayed flights >15 minutes'
+    Y2D_DELAYED_TFC_15_YEAR = cumsum( coalesce( DAY_DELAYED_TFC_15 , 0)),
+    Y2D_AVG_DELAYED_TFC_15 = cummean( coalesce( DAY_DELAYED_TFC_15 , 0))) %>%
   ungroup()
 
 #adding previous year and 2019 values
@@ -174,12 +173,12 @@ apt_delay_data_ <- apt_delay_data %>%
                                       Y2D_DELAYED_TFC_15_YEAR,
                                       Y2D_AVG_DELAYED_TFC_15
 
-                                      ),
-            by = join_by(DATE_PREV_YEAR == FLIGHT_DATE, ARP_CODE == ARP_CODE),
-            suffix = c("", "_PREV_YEAR"))  %>%
+  ),
+  by = join_by(DATE_PREV_YEAR == FLIGHT_DATE, ARP_CODE == ARP_CODE),
+  suffix = c("", "_PREV_YEAR"))  %>%
   #obtaining data for 2019
   left_join(apt_delay_data %>% select(ARP_CODE,
-                                       FLIGHT_DATE,
+                                      FLIGHT_DATE,
                                       #delay minutes
                                       DAY_DLY,
                                       AVG_DLY_ROLLING_WEEK,
@@ -203,15 +202,15 @@ apt_delay_data_ <- apt_delay_data %>%
                                       AVG_DELAYED_TFC_15_ROLLING_WEEK,
                                       Y2D_DELAYED_TFC_15_YEAR,
                                       Y2D_AVG_DELAYED_TFC_15
-                                      ),
-            by = join_by(DATE_2019 == FLIGHT_DATE, ARP_CODE == ARP_CODE),
-            suffix = c("", "_2019"))
+  ),
+  by = join_by(DATE_2019 == FLIGHT_DATE, ARP_CODE == ARP_CODE),
+  suffix = c("", "_2019"))
 
 #getting the latest date's traffic data
 apt_delay_last_day <- apt_delay_data_ %>%
   filter(FLIGHT_DATE == min(data_day_date,
-                          max(FLIGHT_DATE),
-                          na.rm = TRUE))
+                            max(FLIGHT_DATE),
+                            na.rm = TRUE))
 
 
 #creating, selecting and renaming columns
@@ -370,12 +369,12 @@ apt_delay_for_json  <- apt_delay_last_day %>%
 #### Punctuality data ----
 
 #querying the data in SQL
-ap_apt_punct_raw <- export_query(query_ap_punct) %>%
+apt_punct_raw <- export_query(query_ap_punct) %>%
   as_tibble() %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
 #selecting the date for which we have the latest traffic data
-last_day_punct <-  min(max(ap_apt_punct_raw$DAY_DATE),
+last_day_punct <-  min(max(apt_punct_raw$DAY_DATE),
                        data_day_date, na.rm = TRUE)
 #selecting the year for which we have the latest traffic data
 last_year_punct <- as.numeric(format(last_day_punct,'%Y'))
@@ -383,7 +382,7 @@ last_year_punct <- as.numeric(format(last_day_punct,'%Y'))
 
 #####  Data totals----
 #preparing the data
-apt_punct_data <- ap_apt_punct_raw %>%
+apt_punct_data <- apt_punct_raw %>%
   group_by(ARP_CODE, ARP_NAME, DAY_DATE) %>%
   summarise(
     ARR_PUNCTUAL_FLIGHTS = sum( ARR_PUNCTUAL_FLIGHTS , na.rm = TRUE),
@@ -399,24 +398,24 @@ apt_punct_data <- ap_apt_punct_raw %>%
 
     DAY_ARR_PUNCT = if_else(
       ARR_SCHEDULE_FLIGHT == 0 , 0 , ARR_PUNCTUAL_FLIGHTS / ARR_SCHEDULE_FLIGHT * 100
-      ),
+    ),
     DAY_DEP_PUNCT = if_else(
       DEP_SCHEDULE_FLIGHT == 0 , 0 , DEP_PUNCTUAL_FLIGHTS / DEP_SCHEDULE_FLIGHT * 100
-      ),
+    ),
     #previous year
     DAY_ARR_PUNCT_PY = lag( DAY_ARR_PUNCT , 364),
     DAY_DEP_PUNCT_PY = lag( DAY_DEP_PUNCT , 364),
     #2019
     DAY_ARR_PUNCT_2019 =if_else(
       YEAR == last_year_punct , lag( DAY_ARR_PUNCT ,  364 * (last_year_punct - 2019) + floor((last_year_punct - 2019) / 4) * 7), NA
-      ),
+    ),
     DAY_DEP_PUNCT_2019 =if_else(
       YEAR == last_year_punct , lag(DAY_DEP_PUNCT, 364 * (last_year_punct - 2019) + floor((last_year_punct - 2019) / 4) * 7), NA
-      ),
+    ),
     DAY_2019 = if_else(YEAR == last_year_punct,
                        lag(DAY_DATE,
                            364 * (last_year_punct - 2019) + floor((last_year_punct - 2019) / 4) * 7) , NA
-                       ),
+    ),
     DAY_ARR_PUNCT_DIF_PY = DAY_ARR_PUNCT - DAY_ARR_PUNCT_PY,
     DAY_DEP_PUNCT_DIF_PY = DAY_DEP_PUNCT - DAY_DEP_PUNCT_PY,
     DAY_ARR_PUNCT_DIF_2019 = DAY_ARR_PUNCT - DAY_ARR_PUNCT_2019,
@@ -467,12 +466,12 @@ apt_punct_d_w <- apt_punct_data %>%
 
 
 ##### Year to Date----
-apt_punct_y2d <- ap_apt_punct_raw %>%
+apt_punct_y2d <- apt_punct_raw %>%
   arrange(ARP_CODE, DAY_DATE) %>%
   mutate(
     MONTH_DAY = as.numeric(format(DAY_DATE, format="%m%d"))
-   # , ARR_PUNCTUAL_FLIGHTS = 0,  ## while the figures are not showable
-   # DEP_PUNCTUAL_FLIGHTS = 0,  ## while the figures are not showable
+    # , ARR_PUNCTUAL_FLIGHTS = 0,  ## while the figures are not showable
+    # DEP_PUNCTUAL_FLIGHTS = 0,  ## while the figures are not showable
   ) %>%
   filter(MONTH_DAY <= as.numeric(format(last_day_punct, format="%m%d"))) %>%
   group_by(ARP_CODE, ARP_NAME, YEAR) %>%
@@ -1370,7 +1369,7 @@ save_json(apt_traffic_evo_j, "apt_traffic_evo_chart_daily")
 ## PUNCTUALITY ----
 ### 7-day punctuality avg ----
 
-apt_punct_evo <- ap_apt_punct_raw %>%
+apt_punct_evo <- apt_punct_raw %>%
   filter(DAY_DATE >= as.Date(paste0("01-01-", data_day_year-2), format = "%d-%m-%Y")) %>%
   arrange(ARP_CODE, DAY_DATE) %>%
   mutate(
@@ -1381,7 +1380,7 @@ apt_punct_evo <- ap_apt_punct_raw %>%
     ARR_PUN_WK = rollsum(ARR_PUNCTUAL_FLIGHTS, 7, fill = NA, align = "right") /
       rollsum(ARR_SCHEDULE_FLIGHT,7, fill = NA, align = "right") * 100,
     OP_FLT_WK = 100 - rollsum(MISSING_SCHED_FLIGHTS, 7, fill = NA, align = "right") /
-    rollsum((MISSING_SCHED_FLIGHTS+DEP_FLIGHTS_NO_OVERFLIGHTS),7, fill = NA, align = "right")*100
+      rollsum((MISSING_SCHED_FLIGHTS+DEP_FLIGHTS_NO_OVERFLIGHTS),7, fill = NA, align = "right")*100
   ) %>%
   filter(DAY_DATE >= as.Date(paste0("01-01-", data_day_year-1), format = "%d-%m-%Y"),
          DAY_DATE <= last_day_punct) %>%
@@ -1402,7 +1401,7 @@ column_names <- c('ARP_CODE',
                   "Departure punct.",
                   "Arrival punct.",
                   "Operated schedules"
-                  )
+)
 
 colnames(apt_punct_evo) <- column_names
 
@@ -1703,16 +1702,16 @@ apt_delayed_flights_evo <- apt_delay_data_  %>%
          RWK_DELAYED_TFC_PERC_PREV_YEAR =  AVG_DELAYED_TFC_ROLLING_WEEK_PREV_YEAR/ AVG_TFC_ROLLING_WEEK_PREV_YEAR,
          RWK_DELAYED_TFC_15_PERC = AVG_DELAYED_TFC_15_ROLLING_WEEK/AVG_TFC_ROLLING_WEEK,
          RWK_DELAYED_TFC_15_PERC_PREV_YEAR = AVG_DELAYED_TFC_15_ROLLING_WEEK_PREV_YEAR/AVG_TFC_ROLLING_WEEK_PREV_YEAR,
-    RWK_DELAYED_TFC_PERC = case_when(
-      FLIGHT_DATE > min(data_day_date,
-                        max(max(FLIGHT_DATE), na.rm = TRUE),
-                        na.rm = TRUE) ~ NA,
-      .default = RWK_DELAYED_TFC_PERC),
-    RWK_DELAYED_TFC_15_PERC = case_when(
-      FLIGHT_DATE > min(data_day_date,
-                        max(max(FLIGHT_DATE), na.rm = TRUE),
-                        na.rm = TRUE) ~ NA,
-      .default = RWK_DELAYED_TFC_15_PERC),
+         RWK_DELAYED_TFC_PERC = case_when(
+           FLIGHT_DATE > min(data_day_date,
+                             max(max(FLIGHT_DATE), na.rm = TRUE),
+                             na.rm = TRUE) ~ NA,
+           .default = RWK_DELAYED_TFC_PERC),
+         RWK_DELAYED_TFC_15_PERC = case_when(
+           FLIGHT_DATE > min(data_day_date,
+                             max(max(FLIGHT_DATE), na.rm = TRUE),
+                             na.rm = TRUE) ~ NA,
+           .default = RWK_DELAYED_TFC_15_PERC),
   ) %>%
   select(
     ARP_CODE,
