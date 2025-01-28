@@ -507,13 +507,17 @@ apt_json_app_j$apt_traffic <- select(arrange(apt_traffic_for_json, ARP_NAME), -c
 apt_json_app_j$apt_delay <- select(arrange(apt_delay_for_json, ARP_NAME), -c(ARP_NAME, ARP_CODE))
 apt_json_app_j$apt_punct <- select(arrange(apt_punct_for_json, ARP_NAME), -c(ARP_NAME, ARP_CODE))
 
+# change requested by ewasoft https://ewasoft.atlassian.net/browse/ECTRL-130
+apt_json_app_j <- apt_json_app_j %>%
+  rename(APT_CODE = apt_icao_code)
+
 update_day <- floor_date(lubridate::now(), unit = "days") %>%
   as_tibble() %>%
   rename(APP_UPDATE = 1)
 
 apt_json_app_j$apt_update <- update_day
 
-apt_json_app_j <- apt_json_app_j %>%   group_by(apt_icao_code, apt_name)
+apt_json_app_j <- apt_json_app_j %>%   group_by(APT_CODE, apt_name)
 
 apt_json_app <- apt_json_app_j %>% toJSON(., pretty = TRUE)
 
@@ -1351,13 +1355,13 @@ apt_traffic_evo <- apt_traffic_delay_data  %>%
 
 
 
-column_names <- c('ARP_CODE', 'ARP_NAME', 'FLIGHT_DATE', data_day_year, data_day_year-1, 2020, 2019)
+column_names <- c('APT_CODE', 'APT_NAME', 'FLIGHT_DATE', data_day_year, data_day_year-1, 2020, 2019)
 colnames(apt_traffic_evo) <- column_names
 
 ### nest data
 apt_traffic_evo_long <- apt_traffic_evo %>%
-  pivot_longer(-c(ARP_CODE, ARP_NAME,FLIGHT_DATE), names_to = 'year', values_to = 'RWK_AVG_TFC') %>%
-  group_by(ARP_CODE, ARP_NAME,FLIGHT_DATE) %>%
+  pivot_longer(-c(APT_CODE, APT_NAME,FLIGHT_DATE), names_to = 'year', values_to = 'RWK_AVG_TFC') %>%
+  group_by(APT_CODE, APT_NAME,FLIGHT_DATE) %>%
   nest_legacy(.key = "statistics")
 
 
@@ -1395,8 +1399,8 @@ apt_punct_evo <- apt_punct_raw %>%
     OP_FLT_WK
   )
 
-column_names <- c('ARP_CODE',
-                  'ARP_NAME',
+column_names <- c('APT_CODE',
+                  'APT_NAME',
                   'FLIGHT_DATE',
                   "Departure punct.",
                   "Arrival punct.",
@@ -1407,8 +1411,8 @@ colnames(apt_punct_evo) <- column_names
 
 ### nest data
 apt_punct_evo_long <- apt_punct_evo %>%
-  pivot_longer(-c(ARP_CODE, ARP_NAME, FLIGHT_DATE), names_to = 'metric', values_to = 'value') %>%
-  group_by(ARP_CODE, ARP_NAME, FLIGHT_DATE) %>%
+  pivot_longer(-c(APT_CODE, APT_NAME, FLIGHT_DATE), names_to = 'metric', values_to = 'value') %>%
+  group_by(APT_CODE, APT_NAME, FLIGHT_DATE) %>%
   nest_legacy(.key = "statistics")
 
 
@@ -1471,8 +1475,8 @@ apt_delay_cause_day <- apt_delay_cause_data %>%
   )
 
 column_names <- c(
-  "ARP_CODE",
-  "ARP_NAME",
+  "APT_CODE",
+  "APT_NAME",
   "FLIGHT_DATE",
   "Aerodrome capacity",
   "Capacity/Staffing (ATC)",
@@ -1497,7 +1501,7 @@ apt_delay_value_day_long <- apt_delay_cause_day %>%
             share_weather,
             share_other)
   ) %>%
-  pivot_longer(-c(ARP_CODE, ARP_NAME, FLIGHT_DATE), names_to = 'metric', values_to = 'value')
+  pivot_longer(-c(APT_CODE, APT_NAME, FLIGHT_DATE), names_to = 'metric', values_to = 'value')
 
 apt_delay_share_day_long <- apt_delay_cause_day %>%
   select(-c("Aerodrome capacity",
@@ -1509,12 +1513,12 @@ apt_delay_share_day_long <- apt_delay_cause_day %>%
   )
   )  %>%
   mutate(share_delay_prev_year = NA) %>%
-  pivot_longer(-c(ARP_CODE, ARP_NAME, FLIGHT_DATE), names_to = 'name', values_to = 'share') %>%
+  pivot_longer(-c(APT_CODE, APT_NAME, FLIGHT_DATE), names_to = 'name', values_to = 'share') %>%
   select(name, share)
 
 apt_delay_cause_day_long <- cbind(apt_delay_value_day_long, apt_delay_share_day_long) %>%
   select(-name) %>%
-  group_by(ARP_CODE, ARP_NAME, FLIGHT_DATE) %>%
+  group_by(APT_CODE, APT_NAME, FLIGHT_DATE) %>%
   nest_legacy(.key = "statistics")
 
 # for consistency with v1 we use the word category in the name files... should have been cause
@@ -1585,7 +1589,7 @@ apt_delay_value_wk_long <- apt_delay_cause_wk %>%
             share_weather,
             share_other)
   ) %>%
-  pivot_longer(-c(ARP_CODE, ARP_NAME, FLIGHT_DATE), names_to = 'metric', values_to = 'value')
+  pivot_longer(-c(APT_CODE, APT_NAME, FLIGHT_DATE), names_to = 'metric', values_to = 'value')
 
 apt_delay_share_wk_long <- apt_delay_cause_wk %>%
   select(-c("Aerodrome capacity",
@@ -1597,12 +1601,12 @@ apt_delay_share_wk_long <- apt_delay_cause_wk %>%
   )
   )  %>%
   mutate(share_delay_prev_year = NA) %>%
-  pivot_longer(-c(ARP_CODE, ARP_NAME, FLIGHT_DATE), names_to = 'name', values_to = 'share') %>%
+  pivot_longer(-c(APT_CODE, APT_NAME, FLIGHT_DATE), names_to = 'name', values_to = 'share') %>%
   select(name, share)
 
 apt_delay_cause_wk_long <- cbind(apt_delay_value_wk_long, apt_delay_share_wk_long) %>%
   select(-name) %>%
-  group_by(ARP_CODE, ARP_NAME, FLIGHT_DATE) %>%
+  group_by(APT_CODE, APT_NAME, FLIGHT_DATE) %>%
   nest_legacy(.key = "statistics")
 
 
@@ -1667,7 +1671,7 @@ apt_delay_value_y2d_long <- apt_delay_cause_y2d %>%
             share_weather,
             share_other)
   ) %>%
-  pivot_longer(-c(ARP_CODE, ARP_NAME, FLIGHT_DATE), names_to = 'metric', values_to = 'value')
+  pivot_longer(-c(APT_CODE, APT_NAME, FLIGHT_DATE), names_to = 'metric', values_to = 'value')
 
 apt_delay_share_y2d_long <- apt_delay_cause_y2d %>%
   select(-c("Aerodrome capacity",
@@ -1679,12 +1683,12 @@ apt_delay_share_y2d_long <- apt_delay_cause_y2d %>%
   )
   )  %>%
   mutate(share_delay_prev_year = NA) %>%
-  pivot_longer(-c(ARP_CODE, ARP_NAME, FLIGHT_DATE), names_to = 'name', values_to = 'share') %>%
+  pivot_longer(-c(APT_CODE, APT_NAME, FLIGHT_DATE), names_to = 'name', values_to = 'share') %>%
   select(name, share)
 
 apt_delay_cause_y2d_long <- cbind(apt_delay_value_y2d_long, apt_delay_share_y2d_long) %>%
   select(-name) %>%
-  group_by(ARP_CODE, ARP_NAME, FLIGHT_DATE) %>%
+  group_by(APT_CODE, APT_NAME, FLIGHT_DATE) %>%
   nest_legacy(.key = "statistics")
 
 
@@ -1725,8 +1729,8 @@ apt_delayed_flights_evo <- apt_delay_data_  %>%
   filter(FLIGHT_DATE >= as.Date(paste0("01-01-", data_day_year), format = "%d-%m-%Y"),
          FLIGHT_DATE <= as.Date(paste0("31-12-", data_day_year), format = "%d-%m-%Y"))
 
-column_names <- c('ARP_CODE',
-                  'ARP_NAME',
+column_names <- c('APT_CODE',
+                  'APT_NAME',
                   'FLIGHT_DATE',
                   paste0('% of delayed flights ', data_day_year),
                   paste0('% of delayed flights ', data_day_year -1),
@@ -1738,8 +1742,8 @@ colnames(apt_delayed_flights_evo) <- column_names
 
 ### nest data
 apt_delayed_flights_evo_long <- apt_delayed_flights_evo %>%
-  pivot_longer(-c(ARP_CODE, ARP_NAME, FLIGHT_DATE), names_to = 'year', values_to = 'daio') %>%
-  group_by(ARP_CODE, ARP_NAME, FLIGHT_DATE) %>%
+  pivot_longer(-c(AAPT_CODE, APT_NAME, FLIGHT_DATE), names_to = 'year', values_to = 'daio') %>%
+  group_by(APT_CODE, APT_NAME, FLIGHT_DATE) %>%
   nest_legacy(.key = "statistics")
 
 
