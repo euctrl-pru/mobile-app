@@ -1201,7 +1201,7 @@ apt_ms_data_day <- apt_ms_day |>
     APT_NAME = ARP_NAME,
     RANK = R_RANK,
     DY_RANK_DIF_PREV_WEEK,
-    DY_MARKET_SEGMENT = MARKET_SEGMENT,
+    DY_MS_NAME = MARKET_SEGMENT,
     DY_MS_SHARE,
     DY_TO_DATE = LAST_DATA_DAY,
     DY_FLT = CURRENT_DAY,
@@ -1253,7 +1253,7 @@ apt_ms_data_week <- apt_ms_week |>
     APT_NAME = ARP_NAME,
     RANK = R_RANK,
     WK_RANK_DIF_PREV_WEEK,
-    WK_MARKET_SEGMENT = MARKET_SEGMENT,
+    WK_MS_NAME = MARKET_SEGMENT,
     WK_MS_SHARE,
     WK_FROM_DATE,
     WK_TO_DATE,
@@ -1305,7 +1305,7 @@ apt_ms_data_year <- apt_ms_y2d |>
     APT_NAME = ARP_NAME,
     RANK = R_RANK,
     Y2D_RANK_DIF_PREV_YEAR,
-    Y2D_MARKET_SEGMENT = MARKET_SEGMENT,
+    Y2D_MS_NAME = MARKET_SEGMENT,
     Y2D_MS_SHARE,
     Y2D_TO_DATE = LAST_DATA_DAY,
     Y2D_FLT_AVG,
@@ -1742,7 +1742,7 @@ colnames(apt_delayed_flights_evo) <- column_names
 
 ### nest data
 apt_delayed_flights_evo_long <- apt_delayed_flights_evo %>%
-  pivot_longer(-c(AAPT_CODE, APT_NAME, FLIGHT_DATE), names_to = 'year', values_to = 'daio') %>%
+  pivot_longer(-c(APT_CODE, APT_NAME, FLIGHT_DATE), names_to = 'year', values_to = 'daio') %>%
   group_by(APT_CODE, APT_NAME, FLIGHT_DATE) %>%
   nest_legacy(.key = "statistics")
 
