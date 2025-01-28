@@ -13,7 +13,9 @@ FROM pruprod.v_aiu_app_dim_airport"
 
 
 ## traffic ----
-query_ap_traffic <- paste0("
+query_ap_traffic <- function(mydate_string) {
+  mydate <- date_sql_string(mydate_string)
+  paste0("
 with
 
 LIST_AIRPORT  as
@@ -37,7 +39,7 @@ as
  from LIST_AIRPORT a, pru_time_references t
 where
       t.day_date >= to_date('24-12-2018','dd-mm-yyyy')
-      and t.year <= extract(year from TRUNC(SYSDATE)-1)
+      and t.year <= extract(year from ", mydate, "-1)
 ),
 
 
@@ -367,15 +369,15 @@ AIRP_CALC as
             THEN Y2D_AVG_DEP_ARR_YEAR / Y2D_AVG_DEP_ARR_2019 -1
             ELSE NULL
        END Y2D_DEP_ARR_DIF_2019_PERC,
-       TRUNC(SYSDATE) - 1 as LAST_DATA_DAY
+       ", mydate, " - 1 as LAST_DATA_DAY
 
 
      FROM AIRP_CACL_PREV
-     where flight_DATE >=to_date('01-01-'|| extract(year from (TRUNC(SYSDATE)-1)),'dd-mm-yyyy') AND
-     flight_DATE <=to_date('31-12-'|| extract(year from (TRUNC(SYSDATE)-1)),'dd-mm-yyyy')"
+     where flight_DATE >=to_date('01-01-'|| extract(year from (", mydate, "-1)),'dd-mm-yyyy') AND
+     flight_DATE <=to_date('31-12-'|| extract(year from (", mydate, "-1)),'dd-mm-yyyy')"
 
 )
-
+}
 
 
 ## delay ----
@@ -1094,7 +1096,9 @@ order by arp_code,  flight_date
 )
 
 ##punctuality ----
-query_ap_punct <- paste0(
+query_ap_punct <- function(mydate_string) {
+  mydate <- date_sql_string(mydate_string)
+paste0(
   "WITH
   --Getting the list of airports
 LIST_AIRPORT  as
@@ -1115,7 +1119,7 @@ LIST_AIRPORT  as
       FROM LIST_AIRPORT a, pru_time_references t
       WHERE
          t.day_date >= to_date('24-12-2018','DD-MM-YYYY')
-         AND t.day_date < TRUNC(SYSDATE)
+         AND t.day_date < ", mydate, "
          )
     --Joining the airport dates table with the aiport punctuality table
     SELECT
@@ -1141,7 +1145,7 @@ LIST_AIRPORT  as
       on a.arp_code = b.\"ICAO_CODE\" AND a.day_date = b.\"DATE\"
 "
 )
-
+}
 
 
 #check how long the query takes (must have generate_json_file open to install libraries)

@@ -63,7 +63,7 @@ apt_json_app <-""
 #### Traffic data ----
 
 #reading the traffic sheet
-apt_traffic_delay_data <- export_query(query_ap_traffic) %>%
+apt_traffic_delay_data <- export_query(query_ap_traffic(format(data_day_date, "%Y-%m-%d"))) %>%
   as_tibble() %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
@@ -369,7 +369,7 @@ apt_delay_for_json  <- apt_delay_last_day %>%
 #### Punctuality data ----
 
 #querying the data in SQL
-apt_punct_raw <- export_query(query_ap_punct) %>%
+apt_punct_raw <- export_query(query_ap_punct(format(data_day_date, "%Y-%m-%d"))) %>%
   as_tibble() %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
