@@ -98,7 +98,7 @@ copy_app_data <- function(data_day_date) {
   file.copy(from = ap_files_to_copy, to = network_data_folder_v4, overwrite = TRUE)
 
 
-  }
+}
 
 # Define a combined function
 process_app_data <- function(data_day_date) {
