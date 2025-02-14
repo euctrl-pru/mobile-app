@@ -1,5 +1,7 @@
 # daio ----
-query_state_daio <- "
+query_state_daio <- function(mydate_string) {
+  mydate <- date_sql_string(mydate_string)
+  paste0("
 WITH
 
  DATA_DAY
@@ -21,12 +23,12 @@ WITH
              SUM (coalesce(a.agg_asp_delayed_traffic_tvs,0)) as DELAY_FLIGHT,
              (SUM (coalesce(a.agg_asp_delayed_traffic_tvs,0))  - SUM (coalesce(  a.agg_asp_delayed_traffic_ad_tvs,0))) as ERT_DELAY_FLIGHT,
               SUM (coalesce(a.agg_asp_delayed_traffic_ad_tvs,0))  AS ARP_DELAY_FLIGHT
-       FROM v_aiu_agg_asp a
+       FROM prudev.v_aiu_agg_asp a
        WHERE
-             agg_asp_entry_date >= '24-DEC-2018' AND a.AGG_ASP_ENTRY_DATE < TRUNC (SYSDATE)
+             agg_asp_entry_date >= '24-DEC-2018' AND a.AGG_ASP_ENTRY_DATE < ", mydate, "
              and agg_asp_ty = 'COUNTRY_AUA'  AND A.agg_asp_unit_ty <> 'REGION'
              AND (SUBSTR(a.agg_asp_id,1,1) IN ('E','L')
-         OR SUBSTR(a.agg_asp_id,1,2) IN ('GC','GM','GE','UD','UG','UK','YY'))
+         OR SUBSTR(a.agg_asp_id,1,2) IN ('GC','GM','GE','UD','UG','UK','YY', 'BI'))
     GROUP BY
              agg_asp_entry_date,
              agg_asp_id,
@@ -50,10 +52,10 @@ SELECT a.COUNTRY_NAME,
         t.day_type,
         t.day_of_week_nb AS day_of_week,
         t.day_date
-FROM LIST_COUNTRY a, pru_time_references t
+FROM LIST_COUNTRY a, prudev.pru_time_references t
 WHERE
    t.day_date >= to_date('24-12-2018','DD-MM-YYYY')
-   AND t.day_date <= to_date('31-12-'|| extract(year from (trunc(sysdate)-1)),'dd-mm-yyyy')
+   AND t.day_date <= to_date('31-12-'|| extract(year from (", mydate, "-1)),'dd-mm-yyyy')
        ),
 
 
@@ -164,6 +166,8 @@ DATA_COUNTRY_2 as
 
       FROM DATA_COUNTRY_2
   )
+
+
   select
        country_name,
        YEAR,
@@ -184,9 +188,15 @@ DATA_COUNTRY_2 as
        DAY_TFC_PREV_YEAR,
        DAY_TFC_2019,
 
-      DAY_TFC - DAY_TFC_PREV_WEEK  as DAY_TFC_DIFF_PREV_WEEK,
-      DAY_TFC - DAY_TFC_PREV_YEAR  as DAY_TFC_DIFF_PREV_YEAR,
-      DAY_TFC - DAY_TFC_2019  as DAY_TFC_DIFF_2019,
+       CASE WHEN flight_DATE >= ", mydate, " THEN NULL
+           ELSE DAY_TFC - DAY_TFC_PREV_WEEK
+       END DAY_TFC_DIFF_PREV_WEEK,
+       CASE WHEN flight_DATE >= ", mydate, " THEN NULL
+           ELSE DAY_TFC - DAY_TFC_PREV_YEAR
+       END DAY_TFC_DIFF_PREV_YEAR,
+       CASE WHEN flight_DATE >= ", mydate, " THEN NULL
+           ELSE DAY_TFC - DAY_TFC_2019
+       END DAY_TFC_DIFF_2019,
 
        CASE WHEN DAY_TFC_PREV_WEEK  <>0  then
             DAY_TFC/DAY_TFC_PREV_WEEK -1
@@ -201,7 +211,7 @@ DATA_COUNTRY_2 as
        	   ELSE NULL
        END  DAY_TFC_DIFF_2019_PERC,
 
-       CASE WHEN flight_DATE >= trunc(sysdate)
+       CASE WHEN flight_DATE >= ", mydate, "
            THEN NULL
            ELSE AVG_rolling_week
        END AVG_rolling_week,
@@ -210,11 +220,11 @@ DATA_COUNTRY_2 as
        AVG_rolling_week_2020,
        AVG_rolling_week_2019,
 
-      CASE WHEN AVG_rolling_week_PREV_YEAR <> 0 and flight_DATE < trunc(sysdate)
+      CASE WHEN AVG_rolling_week_PREV_YEAR <> 0 and flight_DATE < ", mydate, "
            THEN avg_rolling_week/AVG_rolling_week_PREV_YEAR -1
            ELSE NULL
        END  DIF_WEEK_PREV_YEAR_PERC,
-      CASE WHEN AVG_rolling_week_2019 <> 0 and flight_DATE < trunc(sysdate)
+      CASE WHEN AVG_rolling_week_2019 <> 0 and flight_DATE < ", mydate, "
            THEN avg_rolling_week/AVG_rolling_week_2019 -1
            ELSE NULL
        END  DIF_ROLLING_WEEK_2019_perc,
@@ -222,7 +232,7 @@ DATA_COUNTRY_2 as
        Y2D_TFC_YEAR,
        Y2D_TFC_PREV_YEAR,
        Y2D_TFC_2019,
-       CASE WHEN flight_DATE >= trunc(sysdate)
+       CASE WHEN flight_DATE >= ", mydate, "
            THEN NULL
       	   ELSE Y2D_AVG_TFC_YEAR
        END Y2D_AVG_TFC_YEAR,
@@ -237,14 +247,103 @@ DATA_COUNTRY_2 as
            Y2D_AVG_TFC_YEAR/Y2D_AVG_TFC_2019 - 1
            ELSE NULL
        END Y2D_DIFF_2019_PERC,
-        TRUNC(SYSDATE) -1 as LAST_DATA_DAY
+        ", mydate, " -1 as LAST_DATA_DAY
 
       FROM DATA_COUNTRY_3
-      where flight_DATE >=to_date('01-01-'|| extract(year from (trunc(sysdate)-1)),'dd-mm-yyyy')
+      where flight_DATE >=to_date('01-01-'|| extract(year from (", mydate, "-1)),'dd-mm-yyyy')
+      AND country_name not in ('ICELAND', 'Iceland')
+
+UNION ALL
+
+  select
+       country_name,
+       YEAR,
+       MONTH,
+       WEEK,
+       WEEK_NB_YEAR,
+       DAY_TYPE,
+       day_of_week,
+
+       flight_DATE,
+       flight_DATE_PREV_WEEK,
+       flight_DATE_PREV_YEAR,
+       flight_DATE_2020,
+       flight_DATE_2019,
+
+       case when FLIGHT_DATE >='01-jan-2024' then DAY_TFC else NULL end DAY_TFC,
+       case when FLIGHT_DATE >='01-jan-2024' then DAY_TFC_PREV_WEEK else NULL end DAY_TFC_PREV_WEEK,
+       case when FLIGHT_DATE >='01-jan-2025' then DAY_TFC_PREV_YEAR else NULL end DAY_TFC_PREV_YEAR,
+       NULL as DAY_TFC_2019,
+
+       CASE WHEN flight_DATE >= ", mydate, " THEN NULL
+           ELSE case when FLIGHT_DATE >='01-jan-2024' then DAY_TFC - DAY_TFC_PREV_WEEK
+                     else NULL
+                end
+       END DAY_TFC_DIFF_PREV_WEEK,
+       CASE WHEN flight_DATE >= ", mydate, " THEN NULL
+           ELSE case when FLIGHT_DATE >='01-jan-2025' then DAY_TFC - DAY_TFC_PREV_YEAR
+                     else NULL
+                end
+       END DAY_TFC_DIFF_PREV_YEAR,
+       NULL AS DAY_TFC_DIFF_2019,
+
+       CASE WHEN DAY_TFC_PREV_WEEK  <>0 AND FLIGHT_DATE >='01-jan-2024' then
+            DAY_TFC/DAY_TFC_PREV_WEEK -1
+            ELSE NULL
+       END as DAY_TFC_PREV_WEEK_perc,
+       CASE WHEN DAY_TFC_PREV_YEAR <>0 AND FLIGHT_DATE >='01-jan-2025'
+           THEN DAY_TFC/DAY_TFC_PREV_YEAR -1
+       	   ELSE NULL
+       END  DAY_DIFF_PREV_YEAR_PERC,
+       NULL as DAY_TFC_DIFF_2019_PERC,
+
+       CASE WHEN flight_DATE >= ", mydate, " THEN NULL
+           ELSE case when FLIGHT_DATE >='01-jan-2024' then AVG_rolling_week
+                     else NULL
+                end
+       END AVG_rolling_week,
+
+       case when FLIGHT_DATE >='01-jan-2024' then AVG_rolling_PREV_WEEK else NULL end AVG_rolling_PREV_WEEK,
+       case when FLIGHT_DATE >='01-jan-2025' then AVG_rolling_week_PREV_YEAR else NULL end AVG_rolling_week_PREV_YEAR,
+       NULL as AVG_rolling_week_2020,
+       NULL as AVG_rolling_week_2019,
+
+       CASE WHEN AVG_rolling_week_PREV_YEAR <> 0 and flight_DATE < ", mydate, " AND FLIGHT_DATE >='01-jan-2025'
+           THEN avg_rolling_week/AVG_rolling_week_PREV_YEAR -1
+           ELSE NULL
+       END  DIF_WEEK_PREV_YEAR_PERC,
+       NULL as  DIF_ROLLING_WEEK_2019_perc,
+
+       case when FLIGHT_DATE >='01-jan-2024' then Y2D_TFC_YEAR else NULL end Y2D_TFC_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then Y2D_TFC_PREV_YEAR else NULL end Y2D_TFC_PREV_YEAR,
+       NULL as Y2D_TFC_2019,
+       CASE WHEN flight_DATE >= ", mydate, "
+           THEN NULL
+      	   ELSE (case when FLIGHT_DATE >='01-jan-2024' then Y2D_AVG_TFC_YEAR else NULL END)
+       END Y2D_AVG_TFC_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then Y2D_AVG_TFC_PREV_YEAR else NULL end Y2D_AVG_TFC_PREV_YEAR,
+       NULL as Y2D_AVG_TFC_2019,
+
+       CASE WHEN Y2D_AVG_TFC_PREV_YEAR <> 0 AND FLIGHT_DATE >='01-jan-2025' THEN
+        Y2D_AVG_TFC_YEAR/Y2D_AVG_TFC_PREV_YEAR - 1
+        ELSE NULL
+       END Y2D_DIFF_PREV_YEAR_PERC,
+       NULL as Y2D_DIFF_2019_PERC,
+
+       ", mydate, " -1 as LAST_DATA_DAY
+
+      FROM DATA_COUNTRY_3
+      where flight_DATE >=to_date('01-01-'|| extract(year from (", mydate, "-1)),'dd-mm-yyyy')
+      AND country_name in ('ICELAND', 'Iceland')
+      order by country_name, flight_date
       "
+)
+}
 
 # dai ----
-query_state_dai <-"
+query_state_dai <- function(mydate_string) {
+  mydate <- date_sql_string(mydate_string)
+  paste0("
 WITH
 
 COUNTRY_ICAO2LETTER  as (
@@ -267,7 +366,7 @@ COUNTRY_ICAO2LETTER  as (
  FROM  ARU_SYN.stat_coda_country
  WHERE
   (  (SUBSTR(COUNTRY_ID,1,1) IN ('E','L')
-       OR SUBSTR(COUNTRY_ID,1,2) IN ('GC','GM','GE','UD','UG','UK'))  )
+       OR SUBSTR(COUNTRY_ID,1,2) IN ('GC','GM','GE','UD','UG','UK','BI'))  )
   AND  COUNTRY_ID not in ('LV', 'LX', 'EU','LN')
  ) ,
 
@@ -285,10 +384,10 @@ SELECT a.COUNTRY_NAME,
         t.day_type,
         t.day_of_week_nb AS day_of_week,
         t.year
-FROM LIST_COUNTRY a, pru_time_references t
+FROM LIST_COUNTRY a, prudev.pru_time_references t
 WHERE
    t.day_date >= to_date('24-12-2018','DD-MM-YYYY')
-   AND t.day_date <= to_date('31-12-'|| extract(year from (trunc(sysdate)-1)),'dd-mm-yyyy')
+   AND t.day_date <= to_date('31-12-'|| extract(year from (", mydate, "-1)),'dd-mm-yyyy')
        ),
 
 
@@ -297,13 +396,13 @@ DATA_DEP AS (
         B.COUNTRY_NAME ,
         TRUNC(A.flt_a_asp_prof_time_entry) flight_DATE,
         COUNT(a.flt_uid) DAY_TFC
-FROM v_aiu_flt a,
+FROM prudev.v_aiu_flt a,
      COUNTRY_ICAO2LETTER b
 WHERE  SUBSTR(A.flt_dep_ad,1,2) =  b.ICAO2LETTER
 --    AND A.flt_lobt >= to_date('24-12-2018','DD-MM-YYYY') -2
---    AND A.flt_lobt <  TRUNC(SYSDATE) + 2
+--    AND A.flt_lobt <  ", mydate, " + 2
     AND A.flt_a_asp_prof_time_entry >= to_date('24-12-2018','DD-MM-YYYY')
-    AND A.flt_a_asp_prof_time_entry <  TRUNC(SYSDATE)
+    AND A.flt_a_asp_prof_time_entry <  ", mydate, "
     AND A.flt_state IN ('TE','TA','AA')
 GROUP BY  B.COUNTRY_NAME  ,
         TRUNC(A.flt_a_asp_prof_time_entry)
@@ -315,14 +414,14 @@ SELECT
         C.COUNTRY_NAME ,
         TRUNC(A.flt_a_asp_prof_time_entry) flight_DATE,
         COUNT(a.flt_uid) DAY_TFC
-FROM v_aiu_flt a,
+FROM prudev.v_aiu_flt a,
      COUNTRY_ICAO2LETTER c
 WHERE
      SUBSTR(A.flt_ctfm_ades,1,2) = C.ICAO2LETTER
 --    AND A.flt_lobt >= to_date('24-12-2018','DD-MM-YYYY') -2
---    AND A.flt_lobt <  TRUNC(SYSDATE) + 2
+--    AND A.flt_lobt <  ", mydate, " + 2
     AND A.flt_a_asp_prof_time_entry >= to_date('24-12-2018','DD-MM-YYYY')
-    AND A.flt_a_asp_prof_time_entry <  TRUNC(SYSDATE)
+    AND A.flt_a_asp_prof_time_entry <  ", mydate, "
     AND A.flt_state IN ('TE','TA','AA')
 GROUP BY  C.COUNTRY_NAME  ,
         TRUNC(A.flt_a_asp_prof_time_entry)
@@ -333,16 +432,16 @@ DATA_DOMESTIC as
         B.COUNTRY_NAME ,
         TRUNC(A.flt_a_asp_prof_time_entry) FLIGHT_DATE,
         COUNT(a.flt_uid) DAY_TFC
-FROM v_aiu_flt a,
+FROM prudev.v_aiu_flt a,
      COUNTRY_ICAO2LETTER b,
      COUNTRY_ICAO2LETTER c
 WHERE  SUBSTR(A.flt_dep_ad,1,2) =  b.ICAO2LETTER   AND
        SUBSTR(A.flt_ctfm_ades,1,2) = C.ICAO2LETTER
     AND  B.COUNTRY_NAME =C.COUNTRY_NAME
 --    AND A.flt_lobt >= to_date('24-12-2018','DD-MM-YYYY') -2
---    AND A.flt_lobt <  TRUNC(SYSDATE) + 2
+--    AND A.flt_lobt <  ", mydate, " + 2
     AND A.flt_a_asp_prof_time_entry >= to_date('24-12-2018','DD-MM-YYYY')
-    AND A.flt_a_asp_prof_time_entry <  TRUNC(SYSDATE)
+    AND A.flt_a_asp_prof_time_entry <  ", mydate, "
     AND A.flt_state IN ('TE','TA','AA')
 GROUP BY  B.COUNTRY_NAME  ,
         TRUNC(A.flt_a_asp_prof_time_entry)
@@ -479,9 +578,15 @@ DATA_COUNTRY_2 as
        DAY_TFC_PREV_YEAR,
        DAY_TFC_2019,
 
-      DAY_TFC - DAY_TFC_PREV_WEEK  as DAY_TFC_DIFF_PREV_WEEK,
-      DAY_TFC - DAY_TFC_PREV_YEAR  as DAY_TFC_DIFF_PREV_YEAR,
-      DAY_TFC - DAY_TFC_2019  as DAY_TFC_DIFF_2019,
+       CASE WHEN flight_DATE >= ", mydate, " THEN NULL
+           ELSE DAY_TFC - DAY_TFC_PREV_WEEK
+       END DAY_TFC_DIFF_PREV_WEEK,
+       CASE WHEN flight_DATE >= ", mydate, " THEN NULL
+           ELSE DAY_TFC - DAY_TFC_PREV_YEAR
+       END DAY_TFC_DIFF_PREV_YEAR,
+       CASE WHEN flight_DATE >= ", mydate, " THEN NULL
+           ELSE DAY_TFC - DAY_TFC_2019
+       END DAY_TFC_DIFF_2019,
 
        CASE WHEN DAY_TFC_PREV_WEEK  <>0  then
             DAY_TFC/DAY_TFC_PREV_WEEK -1
@@ -496,7 +601,7 @@ DATA_COUNTRY_2 as
        	   ELSE NULL
        END  DAY_TFC_DIFF_2019_PERC,
 
-       CASE WHEN flight_DATE >= trunc(sysdate)
+       CASE WHEN flight_DATE >= ", mydate, "
            THEN NULL
            ELSE AVG_rolling_week
        END AVG_rolling_week,
@@ -505,11 +610,11 @@ DATA_COUNTRY_2 as
        AVG_rolling_week_2020,
        AVG_rolling_week_2019,
 
-      CASE WHEN AVG_rolling_week_PREV_YEAR <> 0 and flight_DATE < trunc(sysdate)
+      CASE WHEN AVG_rolling_week_PREV_YEAR <> 0 and flight_DATE < ", mydate, "
            THEN avg_rolling_week/AVG_rolling_week_PREV_YEAR -1
            ELSE NULL
        END  DIF_WEEK_PREV_YEAR_PERC,
-      CASE WHEN AVG_rolling_week_2019 <> 0 and flight_DATE < trunc(sysdate)
+      CASE WHEN AVG_rolling_week_2019 <> 0 and flight_DATE < ", mydate, "
            THEN avg_rolling_week/AVG_rolling_week_2019 -1
            ELSE NULL
        END  DIF_ROLLING_WEEK_2019_perc,
@@ -517,7 +622,7 @@ DATA_COUNTRY_2 as
        Y2D_TFC_YEAR,
        Y2D_TFC_PREV_YEAR,
        Y2D_TFC_2019,
-       CASE WHEN flight_DATE >= trunc(sysdate)
+       CASE WHEN flight_DATE >= ", mydate, "
            THEN NULL
       	   ELSE Y2D_AVG_TFC_YEAR
        END Y2D_AVG_TFC_YEAR,
@@ -532,14 +637,102 @@ DATA_COUNTRY_2 as
            Y2D_AVG_TFC_YEAR/Y2D_AVG_TFC_2019 - 1
            ELSE NULL
        END Y2D_DIFF_2019_PERC,
-        TRUNC(SYSDATE) -1 as LAST_DATA_DAY
+        ", mydate, " -1 as LAST_DATA_DAY
 
       FROM DATA_COUNTRY_3
-      where flight_DATE >=to_date('01-01-'|| extract(year from (trunc(sysdate)-1)),'dd-mm-yyyy')
+      where flight_DATE >=to_date('01-01-'|| extract(year from (", mydate, "-1)),'dd-mm-yyyy')
+            AND country_name not in ('ICELAND', 'Iceland')
+
+ UNION ALL
+
+  select
+       country_name,
+       YEAR,
+       MONTH,
+       WEEK,
+       WEEK_NB_YEAR,
+       DAY_TYPE,
+       day_of_week,
+
+       flight_DATE,
+       flight_DATE_PREV_WEEK,
+       flight_DATE_PREV_YEAR,
+       flight_DATE_2020,
+       flight_DATE_2019,
+
+       case when FLIGHT_DATE >='01-jan-2024' then DAY_TFC else NULL end DAY_TFC,
+       case when FLIGHT_DATE >='01-jan-2024' then DAY_TFC_PREV_WEEK else NULL end DAY_TFC_PREV_WEEK,
+       case when FLIGHT_DATE >='01-jan-2025' then DAY_TFC_PREV_YEAR else NULL end DAY_TFC_PREV_YEAR,
+       NULL as DAY_TFC_2019,
+
+       CASE WHEN flight_DATE >= ", mydate, " THEN NULL
+           ELSE case when FLIGHT_DATE >='01-jan-2024' then DAY_TFC - DAY_TFC_PREV_WEEK
+                     else NULL
+                end
+       END DAY_TFC_DIFF_PREV_WEEK,
+       CASE WHEN flight_DATE >= ", mydate, " THEN NULL
+           ELSE case when FLIGHT_DATE >='01-jan-2025' then DAY_TFC - DAY_TFC_PREV_YEAR
+                     else NULL
+                end
+       END DAY_TFC_DIFF_PREV_YEAR,
+       NULL AS DAY_TFC_DIFF_2019,
+
+       CASE WHEN DAY_TFC_PREV_WEEK  <>0 AND FLIGHT_DATE >='01-jan-2024' then
+            DAY_TFC/DAY_TFC_PREV_WEEK -1
+            ELSE NULL
+       END as DAY_TFC_PREV_WEEK_perc,
+       CASE WHEN DAY_TFC_PREV_YEAR <>0 AND FLIGHT_DATE >='01-jan-2025'
+           THEN DAY_TFC/DAY_TFC_PREV_YEAR -1
+       	   ELSE NULL
+       END  DAY_DIFF_PREV_YEAR_PERC,
+       NULL as DAY_TFC_DIFF_2019_PERC,
+
+       CASE WHEN flight_DATE >= ", mydate, " THEN NULL
+           ELSE case when FLIGHT_DATE >='01-jan-2024' then AVG_rolling_week
+                     else NULL
+                end
+       END AVG_rolling_week,
+
+       case when FLIGHT_DATE >='01-jan-2024' then AVG_rolling_PREV_WEEK else NULL end AVG_rolling_PREV_WEEK,
+       case when FLIGHT_DATE >='01-jan-2025' then AVG_rolling_week_PREV_YEAR else NULL end AVG_rolling_week_PREV_YEAR,
+       NULL as AVG_rolling_week_2020,
+       NULL as AVG_rolling_week_2019,
+
+       CASE WHEN AVG_rolling_week_PREV_YEAR <> 0 and flight_DATE < ", mydate, " AND FLIGHT_DATE >='01-jan-2025'
+           THEN avg_rolling_week/AVG_rolling_week_PREV_YEAR -1
+           ELSE NULL
+       END  DIF_WEEK_PREV_YEAR_PERC,
+       NULL as  DIF_ROLLING_WEEK_2019_perc,
+
+       case when FLIGHT_DATE >='01-jan-2024' then Y2D_TFC_YEAR else NULL end Y2D_TFC_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then Y2D_TFC_PREV_YEAR else NULL end Y2D_TFC_PREV_YEAR,
+       NULL as Y2D_TFC_2019,
+       CASE WHEN flight_DATE >= ", mydate, "
+           THEN NULL
+      	   ELSE (case when FLIGHT_DATE >='01-jan-2024' then Y2D_AVG_TFC_YEAR else NULL END)
+       END Y2D_AVG_TFC_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then Y2D_AVG_TFC_PREV_YEAR else NULL end Y2D_AVG_TFC_PREV_YEAR,
+       NULL as Y2D_AVG_TFC_2019,
+
+       CASE WHEN Y2D_AVG_TFC_PREV_YEAR <> 0 AND FLIGHT_DATE >='01-jan-2025' THEN
+        Y2D_AVG_TFC_YEAR/Y2D_AVG_TFC_PREV_YEAR - 1
+        ELSE NULL
+       END Y2D_DIFF_PREV_YEAR_PERC,
+       NULL as Y2D_DIFF_2019_PERC,
+        ", mydate, " -1 as LAST_DATA_DAY
+
+      FROM DATA_COUNTRY_3
+      where flight_DATE >=to_date('01-01-'|| extract(year from (", mydate, "-1)),'dd-mm-yyyy')
+            AND country_name in ('ICELAND', 'Iceland')
+      order by country_name, flight_date
 "
+)
+}
 
 # state delay ----
-query_state_delay <- "
+query_state_delay <- function(mydate_string) {
+  mydate <- date_sql_string(mydate_string)
+  paste0("
 WITH
 
  DATA_DAY
@@ -877,8 +1070,12 @@ DATA_COUNTRY_2 as
       FROM DATA_COUNTRY_3 a
       where flight_DATE >=to_date('01-01-'|| extract(year from (trunc(sysdate)-1)),'dd-mm-yyyy')
 "
-# state delay cause
-query_state_delay_cause <- "
+)
+}
+# state delay cause ----
+query_state_delay_cause <- function(mydate_string) {
+  mydate <- date_sql_string(mydate_string)
+  paste0("
 WITH
 
   COUNTRY_ICAO2LETTER as
@@ -1122,6 +1319,8 @@ select
  select * from DAY_DATA_CALC
  where flight_date >= TO_DATE ('24-12-' || to_char(extract(year from (trunc(sysdate)-1))-1 ), 'dd-mm-yyyy')
 "
+)
+}
 
 # state ao ----
 ## day ----
@@ -1327,12 +1526,12 @@ DIM_AO
 REL_AP_CTRY as (
 select cfmu_ap_code ,
        CASE WHEN SUBSTR(cfmu_ap_code, 1, 2) = 'GC' then 'Spain Canaries'
-            WHEN iso_ct_name = 'SPAIN' then 'Spain Continental'
-            ELSE iso_ct_name
+            WHEN country_name = 'SPAIN' then 'Spain Continental'
+            ELSE country_name
        END iso_ct_name,
        region,
        pru_dashboard_ap_name  as ad_name
- from  v_covid_rel_airport_area
+ from  prudev.v_covid_rel_airport_area
 
 ),
 
@@ -1343,6 +1542,7 @@ CTRY_LIST as (select distinct
  )
 
 , AIRP_FLIGHT as (
+/* Formatted on 06-07-2020 15:56:37 (QP5 v5.318) */
 SELECT flt_uid,
        TRUNC (flt_a_asp_prof_time_entry) AS entry_day,
        c1.iso_ct_name dep_ctry ,
@@ -1351,28 +1551,28 @@ SELECT flt_uid,
 
   FROM v_aiu_flt a, REL_AP_CTRY c1, REL_AP_CTRY c2
  WHERE       (
-                      (     A.flt_lobt >= ", mydate, "  -7 -1
-                        AND A.flt_lobt < ", mydate, " -0
+                      (     A.flt_lobt >= ", mydate, " -7 -1
+                        AND A.flt_lobt < ", mydate, "-0
                         AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -7
-                        AND A.flt_a_asp_prof_time_entry < ", mydate, " -0
+                        AND A.flt_a_asp_prof_time_entry < ", mydate, "-0
                         )
                         or
                       (     A.flt_lobt >= ", mydate, " -7 -1 -7
-                        AND A.flt_lobt < ", mydate, " -0 -7
+                        AND A.flt_lobt < ", mydate, "-0 -7
                         AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -7 -7
-                        AND A.flt_a_asp_prof_time_entry < ", mydate, " -0 - 7
+                        AND A.flt_a_asp_prof_time_entry < ", mydate, "-0 - 7
                         )
                         or
                         (     A.flt_lobt >= ", mydate, " -364-7 -1
-                        AND A.flt_lobt < ", mydate, " -364
+                        AND A.flt_lobt < ", mydate, "-364
                         AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -364-7
-                        AND A.flt_a_asp_prof_time_entry < ", mydate, " -364
+                        AND A.flt_a_asp_prof_time_entry < ", mydate, "-364
                         )
                         or
-                        (     A.flt_lobt >= ", mydate, " - ((extract (year from (", mydate, " -1))-2019) *364)- floor((extract (year from (", mydate, " -1))-2019)/4)*7 -7 -1
-                        AND A.flt_lobt < ", mydate, " - ((extract (year from (", mydate, " -1))-2019) *364)- floor((extract (year from (", mydate, " -1))-2019)/4)*7
-                        AND A.flt_a_asp_prof_time_entry >=  ", mydate, " - ((extract (year from (", mydate, " -1))-2019) *364) - floor((extract (year from (", mydate, " -1))-2019)/4)*7 -7
-                        AND A.flt_a_asp_prof_time_entry < ", mydate, " - ((extract (year from (", mydate, " -1))-2019) *364)- floor((extract (year from (", mydate, " -1))-2019)/4)*7
+                        (     A.flt_lobt >= ", mydate, " - ((extract (year from (", mydate, "-1))-2019) *364)- floor((extract (year from (", mydate, "-1))-2019)/4)*7 -7 -1
+                        AND A.flt_lobt < ", mydate, "- ((extract (year from (", mydate, "-1))-2019) *364)- floor((extract (year from (", mydate, "-1))-2019)/4)*7
+                        AND A.flt_a_asp_prof_time_entry >=  ", mydate, " - ((extract (year from (", mydate, "-1))-2019) *364) - floor((extract (year from (", mydate, "-1))-2019)/4)*7 -7
+                        AND A.flt_a_asp_prof_time_entry < ", mydate, "- ((extract (year from (", mydate, "-1))-2019) *364)- floor((extract (year from (", mydate, "-1))-2019)/4)*7
 
 
 
@@ -1449,8 +1649,8 @@ SELECT entry_day,
          case when entry_day >= ", mydate, " -7 and entry_day < ", mydate, "  then 'CURRENT_ROLLING_WEEK'
       when entry_day >= ", mydate, " -364-7 and entry_day < ", mydate, " -364  then 'ROLLING_WEEK_PREV_YEAR'
       when entry_day >= ", mydate, " -7-7 and entry_day < ", mydate, " -7  then 'PREV_ROLLING_WEEK'
-      when entry_day >= ", mydate, " -((extract (year from (", mydate, " -1))-2019) *364)- floor((extract (year from (", mydate, " -1))-2019)/4)*7-7
-              and entry_day < ", mydate, " -((extract (year from (", mydate, " -1))-2019) *364)- floor((extract (year from (", mydate, " -1))-2019)/4)*7
+      when entry_day >= ", mydate, " -((extract (year from (", mydate, "-1))-2019) *364)- floor((extract (year from (", mydate, "-1))-2019)/4)*7-7
+              and entry_day < ", mydate, " -((extract (year from (", mydate, "-1))-2019) *364)- floor((extract (year from (", mydate, "-1))-2019)/4)*7
               then 'ROLLING_WEEK_2019'
          else '-'
     end  flag_rolling_week
@@ -1469,9 +1669,9 @@ select ctry_name,  ao_grp_code,   ao_grp_name , flag_rolling_week,
 AO_RANK_WEEK as
 (SELECT  ao_grp_code, ctry_name, flag_rolling_week,
         ROW_NUMBER() OVER (PARTITION BY  ctry_name, flag_rolling_week
-                ORDER BY flight_without_overflight DESC, ao_grp_name) as R_RANK,
+                ORDER BY flight_without_overflight DESC, ao_grp_name) R_RANK,
         RANK() OVER (PARTITION BY  ctry_name, flag_rolling_week
-                ORDER BY flight_without_overflight DESC) as RANK
+                ORDER BY flight_without_overflight DESC) RANK
 
 FROM AO_COUNTRY_FLIGHT_GRP
 WHERE flag_rolling_week <> '-' AND flag_rolling_week = 'CURRENT_ROLLING_WEEK'
@@ -1480,22 +1680,65 @@ WHERE flag_rolling_week <> '-' AND flag_rolling_week = 'CURRENT_ROLLING_WEEK'
 AO_RANK_WEEK_PREV as
 (SELECT  ao_grp_code, ctry_name, flag_rolling_week,
         RANK() OVER (PARTITION BY  ctry_name, flag_rolling_week
-                ORDER BY flight_without_overflight DESC) as RANK_PREV_WEEK
+                ORDER BY flight_without_overflight DESC) RANK_PREV_WEEK
 FROM AO_COUNTRY_FLIGHT_GRP
 WHERE flag_rolling_week <> '-' AND flag_rolling_week = 'PREV_ROLLING_WEEK'
-)
+),
 
-select  a.ctry_name as country_name, a.flag_rolling_week, a.ao_grp_code, ao_grp_name ,
-       flight_without_overflight,
-       r_rank, rank, RANK_PREV_WEEK,
-       to_date(  TO_CHAR (", mydate, " -7, 'dd-mm-yyyy'),'dd-mm-yyyy') as from_date,
-       to_date(  TO_CHAR (", mydate, " -1, 'dd-mm-yyyy'),'dd-mm-yyyy') as to_date
+DATA_FILTERED as (
+select  a.ctry_name as country_name,
+        a.flag_rolling_week,
+        a.ao_grp_code,
+        ao_grp_name,
+        flight_without_overflight,
+        r_rank,
+        rank,
+        RANK_PREV_WEEK,
+        to_date(  TO_CHAR (", mydate, "-7, 'dd-mm-yyyy'),'dd-mm-yyyy') as from_date,
+        to_date(  TO_CHAR (", mydate, "-1, 'dd-mm-yyyy'),'dd-mm-yyyy') as to_date
 
  from AO_COUNTRY_FLIGHT_GRP a
  left join AO_RANK_WEEK b on a.ao_grp_code =  b.ao_grp_code  AND a.ctry_name = b.ctry_name
  left join AO_RANK_WEEK_PREV c on a.ao_grp_code =  c.ao_grp_code  AND a.ctry_name = c.ctry_name
  where r_rank <= '10'
-order by country_name,  a.flag_rolling_week, r_rank
+)
+
+select  country_name,
+        flag_rolling_week,
+        case when country_name in ('ICELAND', 'Iceland')
+                  and (to_date < '01-jan-2024'
+                       or
+                       (to_date < '01-jan-2025' and flag_rolling_week in ('ROLLING_WEEK_PREV_YEAR'))
+                       or
+                       (flag_rolling_week in ('ROLLING_WEEK_2019'))
+                       )
+            then NULL else ao_grp_code
+        end ao_grp_code,
+        case when country_name in ('ICELAND', 'Iceland')
+                  and (to_date < '01-jan-2024'
+                       or
+                       (to_date < '01-jan-2025' and flag_rolling_week in ('ROLLING_WEEK_PREV_YEAR'))
+                       or
+                       (flag_rolling_week in ('ROLLING_WEEK_2019'))
+                       )
+            then NULL else ao_grp_name
+        end ao_grp_name,
+        case when country_name in ('ICELAND', 'Iceland')
+                  and (to_date < '01-jan-2024'
+                       or
+                       (to_date < '01-jan-2025' and flag_rolling_week in ('ROLLING_WEEK_PREV_YEAR'))
+                       or
+                       (flag_rolling_week in ('ROLLING_WEEK_2019'))
+                       )
+            then NULL else flight_without_overflight
+        end flight_without_overflight,
+        r_rank,
+        rank,
+        RANK_PREV_WEEK,
+        from_date,
+        to_date
+from DATA_FILTERED
+order by country_name,  flag_rolling_week, r_rank
 "
 )
 }
@@ -1516,12 +1759,12 @@ as (
 REL_AP_CTRY as (
 select cfmu_ap_code ,
        CASE WHEN SUBSTR(cfmu_ap_code, 1, 2) = 'GC' then 'Spain Canaries'
-            WHEN iso_ct_name = 'SPAIN' then 'Spain Continental'
-            ELSE iso_ct_name
+            WHEN country_name = 'SPAIN' then 'Spain Continental'
+            ELSE country_name
        END iso_ct_name,
        region,
        pru_dashboard_ap_name  as ad_name
- from  v_covid_rel_airport_area
+ from  prudev.v_covid_rel_airport_area
 
 ),
 
@@ -1538,13 +1781,13 @@ SELECT  flt_uid,
      TRUNC (flt_a_asp_prof_time_entry) AS entry_day,
        c1.iso_ct_name dep_ctry ,c2.iso_ct_name arr_ctry,
        A.ao_icao_id
-FROM v_aiu_flt a, REL_AP_CTRY c1, REL_AP_CTRY c2
+FROM prudev.v_aiu_flt a, REL_AP_CTRY c1, REL_AP_CTRY c2
 WHERE
     A.flt_lobt>= TO_DATE ('01-01-2019', 'dd-mm-yyyy') -1
         AND A.flt_lobt < ", mydate, "
         AND flt_a_asp_prof_time_entry >= TO_DATE ('01-01-2019', 'dd-mm-yyyy')
-        AND TO_NUMBER (TO_CHAR (TRUNC (flt_a_asp_prof_time_entry), 'mmdd')) <=   TO_NUMBER (TO_CHAR (", mydate, " -1, 'mmdd'))
-        and extract (year from flt_a_asp_prof_time_entry) <= extract(year from (", mydate, " -1))
+        AND TO_NUMBER (TO_CHAR (TRUNC (flt_a_asp_prof_time_entry), 'mmdd')) <=   TO_NUMBER (TO_CHAR (", mydate, "-1, 'mmdd'))
+        and extract (year from flt_a_asp_prof_time_entry) <= extract(year from (", mydate, "-1))
 
         AND A.flt_state IN ('TE', 'TA', 'AA')
         AND  flt_dep_ad IS NOT NULL
@@ -1631,7 +1874,7 @@ SELECT
 FROM pru_time_references
 where day_date >= TO_DATE ('01-01-2019', 'dd-mm-yyyy')
         AND TO_NUMBER (TO_CHAR (TRUNC (day_date), 'mmdd')) <=   TO_NUMBER (TO_CHAR (", mydate, "-1, 'mmdd'))
-        AND year <= extract(year from (", mydate, " -1))
+        AND year <= extract(year from (", mydate, "-1))
 group by year
 ),
 
@@ -1648,33 +1891,87 @@ GROUP BY a.year, ao_grp_code, ao_grp_name, ctry_name
 AO_RANK_PREV as
 (SELECT  ao_grp_code, ctry_name,
         RANK() OVER (PARTITION BY  ctry_name, year
-                ORDER BY flight_without_overflight DESC) as RANK_PREV_YEAR
+                ORDER BY flight_without_overflight DESC) RANK_PREV_YEAR
 FROM AO_COUNTRY_FLIGHT_GROUP
-WHERE year = extract (year from (", mydate, " -1)) - 1
+WHERE year = extract (year from (", mydate, "-1)) - 1
 ),
 
 AO_RANK as
 (SELECT  ao_grp_code, ctry_name,
         ROW_NUMBER() OVER (PARTITION BY  ctry_name, year
-                ORDER BY flight_without_overflight DESC, ao_grp_name) as R_RANK,
+                ORDER BY flight_without_overflight DESC, ao_grp_name) R_RANK,
         RANK() OVER (PARTITION BY  ctry_name, year
-                ORDER BY flight_without_overflight DESC) as RANK
+                ORDER BY flight_without_overflight DESC) RANK
 FROM AO_COUNTRY_FLIGHT_GROUP
-WHERE year = extract (year from (", mydate, " -1))
-)
+WHERE year = extract (year from (", mydate, "-1))
+),
 
-SELECT a.ctry_name as country_name, a.year, a.ao_grp_code, ao_grp_name, flight_without_overflight,
+DATA_FILTERED as (
+SELECT a.ctry_name as country_name,
+       a.year,
+       a.ao_grp_code,
+       ao_grp_name,
+       flight_without_overflight,
        flight_without_overflight / d.no_days as avg_flt,
-       r_rank, rank as rank_current, RANK_PREV_YEAR,
+       r_rank,
+       rank as rank_current,
+       RANK_PREV_YEAR,
        d.from_date,
-       d.to_date
+       d.to_date,
+       max(d.to_date) over () as max_to_date
 FROM AO_COUNTRY_FLIGHT_GROUP a
 left join AO_RANK_PREV b on a.ao_grp_code =  b.ao_grp_code AND a.ctry_name =  b.ctry_name
 left join AO_RANK c on a.ao_grp_code =  c.ao_grp_code AND a.ctry_name =  c.ctry_name
 left join REF_DATES d on a.year = d.year
 WHERE r_rank <=10
 AND a.ctry_name <> ANY('#UNKNOWN#')
-ORDER by a.ctry_name, a.year DESC, r_rank
+)
+
+SELECT country_name,
+       year,
+        case when country_name in ('ICELAND', 'Iceland')
+                  and (max_to_date < '01-jan-2024'
+                       or
+                       (max_to_date < '01-jan-2025' and to_date < '01-jan-2024')
+                       or
+                       (to_date < '01-jan-2024')
+                       )
+            then NULL else ao_grp_code
+        end ao_grp_code,
+        case when country_name in ('ICELAND', 'Iceland')
+                  and (max_to_date < '01-jan-2024'
+                       or
+                       (max_to_date < '01-jan-2025' and to_date < '01-jan-2024')
+                       or
+                       (to_date < '01-jan-2024')
+                       )
+            then NULL else ao_grp_name
+        end ao_grp_name,
+        case when country_name in ('ICELAND', 'Iceland')
+                  and (max_to_date < '01-jan-2024'
+                       or
+                       (max_to_date < '01-jan-2025' and to_date < '01-jan-2024')
+                       or
+                       (to_date < '01-jan-2024')
+                       )
+            then NULL else flight_without_overflight
+        end flight_without_overflight,
+        case when country_name in ('ICELAND', 'Iceland')
+                  and (max_to_date < '01-jan-2024'
+                       or
+                       (max_to_date < '01-jan-2025' and to_date < '01-jan-2024')
+                       or
+                       (to_date < '01-jan-2024')
+                       )
+            then NULL else avg_flt
+        end avg_flt,
+       r_rank,
+       rank_current,
+       RANK_PREV_YEAR,
+       from_date,
+       to_date
+FROM DATA_FILTERED
+ORDER by country_name, year DESC, r_rank
 "
   )
 }
@@ -1689,12 +1986,12 @@ with
 REL_AP_CTRY as (
 select cfmu_ap_code ,
        CASE WHEN SUBSTR(cfmu_ap_code, 1, 2) = 'GC' then 'Spain Canaries'
-            WHEN iso_ct_name = 'SPAIN' then 'Spain Continental'
-            ELSE iso_ct_name
+            WHEN country_name = 'SPAIN' then 'Spain Continental'
+            ELSE country_name
        END iso_ct_name,
        region,
        pru_dashboard_ap_name  as ad_name
- from  v_covid_rel_airport_area
+ from  prudev.v_covid_rel_airport_area
 
 ),
 
@@ -1708,22 +2005,22 @@ CTRY_LIST as (select distinct
 SELECT nvl(A.adep_day_all_trf,0) AS mvt,
                 A.adep_day_adep  ad, 'DEP' as airport_flow,
                  A.adep_DAY_FLT_DATE  AS FLIGHT_DATE
- FROM  v_aiu_agg_dep_day A
+ FROM  prudev.v_aiu_agg_dep_day A
   where
                    (
                       (
                          A.adep_DAY_FLT_DATE >=  ", mydate, " -1
-                        AND A.adep_DAY_FLT_DATE < ", mydate, " -0
+                        AND A.adep_DAY_FLT_DATE < ", mydate, "-0
                         )
                         or
                       (
                          A.adep_DAY_FLT_DATE >=  ", mydate, " -1 -7
-                        AND A.adep_DAY_FLT_DATE < ", mydate, " -0 -7
+                        AND A.adep_DAY_FLT_DATE < ", mydate, "-0 -7
                         )
                         or
                       (
                          A.adep_DAY_FLT_DATE >=  ", mydate, " -1 -364
-                        AND A.adep_DAY_FLT_DATE < ", mydate, " -0 -364
+                        AND A.adep_DAY_FLT_DATE < ", mydate, "-0 -364
                         )
 
                         or
@@ -1738,22 +2035,22 @@ SELECT nvl(A.adep_day_all_trf,0) AS mvt,
 SELECT nvl(A.ades_day_all_trf,0) AS mvt,
                 A.ades_day_ades_ctfm  ad, 'ARR' as airport_flow,
                  A.ades_DAY_FLT_DATE  AS FLIGHT_DATE
- FROM  v_aiu_agg_arr_day A
+ FROM  prudev.v_aiu_agg_arr_day A
   where
                    (
                       (
                          A.ades_DAY_FLT_DATE >=  ", mydate, " -1
-                        AND A.ades_DAY_FLT_DATE < ", mydate, " -0
+                        AND A.ades_DAY_FLT_DATE < ", mydate, "-0
                         )
                         or
                       (
                          A.ades_DAY_FLT_DATE >=  ", mydate, " -1 -7
-                        AND A.ades_DAY_FLT_DATE < ", mydate, " -0 -7
+                        AND A.ades_DAY_FLT_DATE < ", mydate, "-0 -7
                         )
                         or
                       (
                          A.ades_DAY_FLT_DATE >=  ", mydate, " -1 -364
-                        AND A.ades_DAY_FLT_DATE < ", mydate, " -0 -364
+                        AND A.ades_DAY_FLT_DATE < ", mydate, "-0 -364
                         )
                         or
                         (
@@ -1791,8 +2088,8 @@ select
         iso_ct_name ,
         airport_flow,
          case when FLIGHT_DATE >= ", mydate, " -1 and FLIGHT_DATE < ", mydate, "  then 'CURRENT_DAY'
-              when FLIGHT_DATE >= ", mydate, " -1-364 and FLIGHT_DATE < ", mydate, " -364  then 'DAY_PREV_YEAR'
-              when FLIGHT_DATE >= ", mydate, " -1-7 and FLIGHT_DATE < ", mydate, " -7  then 'DAY_PREV_WEEK'
+              when FLIGHT_DATE >= ", mydate, " -1-364 and FLIGHT_DATE < ", mydate, "-364  then 'DAY_PREV_YEAR'
+              when FLIGHT_DATE >= ", mydate, " -1-7 and FLIGHT_DATE < ", mydate, "-7  then 'DAY_PREV_WEEK'
               when FLIGHT_DATE >= ", mydate, " -((extract (year from (", mydate, "-1))-2019) *364)- floor((extract (year from (", mydate, "-1))-2019)/4)*7 -1
                     and FLIGHT_DATE < ", mydate, " -((extract (year from (", mydate, "-1))-2019) *364)- floor((extract (year from (", mydate, "-1))-2019)/4)*7
                     then 'DAY_2019'
@@ -1816,9 +2113,9 @@ group by ad, ad_name , iso_ct_name, flag_day
 , APT_RANK_DAY as(
 SELECT  flag_day, iso_ct_name, ad,
         ROW_NUMBER() OVER (PARTITION BY  iso_ct_name, flag_day
-                ORDER BY dep_arr DESC, ad_name) as R_RANK,
+                ORDER BY dep_arr DESC, ad_name) R_RANK,
         RANK() OVER (PARTITION BY  iso_ct_name, flag_day
-                ORDER BY dep_arr DESC) as RANK
+                ORDER BY dep_arr DESC) RANK
 FROM COUNTRY_FLIGHT_GROUP
 WHERE flag_day <> '-' AND flag_day = 'CURRENT_DAY'
 ),
@@ -1826,20 +2123,64 @@ WHERE flag_day <> '-' AND flag_day = 'CURRENT_DAY'
 APT_RANK_PREV_WEEK as
 (SELECT  flag_day, iso_ct_name, ad,
         ROW_NUMBER() OVER (PARTITION BY  iso_ct_name, flag_day
-                ORDER BY dep_arr DESC) as RANK_PREV_WEEK
+                ORDER BY dep_arr DESC) RANK_PREV_WEEK
 FROM COUNTRY_FLIGHT_GROUP
 WHERE flag_day <> '-' AND flag_day = 'DAY_PREV_WEEK'
-)
+),
 
-select  a.iso_ct_name as country_name, a.flag_day, a.ad as airport_code, ad_name as airport_name,
-       dep_arr, r_rank, rank, RANK_PREV_WEEK,
-        ", mydate, " -1 as to_date
+DATA_FILTERED as (
+select  a.iso_ct_name as country_name,
+        a.flag_day,
+        a.ad as airport_code,
+        ad_name as airport_name,
+        dep_arr,
+        r_rank,
+        rank,
+        RANK_PREV_WEEK,
+        ", mydate, "-1 as to_date
 
  from COUNTRY_FLIGHT_GROUP a
  left join APT_RANK_DAY b on a.iso_ct_name = b.iso_ct_name  AND a.ad = b.ad
  left join APT_RANK_PREV_WEEK c on a.iso_ct_name = c.iso_ct_name  AND a.ad = c.ad
  where r_rank <= '10'
-order by country_name,  a.flag_day, r_rank
+)
+
+select  country_name,
+        flag_day,
+        case when country_name in ('ICELAND', 'Iceland')
+          and (to_date < '01-jan-2024'
+               or
+               (to_date < '01-jan-2025' and flag_day in ('DAY_PREV_YEAR'))
+               or
+               (flag_day in ('DAY_2019'))
+               )
+            then NULL else airport_code
+        end airport_code,
+        case when country_name in ('ICELAND', 'Iceland')
+          and (to_date < '01-jan-2024'
+               or
+               (to_date < '01-jan-2025' and flag_day in ('DAY_PREV_YEAR'))
+               or
+               (flag_day in ('DAY_2019'))
+               )
+            then NULL else airport_name
+        end airport_name,
+        case when country_name in ('ICELAND', 'Iceland')
+          and (to_date < '01-jan-2024'
+               or
+               (to_date < '01-jan-2025' and flag_day in ('DAY_PREV_YEAR'))
+               or
+               (flag_day in ('DAY_2019'))
+               )
+            then NULL else dep_arr
+        end dep_arr,
+        r_rank,
+        rank,
+        RANK_PREV_WEEK,
+        to_date
+
+ from DATA_FILTERED
+ order by country_name,  flag_day, r_rank
 "
 )
 }
@@ -1853,12 +2194,12 @@ with
 REL_AP_CTRY as (
 select cfmu_ap_code ,
        CASE WHEN SUBSTR(cfmu_ap_code, 1, 2) = 'GC' then 'Spain Canaries'
-            WHEN iso_ct_name = 'SPAIN' then 'Spain Continental'
-            ELSE iso_ct_name
+            WHEN country_name = 'SPAIN' then 'Spain Continental'
+            ELSE country_name
        END iso_ct_name,
        region,
        pru_dashboard_ap_name  as ad_name
- from  v_covid_rel_airport_area
+ from  prudev.v_covid_rel_airport_area
 
 ),
 
@@ -1872,28 +2213,28 @@ CTRY_LIST as (select distinct
 SELECT nvl(A.adep_day_all_trf,0) AS mvt,
                 A.adep_day_adep  ad, 'DEP' as airport_flow,
                  A.adep_DAY_FLT_DATE  AS FLIGHT_DATE
- FROM  v_aiu_agg_dep_day A
+ FROM  prudev.v_aiu_agg_dep_day A
   where
                    (
                       (
                          A.adep_DAY_FLT_DATE >=  ", mydate, " - 7
-                        AND A.adep_DAY_FLT_DATE < ", mydate, " -0
+                        AND A.adep_DAY_FLT_DATE < ", mydate, "-0
                         )
                         or
                       (
                          A.adep_DAY_FLT_DATE >=  ", mydate, " -7 -7
-                        AND A.adep_DAY_FLT_DATE < ", mydate, " -0 -7
+                        AND A.adep_DAY_FLT_DATE < ", mydate, "-0 -7
                         )
                         or
                       (
                          A.adep_DAY_FLT_DATE >=  ", mydate, " -7 -364
-                        AND A.adep_DAY_FLT_DATE < ", mydate, " -0 -364
+                        AND A.adep_DAY_FLT_DATE < ", mydate, "-0 -364
                         )
 
                         or
                       (
                         A.adep_DAY_FLT_DATE >=  ", mydate, " -((extract (year from (", mydate, "-1))-2019) *364)- floor((extract (year from (", mydate, "-1))-2019)/4)*7 -7
-                        AND A.adep_DAY_FLT_DATE < ", mydate, " -((extract (year from (", mydate, "-1))-2019) *364) - floor((extract (year from (", mydate, "-1))-2019)/4)*7
+                        AND A.adep_DAY_FLT_DATE < ", mydate, "-((extract (year from (", mydate, "-1))-2019) *364) - floor((extract (year from (", mydate, "-1))-2019)/4)*7
                         )
                    )
 ),
@@ -1902,27 +2243,27 @@ DATA_FLIGHT_ARR as (
 SELECT nvl(A.ades_day_all_trf,0) AS mvt,
                 A.ades_day_ades_ctfm  ad, 'ARR' as airport_flow,
                  A.ades_DAY_FLT_DATE  AS FLIGHT_DATE
- FROM v_aiu_agg_arr_day A
+ FROM prudev.v_aiu_agg_arr_day A
   where
                    (
                       (
                          A.ades_DAY_FLT_DATE >=  ", mydate, " -7
-                        AND A.ades_DAY_FLT_DATE < ", mydate, " -0
+                        AND A.ades_DAY_FLT_DATE < ", mydate, "-0
                         )
                         or
                       (
                          A.ades_DAY_FLT_DATE >=  ", mydate, " -7 -7
-                        AND A.ades_DAY_FLT_DATE < ", mydate, " -0 -7
+                        AND A.ades_DAY_FLT_DATE < ", mydate, "-0 -7
                         )
                         or
                       (
                          A.ades_DAY_FLT_DATE >=  ", mydate, " -7 -364
-                        AND A.ades_DAY_FLT_DATE < ", mydate, " -0 -364
+                        AND A.ades_DAY_FLT_DATE < ", mydate, "-0 -364
                         )
                         or
                         (
                         A.ades_DAY_FLT_DATE >=  ", mydate, " -((extract (year from (", mydate, "-1))-2019) *364)- floor((extract (year from (", mydate, "-1))-2019)/4)*7 -7
-                        AND A.ades_DAY_FLT_DATE < ", mydate, " -((extract (year from (", mydate, "-1))-2019) *364) - floor((extract (year from (", mydate, "-1))-2019)/4)*7
+                        AND A.ades_DAY_FLT_DATE < ", mydate, "-((extract (year from (", mydate, "-1))-2019) *364) - floor((extract (year from (", mydate, "-1))-2019)/4)*7
                         )
                    )
 ),
@@ -1982,9 +2323,9 @@ group by ad, ad_name , iso_ct_name, flag_rolling_week
 APT_RANK_DAY as
 (SELECT  flag_rolling_week, iso_ct_name, ad,
         ROW_NUMBER() OVER (PARTITION BY  iso_ct_name, flag_rolling_week
-                ORDER BY dep_arr DESC, ad_name) as R_RANK,
+                ORDER BY dep_arr DESC, ad_name) R_RANK,
         RANK() OVER (PARTITION BY  iso_ct_name, flag_rolling_week
-                ORDER BY dep_arr DESC) as RANK
+                ORDER BY dep_arr DESC) RANK
 FROM COUNTRY_FLIGHT_GROUP
 WHERE flag_rolling_week <> '-' AND flag_rolling_week = 'CURRENT_ROLLING_WEEK'
 ),
@@ -1992,11 +2333,12 @@ WHERE flag_rolling_week <> '-' AND flag_rolling_week = 'CURRENT_ROLLING_WEEK'
 APT_RANK_PREV_WEEK as
 (SELECT  flag_rolling_week, iso_ct_name, ad,
         ROW_NUMBER() OVER (PARTITION BY  iso_ct_name, flag_rolling_week
-                ORDER BY dep_arr DESC) as RANK_PREV_WEEK
+                ORDER BY dep_arr DESC) RANK_PREV_WEEK
 FROM COUNTRY_FLIGHT_GROUP
 WHERE flag_rolling_week <> '-' AND flag_rolling_week = 'PREV_ROLLING_WEEK'
-)
+),
 
+DATA_FILTERED as (
 select  a.iso_ct_name as country_name, a.flag_rolling_week, a.ad as airport_code, ad_name as airport_name,
        dep_arr, r_rank, rank, RANK_PREV_WEEK,
         ", mydate, "-7 as from_date,
@@ -2006,7 +2348,46 @@ select  a.iso_ct_name as country_name, a.flag_rolling_week, a.ad as airport_code
  left join APT_RANK_DAY b on a.iso_ct_name = b.iso_ct_name  AND a.ad = b.ad
  left join APT_RANK_PREV_WEEK c on a.iso_ct_name = c.iso_ct_name  AND a.ad = c.ad
  where r_rank <= '10'
-order by country_name,  a.flag_rolling_week, r_rank
+)
+
+select
+        country_name,
+        flag_rolling_week,
+        case when country_name in ('ICELAND', 'Iceland')
+                  and (to_date < '01-jan-2024'
+                       or
+                       (to_date < '01-jan-2025' and flag_rolling_week in ('ROLLING_WEEK_PREV_YEAR'))
+                       or
+                       (flag_rolling_week in ('ROLLING_WEEK_2019'))
+                       )
+            then NULL else airport_code
+        end airport_code,
+        case when country_name in ('ICELAND', 'Iceland')
+                  and (to_date < '01-jan-2024'
+                       or
+                       (to_date < '01-jan-2025' and flag_rolling_week in ('ROLLING_WEEK_PREV_YEAR'))
+                       or
+                       (flag_rolling_week in ('ROLLING_WEEK_2019'))
+                       )
+            then NULL else airport_name
+        end airport_name,
+        case when country_name in ('ICELAND', 'Iceland')
+                  and (to_date < '01-jan-2024'
+                       or
+                       (to_date < '01-jan-2025' and flag_rolling_week in ('ROLLING_WEEK_PREV_YEAR'))
+                       or
+                       (flag_rolling_week in ('ROLLING_WEEK_2019'))
+                       )
+            then NULL else dep_arr
+        end dep_arr,
+        r_rank,
+        rank,
+        RANK_PREV_WEEK,
+        from_date,
+        to_date
+
+ from DATA_FILTERED
+order by country_name,  flag_rolling_week, r_rank
 "
 )
 }
@@ -2020,12 +2401,12 @@ with
 REL_AP_CTRY as (
 select cfmu_ap_code ,
        CASE WHEN SUBSTR(cfmu_ap_code, 1, 2) = 'GC' then 'Spain Canaries'
-            WHEN iso_ct_name = 'SPAIN' then 'Spain Continental'
-            ELSE iso_ct_name
+            WHEN country_name = 'SPAIN' then 'Spain Continental'
+            ELSE country_name
        END iso_ct_name,
        region,
        pru_dashboard_ap_name  as ad_name
- from  v_covid_rel_airport_area
+ from  prudev.v_covid_rel_airport_area
 where region = 'ECAC'
                 or iso_ct_name in ('ISRAEL', 'MOROCCO')
 ),
@@ -2038,7 +2419,7 @@ SELECT
   min(day_date) as from_date,
   max(day_date) as to_date,
   max(day_date) - min(day_date) + 1 as no_days
-FROM pru_time_references
+FROM prudev.pru_time_references
 where day_date >= TO_DATE ('01-01-2019', 'dd-mm-yyyy')
         AND TO_NUMBER (TO_CHAR (TRUNC (day_date), 'mmdd')) <=   TO_NUMBER (TO_CHAR (", mydate, "-1, 'mmdd'))
         AND year <= extract(year from (", mydate, "-1))
@@ -2052,7 +2433,7 @@ SELECT nvl(A.adep_day_all_trf,0) AS mvt,
                  extract (year from A.adep_DAY_FLT_DATE) as year,
                   c.ad_name,
         c.iso_ct_name
- FROM v_aiu_agg_dep_day A  JOIN REL_AP_CTRY C on (A.adep_day_adep = c.cfmu_ap_code)
+ FROM prudev.v_aiu_agg_dep_day A  JOIN REL_AP_CTRY C on (A.adep_day_adep = c.cfmu_ap_code)
   where
         A.adep_DAY_FLT_DATE >= TO_DATE ('01-01-2019', 'dd-mm-yyyy') AND A.adep_DAY_FLT_DATE < ", mydate, "
         AND TO_NUMBER (TO_CHAR (TRUNC (adep_DAY_FLT_DATE), 'mmdd')) <=   TO_NUMBER (TO_CHAR (", mydate, "-1, 'mmdd'))
@@ -2070,7 +2451,7 @@ SELECT nvl(A.ades_day_all_trf,0) AS mvt,
                  , extract (year from A.ades_DAY_FLT_DATE) as year,
                   c.ad_name,
         c.iso_ct_name
- FROM  v_aiu_agg_arr_day  A  JOIN REL_AP_CTRY C on (  A.ades_day_ades_ctfm  = c.cfmu_ap_code)
+ FROM  prudev.v_aiu_agg_arr_day  A  JOIN REL_AP_CTRY C on (  A.ades_day_ades_ctfm  = c.cfmu_ap_code)
  WHERE
         A.ades_DAY_FLT_DATE >= TO_DATE ('01-01-2019', 'dd-mm-yyyy') AND A.ades_DAY_FLT_DATE < ", mydate, "
         AND TO_NUMBER (TO_CHAR (TRUNC (ades_DAY_FLT_DATE), 'mmdd')) <=   TO_NUMBER (TO_CHAR (", mydate, "-1, 'mmdd'))
@@ -2108,7 +2489,7 @@ APT_RANK_PY as
 (
 SELECT  ad, year, iso_ct_name,
         RANK() OVER (PARTITION BY  iso_ct_name, year
-                ORDER BY dep_arr DESC) as RANK_PREV_YEAR
+                ORDER BY dep_arr DESC) RANK_PREV_YEAR
 FROM COUNTRY_FLIGHT
 WHERE year = extract (year from (", mydate, "-1)) -1
 ),
@@ -2117,13 +2498,14 @@ APT_RANK as
 (
 SELECT  ad, year, iso_ct_name,
         ROW_NUMBER() OVER (PARTITION BY  iso_ct_name, year
-                ORDER BY dep_arr DESC, ad) as R_RANK,
+                ORDER BY dep_arr DESC, ad) R_RANK,
         RANK() OVER (PARTITION BY  iso_ct_name, year
-                ORDER BY dep_arr DESC) as RANK_CURRENT
+                ORDER BY dep_arr DESC) RANK_CURRENT
 FROM COUNTRY_FLIGHT
 WHERE year = extract (year from (", mydate, "-1))
-)
+),
 
+DATA_FILTERED as (
 SELECT
         a.iso_ct_name as country_name,
         a.year,
@@ -2132,14 +2514,59 @@ SELECT
        , dep_arr/d.no_days as avg_dep_arr
        , r_rank, RANK_CURRENT, RANK_PREV_YEAR,
        d.from_date,
-       d.to_date
-
+       d.to_date,
+       max(d.to_date) over () as max_to_date
 FROM COUNTRY_FLIGHT a
 left join APT_RANK_PY b on a.ad = b.ad
 left join APT_RANK c on a.ad = c.ad
 left join REF_DATES d on a.year=d.year
 where r_rank <=10
-order by country_name, year DESC, airport_name
+)
+
+SELECT
+        country_name,
+        year,
+        case when country_name in ('ICELAND', 'Iceland')
+                  and (max_to_date < '01-jan-2024'
+                       or
+                       (max_to_date < '01-jan-2025' and to_date < '01-jan-2024')
+                       or
+                       (to_date < '01-jan-2024')
+                       )
+            then NULL else airport_code
+        end airport_code,
+        case when country_name in ('ICELAND', 'Iceland')
+                  and (max_to_date < '01-jan-2024'
+                       or
+                       (max_to_date < '01-jan-2025' and to_date < '01-jan-2024')
+                       or
+                       (to_date < '01-jan-2024')
+                       )
+            then NULL else airport_name
+        end airport_name,
+        case when country_name in ('ICELAND', 'Iceland')
+                  and (max_to_date < '01-jan-2024'
+                       or
+                       (max_to_date < '01-jan-2025' and to_date < '01-jan-2024')
+                       or
+                       (to_date < '01-jan-2024')
+                       )
+            then NULL else dep_arr
+        end dep_arr,
+        case when country_name in ('ICELAND', 'Iceland')
+                  and (max_to_date < '01-jan-2024'
+                       or
+                       (max_to_date < '01-jan-2025' and to_date < '01-jan-2024')
+                       or
+                       (to_date < '01-jan-2024')
+                       )
+            then NULL else avg_dep_arr
+        end avg_dep_arr,
+        r_rank, RANK_CURRENT, RANK_PREV_YEAR,
+        from_date,
+        to_date
+FROM DATA_FILTERED a
+order by country_name, year DESC, r_rank
 "
   )
 }
@@ -2160,19 +2587,19 @@ select cfmu_ap_code ,
        END country_code,
        region,
        pru_dashboard_ap_name  as ad_name
- from  v_covid_rel_airport_area
+ from  prudev.v_covid_rel_airport_area
  where iso_ct_code <> '##'
 
 ),
 
 CTRY_LIST as (
 select distinct
-            case when iso_ct_code = 'ES' then 'Spain Continental'
-                else iso_ct_name
+            case when country_code = 'ES' then 'Spain Continental'
+                else country_name
             end iso_ct_name,
-            iso_ct_code
-from v_covid_rel_airport_area where region = 'ECAC'
-                              or iso_ct_name in ('ISRAEL', 'MOROCCO')
+            country_code as iso_ct_code
+from prudev.v_covid_rel_airport_area where region = 'ECAC'
+                              or country_name in ('ISRAEL', 'MOROCCO')
 UNION ALL
 SELECT
         'Spain Canaries' AS iso_ct_name,
@@ -2186,7 +2613,7 @@ select
                  else aiu_iso_country_name
             end ec_iso_ct_name,
             aiu_iso_country_code as ec_iso_ct_code
-from pru_country_iso
+from prudev.pru_country_iso
 group by aiu_iso_country_name,  aiu_iso_country_code
 
 UNION ALL
@@ -2207,21 +2634,21 @@ SELECT count(flt_uid) as mvt,
   FROM v_aiu_flt a, REL_AP_CTRY c1, REL_AP_CTRY c2
  WHERE       (
                       (     A.flt_lobt >= ", mydate, " -1 -1
-                        AND A.flt_lobt < ", mydate, " -0
+                        AND A.flt_lobt < ", mydate, "-0
                         AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -1
-                        AND A.flt_a_asp_prof_time_entry < ", mydate, " -0
+                        AND A.flt_a_asp_prof_time_entry < ", mydate, "-0
                         )
                         or
                       (     A.flt_lobt >= ", mydate, " -1-1-7
-                        AND A.flt_lobt < ", mydate, " -0-7
+                        AND A.flt_lobt < ", mydate, "-0-7
                         AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -1 -7
-                        AND A.flt_a_asp_prof_time_entry < ", mydate, " -0 -7
+                        AND A.flt_a_asp_prof_time_entry < ", mydate, "-0 -7
                         )
                         or
                       (     A.flt_lobt >= ", mydate, " -1-1-364
-                        AND A.flt_lobt < ", mydate, " -0-364
+                        AND A.flt_lobt < ", mydate, "-0-364
                         AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -1-364
-                        AND A.flt_a_asp_prof_time_entry < ", mydate, " -0 -364
+                        AND A.flt_a_asp_prof_time_entry < ", mydate, "-0 -364
                         )
                         or
                         (     A.flt_lobt >= ", mydate, " -((extract (year from (", mydate, "-1))-2019) *364)- floor((extract (year from (", mydate, "-1))-2019)/4)*7 -1-1
@@ -2316,9 +2743,9 @@ CTRY_PAIR_RANK as
             country_pair,
             flag_day,
             RANK() OVER (PARTITION BY  country_id, flag_day
-                ORDER BY TOT_MVT DESC) as RANK,
+                ORDER BY TOT_MVT DESC) RANK,
             ROW_NUMBER() OVER (PARTITION BY  country_id, flag_day
-                ORDER BY TOT_MVT DESC, ctry2) as R_RANK
+                ORDER BY TOT_MVT DESC, ctry2) R_RANK
 from CTRY_PAIR_SELECTION
 where flag_day = 'CURRENT_DAY'
 ),
@@ -2330,11 +2757,12 @@ CTRY_PAIR_RANK_PREV as
             country_pair,
             flag_day,
             ROW_NUMBER() OVER (PARTITION BY  country_id, flag_day
-                ORDER BY TOT_MVT DESC) as RANK_PREV_WEEK
+                ORDER BY TOT_MVT DESC) RANK_PREV_WEEK
 from CTRY_PAIR_SELECTION
 where flag_day = 'DAY_PREV_WEEK'
-)
+),
 
+DATA_FILTERED as (
  select
             d.ec_iso_ct_name as country_name,
             a.flag_day,
@@ -2351,6 +2779,42 @@ from CTRY_PAIR_SELECTION a
  left join CTRY_LIST_ALL d on a.country_id = d.ec_iso_ct_code
  left join CTRY_LIST_ALL e on a.ctry2 = e.ec_iso_ct_code
 where r_rank <= '10'
+)
+
+ select
+          country_name,
+          flag_day,
+          case when country_name in ('ICELAND', 'Iceland')
+          and (to_date < '01-jan-2024'
+               or
+               (to_date < '01-jan-2025' and flag_day in ('DAY_PREV_YEAR'))
+               or
+               (flag_day in ('DAY_2019'))
+               )
+            then NULL else from_to_iso_ct_code
+        end from_to_iso_ct_code,
+        case when country_name in ('ICELAND', 'Iceland')
+          and (to_date < '01-jan-2024'
+               or
+               (to_date < '01-jan-2025' and flag_day in ('DAY_PREV_YEAR'))
+               or
+               (flag_day in ('DAY_2019'))
+               )
+            then NULL else from_to_country_name
+        end from_to_country_name,
+        case when country_name in ('ICELAND', 'Iceland')
+          and (to_date < '01-jan-2024'
+               or
+               (to_date < '01-jan-2025' and flag_day in ('DAY_PREV_YEAR'))
+               or
+               (flag_day in ('DAY_2019'))
+               )
+            then NULL else TOT_MVT
+        end TOT_MVT,
+        r_rank, rank, rank_prev_week,
+        to_date
+
+from DATA_FILTERED a
 order by country_name,   flag_day, r_rank
 "
 )
@@ -2371,19 +2835,19 @@ select cfmu_ap_code ,
        END country_code,
        region,
        pru_dashboard_ap_name  as ad_name
- from  v_covid_rel_airport_area
+ from  prudev.v_covid_rel_airport_area
  where iso_ct_code <> '##'
 
 ),
 
 CTRY_LIST as (
 select distinct
-            case when iso_ct_code = 'ES' then 'Spain Continental'
-                else iso_ct_name
+            case when country_code = 'ES' then 'Spain Continental'
+                else country_name
             end iso_ct_name,
-            iso_ct_code
-from v_covid_rel_airport_area where region = 'ECAC'
-                              or iso_ct_name in ('ISRAEL', 'MOROCCO')
+            country_code as iso_ct_code
+from prudev.v_covid_rel_airport_area where region = 'ECAC'
+                              or country_name in ('ISRAEL', 'MOROCCO')
 UNION ALL
 SELECT
         'Spain Canaries' AS iso_ct_name,
@@ -2397,7 +2861,7 @@ select
                  else aiu_iso_country_name
             end ec_iso_ct_name,
             aiu_iso_country_code as ec_iso_ct_code
-from pru_country_iso
+from prudev.pru_country_iso
 group by aiu_iso_country_name,  aiu_iso_country_code
 
 UNION ALL
@@ -2526,9 +2990,9 @@ CTRY_PAIR_RANK as
             country_pair,
             flag_rolling_week,
             RANK() OVER (PARTITION BY  country_id, flag_rolling_week
-                ORDER BY TOT_MVT DESC) as RANK,
+                ORDER BY TOT_MVT DESC) RANK,
             ROW_NUMBER() OVER (PARTITION BY  country_id, flag_rolling_week
-                ORDER BY TOT_MVT DESC, ctry2) as R_RANK
+                ORDER BY TOT_MVT DESC, ctry2) R_RANK
 from CTRY_PAIR_SELECTION
 where flag_rolling_week = 'CURRENT_ROLLING_WEEK'
 ),
@@ -2540,11 +3004,12 @@ CTRY_PAIR_RANK_PREV as
             country_pair,
             flag_rolling_week,
             ROW_NUMBER() OVER (PARTITION BY  country_id, flag_rolling_week
-                ORDER BY TOT_MVT DESC) as RANK_PREV_WEEK
+                ORDER BY TOT_MVT DESC) RANK_PREV_WEEK
 from CTRY_PAIR_SELECTION
 where flag_rolling_week = 'PREV_ROLLING_WEEK'
-)
+),
 
+DATA_FILTERED as (
  select
             d.ec_iso_ct_name as country_name,
             a.flag_rolling_week,
@@ -2556,12 +3021,48 @@ where flag_rolling_week = 'PREV_ROLLING_WEEK'
             ", mydate, "-1 as to_date
 
 from CTRY_PAIR_SELECTION a
-
  left join CTRY_PAIR_RANK b on a.country_id =  b.country_id AND a.country_pair =  b.country_pair
  left join CTRY_PAIR_RANK_PREV c on a.country_id =  c.country_id AND a.country_pair =  c.country_pair
  left join CTRY_LIST_ALL d on a.country_id = d.ec_iso_ct_code
  left join CTRY_LIST_ALL e on a.ctry2 = e.ec_iso_ct_code
 where r_rank <= '10'
+)
+
+ select
+        country_name,
+        flag_rolling_week,
+        case when country_name in ('ICELAND', 'Iceland')
+                  and (to_date < '01-jan-2024'
+                       or
+                       (to_date < '01-jan-2025' and flag_rolling_week in ('ROLLING_WEEK_PREV_YEAR'))
+                       or
+                       (flag_rolling_week in ('ROLLING_WEEK_2019'))
+                       )
+            then NULL else from_to_iso_ct_code
+        end from_to_iso_ct_code,
+        case when country_name in ('ICELAND', 'Iceland')
+                  and (to_date < '01-jan-2024'
+                       or
+                       (to_date < '01-jan-2025' and flag_rolling_week in ('ROLLING_WEEK_PREV_YEAR'))
+                       or
+                       (flag_rolling_week in ('ROLLING_WEEK_2019'))
+                       )
+            then NULL else from_to_country_name
+        end from_to_country_name,
+        case when country_name in ('ICELAND', 'Iceland')
+                  and (to_date < '01-jan-2024'
+                       or
+                       (to_date < '01-jan-2025' and flag_rolling_week in ('ROLLING_WEEK_PREV_YEAR'))
+                       or
+                       (flag_rolling_week in ('ROLLING_WEEK_2019'))
+                       )
+            then NULL else TOT_MVT
+        end TOT_MVT,
+        r_rank, rank, rank_prev_week,
+        from_date,
+        to_date
+
+from DATA_FILTERED
 order by country_name,   flag_rolling_week, r_rank
 "
   )
@@ -2582,19 +3083,19 @@ select cfmu_ap_code ,
        END country_code,
        region,
        pru_dashboard_ap_name  as ad_name
- from  v_covid_rel_airport_area
+ from  prudev.v_covid_rel_airport_area
  where iso_ct_code <> '##'
 
 ),
 
 CTRY_LIST as (
 select distinct
-            case when iso_ct_code = 'ES' then 'Spain Continental'
-                else iso_ct_name
+            case when country_code = 'ES' then 'Spain Continental'
+                else country_name
             end iso_ct_name,
-            iso_ct_code
-from v_covid_rel_airport_area where region = 'ECAC'
-                              or iso_ct_name in ('ISRAEL', 'MOROCCO')
+            country_code as iso_ct_code
+from prudev.v_covid_rel_airport_area where region = 'ECAC'
+                              or country_name in ('ISRAEL', 'MOROCCO')
 UNION ALL
 SELECT
         'Spain Canaries' AS iso_ct_name,
@@ -2608,7 +3109,7 @@ select
                  else aiu_iso_country_name
             end ec_iso_ct_name,
             aiu_iso_country_code as ec_iso_ct_code
-from pru_country_iso
+from prudev.pru_country_iso
 group by aiu_iso_country_name,  aiu_iso_country_code
 
 UNION ALL
@@ -2627,7 +3128,7 @@ SELECT
   min(day_date) as from_date,
   max(day_date) as to_date,
   max(day_date) - min(day_date) + 1 as no_days
-FROM pru_time_references
+FROM prudev.pru_time_references
 where day_date >= TO_DATE ('01-01-2019', 'dd-mm-yyyy')
         AND TO_NUMBER (TO_CHAR (TRUNC (day_date), 'mmdd')) <=   TO_NUMBER (TO_CHAR (", mydate, "-1, 'mmdd'))
         AND year <= extract(year from (", mydate, "-1))
@@ -2719,9 +3220,9 @@ CTRY_PAIR_RANK as
             country_pair,
             year,
             RANK() OVER (PARTITION BY  country_id, year
-                ORDER BY TOT_MVT DESC) as RANK_CURRENT,
+                ORDER BY TOT_MVT DESC) RANK_CURRENT,
             ROW_NUMBER() OVER (PARTITION BY  country_id, year
-                ORDER BY TOT_MVT DESC, ctry2) as R_RANK
+                ORDER BY TOT_MVT DESC, ctry2) R_RANK
 from CTRY_PAIR_SELECTION
 WHERE year = extract (year from (", mydate, "-1))
 ),
@@ -2732,11 +3233,12 @@ CTRY_PAIR_RANK_PREV as
             country_pair,
             year,
             ROW_NUMBER() OVER (PARTITION BY  country_id, year
-                ORDER BY TOT_MVT DESC) as RANK_PREV_YEAR
+                ORDER BY TOT_MVT DESC) RANK_PREV_YEAR
 from CTRY_PAIR_SELECTION
 WHERE year = extract (year from (", mydate, "-1)) - 1
-)
+),
 
+DATA_FILTERED as (
  select
             d.ec_iso_ct_name as country_name,
             a.year,
@@ -2745,7 +3247,8 @@ WHERE year = extract (year from (", mydate, "-1)) - 1
             TOT_MVT,
             TOT_MVT/f.no_days  as AVG_MVT,
             r_rank, rank_current, rank_prev_year,
-            f.from_date, f.to_date
+            f.from_date, f.to_date,
+            max(f.to_date) over () as max_to_date
 
 from CTRY_PAIR_SELECTION a
 
@@ -2755,6 +3258,52 @@ from CTRY_PAIR_SELECTION a
  left join CTRY_LIST_ALL e on a.ctry2 = e.ec_iso_ct_code
  left join REF_DATES f on a.year=f.year
 where r_rank <= '10'
+)
+
+ select
+        country_name,
+        year,
+        case when country_name in ('ICELAND', 'Iceland')
+                  and (max_to_date < '01-jan-2024'
+                       or
+                       (max_to_date < '01-jan-2025' and to_date < '01-jan-2024')
+                       or
+                       (to_date < '01-jan-2024')
+                       )
+            then NULL else from_to_iso_ct_code
+        end from_to_iso_ct_code,
+        case when country_name in ('ICELAND', 'Iceland')
+                  and (max_to_date < '01-jan-2024'
+                       or
+                       (max_to_date < '01-jan-2025' and to_date < '01-jan-2024')
+                       or
+                       (to_date < '01-jan-2024')
+                       )
+            then NULL else from_to_country_name
+        end from_to_country_name,
+        case when country_name in ('ICELAND', 'Iceland')
+                  and (max_to_date < '01-jan-2024'
+                       or
+                       (max_to_date < '01-jan-2025' and to_date < '01-jan-2024')
+                       or
+                       (to_date < '01-jan-2024')
+                       )
+            then NULL else TOT_MVT
+        end TOT_MVT,
+        case when country_name in ('ICELAND', 'Iceland')
+                  and (max_to_date < '01-jan-2024'
+                       or
+                       (max_to_date < '01-jan-2025' and to_date < '01-jan-2024')
+                       or
+                       (to_date < '01-jan-2024')
+                       )
+            then NULL else AVG_MVT
+        end AVG_MVT,
+        r_rank, rank_current, rank_prev_year,
+        from_date,
+        to_date
+
+from DATA_FILTERED
 order by country_name, year desc, r_rank
 "
   )
