@@ -750,12 +750,12 @@ WITH
              SUM(coalesce(a.agg_asp_delay_tvs,0)) as DAY_DLY,
              (SUM (coalesce(a.agg_asp_delay_tvs,0)) - SUM (coalesce(a.agg_asp_delay_airport_tvs,0)))  AS DAY_ERT_DLY,
              SUM (coalesce(a.agg_asp_delay_airport_tvs,0))  AS DAY_ARP_DLY
-       FROM v_aiu_agg_asp a
+       FROM prudev.v_aiu_agg_asp a
        WHERE
-             agg_asp_entry_date >= '24-DEC-2018' AND a.AGG_ASP_ENTRY_DATE < TRUNC (SYSDATE)
+             agg_asp_entry_date >= '24-DEC-2018' AND a.AGG_ASP_ENTRY_DATE < ", mydate, "
              and agg_asp_ty = 'COUNTRY_AUA'  AND A.agg_asp_unit_ty <> 'REGION'
              AND (SUBSTR(a.agg_asp_id,1,1) IN ('E','L')
-         OR SUBSTR(a.agg_asp_id,1,2) IN ('GC','GM','GE','UD','UG','UK','YY'))
+         OR SUBSTR(a.agg_asp_id,1,2) IN ('GC','GM','GE','UD','UG','UK','YY','BI'))
     GROUP BY
              agg_asp_entry_date,
              agg_asp_id,
@@ -778,10 +778,10 @@ SELECT a.COUNTRY_NAME,
         t.day_type,
         t.day_of_week_nb AS day_of_week,
         t.day_date
-FROM LIST_COUNTRY a, pru_time_references t
+FROM LIST_COUNTRY a, prudev.pru_time_references t
 WHERE
    t.day_date >= to_date('24-12-2018','DD-MM-YYYY')
-   AND t.day_date < to_date('31-12-'|| extract(year from (trunc(sysdate)-1)),'dd-mm-yyyy')
+   AND t.day_date <= to_date('31-12-'|| extract(year from (", mydate, "-1)),'dd-mm-yyyy')
        ),
 
 
@@ -949,19 +949,19 @@ DATA_COUNTRY_2 as
        DAY_ERT_DLY_2019,
        DAY_ARP_DLY_2019,
 
-      CASE WHEN flight_DATE >= trunc(sysdate)
+      CASE WHEN flight_DATE >= ", mydate, "
            THEN NULL
            ELSE avg_TFC_rolling_week
        END avg_TFC_rolling_week,
-      CASE WHEN flight_DATE >= trunc(sysdate)
+      CASE WHEN flight_DATE >= ", mydate, "
            THEN NULL
            ELSE avg_DLY_rolling_week
        END avg_DLY_rolling_week,
-      CASE WHEN flight_DATE >= trunc(sysdate)
+      CASE WHEN flight_DATE >= ", mydate, "
            THEN NULL
            ELSE avg_ERT_DLY_rolling_week
        END avg_ERT_DLY_rolling_week,
-      CASE WHEN flight_DATE >= trunc(sysdate)
+      CASE WHEN flight_DATE >= ", mydate, "
            THEN NULL
            ELSE avg_ARP_DLY_rolling_week
        END avg_ARP_DLY_rolling_week,
@@ -1000,19 +1000,19 @@ DATA_COUNTRY_2 as
        Y2D_ERT_DLY_2019,
        Y2D_ARP_DLY_2019,
 
-       CASE WHEN flight_DATE >= trunc(sysdate)
+       CASE WHEN flight_DATE >= ", mydate, "
            THEN NULL
       	   ELSE Y2D_AVG_TFC_YEAR
        END Y2D_AVG_TFC_YEAR,
-       CASE WHEN flight_DATE >= trunc(sysdate)
+       CASE WHEN flight_DATE >= ", mydate, "
            THEN NULL
       	   ELSE Y2D_AVG_DLY_YEAR
        END Y2D_AVG_DLY_YEAR,
-       CASE WHEN flight_DATE >= trunc(sysdate)
+       CASE WHEN flight_DATE >= ", mydate, "
            THEN NULL
       	   ELSE Y2D_AVG_ERT_DLY_YEAR
        END Y2D_AVG_ERT_DLY_YEAR,
-       CASE WHEN flight_DATE >= trunc(sysdate)
+       CASE WHEN flight_DATE >= ", mydate, "
            THEN NULL
       	   ELSE Y2D_AVG_ARP_DLY_YEAR
        END Y2D_AVG_ARP_DLY_YEAR,
@@ -1029,8 +1029,92 @@ DATA_COUNTRY_2 as
 
       FROM DATA_COUNTRY_2
   )
-  select a.*,
+  select
+--  from prev table
+       country_name,
+       YEAR,
+       MONTH,
+       WEEK,
+       WEEK_NB_YEAR,
+       DAY_TYPE,
+       day_of_week,
 
+       flight_DATE,
+       flight_DATE_PREV_WEEK,
+       flight_DATE_PREV_YEAR,
+       flight_DATE_2019,
+
+       DAY_TFC,
+       DAY_DLY,
+       DAY_ERT_DLY,
+       DAY_ARP_DLY,
+
+       DAY_TFC_PREV_WEEK,
+       DAY_DLY_PREV_WEEK,
+       DAY_ERT_DLY_PREV_WEEK,
+       DAY_ARP_DLY_PREV_WEEK,
+
+       DAY_TFC_PREV_YEAR,
+       DAY_DLY_PREV_YEAR,
+       DAY_ERT_DLY_PREV_YEAR,
+       DAY_ARP_DLY_PREV_YEAR,
+
+       DAY_TFC_2019,
+       DAY_DLY_2019,
+       DAY_ERT_DLY_2019,
+       DAY_ARP_DLY_2019,
+
+       avg_TFC_rolling_week,
+       avg_DLY_rolling_week,
+       avg_ERT_DLY_rolling_week,
+       avg_ARP_DLY_rolling_week,
+
+       AVG_TFC_rolling_PREV_WEEK,
+       AVG_DLY_rolling_PREV_WEEK,
+       AVG_ERT_DLY_rolling_PREV_WEEK,
+       AVG_ARP_DLY_rolling_PREV_WEEK,
+
+       AVG_TFC_rolling_week_PREV_YEAR,
+       AVG_DLY_rolling_week_PREV_YEAR,
+       AVG_ERT_DLY_rolling_week_PREV_YEAR,
+       AVG_ARP_DLY_rolling_week_PREV_YEAR,
+
+       AVG_TFC_rolling_week_2019,
+       AVG_DLY_rolling_week_2019,
+       AVG_ERT_DLY_rolling_week_2019,
+       AVG_ARP_DLY_rolling_week_2019,
+
+       Y2D_TFC_YEAR,
+       Y2D_DLY_YEAR,
+       Y2D_ERT_DLY_YEAR,
+       Y2D_ARP_DLY_YEAR,
+
+       Y2D_TFC_PREV_YEAR,
+       Y2D_DLY_PREV_YEAR,
+       Y2D_ERT_DLY_PREV_YEAR,
+       Y2D_ARP_DLY_PREV_YEAR,
+
+       Y2D_TFC_2019,
+       Y2D_DLY_2019,
+       Y2D_ERT_DLY_2019,
+       Y2D_ARP_DLY_2019,
+
+       Y2D_AVG_TFC_YEAR,
+       Y2D_AVG_DLY_YEAR,
+       Y2D_AVG_ERT_DLY_YEAR,
+       Y2D_AVG_ARP_DLY_YEAR,
+
+       Y2D_AVG_TFC_PREV_YEAR,
+       Y2D_AVG_DLY_PREV_YEAR,
+       Y2D_AVG_ERT_DLY_PREV_YEAR,
+       Y2D_AVG_ARP_DLY_PREV_YEAR,
+
+       Y2D_AVG_TFC_2019,
+       Y2D_AVG_DLY_2019,
+       Y2D_AVG_ERT_DLY_2019,
+       Y2D_AVG_ARP_DLY_2019,
+
+--  new calcs
       DAY_DLY - DAY_DLY_PREV_WEEK  as DAY_DLY_DIFF_PREV_WEEK,
       DAY_DLY - DAY_DLY_PREV_YEAR  as DAY_DLY_DIFF_PREV_YEAR,
       DAY_DLY - DAY_DLY_2019  as DAY_DLY_DIFF_2019,
@@ -1048,11 +1132,11 @@ DATA_COUNTRY_2 as
        	   ELSE NULL
       END  DAY_DLY_DIF_2019_PERC,
 
-      CASE WHEN AVG_DLY_rolling_week_PREV_YEAR <> 0 and flight_DATE < trunc(sysdate)
+      CASE WHEN AVG_DLY_rolling_week_PREV_YEAR <> 0 and flight_DATE < ", mydate, "
            THEN avg_DLY_rolling_week/AVG_DLY_rolling_week_PREV_YEAR -1
            ELSE NULL
        END  DIF_DLY_ROLLING_WEEK_PREV_YEAR_PERC,
-      CASE WHEN AVG_DLY_rolling_week_2019 <> 0 and flight_DATE < trunc(sysdate)
+      CASE WHEN AVG_DLY_rolling_week_2019 <> 0 and flight_DATE < ", mydate, "
            THEN avg_DLY_rolling_week/AVG_DLY_rolling_week_2019 -1
            ELSE NULL
        END  DIF_DLY_ROLLING_WEEK_2019_perc,
@@ -1065,10 +1149,130 @@ DATA_COUNTRY_2 as
            Y2D_AVG_DLY_YEAR/Y2D_AVG_DLY_2019 - 1
            ELSE NULL
        END Y2D_DLY_DIF_2019_PERC,
-       TRUNC(SYSDATE) -1 as LAST_DATA_DAY
+       ", mydate, " -1 as LAST_DATA_DAY
 
-      FROM DATA_COUNTRY_3 a
-      where flight_DATE >=to_date('01-01-'|| extract(year from (trunc(sysdate)-1)),'dd-mm-yyyy')
+      FROM DATA_COUNTRY_3
+      where flight_DATE >=to_date('01-01-'|| extract(year from (", mydate, "-1)),'dd-mm-yyyy')
+                  AND country_name not in ('ICELAND', 'Iceland')
+
+UNION ALL
+
+select
+       country_name,
+       YEAR,
+       MONTH,
+       WEEK,
+       WEEK_NB_YEAR,
+       DAY_TYPE,
+       day_of_week,
+
+       flight_DATE,
+       flight_DATE_PREV_WEEK,
+       flight_DATE_PREV_YEAR,
+       flight_DATE_2019,
+
+       case when FLIGHT_DATE >='01-jan-2024' then DAY_TFC else NULL end DAY_TFC,
+       case when FLIGHT_DATE >='01-jan-2024' then DAY_DLY else NULL end DAY_DLY,
+       case when FLIGHT_DATE >='01-jan-2024' then DAY_ERT_DLY else NULL end DAY_ERT_DLY,
+       case when FLIGHT_DATE >='01-jan-2024' then DAY_ARP_DLY else NULL end DAY_ARP_DLY,
+
+       case when FLIGHT_DATE >='01-jan-2024' then DAY_TFC_PREV_WEEK else NULL end DAY_TFC_PREV_WEEK,
+       case when FLIGHT_DATE >='01-jan-2024' then DAY_DLY_PREV_WEEK else NULL end DAY_DLY_PREV_WEEK,
+       case when FLIGHT_DATE >='01-jan-2024' then DAY_ERT_DLY_PREV_WEEK else NULL end DAY_ERT_DLY_PREV_WEEK,
+       case when FLIGHT_DATE >='01-jan-2024' then DAY_ARP_DLY_PREV_WEEK else NULL end DAY_ARP_DLY_PREV_WEEK,
+
+       case when FLIGHT_DATE >='01-jan-2025' then DAY_TFC_PREV_YEAR else NULL end DAY_TFC_PREV_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then DAY_DLY_PREV_YEAR else NULL end DAY_DLY_PREV_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then DAY_ERT_DLY_PREV_YEAR else NULL end DAY_ERT_DLY_PREV_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then DAY_ARP_DLY_PREV_YEAR else NULL end DAY_ARP_DLY_PREV_YEAR,
+
+       NULL as DAY_TFC_2019,
+       NULL as DAY_DLY_2019,
+       NULL as DAY_ERT_DLY_2019,
+       NULL as DAY_ARP_DLY_2019,
+
+       case when FLIGHT_DATE >='01-jan-2024' then avg_TFC_rolling_week else NULL end avg_TFC_rolling_week,
+       case when FLIGHT_DATE >='01-jan-2024' then avg_DLY_rolling_week else NULL end avg_DLY_rolling_week,
+       case when FLIGHT_DATE >='01-jan-2024' then avg_ERT_DLY_rolling_week else NULL end avg_ERT_DLY_rolling_week,
+       case when FLIGHT_DATE >='01-jan-2024' then avg_ARP_DLY_rolling_week else NULL end avg_ARP_DLY_rolling_week,
+
+       case when FLIGHT_DATE >='01-jan-2024' then AVG_TFC_rolling_PREV_WEEK else NULL end AVG_TFC_rolling_PREV_WEEK,
+       case when FLIGHT_DATE >='01-jan-2024' then AVG_DLY_rolling_PREV_WEEK else NULL end AVG_DLY_rolling_PREV_WEEK,
+       case when FLIGHT_DATE >='01-jan-2024' then AVG_ERT_DLY_rolling_PREV_WEEK else NULL end AVG_ERT_DLY_rolling_PREV_WEEK,
+       case when FLIGHT_DATE >='01-jan-2024' then AVG_ARP_DLY_rolling_PREV_WEEK else NULL end AVG_ARP_DLY_rolling_PREV_WEEK,
+
+       case when FLIGHT_DATE >='01-jan-2025' then AVG_TFC_rolling_week_PREV_YEAR else NULL end AVG_TFC_rolling_week_PREV_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then AVG_DLY_rolling_week_PREV_YEAR else NULL end AVG_DLY_rolling_week_PREV_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then AVG_ERT_DLY_rolling_week_PREV_YEAR else NULL end AVG_ERT_DLY_rolling_week_PREV_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then AVG_ARP_DLY_rolling_week_PREV_YEAR else NULL end AVG_ARP_DLY_rolling_week_PREV_YEAR,
+
+       NULL as AVG_TFC_rolling_week_2019,
+       NULL as AVG_DLY_rolling_week_2019,
+       NULL as AVG_ERT_DLY_rolling_week_2019,
+       NULL as AVG_ARP_DLY_rolling_week_2019,
+
+       case when FLIGHT_DATE >='01-jan-2024' then Y2D_TFC_YEAR else NULL end Y2D_TFC_YEAR,
+       case when FLIGHT_DATE >='01-jan-2024' then Y2D_DLY_YEAR else NULL end Y2D_DLY_YEAR,
+       case when FLIGHT_DATE >='01-jan-2024' then Y2D_ERT_DLY_YEAR else NULL end Y2D_ERT_DLY_YEAR,
+       case when FLIGHT_DATE >='01-jan-2024' then Y2D_ARP_DLY_YEAR else NULL end Y2D_ARP_DLY_YEAR,
+
+       case when FLIGHT_DATE >='01-jan-2025' then Y2D_TFC_PREV_YEAR else NULL end Y2D_TFC_PREV_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then Y2D_DLY_PREV_YEAR else NULL end Y2D_DLY_PREV_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then Y2D_ERT_DLY_PREV_YEAR else NULL end Y2D_ERT_DLY_PREV_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then Y2D_ARP_DLY_PREV_YEAR else NULL end Y2D_ARP_DLY_PREV_YEAR,
+
+       NULL as Y2D_TFC_2019,
+       NULL as Y2D_DLY_2019,
+       NULL as Y2D_ERT_DLY_2019,
+       NULL as Y2D_ARP_DLY_2019,
+
+       case when FLIGHT_DATE >='01-jan-2024' then Y2D_AVG_TFC_YEAR else NULL end Y2D_AVG_TFC_YEAR,
+       case when FLIGHT_DATE >='01-jan-2024' then Y2D_AVG_DLY_YEAR else NULL end Y2D_AVG_DLY_YEAR,
+       case when FLIGHT_DATE >='01-jan-2024' then Y2D_AVG_ERT_DLY_YEAR else NULL end Y2D_AVG_ERT_DLY_YEAR,
+       case when FLIGHT_DATE >='01-jan-2024' then Y2D_AVG_ARP_DLY_YEAR else NULL end Y2D_AVG_ARP_DLY_YEAR,
+
+       case when FLIGHT_DATE >='01-jan-2025' then Y2D_AVG_TFC_PREV_YEAR else NULL end Y2D_AVG_TFC_PREV_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then Y2D_AVG_DLY_PREV_YEAR else NULL end Y2D_AVG_DLY_PREV_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then Y2D_AVG_ERT_DLY_PREV_YEAR else NULL end Y2D_AVG_ERT_DLY_PREV_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then Y2D_AVG_ARP_DLY_PREV_YEAR else NULL end Y2D_AVG_ARP_DLY_PREV_YEAR,
+
+       NULL as Y2D_AVG_TFC_2019,
+       NULL as Y2D_AVG_DLY_2019,
+       NULL as Y2D_AVG_ERT_DLY_2019,
+       NULL as Y2D_AVG_ARP_DLY_2019,
+
+--  new calcs
+      case when FLIGHT_DATE >='01-jan-2024' then DAY_DLY - DAY_DLY_PREV_WEEK else NULL end DAY_DLY_DIFF_PREV_WEEK,
+      case when FLIGHT_DATE >='01-jan-2025' then DAY_DLY - DAY_DLY_PREV_YEAR else NULL end DAY_DLY_DIFF_PREV_YEAR,
+      NULL as DAY_DLY_DIFF_2019,
+
+      CASE WHEN DAY_DLY_PREV_WEEK  <>0 and FLIGHT_DATE >='01-jan-2024'
+            THEN DAY_DLY/DAY_DLY_PREV_WEEK -1
+            ELSE NULL
+      END as DAY_DLY_PREV_WEEK_perc,
+      CASE WHEN DAY_DLY_PREV_YEAR <>0  and FLIGHT_DATE >='01-jan-2025'
+           THEN DAY_DLY/DAY_DLY_PREV_YEAR -1
+       	   ELSE NULL
+      END  DAY_DLY_DIF_PREV_YEAR_PERC,
+      NULL as DAY_DLY_DIF_2019_PERC,
+
+      CASE WHEN AVG_DLY_rolling_week_PREV_YEAR <> 0 and flight_DATE < ", mydate, " and FLIGHT_DATE >='01-jan-2025'
+           THEN avg_DLY_rolling_week/AVG_DLY_rolling_week_PREV_YEAR -1
+           ELSE NULL
+       END  DIF_DLY_ROLLING_WEEK_PREV_YEAR_PERC,
+      NULL as DIF_DLY_ROLLING_WEEK_2019_perc,
+
+       CASE WHEN Y2D_AVG_DLY_PREV_YEAR <> 0 and FLIGHT_DATE >='01-jan-2025'
+        THEN Y2D_AVG_DLY_YEAR/Y2D_AVG_DLY_PREV_YEAR - 1
+        ELSE NULL
+       END Y2D_DLY_DIF_PREV_YEAR_PERC,
+       NULL as Y2D_DLY_DIF_2019_PERC,
+       ", mydate, " -1 as LAST_DATA_DAY
+
+      FROM DATA_COUNTRY_3
+      where flight_DATE >=to_date('01-01-'|| extract(year from (", mydate, "-1)),'dd-mm-yyyy')
+                  AND country_name in ('ICELAND', 'Iceland')
+      order by country_name, flight_date
 "
 )
 }
@@ -1098,7 +1302,7 @@ WITH
  FROM  ARU_SYN.stat_coda_country
  WHERE
   (  (SUBSTR(COUNTRY_ID,1,1) IN ('E','L')
-       OR SUBSTR(COUNTRY_ID,1,2) IN ('GC','GM','GE','UD','UG','UK'))  )
+       OR SUBSTR(COUNTRY_ID,1,2) IN ('GC','GM','GE','UD','UG','UK','BI'))  )
   AND  COUNTRY_ID not in ('LV', 'LX', 'EU','LN')
 ),
 
@@ -1109,7 +1313,7 @@ group by  COUNTRY_NAME),
 REL_CFMU_TVS_CTRY_CODE
  as (
  select a.pru_tvs_code, a.wef, a.till, b.country_code, b.country_name
-  from v_pru_rel_cfmu_tvs_Country_fir a ,  COUNTRY_ICAO2LETTER  b
+  from prudev.v_pru_rel_cfmu_tvs_Country_fir a ,  COUNTRY_ICAO2LETTER  b
  where a.unit_code = b.ICAO2LETTER )
 ,
 
@@ -1123,10 +1327,10 @@ SELECT a.COUNTRY_NAME,
         t.day_type,
         t.day_of_week_nb AS day_of_week,
         t.day_date
-FROM LIST_COUNTRY a, pru_time_references t
+FROM LIST_COUNTRY a, prudev.pru_time_references t
 WHERE
     day_date >= TO_DATE ('01-01-2019', 'dd-mm-yyyy')
-    AND day_date < TRUNC (SYSDATE)
+    AND day_date < ", mydate, "
 )   ,
 
 
@@ -1135,7 +1339,7 @@ DELAY_TVS_day
   AS
      (SELECT a.*,
             a.agg_flt_tv_set_id AS pru_tvs_code
-      FROM v_aiu_agg_flt_flow a
+      FROM prudev.v_aiu_agg_flt_flow a
       WHERE a.agg_flt_a_first_entry_date >= '01-jan-2019'),
 
 DELAY_TVS
@@ -1316,8 +1520,117 @@ select
       FROM ALL_DAY_DATA a
  )
 
- select * from DAY_DATA_CALC
- where flight_date >= TO_DATE ('24-12-' || to_char(extract(year from (trunc(sysdate)-1))-1 ), 'dd-mm-yyyy')
+ select
+       country_name,
+       YEAR,
+       MONTH,
+       WEEK,
+       WEEK_NB_YEAR,
+       DAY_TYPE,
+       day_of_week,
+       flight_date,
+
+       TDF,
+       TDF_ARP,
+       TDF_ERT,
+       TDF_NA,
+       TDM,
+       TDM_ARP,
+       TDM_ARP_CSG,
+       TDM_ARP_CS,
+       TDM_ARP_G,
+       TDM_ARP_IT,
+       TDM_ARP_WD,
+       TDM_ARP_NO_CSGITWD,
+       TDM_ERT,
+       TDM_ERT_CSG,
+       TDM_ERT_CS,
+       TDM_ERT_G,
+       TDM_ERT_IT,
+       TDM_ERT_WD,
+       TDM_ERT_NO_CSGITWD,
+
+       flight_date_PREV_YEAR,
+       TDM_PREV_YEAR,
+
+       TDM_ARP_PREV_YEAR,
+       TDM_ARP_CSG_PREV_YEAR,
+       TDM_ARP_CS_PREV_YEAR,
+       TDM_ARP_G_PREV_YEAR,
+       TDM_ARP_IT_PREV_YEAR,
+       TDM_ARP_WD_PREV_YEAR,
+       TDM_ARP_NO_CSGITWD_PREV_YEAR,
+       TDM_ERT_PREV_YEAR,
+       TDM_ERT_CSG_PREV_YEAR,
+       TDM_ERT_CS_PREV_YEAR,
+       TDM_ERT_G_PREV_YEAR,
+       TDM_ERT_IT_PREV_YEAR,
+       TDM_ERT_WD_PREV_YEAR,
+       TDM_ERT_NO_CSGITWD_PREV_YEAR
+
+ from DAY_DATA_CALC
+ where flight_date >= TO_DATE ('24-12-' || to_char(extract(year from (", mydate, "-1))-1 ), 'dd-mm-yyyy')
+             AND country_name not in ('ICELAND', 'Iceland')
+
+ union all
+
+ select
+       country_name,
+       YEAR,
+       MONTH,
+       WEEK,
+       WEEK_NB_YEAR,
+       DAY_TYPE,
+       day_of_week,
+       flight_date,
+
+       case when FLIGHT_DATE >='01-jan-2024' then TDF else NULL end TDF,
+       case when FLIGHT_DATE >='01-jan-2024' then TDF_ARP else NULL end TDF_ARP,
+       case when FLIGHT_DATE >='01-jan-2024' then TDF_ERT else NULL end TDF_ERT,
+       case when FLIGHT_DATE >='01-jan-2024' then TDF_NA else NULL end TDF_NA,
+
+       case when FLIGHT_DATE >='01-jan-2024' then TDM else NULL end TDM,
+
+       case when FLIGHT_DATE >='01-jan-2024' then TDM_ARP else NULL end TDM_ARP,
+       case when FLIGHT_DATE >='01-jan-2024' then TDM_ARP_CSG else NULL end TDM_ARP_CSG,
+       case when FLIGHT_DATE >='01-jan-2024' then TDM_ARP_CS else NULL end TDM_ARP_CS,
+       case when FLIGHT_DATE >='01-jan-2024' then TDM_ARP_G else NULL end TDM_ARP_G,
+       case when FLIGHT_DATE >='01-jan-2024' then TDM_ARP_IT else NULL end TDM_ARP_IT,
+       case when FLIGHT_DATE >='01-jan-2024' then TDM_ARP_WD else NULL end TDM_ARP_WD,
+       case when FLIGHT_DATE >='01-jan-2024' then TDM_ARP_NO_CSGITWD else NULL end TDM_ARP_NO_CSGITWD,
+
+       case when FLIGHT_DATE >='01-jan-2024' then TDM_ERT else NULL end TDM_ERT,
+       case when FLIGHT_DATE >='01-jan-2024' then TDM_ERT_CSG else NULL end TDM_ERT_CSG,
+       case when FLIGHT_DATE >='01-jan-2024' then TDM_ERT_CS else NULL end TDM_ERT_CS,
+       case when FLIGHT_DATE >='01-jan-2024' then TDM_ERT_G else NULL end TDM_ERT_G,
+       case when FLIGHT_DATE >='01-jan-2024' then TDM_ERT_IT else NULL end TDM_ERT_IT,
+       case when FLIGHT_DATE >='01-jan-2024' then TDM_ERT_WD else NULL end TDM_ERT_WD,
+       case when FLIGHT_DATE >='01-jan-2024' then TDM_ERT_NO_CSGITWD else NULL end TDM_ERT_NO_CSGITWD,
+
+
+       flight_date_PREV_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then TDM_PREV_YEAR else NULL end TDM_PREV_YEAR,
+
+       case when FLIGHT_DATE >='01-jan-2025' then TDM_ARP_PREV_YEAR else NULL end TDM_ARP_PREV_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then TDM_ARP_CSG_PREV_YEAR else NULL end TDM_ARP_CSG_PREV_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then TDM_ARP_CS_PREV_YEAR else NULL end TDM_ARP_CS_PREV_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then TDM_ARP_G_PREV_YEAR else NULL end TDM_ARP_G_PREV_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then TDM_ARP_IT_PREV_YEAR else NULL end TDM_ARP_IT_PREV_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then TDM_ARP_WD_PREV_YEAR else NULL end TDM_ARP_WD_PREV_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then TDM_ARP_NO_CSGITWD_PREV_YEAR else NULL end TDM_ARP_NO_CSGITWD_PREV_YEAR,
+
+       case when FLIGHT_DATE >='01-jan-2025' then TDM_ERT_PREV_YEAR else NULL end TDM_ERT_PREV_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then TDM_ERT_CSG_PREV_YEAR else NULL end TDM_ERT_CSG_PREV_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then TDM_ERT_CS_PREV_YEAR else NULL end TDM_ERT_CS_PREV_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then TDM_ERT_G_PREV_YEAR else NULL end TDM_ERT_G_PREV_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then TDM_ERT_IT_PREV_YEAR else NULL end TDM_ERT_IT_PREV_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then TDM_ERT_WD_PREV_YEAR else NULL end TDM_ERT_WD_PREV_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then TDM_ERT_NO_CSGITWD_PREV_YEAR else NULL end TDM_ERT_NO_CSGITWD_PREV_YEAR
+
+ from DAY_DATA_CALC
+ where flight_date >= TO_DATE ('24-12-' || to_char(extract(year from (", mydate, "-1))-1 ), 'dd-mm-yyyy')
+            AND country_name in ('ICELAND', 'Iceland')
+ order by country_name, flight_date
 "
 )
 }
