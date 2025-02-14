@@ -826,7 +826,6 @@ DIM_STATE as (
       c.EC_ISO_CT_NAME
   FROM COUNTRY_DAY_DATA a
   left join DIM_STATE c on a.ISO_2LETTER = c.EC_ISO_CT_CODE
-  where a.ISO_2LETTER != 'IS'
 
 "
 
