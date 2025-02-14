@@ -11,7 +11,6 @@ FROM pruprod.v_aiu_app_dim_airport"
 }
 
 
-
 ## traffic ----
 query_ap_traffic <- function(mydate_string) {
   mydate <- date_sql_string(mydate_string)

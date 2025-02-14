@@ -125,6 +125,16 @@ st_daio_last_day <- st_daio_data_zone %>%
   filter(FLIGHT_DATE == data_day_date)
 
 st_daio_for_json <- st_daio_last_day %>%
+  # Iceland exception
+  mutate(
+    DAY_DIFF_PREV_YEAR_PERC =  if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, DAY_DIFF_PREV_YEAR_PERC),
+    DIF_WEEK_PREV_YEAR_PERC =  if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, DIF_WEEK_PREV_YEAR_PERC),
+    Y2D_DIFF_PREV_YEAR_PERC = if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, Y2D_DIFF_PREV_YEAR_PERC),
+
+    DAY_TFC_DIFF_2019_PERC =  if_else(iso_2letter == "IS", NA, DAY_TFC_DIFF_2019_PERC),
+    DIF_ROLLING_WEEK_2019_PERC =  if_else(iso_2letter == "IS", NA, DIF_ROLLING_WEEK_2019_PERC),
+    Y2D_DIFF_2019_PERC = if_else(iso_2letter == "IS", NA, Y2D_DIFF_2019_PERC)
+    ) %>%
   select(
     iso_2letter,
     FLIGHT_DATE,
@@ -174,6 +184,16 @@ st_dai_last_day <- st_dai_data_zone %>%
   filter(FLIGHT_DATE == data_day_date)
 
 st_dai_for_json <- st_dai_last_day %>%
+  # Iceland exception
+  mutate(
+    DAY_DIFF_PREV_YEAR_PERC =  if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, DAY_DIFF_PREV_YEAR_PERC),
+    DIF_WEEK_PREV_YEAR_PERC =  if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, DIF_WEEK_PREV_YEAR_PERC),
+    Y2D_DIFF_PREV_YEAR_PERC = if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, Y2D_DIFF_PREV_YEAR_PERC),
+
+    DAY_TFC_DIFF_2019_PERC =  if_else(iso_2letter == "IS", NA, DAY_TFC_DIFF_2019_PERC),
+    DIF_ROLLING_WEEK_2019_PERC =  if_else(iso_2letter == "IS", NA, DIF_ROLLING_WEEK_2019_PERC),
+    Y2D_DIFF_2019_PERC = if_else(iso_2letter == "IS", NA, Y2D_DIFF_2019_PERC)
+  ) %>%
   select(
     iso_2letter,
     FLIGHT_DATE,
@@ -317,6 +337,16 @@ mycolnames <- colnames(st_overflight_last_day) %>%
 
 st_overflight_for_json <- st_overflight_last_day %>%
   mutate(DAY_TFC =  if_else(DAY_TFC<0, 0, DAY_TFC)) %>%    #temporary correction
+  # Iceland exception
+  mutate(
+    DAY_DIFF_PREV_YEAR_PERC =  if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, DAY_DIFF_PREV_YEAR_PERC),
+    DIF_WEEK_PREV_YEAR_PERC =  if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, DIF_WEEK_PREV_YEAR_PERC),
+    Y2D_DIFF_PREV_YEAR_PERC = if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, Y2D_DIFF_PREV_YEAR_PERC),
+
+    DAY_TFC_DIFF_2019_PERC =  if_else(iso_2letter == "IS", NA, DAY_TFC_DIFF_2019_PERC),
+    DIF_ROLLING_WEEK_2019_PERC =  if_else(iso_2letter == "IS", NA, DIF_ROLLING_WEEK_2019_PERC),
+    Y2D_DIFF_2019_PERC = if_else(iso_2letter == "IS", NA, Y2D_DIFF_2019_PERC)
+  ) %>%
   select(
     iso_2letter,
     FLIGHT_DATE,
@@ -439,6 +469,25 @@ st_delay_for_json  <- st_delay_last_day %>%
 
     Y2D_DLY_AVG = Y2D_AVG_DLY_YEAR,
     Y2D_DLY_FLT_DIF_PREV_YEAR_PERC = Y2D_DLY_FLT_DIF_PY_PERC
+  ) %>%
+  # Iceland exception
+  mutate(
+    DY_DLY_DIF_PREV_YEAR_PERC =  if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, DY_DLY_DIF_PREV_YEAR_PERC),
+    WK_DLY_DIF_PREV_YEAR_PERC =  if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, WK_DLY_DIF_PREV_YEAR_PERC),
+    Y2D_DLY_DIF_PREV_YEAR_PERC = if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, Y2D_DLY_DIF_PREV_YEAR_PERC),
+
+    DY_DLY_FLT_DIF_PREV_YEAR_PERC =  if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, DY_DLY_FLT_DIF_PREV_YEAR_PERC),
+    WK_DLY_FLT_DIF_PREV_YEAR_PERC =  if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, WK_DLY_FLT_DIF_PREV_YEAR_PERC),
+    Y2D_DLY_FLT_DIF_PREV_YEAR_PERC = if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, Y2D_DLY_FLT_DIF_PREV_YEAR_PERC),
+
+    DY_DLY_DIF_2019_PERC =  if_else(iso_2letter == "IS", NA, DY_DLY_DIF_2019_PERC),
+    WK_DLY_DIF_2019_PERC =  if_else(iso_2letter == "IS", NA, WK_DLY_DIF_2019_PERC),
+    Y2D_DLY_DIF_2019_PERC = if_else(iso_2letter == "IS", NA, Y2D_DLY_DIF_2019_PERC),
+
+    DY_DLY_FLT_DIF_2019_PERC =  if_else(iso_2letter == "IS", NA, DY_DLY_FLT_DIF_2019_PERC),
+    WK_DLY_FLT_DIF_2019_PERC =  if_else(iso_2letter == "IS", NA, WK_DLY_FLT_DIF_2019_PERC),
+    Y2D_DLY_FLT_DIF_2019_PERC = if_else(iso_2letter == "IS", NA, Y2D_DLY_FLT_DIF_2019_PERC)
+
   ) %>%
   right_join(state_iso, by ="iso_2letter") %>%
   select(-state) %>%
@@ -606,6 +655,24 @@ st_punct_y2d <- st_punct_data_joined %>%
   )
 
 st_punct_for_json <- merge(st_punct_d_w, st_punct_y2d, by="ISO_2LETTER") %>%
+  # Iceland exception
+  mutate(
+    DY_ARR_PUN_DIF_PREV_YEAR =  if_else(ISO_2LETTER == "IS" & year(FLIGHT_DATE) < 2025, NA, DY_ARR_PUN_DIF_PREV_YEAR),
+    WK_ARR_PUN_DIF_PREV_YEAR =  if_else(ISO_2LETTER == "IS" & year(FLIGHT_DATE) < 2025, NA, WK_ARR_PUN_DIF_PREV_YEAR),
+    Y2D_ARR_PUN_DIF_PREV_YEAR = if_else(ISO_2LETTER == "IS" & year(FLIGHT_DATE) < 2025, NA, Y2D_ARR_PUN_DIF_PREV_YEAR),
+
+    DY_DEP_PUN_DIF_PREV_YEAR =  if_else(ISO_2LETTER == "IS" & year(FLIGHT_DATE) < 2025, NA, DY_DEP_PUN_DIF_PREV_YEAR),
+    WK_DEP_PUN_DIF_PREV_YEAR =  if_else(ISO_2LETTER == "IS" & year(FLIGHT_DATE) < 2025, NA, WK_DEP_PUN_DIF_PREV_YEAR),
+    Y2D_DEP_PUN_DIF_PREV_YEAR = if_else(ISO_2LETTER == "IS" & year(FLIGHT_DATE) < 2025, NA, Y2D_DEP_PUN_DIF_PREV_YEAR),
+
+    DY_ARR_PUN_DIF_2019 =  if_else(ISO_2LETTER == "IS", NA, DY_ARR_PUN_DIF_2019),
+    WK_ARR_PUN_DIF_2019 =  if_else(ISO_2LETTER == "IS", NA, WK_ARR_PUN_DIF_2019),
+    Y2D_ARR_PUN_DIF_2019 = if_else(ISO_2LETTER == "IS", NA, Y2D_ARR_PUN_DIF_2019),
+
+    DY_DEP_PUN_DIF_2019 =  if_else(ISO_2LETTER == "IS", NA, DY_DEP_PUN_DIF_2019),
+    WK_DEP_PUN_DIF_2019 =  if_else(ISO_2LETTER == "IS", NA, WK_DEP_PUN_DIF_2019),
+    Y2D_DEP_PUN_DIF_2019 = if_else(ISO_2LETTER == "IS", NA, Y2D_DEP_PUN_DIF_2019)
+  ) %>%
   rename(iso_2letter = ISO_2LETTER) %>%
   right_join(state_iso, by = "iso_2letter") %>%
   select (-state) %>%
@@ -812,7 +879,7 @@ if (archive_mode) {
 
 # process data
 st_ao_data_day_int <- assign(mydataframe, df) %>%
-  mutate(TO_DATE = max(TO_DATE)) %>%
+  mutate(TO_DATE = max(TO_DATE, na.rm = TRUE)) %>%
   spread(., key = FLAG_DAY, value = FLIGHT_WITHOUT_OVERFLIGHT) %>%
   arrange(COUNTRY_NAME, R_RANK) %>%
   mutate(
@@ -830,7 +897,9 @@ st_ao_data_day_int <- assign(mydataframe, df) %>%
     ),
     ST_RANK = paste0(tolower(COUNTRY_NAME), R_RANK),
     ST_TFC_AO_GRP_DIF = CURRENT_DAY - DAY_PREV_WEEK
-  )
+  ) %>%
+  # filter out bad rows created by Iceland case
+  filter(!is.na(AO_GRP_CODE))
 
 st_ao_data_day <- st_ao_data_day_int %>%
   rename(
@@ -903,7 +972,9 @@ st_ao_data_wk <- assign(mydataframe, df) %>%
     WK_FLT_AVG,
     WK_FLT_DIF_PREV_WEEK_PERC,
     WK_FLT_DIF_PREV_YEAR_PERC
-  )
+  )%>%
+  # filter out bad rows created by Iceland case
+  filter(!is.na(WK_AO_GRP_NAME))
 
 #### y2d ----
 mydataframe <- "st_ao_data_y2d_raw"
@@ -968,7 +1039,9 @@ st_ao_data_y2d <- assign(mydataframe, df) %>%
     Y2D_FLT_AVG,
     Y2D_FLT_DIF_PREV_YEAR_PERC,
     Y2D_FLT_DIF_2019_PERC
-  )
+  )%>%
+  # filter out bad rows created by Iceland case
+  filter(!is.na(Y2D_AO_GRP_NAME))
 
 #### main card ----
 st_ao_main_traffic <- st_ao_data_day_int %>%
@@ -1100,7 +1173,9 @@ st_apt_data_day_int <- assign(mydataframe, df) %>%
     ),
     ST_RANK = paste0(tolower(COUNTRY_NAME), R_RANK),
     ST_TFC_APT_DIF = CURRENT_DAY - DAY_PREV_WEEK
-  )
+  ) %>%
+  # filter out bad rows created by Iceland case
+  filter(!is.na(AIRPORT_NAME))
 
 st_apt_data_day <- st_apt_data_day_int %>%
   rename(
@@ -1117,6 +1192,7 @@ st_apt_data_day <- st_apt_data_day_int %>%
     DY_FLT_DIF_PREV_WEEK_PERC,
     DY_FLT_DIF_PREV_YEAR_PERC
   )
+
 
 #### week ----
 mydataframe <- "st_apt_data_week_raw"
@@ -1174,7 +1250,9 @@ st_apt_data_wk <- assign(mydataframe, df) %>%
     WK_FLT_AVG,
     WK_FLT_DIF_PREV_WEEK_PERC,
     WK_FLT_DIF_PREV_YEAR_PERC
-  )
+  ) %>%
+  # filter out bad rows created by Iceland case
+  filter(!is.na(WK_APT_NAME))
 
 #### y2d ----
 mydataframe <- "st_apt_data_y2d_raw"
@@ -1239,7 +1317,9 @@ st_apt_data_y2d <- assign(mydataframe, df) %>%
     Y2D_FLT_AVG,
     Y2D_FLT_DIF_PREV_YEAR_PERC,
     Y2D_FLT_DIF_2019_PERC
-  )
+  ) %>%
+  # filter out bad rows created by Iceland case
+  filter(!is.na(Y2D_APT_NAME))
 
 #### main card ----
 st_apt_main_traffic <- st_apt_data_day_int %>%
@@ -1359,7 +1439,10 @@ st_st_data_day_int <- assign(mydataframe, df) %>%
     ),
     ST_RANK = paste0(tolower(COUNTRY_NAME), R_RANK),
     ST_TFC_CTRY_DIF = CURRENT_DAY - DAY_PREV_WEEK
-  )
+  )  %>%
+  # filter out bad rows created by Iceland case
+  filter(!is.na(FROM_TO_COUNTRY_NAME))
+
 
 st_st_data_day <- st_st_data_day_int %>%
   rename(
@@ -1433,7 +1516,10 @@ st_st_data_wk <- assign(mydataframe, df) %>%
     WK_CTRY_DAI,
     WK_DIF_PREV_WEEK_PERC,
     WK_DIF_PREV_YEAR_PERC
-  )
+  ) %>%
+  # filter out bad rows created by Iceland case
+  filter(!is.na(WK_COUNTRY_NAME))
+
 
 #### y2d ----
 mydataframe <- "st_st_data_y2d_raw"
@@ -1498,7 +1584,9 @@ st_st_data_y2d <- assign(mydataframe, df) %>%
     Y2D_CTRY_DAI,
     Y2D_CTRY_DAI_PREV_YEAR_PERC,
     Y2D_CTRY_DAI_2019_PERC
-  )
+  ) %>%
+  # filter out bad rows created by Iceland case
+  filter(!is.na(Y2D_COUNTRY_NAME))
 
 #### main card ----
 st_st_main_traffic <- st_st_data_day_int %>%
@@ -2118,6 +2206,11 @@ st_apt_punct_y2d <- st_apt_punct_calc %>%
     ) %>%
   filter(NO_APTS < 11) %>%
   ungroup() %>%
+  # iceland exception
+  mutate(
+    Y2D_APT_ARR_PUNCT_DIF_PREV_YEAR = if_else(state == "Iceland" & YEAR < 2025, NA, Y2D_APT_ARR_PUNCT_DIF_PREV_YEAR),
+    Y2D_APT_ARR_PUNCT_DIF_2019 = if_else(state == "Iceland", NA, Y2D_APT_ARR_PUNCT_DIF_2019)
+  ) %>%
   select(
     ST_RANK,
     Y2D_RANK,
@@ -2197,6 +2290,12 @@ st_daio_evo_app <- st_daio_data_zone  %>%
   mutate(AVG_ROLLING_WEEK = if_else(FLIGHT_DATE > min(data_day_date,
                                                  max(LAST_DATA_DAY, na.rm = TRUE),na.rm = TRUE), NA, AVG_ROLLING_WEEK)
          ) %>%
+  # iceland exception
+  mutate(
+    AVG_ROLLING_WEEK_PREV_YEAR = if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, AVG_ROLLING_WEEK_PREV_YEAR),
+    AVG_ROLLING_WEEK_2020 = if_else(iso_2letter == "IS", NA, AVG_ROLLING_WEEK_2020),
+    AVG_ROLLING_WEEK_2019 = if_else(iso_2letter == "IS", NA, AVG_ROLLING_WEEK_2019)
+  ) %>%
   select(
     iso_2letter,
     daio_zone,
@@ -2226,6 +2325,12 @@ st_dai_evo_app <- st_dai_data_zone %>%
   mutate(AVG_ROLLING_WEEK = if_else(FLIGHT_DATE > min(data_day_date,
                                                       max(LAST_DATA_DAY, na.rm = TRUE),na.rm = TRUE), NA, AVG_ROLLING_WEEK)
   ) %>%
+  # iceland exception
+  mutate(
+    AVG_ROLLING_WEEK_PREV_YEAR = if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, AVG_ROLLING_WEEK_PREV_YEAR),
+    AVG_ROLLING_WEEK_2020 = if_else(iso_2letter == "IS", NA, AVG_ROLLING_WEEK_2020),
+    AVG_ROLLING_WEEK_2019 = if_else(iso_2letter == "IS", NA, AVG_ROLLING_WEEK_2019)
+  ) %>%
   select(
     iso_2letter,
     daio_zone,
@@ -2254,6 +2359,12 @@ save_json(st_dai_evo_app_j, "st_dai_evo_chart_daily")
 st_ovf_evo_app <- st_overflight_data_zone %>%
   mutate(AVG_ROLLING_WEEK = if_else(FLIGHT_DATE > min(data_day_date,
                                                       max(LAST_DATA_DAY, na.rm = TRUE),na.rm = TRUE), NA, AVG_ROLLING_WEEK)
+  ) %>%
+  # iceland exception
+  mutate(
+    AVG_ROLLING_WEEK_PREV_YEAR = if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, AVG_ROLLING_WEEK_PREV_YEAR),
+    AVG_ROLLING_WEEK_2020 = if_else(iso_2letter == "IS", NA, AVG_ROLLING_WEEK_2020),
+    AVG_ROLLING_WEEK_2019 = if_else(iso_2letter == "IS", NA, AVG_ROLLING_WEEK_2019)
   ) %>%
   select(
     iso_2letter,
@@ -2304,7 +2415,13 @@ st_punct_evo_app <- st_punct_data_joined %>%
     DEP_PUN_WK,
     ARR_PUN_WK,
     OP_FLT_WK
+  ) %>%   # iceland exception
+  mutate(
+    DEP_PUN_WK = if_else(iso_2letter == "IS" & year(DAY_DATE) < 2024, NA, DEP_PUN_WK),
+    ARR_PUN_WK = if_else(iso_2letter == "IS" & year(DAY_DATE) < 2024, NA, ARR_PUN_WK),
+    OP_FLT_WK = if_else(iso_2letter == "IS" & year(DAY_DATE) < 2024, NA, OP_FLT_WK)
   )
+
 
 column_names <- c('iso_2letter',
                   'state',
@@ -2392,6 +2509,9 @@ st_delay_cause_day <- st_delay_cause_data %>%
          SHARE_TDM_IT,
          SHARE_TDM_WD,
          SHARE_TDM_NOCSGITWD
+  ) %>%   # iceland exception
+  mutate(
+    TDM_PREV_YEAR = if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, TDM_PREV_YEAR)
   )
 
 column_names <- c(
@@ -2492,7 +2612,11 @@ st_delay_cause_wk <- st_delay_cause_data %>%
          WK_SHARE_TDM_IT,
          WK_SHARE_TDM_WD,
          WK_SHARE_TDM_NOCSGITWD
+  ) %>%   # iceland exception
+  mutate(
+    TDM_PREV_YEAR = if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, TDM_PREV_YEAR)
   )
+
 
 colnames(st_delay_cause_wk) <- column_names
 
@@ -2574,7 +2698,11 @@ st_delay_cause_y2d <- st_delay_cause_data %>%
          Y2D_SHARE_TDM_IT,
          Y2D_SHARE_TDM_WD,
          Y2D_SHARE_TDM_NOCSGITWD
+  ) %>%   # iceland exception
+  mutate(
+    RWK_TDM_PREV_YEAR = if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, RWK_TDM_PREV_YEAR)
   )
+
 
 colnames(st_delay_cause_y2d) <- column_names
 
@@ -2657,6 +2785,9 @@ st_delay_type_day <- st_delay_type_data %>%
          DY_DLY_FLT_PREV_YEAR,
          DY_SHARE_DLY_FLT_ERT,
          DY_SHARE_DLY_FLT_APT
+  ) %>%   # iceland exception
+  mutate(
+    DY_DLY_FLT_PREV_YEAR = if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, DY_DLY_FLT_PREV_YEAR)
   )
 
 column_names <- c(
@@ -2747,6 +2878,9 @@ st_delay_type_wk <- st_delay_type_data %>%
 
     WK_SHARE_DLY_FLT_ERT,
     WK_SHARE_DLY_FLT_APT
+  ) %>%   # iceland exception
+  mutate(
+    DY_DLY_FLT_PREV_YEAR = if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, DY_DLY_FLT_PREV_YEAR)
   )
 
 colnames(st_delay_type_wk) <- column_names
@@ -2805,6 +2939,9 @@ st_delay_type_y2d <- st_delay_type_data %>%
          RWK_DLY_FLT_PREV_YEAR,
          Y2D_SHARE_DLY_FLT_ERT,
          Y2D_SHARE_DLY_FLT_APT
+  ) %>%   # iceland exception
+  mutate(
+    RWK_DLY_FLT_PREV_YEAR = if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, RWK_DLY_FLT_PREV_YEAR)
   )
 
 colnames(st_delay_type_y2d) <- column_names
