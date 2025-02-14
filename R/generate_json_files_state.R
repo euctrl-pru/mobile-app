@@ -107,14 +107,33 @@ st_billed_for_json <- st_billing %>%
   arrange(iso_2letter)
 
 #### Traffic DAIO data ----
-st_daio_data <-  read_xlsx(
-  path  = fs::path_abs(
-    str_glue(st_base_file),
-    start = st_base_dir),
-  sheet = "state_daio",
-  range = cell_limits(c(1, 1), c(NA, NA))) %>%
-  as_tibble() %>%
-  mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+mydataframe <- "state_daio_raw"
+stakeholder <- "st"
+
+if (archive_mode & year(data_day_date) < year(today(tzone = "") +  days(-1))) {
+  myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+
+} else {
+  df <-  read_xlsx(
+    path  = fs::path_abs(
+      str_glue(st_base_file),
+      start = st_base_dir),
+    sheet = "state_daio",
+    range = cell_limits(c(1, 1), c(NA, NA))) %>%
+    as_tibble() %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+  # save pre-processed file in archive for generation of past json files
+  # only last day of the year
+  if(format(data_day_date, "%m%d") == "1231") {
+    myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
+    write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+  }
+}
+
+# process data
+st_daio_data <- assign(mydataframe, df)
 
 st_daio_data_zone <- st_daio_data %>%
   mutate(daio_zone_lc = tolower(COUNTRY_NAME)) %>%
@@ -166,14 +185,33 @@ st_daio_for_json <- st_daio_last_day %>%
   arrange(iso_2letter)
 
 #### Traffic DAI data ----
-st_dai_data <-  read_xlsx(
-  path  = fs::path_abs(
-    str_glue(st_base_file),
-    start = st_base_dir),
-  sheet = "state_dai",
-  range = cell_limits(c(1, 1), c(NA, NA))) %>%
-  as_tibble() %>%
-  mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+mydataframe <- "state_dai_raw"
+stakeholder <- "st"
+
+if (archive_mode & year(data_day_date) < year(today(tzone = "") +  days(-1))) {
+  myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+
+} else {
+  df <-  read_xlsx(
+    path  = fs::path_abs(
+      str_glue(st_base_file),
+      start = st_base_dir),
+    sheet = "state_dai",
+    range = cell_limits(c(1, 1), c(NA, NA))) %>%
+    as_tibble() %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+  # save pre-processed file in archive for generation of past json files
+  # only last day of the year
+  if(format(data_day_date, "%m%d") == "1231") {
+    myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
+    write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+  }
+}
+
+# process data
+st_dai_data <- assign(mydataframe, df)
 
 st_dai_data_zone <- st_dai_data %>%
   mutate(daio_zone_lc = tolower(COUNTRY_NAME)) %>%
@@ -378,14 +416,33 @@ st_overflight_for_json <- st_overflight_last_day %>%
   arrange(iso_2letter)
 
 #### Delay data ----
-st_delay_data <-  read_xlsx(
-  path  = fs::path_abs(
-    str_glue(st_base_file),
-    start = st_base_dir),
-  sheet = "state_delay",
-  range = cell_limits(c(1, 1), c(NA, NA))) %>%
-  as_tibble() %>%
-  mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+mydataframe <- "state_delay_raw"
+stakeholder <- "st"
+
+if (archive_mode & year(data_day_date) < year(today(tzone = "") +  days(-1))) {
+  myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+
+} else {
+  df <- read_xlsx(
+    path  = fs::path_abs(
+      str_glue(st_base_file),
+      start = st_base_dir),
+    sheet = "state_delay",
+    range = cell_limits(c(1, 1), c(NA, NA))) %>%
+    as_tibble() %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+  # save pre-processed file in archive for generation of past json files
+  # only last day of the year
+  if(format(data_day_date, "%m%d") == "1231") {
+    myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
+    write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+  }
+}
+
+# process data
+st_delay_data <- assign(mydataframe, df)
 
 st_delay_last_day <- st_delay_data %>%
   filter(FLIGHT_DATE == min(data_day_date,
@@ -2445,23 +2502,52 @@ save_json(st_punct_evo_app_j, "st_punct_evo_chart")
 
 ## DELAY ----
 ### Delay category ----
-st_delay_data <-  read_xlsx(
-  path  = fs::path_abs(
-    str_glue(st_base_file),
-    start = st_base_dir),
-  sheet = "state_delay",
-  range = cell_limits(c(1, 1), c(NA, NA))) %>%
-  as_tibble() %>%
-  mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+mydataframe <- "state_delay_raw"
+stakeholder <- "st"
 
-st_delay_cause_data <-  read_xlsx(
-  path  = fs::path_abs(
-    str_glue(st_base_file),
-    start = st_base_dir),
-  sheet = "state_delay_cause",
-  range = cell_limits(c(1, 1), c(NA, NA))) %>%
-  as_tibble() %>%
-  mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
+if (archive_mode & year(data_day_date) < year(today(tzone = "") +  days(-1))) {
+  myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+
+} else {
+  df <- read_xlsx(
+    path  = fs::path_abs(
+      str_glue(st_base_file),
+      start = st_base_dir),
+    sheet = "state_delay",
+    range = cell_limits(c(1, 1), c(NA, NA))) %>%
+    as_tibble() %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+}
+
+st_delay_data <- assign(mydataframe, df)
+
+mydataframe <- "state_delay_cause_raw"
+stakeholder <- "st"
+
+if (archive_mode & year(data_day_date) < year(today(tzone = "") +  days(-1))) {
+  myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+
+} else {
+  df <- read_xlsx(
+    path  = fs::path_abs(
+      str_glue(st_base_file),
+      start = st_base_dir),
+    sheet = "state_delay_cause",
+    range = cell_limits(c(1, 1), c(NA, NA))) %>%
+    as_tibble()  %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+  # save pre-processed file in archive for generation of past json files
+  # only last day of the year
+  if(format(data_day_date, "%m%d") == "1231") {
+    myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
+    write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+  }
+}
+
+st_delay_cause_data <- assign(mydataframe, df) %>%
   mutate(
     TDM_G = TDM_ARP_G + TDM_ERT_G,
     TDM_CS = TDM_ARP_CS + TDM_ERT_CS,

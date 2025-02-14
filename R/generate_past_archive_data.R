@@ -14,19 +14,20 @@ source(here("..", "mobile-app", "R", "queries_ap.R"))
 
 test_archive_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Project/DDP/AIU app/data_archive'
 # files_to_rename <- list.files(here(test_archive_dir, "ap"),
-#                               pattern = "ap_ap_des_data_week_raw",
-#                               full.names = TRUE)
+#                               pattern = "ap_st_des_data_y2d_raw",
+#                               full.names = FALSE)
 # new_filenames <- gsub("ap_ap_des_data_week_raw", "ap_ap_des_data_y2d_raw", files_to_rename)
 # file.rename(files_to_rename, new_filenames)
 
 # set period
-wef <- "2024-11-10"  #included in output
-til <- "2025-01-20"  #included in output
+wef <- "2024-12-31"  #included in output
+til <- "2024-12-31"  #included in output
 
-myquery_string <- "query_ap_ms_data_y2d_raw" # set the name of the query function here
+myquery_string <- "query_st_ao_data_day_raw" # set the name of the query function here
 myarchivefile <- paste0(str_replace(myquery_string, "query", ""), ".csv")
 stakeholder <- stringr::str_sub(myarchivefile, 2,
                                 regexpr("_", substr(myarchivefile, 2, nchar(myarchivefile))))
+# stakeholder <- "st"
 myquery <- function(mydate_string) {
   get(myquery_string)(mydate_string)
 }

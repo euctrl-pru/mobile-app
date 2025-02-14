@@ -1,5 +1,5 @@
 # daio ----
-query_state_daio <- function(mydate_string) {
+query_state_daio_raw <- function(mydate_string) {
   mydate <- date_sql_string(mydate_string)
   paste0("
 WITH
@@ -341,7 +341,7 @@ UNION ALL
 }
 
 # dai ----
-query_state_dai <- function(mydate_string) {
+query_state_dai_raw <- function(mydate_string) {
   mydate <- date_sql_string(mydate_string)
   paste0("
 WITH
@@ -730,7 +730,7 @@ DATA_COUNTRY_2 as
 }
 
 # state delay ----
-query_state_delay <- function(mydate_string) {
+query_state_delay_raw <- function(mydate_string) {
   mydate <- date_sql_string(mydate_string)
   paste0("
 WITH
@@ -1277,7 +1277,7 @@ select
 )
 }
 # state delay cause ----
-query_state_delay_cause <- function(mydate_string) {
+query_state_delay_cause_raw <- function(mydate_string) {
   mydate <- date_sql_string(mydate_string)
   paste0("
 WITH
