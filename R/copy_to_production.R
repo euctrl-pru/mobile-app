@@ -40,9 +40,26 @@ ao_file_status <- read_xlsx(path = fs::path_abs(str_glue(ao_base_file),start = a
                             sheet = "checks",
                             range = cell_limits(c(1, 5), c(2, 5))) %>% pull()
 
+ap_file_status <- read_xlsx(path = fs::path_abs(str_glue(ap_base_file),start = ap_base_dir),
+                            sheet = "checks",
+                            range = cell_limits(c(1, 5), c(2, 5))) %>% pull()
+
+# clean folder function
+clean_folder <- function(folder_address) {
+  files <- list.files(folder_address, full.names = TRUE)
+  files_to_delete <- files[basename(files) != ".keepme"]
+  file.remove(files_to_delete)
+}
 
 # define functions for data generation & copy ----
 generate_app_data <- function(data_day_date) {
+  # clean local folders
+  walk(c(st_local_data_folder,
+         nw_local_data_folder,
+         ao_local_data_folder,
+         ap_local_data_folder),
+       clean_folder)
+
   source(here("..", "mobile-app", "R", "generate_json_files_state.R"))
   source(here("..", "mobile-app", "R", "generate_json_files_nw.R"))
   source(here("..", "mobile-app", "R", "generate_json_files_ao.R"))
