@@ -20,29 +20,34 @@ destination_dir <- '//ihx-vdm05/LIVE_var_www_performance$/briefing'
 archive_mode <- FALSE
 
 if (archive_mode) {
-  wef <- "2024-03-02"  #included in output
-  til <- "2024-03-12"  #included in output
+  wef <- "2025-02-21"  #included in output
+  til <- "2025-02-21"  #included in output
   data_day_date <- seq(ymd(wef), ymd(til), by = "day")
 } else {
   data_day_date <- lubridate::today(tzone = "") +  days(-1)
 }
 
 # check data status ----
-nw_file_status <- read_xlsx(path = fs::path_abs(str_glue(nw_base_file),start = nw_base_dir),
-                            sheet = "Checks",
-                            range = cell_limits(c(1, 5), c(2, 5))) %>% pull()
 
-st_file_status <- read_xlsx(path = fs::path_abs(str_glue(st_base_file),start = st_base_dir),
-                            sheet = "checks",
-                            range = cell_limits(c(1, 5), c(2, 5))) %>% pull()
+files_to_read <- c(
+  here(nw_base_dir, nw_base_file),
+  here(st_base_dir, st_base_file),
+  here(ao_base_dir, ao_base_file),
+  here(ap_base_dir, ap_base_file)
+)
 
-ao_file_status <- read_xlsx(path = fs::path_abs(str_glue(ao_base_file),start = ao_base_dir),
-                            sheet = "checks",
-                            range = cell_limits(c(1, 5), c(2, 5))) %>% pull()
+check_status <- function(check_file) {
+  checK_last_date <- read_xlsx(check_file,
+           sheet = "checks",
+           range = cell_limits(c(1, 4), c(2, 4))) %>% pull()
+  return(checK_last_date == data_day_date )
+}
 
-ap_file_status <- read_xlsx(path = fs::path_abs(str_glue(ap_base_file),start = ap_base_dir),
-                            sheet = "checks",
-                            range = cell_limits(c(1, 5), c(2, 5))) %>% pull()
+data_status <- tryCatch({
+  prod(map_lgl(files_to_read, check_status)) == 1
+}, error = function(e) {
+  FALSE
+})
 
 # clean folder function
 clean_folder <- function(folder_address) {
@@ -125,7 +130,7 @@ process_app_data <- function(data_day_date) {
 
 
 # generate and copy app files ----
-if(archive_mode | (nw_file_status == "OK" & st_file_status == "OK" & ao_file_status == "OK")){
+if(archive_mode | data_status){
   # get helper functions and common data sets ----
   source(here("..", "mobile-app", "R", "helpers.R"))
   source(here("..", "mobile-app", "R", "get_common_data.R"))
@@ -141,7 +146,7 @@ if(archive_mode | (nw_file_status == "OK" & st_file_status == "OK" & ao_file_sta
 
 # send email ----
 ## email parameters ----
-if (nw_file_status == "OK" & st_file_status == "OK" & ao_file_status == "OK") {
+if (data_status) {
   sbj = "All app datasets copied successfully to folder"
   msg = "All good, relax!"
 
