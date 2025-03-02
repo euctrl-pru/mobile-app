@@ -2130,12 +2130,12 @@ save_json(st_apt_delay_j, "st_apt_ranking_delay")
 ## PUNTCUALITY ----
 ### Airport ----
 # raw data
-if(exists("apt_punct_raw") == FALSE) {
-  apt_punct_raw <- get_punct_data_apt()
+if(exists("st_apt_punct_raw") == FALSE) {
+  st_apt_punct_raw <- get_punct_data_apt()
 }
 
 # calc
-st_apt_punct_calc <- apt_punct_raw %>%
+st_apt_punct_calc <- st_apt_punct_raw %>%
   mutate(ISO_COUNTRY_CODE = if_else(substr(ARP_CODE, 1,2) == 'GC',
                                     'IC',
                                     ISO_COUNTRY_CODE ),

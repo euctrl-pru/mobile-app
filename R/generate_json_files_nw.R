@@ -2168,15 +2168,15 @@ st_rank_delay_j <- st_rank_delay %>% toJSON(., pretty = TRUE)
 save_json(st_rank_delay_j, "nw_ctry_ranking_delay")
 
 ## Airport punctuality ----
-if(exists("apt_punct_raw") == FALSE) {
-  apt_punct_raw <- get_punct_data_apt()
+if(exists("nw_apt_punct_raw") == FALSE) {
+  nw_apt_punct_raw <- get_punct_data_apt()
 }
 
-last_punctuality_day <- min(max(apt_punct_raw$DAY_DATE),
+last_punctuality_day <- min(max(nw_apt_punct_raw$DAY_DATE),
                             data_day_date, na.rm = TRUE)
 
 ### calc
-apt_punct_calc <- apt_punct_raw %>%
+apt_punct_calc <- nw_apt_punct_raw %>%
   group_by(DAY_DATE) %>%
   arrange(desc(ARR_PUNCTUALITY_PERCENTAGE), ARP_NAME) %>%
   mutate(RANK = row_number()) %>%
