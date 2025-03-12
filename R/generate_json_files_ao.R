@@ -107,14 +107,33 @@ ao_billed_for_json <- ao_billing %>%
   )
 
 #### Traffic data ----
-ao_traffic_delay_data <-  read_xlsx(
-  path  = fs::path_abs(
-    str_glue(ao_base_file),
-    start = ao_base_dir),
-  sheet = "ao_traffic_delay",
-  range = cell_limits(c(1, 1), c(NA, NA))) %>%
-  as_tibble() %>%
-  mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+mydataframe <- "ao_traffic_delay_raw"
+stakeholder <- "ao"
+
+if (archive_mode & year(data_day_date) < year(today(tzone = "") +  days(-1))) {
+  myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+
+} else {
+
+  df <-  read_xlsx(
+    path  = fs::path_abs(
+      str_glue(ao_base_file),
+      start = ao_base_dir),
+    sheet = "ao_traffic_delay",
+    range = cell_limits(c(1, 1), c(NA, NA))) %>%
+    as_tibble() %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+  # save pre-processed file in archive for generation of past json files
+  # only last day of the year
+  if(format(data_day_date, "%m%d") == "1231") {
+    myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
+    write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+  }
+}
+
+ao_traffic_delay_data <- assign(mydataframe, df)
 
 ao_traffic_delay_last_day <- ao_traffic_delay_data %>%
   filter(FLIGHT_DATE == min(data_day_date,
@@ -217,50 +236,10 @@ query <- "
       WITH
 
       AO_LIST AS (
-      SELECT ao_code,ao_name,ao_grp_code,ao_grp_name
-      FROM prudev.v_covid_dim_ao
-      where ao_grp_code in ('RYR_GRP',
-                      'EZY_GRP',
-                      'THY_GRP',
-                      'DLH_GRP',
-                      'AFR_GRP',
-                      'WZZ_GRP',
-                      'KLM_GRP',
-                      'BAW_GRP',
-                      'SAS_GRP',
-                      'VLG',
-                      'PGT',
-                      'EWG_GRP',
-                      'SWR_GRP',
-                      'NAX_GRP',
-                      'IBE_GRP',
-                      'ITY',
-                      'TUI_GRP',
-                      'AEE_GRP',
-                      'TAP_GRP',
-                      'WIF',
-                      'AUA',
-                      'LOT',
-                      'EXS',
-                      'FIN',
-                      'BCS_GRP',
-                      'SXS',
-                      'QTR',
-                      'ANE',
-                      'UAE',
-                      'EIN_GRP',
-                      'VOE',
-                      'AEA',
-                      'RAM',
-                      'BEL',
-                      'NJE',
-                      'UAL',
-                      'LOG',
-                      'SEH',
-                      'DAL',
-                      'ASL'
-                      )
+        SELECT *
+        FROM pruprod.v_aiu_app_dim_ao_grp
        )
+
       , AO_DAY AS (
       SELECT
               a.ao_code,
@@ -274,7 +253,7 @@ query <- "
               t.day_type,
               t.day_of_week_nb AS day_of_week,
               t.day_date
-      FROM AO_LIST a, pru_time_references t
+      FROM AO_LIST a, prudev.pru_time_references t
       WHERE
          t.day_date >= to_date('24-12-2018','DD-MM-YYYY')
          AND t.day_date < trunc(sysdate)
@@ -286,7 +265,7 @@ query <- "
       left join LDW_VDM.VIEW_FAC_PUNCTUALITY_AO_DAY b on a.ao_code = b.ICAO_CODE and a.day_date = b.DATA_DATE
    "
 
-ao_punct_raw <- export_query(query) %>%
+ao_punct_raw <- export_query(query, schema = "PRU_READ") %>%
   as_tibble() %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
