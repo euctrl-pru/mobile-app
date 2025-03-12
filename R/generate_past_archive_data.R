@@ -23,8 +23,8 @@ test_archive_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Proje
 # file.rename(files_to_rename, new_filenames)
 
 # set period
-wef <- "2025-02-13"  #included in output
-til <- "2025-02-28"  #included in output
+wef <- "2024-12-31"  #included in output
+til <- "2025-12-31"  #included in output
 
 # functions list -----
 # get functions list for multiple queries
@@ -36,11 +36,13 @@ get_functions_from_script <- function(script_path) {
   funcs[sapply(funcs, function(f) is.function(get(f, env)))] # Filter functions
 }
 
-stakeholder <- 'ap' # set the 2 letter stakeholder to retrieve query list
+stakeholder <- 'ao' # set the 2 letter stakeholder to retrieve query list
 script_path <- here("R", paste0("queries_", stakeholder, ".R"))
 function_list <- get_functions_from_script(script_path)
 #remove queries I don't need executed
-function_list <- function_list[!sapply(function_list, function(x) x %in% c("query_ap_traffic",
+function_list <- function_list[!sapply(function_list, function(x) x %in% c("query_ao_traffic_delay_raw",
+
+                                                                           "query_ap_traffic",
                                                                            "query_ap_punct",
 
                                                                            "query_state_daio_raw",
@@ -49,11 +51,11 @@ function_list <- function_list[!sapply(function_list, function(x) x %in% c("quer
                                                                            "query_state_delay_cause_raw"))]
 
 # create archive -----
-all_stk_queries <- TRUE
+all_stk_queries <- FALSE
 if (all_stk_queries) {
   myquery_string <- function_list
   } else {
-  myquery_string <- "query_nw_apt_y2d_raw"
+  myquery_string <- "query_ao_traffic_delay_raw"
   }
 
 
@@ -70,7 +72,7 @@ generate_archive <- function (myquery_string) {
     mydate <- as.Date(mydate_string)
     mydate_prefix <-format(mydate, "%Y%m%d")
     #  myquery <- query_state_ao_day(mydate_string)
-    df <- export_query(myquery(mydate_string)) %>%
+    df <- export_query(myquery(mydate_string), schema="PRU_READ") %>%
       as_tibble() %>%
       mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
