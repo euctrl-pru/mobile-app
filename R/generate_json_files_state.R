@@ -20,6 +20,8 @@ source(here("..", "mobile-app", "R", "helpers.R")) # so it can be launched from 
 # parameters ----
 source(here("..", "mobile-app", "R", "params.R")) # so it can be launched from the checkupdates script in grounded aircraft
 
+# archive_mode <- TRUE
+
 # archive mode for past dates
 if (exists("archive_mode") == FALSE) {archive_mode <- FALSE}
 if (exists("data_day_date") == FALSE) {
@@ -2158,6 +2160,7 @@ st_apt_punct_calc <- st_apt_punct_raw %>%
   )  %>%
   ungroup()
 
+
 #### day ----
 st_apt_punct_dy_all <- st_apt_punct_calc %>%
   group_by(iso_2letter, DAY_DATE) %>%
@@ -2179,7 +2182,12 @@ st_apt_punct_dy_all <- st_apt_punct_calc %>%
   mutate(DY_RANK = rank(desc(DY_APT_ARR_PUNCT), ties.method = "max")) %>%
   group_by(iso_2letter) %>%
   arrange(iso_2letter, desc(DY_APT_ARR_PUNCT), DY_APT_NAME) %>%
-  ungroup()
+  ungroup()  %>%
+  # iceland exception
+  mutate(
+    DY_APT_ARR_PUNCT_DIF_PREV_YEAR = if_else(iso_2letter == "IS" & year(DY_TO_DATE) < 2025, NA, DY_APT_ARR_PUNCT_DIF_PREV_YEAR)
+  )
+
 
 st_apt_punct_dy <- st_apt_punct_dy_all %>%
   select(
@@ -2217,6 +2225,10 @@ st_apt_punct_wk <- st_apt_punct_calc %>%
   group_by(iso_2letter) %>%
   arrange(iso_2letter, desc(WK_APT_ARR_PUNCT), WK_APT_NAME) %>%
   ungroup() %>%
+  # iceland exception
+  mutate(
+    WK_APT_ARR_PUNCT_DIF_PREV_YEAR = if_else(iso_2letter == "IS" & year(WK_TO_DATE) < 2025, NA, WK_APT_ARR_PUNCT_DIF_PREV_YEAR)
+  ) %>%
   select(
     ST_RANK,
     WK_RANK,
@@ -2233,7 +2245,7 @@ st_apt_punct_y2d <- st_apt_punct_calc %>%
   mutate(MONTH_DAY = as.numeric(format(DAY_DATE, format = "%m%d"))) %>%
   filter(MONTH_DAY <= as.numeric(format(last_day_punct, format = "%m%d"))) %>%
   mutate(YEAR = as.numeric(format(DAY_DATE, format="%Y"))) %>%
-  group_by(state, ARP_NAME, ICAO_CODE, YEAR) %>%
+  group_by(state, ARP_NAME, ARP_CODE, YEAR) %>%
   summarise (Y2D_APT_ARR_PUNCT = sum(ARR_PUNCTUAL_FLIGHTS, na.rm=TRUE) / sum(ARR_SCHEDULE_FLIGHT, na.rm=TRUE)
   ) %>%
   ungroup() %>%
@@ -2245,11 +2257,10 @@ st_apt_punct_y2d <- st_apt_punct_calc %>%
     ) %>%
   ungroup() %>%
   group_by(ARP_NAME) %>%
-  arrange(YEAR) %>%
+  arrange(ARP_NAME, YEAR) %>%
   mutate(
-    # Y2D_RANK_DIF_PREV_YEAR = lag(RANK, 1) - RANK,
-    Y2D_APT_ARR_PUNCT_DIF_PREV_YEAR = (Y2D_APT_ARR_PUNCT - lag(Y2D_APT_ARR_PUNCT, 1)),
-    Y2D_APT_ARR_PUNCT_DIF_2019 = (Y2D_APT_ARR_PUNCT - lag(Y2D_APT_ARR_PUNCT, max(YEAR) - 2019))
+    Y2D_APT_ARR_PUNCT_DIF_PREV_YEAR = (Y2D_APT_ARR_PUNCT - lag(Y2D_APT_ARR_PUNCT, 1))
+    , Y2D_APT_ARR_PUNCT_DIF_2019 = (Y2D_APT_ARR_PUNCT - lag(Y2D_APT_ARR_PUNCT, max(YEAR) - 2019))
   )  %>%
   ungroup() %>%
   filter(YEAR == max(YEAR)) %>%
@@ -2265,7 +2276,7 @@ st_apt_punct_y2d <- st_apt_punct_calc %>%
   ungroup() %>%
   # iceland exception
   mutate(
-    Y2D_APT_ARR_PUNCT_DIF_PREV_YEAR = if_else(state == "Iceland" & YEAR < 2025, NA, Y2D_APT_ARR_PUNCT_DIF_PREV_YEAR),
+    Y2D_APT_ARR_PUNCT_DIF_PREV_YEAR = if_else(state == "Iceland" & year(Y2D_TO_DATE) < 2025, NA, Y2D_APT_ARR_PUNCT_DIF_PREV_YEAR),
     Y2D_APT_ARR_PUNCT_DIF_2019 = if_else(state == "Iceland", NA, Y2D_APT_ARR_PUNCT_DIF_2019)
   ) %>%
   select(
