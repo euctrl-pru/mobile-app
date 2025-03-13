@@ -1895,7 +1895,8 @@ WITH stat_aua_list
                                 'UKBVACC',
                                 'UKDVACC',
                                 'UKLVACC',
-                                'UKOVACC'
+                                'UKOVACC',
+                                'BIRDACC'
                                 ,'LQSBACC')
 
   ),
@@ -2201,7 +2202,8 @@ query_nw_acc_delay_week_raw <- function(mydate_string) {
                                 'UKBVACC',
                                 'UKDVACC',
                                 'UKLVACC',
-                                'UKOVACC'
+                                'UKOVACC',
+                                'BIRDACC'
                                 ,'LQSBACC')
 
   ),
@@ -2539,7 +2541,8 @@ WITH stat_aua_list
                                 'UKBVACC',
                                 'UKDVACC',
                                 'UKLVACC',
-                                'UKOVACC'
+                                'UKOVACC',
+                                'BIRDACC'
                                 ,'LQSBACC')
 
   )
@@ -2678,7 +2681,7 @@ LIST_AIRPORT as
 ,'EGLC','EGPD','LFBO','LGTS','LICC','LTAC','LTFJ','UKBB','EBCI',
 'EDDK','EDDN','EGAA','EGPF','GCLP','LCLK','LGIR','LICJ','LKPR','LMML','LTAI','EDDH','EGGD','EPKK','ESSB','EVRA','GCXO','LFBD','LFLL','LROP','EGNX','EGPH',
 'GMMX','LEVC','LEZL','LYBE','LPPR','EDDB','GMMN','LIRA','LPFR','EGBB','ELLX','LEAL','LHBP','LIPE','ENZV','LEMG','LIML','EGGW','ENVA','ENBR','EDDS','GCTS','LFSB',
-'EDDV','ESGG','LFRS','LEIB','LFML','LEBB','LFPB','LIPZ','LIRN','GCRR','LTFM','LTBA','LATI', 'UDYZ', 'LDZA', 'EETN', 'LJLJ', 'LZIB', 'LUKK', 'LWSK','LYPG', 'LQSA','UGTB')
+'EDDV','ESGG','LFRS','LEIB','LFML','LEBB','LFPB','LIPZ','LIRN','GCRR','LTFM','LTBA','LATI', 'UDYZ', 'LDZA', 'EETN', 'LJLJ', 'LZIB', 'LUKK', 'LWSK','LYPG', 'LQSA','UGTB', 'BIKF', 'BIRK')
  )
  ,
 
