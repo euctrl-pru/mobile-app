@@ -23,8 +23,9 @@ test_archive_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Proje
 # file.rename(files_to_rename, new_filenames)
 
 # set period
-wef <- "2024-12-31"  #included in output
-til <- "2025-12-31"  #included in output
+wef <- "2024-01-01"  #included in output
+# til <- "2024-01-01"  #included in output
+til <- "2025-03-19"  #included in output
 
 # functions list -----
 # get functions list for multiple queries
@@ -36,14 +37,18 @@ get_functions_from_script <- function(script_path) {
   funcs[sapply(funcs, function(f) is.function(get(f, env)))] # Filter functions
 }
 
-stakeholder <- 'ao' # set the 2 letter stakeholder to retrieve query list
+stakeholder <- 'ap' # set the 2 letter stakeholder to retrieve query list
 script_path <- here("R", paste0("queries_", stakeholder, ".R"))
-function_list <- get_functions_from_script(script_path)
-#remove queries I don't need executed
-function_list <- function_list[!sapply(function_list, function(x) x %in% c("query_ao_traffic_delay_raw",
+function_list_full <- get_functions_from_script(script_path)
+
+#remove queries I only need once a year
+function_list <- function_list_full[!sapply(function_list_full, function(x) x %in% c("query_ao_traffic_delay_raw",
 
                                                                            "query_ap_traffic",
                                                                            "query_ap_punct",
+##temp exclusion
+# 'query_ap_ap_des_data_y2d_raw', 'query_ap_ap_des_data_week_raw', 'query_ap_ap_des_data_day_raw',
+# 'query_ap_ao_data_y2d_raw', 'query_ap_ao_data_week_raw', 'query_ap_ao_data_day_raw',
 
                                                                            "query_state_daio_raw",
                                                                            "query_state_dai_raw",
@@ -51,11 +56,15 @@ function_list <- function_list[!sapply(function_list, function(x) x %in% c("quer
                                                                            "query_state_delay_cause_raw"))]
 
 # create archive -----
+# set to true to execute all queries for the stakeholder
+# set to false to execute only the query below
 all_stk_queries <- FALSE
 if (all_stk_queries) {
   myquery_string <- function_list
+  myquery_string_full <- function_list_full
   } else {
-  myquery_string <- "query_ao_traffic_delay_raw"
+  myquery_string <- "query_ao_apt_arr_delay_raw"
+  myquery_string_full <- ''
   }
 
 
@@ -71,18 +80,23 @@ generate_archive <- function (myquery_string) {
   cucu <- function(mydate_string) {
     mydate <- as.Date(mydate_string)
     mydate_prefix <-format(mydate, "%Y%m%d")
-    #  myquery <- query_state_ao_day(mydate_string)
-    df <- export_query(myquery(mydate_string), schema="PRU_READ") %>%
+    myschema <- if_else(stakeholder == "ao" |
+                          stakeholder == "ap", "PRU_READ", "PRU_DEV")
+
+    df <- export_query(myquery(mydate_string), schema=myschema) %>%
       as_tibble() %>%
       mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
     write_csv(df,
               here(test_archive_dir, stakeholder, paste0(mydate_prefix, myarchivefile))
     )
+
+    print(paste0(myquery_string, "-", mydate))
   }
 
-  seq(ymd(wef), ymd(til), by = "day") |>
+  seq(ymd(til), ymd(wef), by = "day") |>
     walk(.f = cucu)
 }
 
-walk(myquery_string, generate_archive)
+walk(if_else(format(mydate, "%m%d") = "1231", myquery_string_full, myquery_string),
+     generate_archive)

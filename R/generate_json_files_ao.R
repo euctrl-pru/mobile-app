@@ -112,7 +112,7 @@ stakeholder <- "ao"
 
 if (archive_mode & year(data_day_date) < year(today(tzone = "") +  days(-1))) {
   myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
 } else {
 
@@ -669,7 +669,7 @@ myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
 if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
 } else {
   df <- read_xlsx(
@@ -728,7 +728,7 @@ myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
 if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
 } else {
   df <- read_xlsx(
@@ -785,7 +785,7 @@ myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
 if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
 } else {
   df <- read_xlsx(
@@ -932,7 +932,7 @@ myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
 if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
 } else {
   df <- read_xlsx(
@@ -991,7 +991,7 @@ myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
 if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
 } else {
   df <- read_xlsx(
@@ -1049,7 +1049,7 @@ myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
 if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
 } else {
   df <- read_xlsx(
@@ -1193,7 +1193,7 @@ myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
 if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
 } else {
   df <- read_xlsx(
@@ -1252,7 +1252,7 @@ myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
 if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
 } else {
   df <- read_xlsx(
@@ -1311,7 +1311,7 @@ myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
 if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
 } else {
   df <- read_xlsx(
@@ -1452,10 +1452,11 @@ save_json(ao_apt_pair_data_j, "ao_apt_pair_ranking_traffic")
 
 ## DELAY ----
 ### Arrival airport ----
+myarchivefile <- "_ao_apt_arr_delay_raw.csv"
+stakeholder <- str_sub(myarchivefile, 2,3)
+
 if (archive_mode) {
-  myarchivefile <- "_ao_apt_arr_delay_raw.csv"
-  stakeholder <- str_sub(myarchivefile, 2,3)
-  ao_apt_arr_delay_raw <-  read_csv(here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile)))
+  ao_apt_arr_delay_raw <-  read_csv(here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile)), show_col_types = FALSE)
 
 } else {
   ao_apt_arr_delay_raw <- read_xlsx(
@@ -1467,7 +1468,7 @@ if (archive_mode) {
     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
   # save pre-processed file in archive for generation of past json files
-  write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+  write_csv(df, here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile)))
 }
 
 #### day ----

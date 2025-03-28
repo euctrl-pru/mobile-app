@@ -20,8 +20,8 @@ destination_dir <- '//ihx-vdm05/LIVE_var_www_performance$/briefing'
 archive_mode <- FALSE
 
 if (archive_mode) {
-  wef <- "2025-02-21"  #included in output
-  til <- "2025-02-21"  #included in output
+  wef <- "2024-01-01"  #included in output
+  til <- "2024-05-01"  #included in output
   data_day_date <- seq(ymd(wef), ymd(til), by = "day")
 } else {
   data_day_date <- lubridate::today(tzone = "") +  days(-1)
@@ -141,6 +141,7 @@ if(archive_mode | data_status){
     data_day_date <- data_day_date_temp[[i]]
     # generate and copy data for date sequence ----
     walk(data_day_date, .f = process_app_data)
+    print(data_day_date)
   }
 }
 

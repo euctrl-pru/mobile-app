@@ -540,7 +540,7 @@ myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
 if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
 } else {
   df <- read_xlsx(
@@ -596,7 +596,7 @@ myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
 if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
 } else {
   df <- read_xlsx(
@@ -654,7 +654,7 @@ myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
 if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
 } else {
   df <- read_xlsx(
@@ -787,7 +787,7 @@ myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
 if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
 } else {
   df <- read_xlsx(
@@ -843,7 +843,7 @@ myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
 if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
 } else {
   df <- read_xlsx(
@@ -901,7 +901,7 @@ myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
 if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
 } else {
   df <- read_xlsx(
@@ -1032,7 +1032,7 @@ myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
 if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
 } else {
   df <- read_xlsx(
@@ -1088,7 +1088,7 @@ myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
 if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
 } else {
   df <- read_xlsx(
@@ -1146,7 +1146,7 @@ myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
 if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
 } else {
   df <- read_xlsx(
@@ -1284,7 +1284,7 @@ myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
 if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
 } else {
   df <- read_xlsx(
@@ -1342,7 +1342,7 @@ myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
 if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
 } else {
   df <- read_xlsx(
@@ -1407,7 +1407,7 @@ myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
 if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile))
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
 } else {
   df <- read_xlsx(

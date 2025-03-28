@@ -684,7 +684,7 @@ get_ao_billing_data <- function() {
 get_punct_data_spain <- function() {
 
   temp_data_archive <-'//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Project/DDP/AIU app/data_archive/'
-  punct_data_spain_prev <- read_csv(paste0(temp_data_archive, 'punct_data_spain.csv'))
+  punct_data_spain_prev <- read_csv(paste0(temp_data_archive, 'punct_data_spain.csv'), show_col_types = FALSE)
 
   max_date_prev <- max(punct_data_spain_prev$DAY_DATE, na.rm = TRUE)
 

@@ -35,7 +35,7 @@ as
        t.WEEK,
        TO_CHAR ( t.day_date, 'd')  AS day_of_week,
        TO_CHAR ( t.day_date, 'mmdd') AS MMDD
- from LIST_AIRPORT a, pru_time_references t
+ from LIST_AIRPORT a, prudev.pru_time_references t
 where
       t.day_date >= to_date('24-12-2018','dd-mm-yyyy')
       and t.year <= extract(year from ", mydate, "-1)
@@ -45,7 +45,7 @@ where
 
  ttf_dep as(
 SELECT adep_day_adep, sum(coalesce(adep_day_all_trf,0)) AS DEP,f.adep_DAY_FLT_DATE
-              FROM  v_aiu_agg_dep_day f
+              FROM  prudev.v_aiu_agg_dep_day f
               where f.adep_DAY_FLT_DATE >=to_date('24-12-2018','dd-mm-yyyy')
               and adep_day_adep in (select arp_code from list_airport)
               group by  adep_day_adep ,f.adep_DAY_FLT_DATE
@@ -54,7 +54,7 @@ SELECT adep_day_adep, sum(coalesce(adep_day_all_trf,0)) AS DEP,f.adep_DAY_FLT_DA
 
  ttf_arr as (
                   SELECT ades_day_ades_ctfm, sum(coalesce(ades_day_all_trf,0)) AS ARR,ades_DAY_FLT_DATE
-              FROM  v_aiu_agg_arr_day
+              FROM  prudev.v_aiu_agg_arr_day
               where ades_DAY_FLT_DATE >=to_date('24-12-2018','dd-mm-yyyy')
            and ades_day_ades_ctfm in (select arp_code from list_airport)
            group by ades_day_ades_ctfm,ades_DAY_FLT_DATE
@@ -401,7 +401,7 @@ as
   t.WEEK,
   TO_CHAR ( t.day_date, 'd')  AS day_of_week,
   TO_CHAR ( t.day_date, 'mmdd') AS MMDD
-  from LIST_AIRPORT a, pru_time_references t
+  from LIST_AIRPORT a, prudev.pru_time_references t
   where
   t.day_date >= to_date('24-12-2018','dd-mm-yyyy')
 ),
@@ -421,7 +421,7 @@ AS
   u.day_name,
   u.WEEK,
   u.day_of_week
-  FROM AIRPORT_DAY u left join v_aiu_agg_arr_day f
+  FROM AIRPORT_DAY u left join prudev.v_aiu_agg_arr_day f
   on trunc(f.ades_DAY_FLT_DATE) = u.day_date
   and f.ades_day_ades_ctfm = u.arp_code
   GROUP BY
@@ -763,7 +763,7 @@ AS
   tdm_15_arp_dep_w,
   SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('NA') AND a.MP_REGU_LOC_CAT = 'Departure' AND a.agg_flt_delay_interval IN (']15,30]', ']30,60]', '> 60') THEN  a.agg_flt_total_delay END),0))
   tdm_15_arp_dep_na
-  FROM v_aiu_agg_flt_flow a
+  FROM prudev.v_aiu_agg_flt_flow a
   WHERE
   a.agg_flt_a_first_entry_date >= to_date('24-12-2018','dd-mm-yyyy')
   and a.AGG_FLT_MP_REGU_LOC_TY = 'Airport'
@@ -1115,7 +1115,7 @@ LIST_AIRPORT  as
               t.day_type,
               t.day_of_week_nb AS day_of_week,
               t.day_date
-      FROM LIST_AIRPORT a, pru_time_references t
+      FROM LIST_AIRPORT a, prudev.pru_time_references t
       WHERE
          t.day_date >= to_date('24-12-2018','DD-MM-YYYY')
          AND t.day_date < ", mydate, "
@@ -1178,7 +1178,7 @@ SELECT
         nvl(d.ao_grp_code,'Unidentified')ao_grp_code, nvl(d.ao_grp_name,'Unidentified') ao_grp_name,
         TRUNC(A.flt_a_asp_prof_time_entry) ENTRY_DATE,
         A.flt_uid
-FROM v_aiu_flt A
+FROM prudev.v_aiu_flt A
      left outer  join DIM_APT b ON  ( A.flt_dep_ad=  b.arp_code)
      left outer join DIM_APT C  ON  (A.flt_ctfm_ades = C.arp_code)
      left outer join DIM_AO d  on ( (a.ao_icao_id = d.ao_code ) )
@@ -1356,7 +1356,7 @@ SELECT
         nvl(d.ao_grp_code,'Unidentified')ao_grp_code, nvl(d.ao_grp_name,'Unidentified') ao_grp_name,
         TRUNC(A.flt_a_asp_prof_time_entry) ENTRY_DATE,
         A.flt_uid
-FROM v_aiu_flt A
+FROM prudev.v_aiu_flt A
      left outer  join DIM_APT b ON  ( A.flt_dep_ad=  b.arp_code)
      left outer join DIM_APT C  ON  (A.flt_ctfm_ades = C.arp_code)
      left outer join DIM_AO d  on ( (a.ao_icao_id = d.ao_code ) )
@@ -1539,7 +1539,7 @@ DATA_DAY as
         nvl(d.ao_grp_code,'UNKNOWN')ao_grp_code, nvl(d.ao_grp_name,'UNKNOWN') ao_grp_name,
         TRUNC(A.flt_a_asp_prof_time_entry) ENTRY_DATE,
         A.flt_uid
-FROM v_aiu_flt A
+FROM prudev.v_aiu_flt A
      left outer  join DIM_APT b ON  ( A.flt_dep_ad=  b.arp_code)
      left outer join DIM_APT C  ON  (A.flt_ctfm_ades = C.arp_code)
      left outer join DIM_AO d  on ( (a.ao_icao_id = d.ao_code ) )
@@ -1664,8 +1664,8 @@ DIM_AO
 
 DIM_APT
  as ( select code as arp_code, dashboard_name as arp_name,  b.aiu_iso_country_name as iso_ct_name, a.iso_country_code as iso_ct_code
- from  pru_airport a
- left join pru_country_iso b on a.iso_country_code = b.ec_iso_country_code
+ from  prudev.pru_airport a
+ left join prudev.pru_country_iso b on a.iso_country_code = b.ec_iso_country_code
  ),
 
 LIST_APT as
@@ -1679,7 +1679,7 @@ SELECT flt_uid,
        a.flt_dep_ad dep_ap ,a.flt_ctfm_ades arr_ap,
        A.ao_icao_id
 
-  FROM v_aiu_flt a
+  FROM prudev.v_aiu_flt a
  WHERE       (
                      (     A.flt_lobt >= ", mydate, " -1 -1
                         AND A.flt_lobt < ", mydate, "-0
@@ -1812,8 +1812,8 @@ DIM_AO
 
 DIM_APT
  as ( select code as arp_code, dashboard_name as arp_name,  b.aiu_iso_country_name as iso_ct_name, a.iso_country_code as iso_ct_code
- from  pru_airport a
- left join pru_country_iso b on a.iso_country_code = b.ec_iso_country_code
+ from  prudev.pru_airport a
+ left join prudev.pru_country_iso b on a.iso_country_code = b.ec_iso_country_code
  ),
 
 LIST_APT as
@@ -1826,7 +1826,7 @@ SELECT flt_uid,
        a.flt_dep_ad dep_ap ,a.flt_ctfm_ades arr_ap,
        A.ao_icao_id
 
-  FROM v_aiu_flt a
+  FROM prudev.v_aiu_flt a
  WHERE       (
                      (     A.flt_lobt >= ", mydate, " -7 -1
                         AND A.flt_lobt < ", mydate, "-0
@@ -1962,8 +1962,8 @@ DIM_AO
 
 DIM_APT
  as ( select code as arp_code, dashboard_name as arp_name,  b.aiu_iso_country_name as iso_ct_name, a.iso_country_code as iso_ct_code
- from  pru_airport a
- left join pru_country_iso b on a.iso_country_code = b.ec_iso_country_code
+ from  prudev.pru_airport a
+ left join prudev.pru_country_iso b on a.iso_country_code = b.ec_iso_country_code
  ),
 
 LIST_APT as
@@ -1977,7 +1977,7 @@ SELECT flt_uid,
        a.flt_dep_ad dep_ap ,a.flt_ctfm_ades arr_ap,
        A.ao_icao_id
 
-  FROM v_aiu_flt a
+  FROM prudev.v_aiu_flt a
  WHERE
      A.flt_lobt>= TO_DATE ('01-01-2019', 'dd-mm-yyyy') -1  AND A.flt_lobt < ", mydate, "
      AND a.flt_a_asp_prof_time_entry >= TO_DATE ('01-01-2019', 'dd-mm-yyyy')
@@ -2077,7 +2077,7 @@ DIM_AO
 
 DIM_APT
  as ( select code as arp_code, dashboard_name as arp_name
- from  pru_airport a
+ from  prudev.pru_airport a
  ),
 
 LIST_APT as
@@ -2091,7 +2091,7 @@ SELECT flt_uid,
        a.flt_dep_ad dep_ap ,a.flt_ctfm_ades arr_ap,
        A.ao_icao_id
 
-  FROM v_aiu_flt a
+  FROM prudev.v_aiu_flt a
  WHERE       (
                      (     A.flt_lobt >= ", mydate, " -1 -1
                         AND A.flt_lobt < ", mydate, "-0
@@ -2223,7 +2223,7 @@ DIM_AO
 
 DIM_APT
  as ( select code as arp_code, dashboard_name as arp_name
- from  pru_airport a
+ from  prudev.pru_airport a
  ),
 
 LIST_APT as
@@ -2237,7 +2237,7 @@ SELECT flt_uid,
        a.flt_dep_ad dep_ap ,a.flt_ctfm_ades arr_ap,
        A.ao_icao_id
 
-  FROM v_aiu_flt a
+  FROM prudev.v_aiu_flt a
  WHERE       (
                      (     A.flt_lobt >= ", mydate, " -7 -1
                         AND A.flt_lobt < ", mydate, "-0
@@ -2373,7 +2373,7 @@ DIM_AO
 
 DIM_APT
  as ( select code as arp_code, dashboard_name as arp_name
- from  pru_airport a
+ from  prudev.pru_airport a
  ),
 
 LIST_APT as
@@ -2387,7 +2387,7 @@ SELECT flt_uid,
        a.flt_dep_ad dep_ap ,a.flt_ctfm_ades arr_ap,
        A.ao_icao_id
 
-  FROM v_aiu_flt a
+  FROM prudev.v_aiu_flt a
  WHERE
      A.flt_lobt>= TO_DATE ('01-01-2019', 'dd-mm-yyyy') -1  AND A.flt_lobt < ", mydate, "
      AND a.flt_a_asp_prof_time_entry >= TO_DATE ('01-01-2019', 'dd-mm-yyyy')
@@ -2513,7 +2513,7 @@ SELECT
         TRUNC(A.flt_a_asp_prof_time_entry) ENTRY_DATE,
         coalesce(d.market_segment,'Other Types') market_segment,
         A.flt_uid
-FROM v_aiu_flt_mark_seg A
+FROM prudev.v_aiu_flt_mark_seg A
      left outer  join DIM_APT b ON  ( A.flt_dep_ad=  b.arp_code)
      left outer join DIM_APT C  ON  (A.flt_ctfm_ades = C.arp_code)
      left outer join dim_market_segment   d  ON (a.SK_FLT_TYPE_RULE_ID = d.SK_FLT_TYPE_RULE_ID )
@@ -2699,7 +2699,7 @@ SELECT
         TRUNC(A.flt_a_asp_prof_time_entry) ENTRY_DATE,
         coalesce(d.market_segment,'Other Types') market_segment,
         A.flt_uid
-FROM v_aiu_flt_mark_seg A
+FROM prudev.v_aiu_flt_mark_seg A
      left outer  join DIM_APT b ON  ( A.flt_dep_ad=  b.arp_code)
      left outer join DIM_APT C  ON  (A.flt_ctfm_ades = C.arp_code)
      left outer join dim_market_segment   d  ON (a.SK_FLT_TYPE_RULE_ID = d.SK_FLT_TYPE_RULE_ID )
@@ -2889,7 +2889,7 @@ SELECT
         TRUNC(A.flt_a_asp_prof_time_entry) ENTRY_DATE,
         coalesce(d.market_segment,'Other Types') market_segment,
         A.flt_uid
-FROM v_aiu_flt_mark_seg A
+FROM prudev.v_aiu_flt_mark_seg A
      left outer  join DIM_APT b ON  ( A.flt_dep_ad=  b.arp_code)
      left outer join DIM_APT C  ON  (A.flt_ctfm_ades = C.arp_code)
      left outer join dim_market_segment   d  ON (a.SK_FLT_TYPE_RULE_ID = d.SK_FLT_TYPE_RULE_ID )
