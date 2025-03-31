@@ -102,17 +102,34 @@ nw_billed_json <- nw_billed_for_json %>%
 
 ## Network traffic ----
 # traffic data
-nw_traffic_data <- read_xlsx(
-  path = fs::path_abs(
-    str_glue(nw_base_file),
-    start = nw_base_dir
-  ),
-  sheet = "NM_Daily_Traffic_All",
-  range = cell_limits(c(2, 1), c(NA, 39))
-) %>%
-  as_tibble() %>%
-  mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+mydataframe <- "nw_traffic_data"
+stakeholder <- "nw"
 
+if (archive_mode & year(data_day_date) < year(today(tzone = "") +  days(-1))) {
+  myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
+
+} else {
+  df <- read_xlsx(
+    path = fs::path_abs(
+      str_glue(nw_base_file),
+      start = nw_base_dir
+    ),
+    sheet = "NM_Daily_Traffic_All",
+    range = cell_limits(c(2, 1), c(NA, 39))
+  ) %>%
+    as_tibble() %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+  # save pre-processed file in archive for generation of past json files
+  # only last day of the year
+  if(format(data_day_date, "%m%d") == "1231") {
+    myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
+    write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+  }
+}
+
+nw_traffic_data <- assign(mydataframe, df)
 
 # get data for last date
 nw_traffic_last_day <- nw_traffic_data %>%
@@ -143,16 +160,35 @@ nw_traffic_json <- nw_traffic_for_json %>%
 
 ## Network delay ----
 # delay data
-nw_delay_data <- read_xlsx(
-  path = fs::path_abs(
-    str_glue(nw_base_file),
-    start = nw_base_dir
-  ),
-  sheet = "NM_Daily_Delay_All",
-  range = cell_limits(c(2, 1), c(NA, 39))
-) %>%
-  as_tibble() %>%
-  mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+mydataframe <- "nw_delay_data"
+stakeholder <- "nw"
+
+if (archive_mode & year(data_day_date) < year(today(tzone = "") +  days(-1))) {
+  myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
+
+} else {
+  df <-  read_xlsx(
+    path = fs::path_abs(
+      str_glue(nw_base_file),
+      start = nw_base_dir
+    ),
+    sheet = "NM_Daily_Delay_All",
+    range = cell_limits(c(2, 1), c(NA, 39))
+  ) %>%
+    as_tibble() %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+  # save pre-processed file in archive for generation of past json files
+  # only last day of the year
+  if(format(data_day_date, "%m%d") == "1231") {
+    myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
+    write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+  }
+}
+
+nw_delay_data <- assign(mydataframe, df)
 
 # calcs
 nw_delay_for_json <- nw_delay_data %>%
