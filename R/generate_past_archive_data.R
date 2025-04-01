@@ -23,9 +23,9 @@ test_archive_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Proje
 # file.rename(files_to_rename, new_filenames)
 
 # set period
-wef <- "2024-12-31"  #included in output
+wef <- "2025-03-20"  #included in output
 # til <- "2024-01-01"  #included in output
-til <- "2024-12-31"  #included in output
+til <- "2025-03-31"  #included in output
 
 # functions list -----
 # get functions list for multiple queries
@@ -63,7 +63,7 @@ if (all_stk_queries) {
   myquery_string <- function_list
   myquery_string_full <- function_list_full
   } else {
-  myquery_string <- "query_nw_delay_data"
+  myquery_string <- "query_ao_apt_arr_delay_raw"
   myquery_string_full <- myquery_string
   }
 
@@ -94,7 +94,7 @@ generate_archive <- function (myquery_string) {
     print(paste0(myquery_string, "-", mydate))
   }
 
-  seq(ymd(til), ymd(wef), by = "day") |>
+    seq(ymd(til), ymd(wef), by = "-1 day") |>
     walk(.f = cucu)
 }
 

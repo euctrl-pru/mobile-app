@@ -1456,10 +1456,10 @@ myarchivefile <- "_ao_apt_arr_delay_raw.csv"
 stakeholder <- str_sub(myarchivefile, 2,3)
 
 if (archive_mode) {
-  ao_apt_arr_delay_raw <-  read_csv(here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile)), show_col_types = FALSE)
+  df <-  read_csv(here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile)), show_col_types = FALSE)
 
 } else {
-  ao_apt_arr_delay_raw <- read_xlsx(
+  df <- read_xlsx(
     path  = fs::path_abs(
       str_glue(ao_base_file),
       start = ao_base_dir),
@@ -1470,6 +1470,8 @@ if (archive_mode) {
   # save pre-processed file in archive for generation of past json files
   write_csv(df, here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile)))
 }
+
+ao_apt_arr_delay_raw <- assign(mydataframe, df)
 
 #### day ----
 ao_apt_arr_delay_day <- ao_apt_arr_delay_raw %>%
