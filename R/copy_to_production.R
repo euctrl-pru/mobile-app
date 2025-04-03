@@ -12,6 +12,8 @@ library(purrr)
 source(here("..", "mobile-app", "R", "params.R"))
 
 destination_dir <- '//ihx-vdm05/LIVE_var_www_performance$/briefing'
+network_data_folder_prod <- here(destination_dir, "data", "v3")
+network_data_folder_dev <- here(destination_dir, "data", "v4")
 
 # set the archive_mode to FALSE to run the scripts for day-1.
 # set the archive_mode to TRUE to run the scripts
@@ -20,21 +22,28 @@ destination_dir <- '//ihx-vdm05/LIVE_var_www_performance$/briefing'
 archive_mode <- FALSE
 
 if (archive_mode) {
-  wef <- "2024-01-01"  #included in output
-  til <- "2024-05-01"  #included in output
+  wef <- "2025-03-25"  #included in output
+  til <- "2025-03-25"  #included in output
   data_day_date <- seq(ymd(wef), ymd(til), by = "day")
 } else {
   data_day_date <- lubridate::today(tzone = "") +  days(-1)
 }
 
-# check data status ----
+# set the stakeholders you want to generate (change only when using archive mode)
+stakeholders <- if(!archive_mode) {
+  c("nw","st","ao","ap",NULL) # don't touch this line
+  } else {c(
+    # "nw",
+    "st",
+    # "ao",
+    # "ap",
+    NULL)
+}
 
-files_to_read <- c(
-  here(nw_base_dir, nw_base_file),
-  here(st_base_dir, st_base_file),
-  here(ao_base_dir, ao_base_file),
-  here(ap_base_dir, ap_base_file)
-)
+# check data status ----
+files_to_read <- stakeholders %>%
+  compact() %>%  # Remove NULLs
+  map_chr(~ here(get(paste0(.x, "_base_dir")), get(paste0(.x, "_base_file"))))
 
 check_status <- function(check_file) {
   checK_last_date <- read_xlsx(check_file,
@@ -56,69 +65,66 @@ clean_folder <- function(folder_address) {
   file.remove(files_to_delete)
 }
 
+folders_to_clean <- stakeholders %>%
+  compact() %>%  # Remove NULLs
+  map_chr(~ (paste0(.x, "_local_data_folder")))
+
+
 # define functions for data generation & copy ----
 generate_app_data <- function(data_day_date) {
   # clean local folders
-  walk(c(st_local_data_folder,
-         nw_local_data_folder,
-         ao_local_data_folder,
-         ap_local_data_folder),
-       clean_folder)
+  walk(folders_to_clean, clean_folder)
 
-  source(here("..", "mobile-app", "R", "generate_json_files_state.R"))
-  source(here("..", "mobile-app", "R", "generate_json_files_nw.R"))
-  source(here("..", "mobile-app", "R", "generate_json_files_ao.R"))
-  source(here("..", "mobile-app", "R", "generate_json_files_ap.R"))
+# generate json files
+  walk(stakeholders, ~ {
+    source(here("..", "mobile-app", "R", paste0("generate_json_files_", .x, ".R")))
+  })
 }
+
 
 copy_app_data <- function(data_day_date) {
   # parameters ----
   data_day_text_dash <- data_day_date %>% format("%Y-%m-%d")
-  network_data_folder_v3 <- here(destination_dir, "data", "v3", data_day_text_dash)
-  network_data_folder_v4 <- here(destination_dir, "data", "v4", data_day_text_dash)
+  network_data_folder_prod_date <- here(network_data_folder_prod, data_day_text_dash)
+  network_data_folder_dev_date <- here(network_data_folder_dev, data_day_text_dash)
 
-  # check if v3 date folder already exists ----
-  if (!dir.exists(network_data_folder_v3)) {
-    dir.create(network_data_folder_v3)
+  # check if date folders already exists ----
+  if (!dir.exists(network_data_folder_prod_date)) {
+    dir.create(network_data_folder_prod_date)
   }
 
-  # copy files to the V3 network folder ----
-  st_files_to_copy <- list.files(st_local_data_folder, full.names = TRUE)
-  nw_files_to_copy <- list.files(nw_local_data_folder, full.names = TRUE)
-  ao_files_to_copy <- list.files(ao_local_data_folder, full.names = TRUE)
+  if (!dir.exists(network_data_folder_dev_date)) {
+    dir.create(network_data_folder_dev_date)
+  }
 
-  file.copy(from = st_files_to_copy, to = network_data_folder_v3, overwrite = TRUE)
-  file.copy(from = nw_files_to_copy, to = network_data_folder_v3, overwrite = TRUE)
-  file.copy(from = ao_files_to_copy, to = network_data_folder_v3, overwrite = TRUE)
+  # copy files to the network folder ----
+  walk(stakeholders, ~ {
+    files_to_copy <- list.files(get(paste0(.x, "_local_data_folder")), full.names = TRUE)
+    # assign(paste0(.x, "_files_to_copy"), files_to_copy, envir = .GlobalEnv)  # Assign dynamically to global environment
+
+    if (get(paste0(.x, "_status")) == "prod") {
+        file.copy(from = files_to_copy, to = network_data_folder_prod_date, overwrite = TRUE)
+    }
+    file.copy(from = files_to_copy, to = network_data_folder_dev_date, overwrite = TRUE)
+    print(.x)
+    }
+    )
 
   # copy also one file in the root folder for the checkupdates script to verify
-  file.copy(from = here(nw_local_data_folder, "nw_json_app.json"),
-            to = here(destination_dir, "data", "v3"),
-            overwrite = TRUE)
+  if(!archive_mode) {
+    file.copy(from = here(nw_local_data_folder, "nw_json_app.json"),
+              to = network_data_folder_dev,
+              overwrite = TRUE)
 
-  # backup json files
-  file.copy(network_data_folder_v3,
-            archive_dir,
-            recursive = TRUE, overwrite = TRUE)
-
-  # check if v4 date folder already exists ----
-  if (!dir.exists(network_data_folder_v4)) {
-    dir.create(network_data_folder_v4)
+    file.copy(from = here(nw_local_data_folder, "nw_json_app.json"),
+              to = network_data_folder_prod,
+              overwrite = TRUE)
   }
 
-  # copy production files into v4 folder
-  v3_files_to_copy <- list.files(network_data_folder_v3, full.names = TRUE)
-
-  file.copy(v3_files_to_copy,
-            network_data_folder_v4,
+  # backup json files
+  file.copy(network_data_folder_prod_date,
+            archive_dir,
             recursive = TRUE, overwrite = TRUE)
-
-  # development files to copy
-  ap_files_to_copy <- list.files(ap_local_data_folder, full.names = TRUE)
-
-  # copy development files
-  file.copy(from = ap_files_to_copy, to = network_data_folder_v4, overwrite = TRUE)
-
 
 }
 
