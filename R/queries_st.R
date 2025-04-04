@@ -2895,7 +2895,7 @@ REL_AP_CTRY as (
 select cfmu_ap_code ,
        CASE WHEN SUBSTR(cfmu_ap_code, 1, 2) = 'GC' then 'IC'
             WHEN SUBSTR(cfmu_ap_code, 1, 2) = 'GE' then 'ES'
-            WHEN SUBSTR(cfmu_ap_code, 1, 2) = 'EE' then 'ES'
+            WHEN SUBSTR(cfmu_ap_code, 1, 2) = 'LE' then 'ES'
             ELSE country_code
        END country_code,
        region,
@@ -3143,7 +3143,7 @@ REL_AP_CTRY as (
 select cfmu_ap_code ,
        CASE WHEN SUBSTR(cfmu_ap_code, 1, 2) = 'GC' then 'IC'
             WHEN SUBSTR(cfmu_ap_code, 1, 2) = 'GE' then 'ES'
-            WHEN SUBSTR(cfmu_ap_code, 1, 2) = 'EE' then 'ES'
+            WHEN SUBSTR(cfmu_ap_code, 1, 2) = 'LE' then 'ES'
             ELSE country_code
        END country_code,
        region,
@@ -3391,7 +3391,7 @@ REL_AP_CTRY as (
 select cfmu_ap_code ,
        CASE WHEN SUBSTR(cfmu_ap_code, 1, 2) = 'GC' then 'IC'
             WHEN SUBSTR(cfmu_ap_code, 1, 2) = 'GE' then 'ES'
-            WHEN SUBSTR(cfmu_ap_code, 1, 2) = 'EE' then 'ES'
+            WHEN SUBSTR(cfmu_ap_code, 1, 2) = 'LE' then 'ES'
             ELSE country_code
        END country_code,
        region,
