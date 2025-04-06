@@ -23,8 +23,8 @@ source(here("..", "mobile-app", "R", "params.R")) # so it can be launched from t
 # archive_mode <- TRUE
 
 # archive mode for past dates
-if (exists("archive_mode") == FALSE) {archive_mode <- FALSE}
-if (exists("data_day_date") == FALSE) {
+if (!exists("archive_mode")) {archive_mode <- FALSE}
+if (!exists("data_day_date")) {
   data_day_date <- lubridate::today(tzone = "") +  days(-1)
 }
 
