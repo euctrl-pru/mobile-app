@@ -614,8 +614,8 @@ if (archive_mode) {
 # process data
 apt_ao_data_week <- assign(mydataframe, df) |>
   mutate(
-    WK_FROM_DATE = max(FROM_DATE),
-    WK_TO_DATE = max(TO_DATE)
+    WK_TO_DATE = max(TO_DATE),
+    WK_FROM_DATE = WK_TO_DATE + days(-6)
   ) |>
   select(-FROM_DATE, -TO_DATE, -LAST_DATA_DAY) |>
   spread(key = PERIOD_TYPE, value = DEP_ARR) |>
@@ -861,8 +861,8 @@ if (archive_mode) {
 # process data
 apt_apt_data_week <- assign(mydataframe, df)  |>
   mutate(
-    WK_FROM_DATE = max(FROM_DATE),
-    WK_TO_DATE = max(TO_DATE)
+    WK_TO_DATE = max(TO_DATE),
+    WK_FROM_DATE = WK_TO_DATE + days(-6)
   ) |>
   select(-FROM_DATE, -TO_DATE, -LAST_DATA_DAY) |>
   spread(key = FLAG_PERIOD, value = DEP) |>
@@ -1106,8 +1106,8 @@ if (archive_mode) {
 # process data
 apt_st_data_week <- assign(mydataframe, df) |>
   mutate(
-    WK_FROM_DATE = max(FROM_DATE),
-    WK_TO_DATE = max(TO_DATE)
+    WK_TO_DATE = max(TO_DATE),
+    WK_FROM_DATE = WK_TO_DATE + days(-6)
   ) |>
   select(-FROM_DATE, -TO_DATE, -LAST_DATA_DAY) |>
   spread(key = FLAG_PERIOD, value = DEP) |>
@@ -1360,8 +1360,8 @@ if (archive_mode) {
 # process data
 apt_ms_data_week <- assign(mydataframe, df) |>
   mutate(
-    WK_FROM_DATE = max(FROM_DATE),
-    WK_TO_DATE = max(TO_DATE)
+    WK_TO_DATE = max(TO_DATE),
+    WK_FROM_DATE = WK_TO_DATE + days(-6)
   ) |>
   select(-FROM_DATE, -TO_DATE, -LAST_DATA_DAY) |>
   spread(key = FLAG_PERIOD, value = DEP_ARR) |>

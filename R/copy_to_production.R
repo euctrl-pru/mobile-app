@@ -29,14 +29,14 @@ if (archive_mode) {
   data_day_date <- lubridate::today(tzone = "") +  days(-1)
 }
 
-# set the stakeholders you want to generate (change only when using archive mode)
+# set the stakeholders you want to generate when using archive mode
 stakeholders <- if(!archive_mode) {
   c("nw","st","ao","ap",NULL) # don't touch this line
   } else {c(
     # "nw",
-    "st",
+    # "st",
     # "ao",
-    # "ap",
+    "ap",
     NULL)
 }
 
@@ -66,19 +66,25 @@ clean_folder <- function(folder_address) {
 }
 
 folders_to_clean <- stakeholders %>%
-  compact() %>%  # Remove NULLs
-  map_chr(~ (paste0(.x, "_local_data_folder")))
-
+  compact() %>%
+  map_chr(~ get(paste0(.x, "_local_data_folder")))
 
 # define functions for data generation & copy ----
 generate_app_data <- function(data_day_date) {
   # clean local folders
-  walk(folders_to_clean, clean_folder)
+  folders_to_clean %>% walk(clean_folder)
 
 # generate json files
-  walk(stakeholders, ~ {
-    source(here("..", "mobile-app", "R", paste0("generate_json_files_", .x, ".R")))
-  })
+  all_jsons <- TRUE #TRUE if we want all json files for the stakeholder(s)
+  if(all_jsons) {
+    walk(stakeholders, ~ {
+      source(here("..", "mobile-app", "R", paste0("generate_json_files_", .x, ".R")))
+    })
+  } else if (archive_mode) {
+    ### to be created, if possible, a way of generating only one json file
+    source(here("..", "mobile-app", "R","one_json.R"))
+    one_json()
+  }
 }
 
 
@@ -88,7 +94,7 @@ copy_app_data <- function(data_day_date) {
   network_data_folder_prod_date <- here(network_data_folder_prod, data_day_text_dash)
   network_data_folder_dev_date <- here(network_data_folder_dev, data_day_text_dash)
 
-  # check if date folders already exists ----
+  # check if date folders already exist ----
   if (!dir.exists(network_data_folder_prod_date)) {
     dir.create(network_data_folder_prod_date)
   }
@@ -97,7 +103,7 @@ copy_app_data <- function(data_day_date) {
     dir.create(network_data_folder_dev_date)
   }
 
-  # copy files to the network folder ----
+  # copy files to the network folders ----
   walk(stakeholders, ~ {
     files_to_copy <- list.files(get(paste0(.x, "_local_data_folder")), full.names = TRUE)
     # assign(paste0(.x, "_files_to_copy"), files_to_copy, envir = .GlobalEnv)  # Assign dynamically to global environment
@@ -105,6 +111,7 @@ copy_app_data <- function(data_day_date) {
     if (get(paste0(.x, "_status")) == "prod") {
         file.copy(from = files_to_copy, to = network_data_folder_prod_date, overwrite = TRUE)
     }
+    # print(files_to_copy)
     file.copy(from = files_to_copy, to = network_data_folder_dev_date, overwrite = TRUE)
     print(.x)
     }
