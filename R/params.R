@@ -3,7 +3,7 @@
 nw_status <- "prod"
 st_status <- "prod"
 ao_status <- "prod"
-ap_status <- "dev"
+ap_status <- "prod"
 
 nw_local_data_folder_prod <- here::here("..", "mobile-app", "data", "prod", "nw")
 st_local_data_folder_prod <- here::here("..", "mobile-app", "data", "prod", "st")

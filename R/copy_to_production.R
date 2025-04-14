@@ -12,8 +12,8 @@ library(purrr)
 source(here("..", "mobile-app", "R", "params.R"))
 
 destination_dir <- '//ihx-vdm05/LIVE_var_www_performance$/briefing'
-network_data_folder_prod <- here(destination_dir, "data", "v3")
-network_data_folder_dev <- here(destination_dir, "data", "v4")
+network_data_folder_prod <- here(destination_dir, "data", "v4")
+network_data_folder_dev <- here(destination_dir, "data", "v5")
 
 # set the archive_mode to FALSE to run the scripts for day-1.
 # set the archive_mode to TRUE to run the scripts
