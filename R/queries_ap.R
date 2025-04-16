@@ -1663,7 +1663,7 @@ DIM_AO
  as ( select  ao_code, ao_name, ao_nm_group_code, ao_nm_group_name  from  prudev.v_covid_dim_ao) ,
 
 DIM_APT
- as ( select code as arp_code, dashboard_name as arp_name,  b.aiu_iso_country_name as iso_ct_name, a.iso_country_code as iso_ct_code
+ as ( select code as arp_code, dashboard_name as arp_name,  b.aiu_iso_country_name as iso_ct_name, b.aiu_iso_country_code as iso_ct_code
  from  prudev.pru_airport a
  left join prudev.pru_country_iso b on a.iso_country_code = b.ec_iso_country_code
  ),
@@ -1811,7 +1811,7 @@ DIM_AO
  as ( select  ao_code, ao_name, ao_nm_group_code, ao_nm_group_name  from  prudev.v_covid_dim_ao) ,
 
 DIM_APT
- as ( select code as arp_code, dashboard_name as arp_name,  b.aiu_iso_country_name as iso_ct_name, a.iso_country_code as iso_ct_code
+ as ( select code as arp_code, dashboard_name as arp_name,  b.aiu_iso_country_name as iso_ct_name, b.aiu_iso_country_code as iso_ct_code
  from  prudev.pru_airport a
  left join prudev.pru_country_iso b on a.iso_country_code = b.ec_iso_country_code
  ),
@@ -1961,7 +1961,7 @@ DIM_AO
  as ( select  ao_code, ao_name, ao_nm_group_code, ao_nm_group_name  from  prudev.v_covid_dim_ao) ,
 
 DIM_APT
- as ( select code as arp_code, dashboard_name as arp_name,  b.aiu_iso_country_name as iso_ct_name, a.iso_country_code as iso_ct_code
+ as ( select code as arp_code, dashboard_name as arp_name,  b.aiu_iso_country_name as iso_ct_name, b.aiu_iso_country_code as iso_ct_code
  from  prudev.pru_airport a
  left join prudev.pru_country_iso b on a.iso_country_code = b.ec_iso_country_code
  ),
