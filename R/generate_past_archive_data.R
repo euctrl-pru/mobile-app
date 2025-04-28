@@ -23,8 +23,8 @@ test_archive_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Proje
 # file.rename(files_to_rename, new_filenames)
 
 # set period
-wef <- "2024-01-01"  #included in output
-til <- "2024-11-23"  #included in output
+wef <- "2024-12-31"  #included in output
+til <- "2024-12-31"  #included in output
 
 # functions list -----
 # get functions list for multiple queries
@@ -36,7 +36,7 @@ get_functions_from_script <- function(script_path) {
   funcs[sapply(funcs, function(f) is.function(get(f, env)))] # Filter functions
 }
 
-stakeholder <- 'st' # set the 2 letter stakeholder to retrieve query list
+stakeholder <- 'ap' # set the 2 letter stakeholder to retrieve query list
 script_path <- here("R", paste0("queries_", stakeholder, ".R"))
 function_list_full <- get_functions_from_script(script_path)
 # these queries only need to be executed if the date is 31 december
@@ -45,8 +45,9 @@ function_list_exceptions <- c("query_ao_traffic_delay_raw",
                              "query_ap_traffic",
                              "query_ap_punct",
                              ##temp exclusion
-                             # 'query_ap_ap_des_data_y2d_raw', 'query_ap_ap_des_data_week_raw', 'query_ap_ap_des_data_day_raw',
+                             # 'query_ap_ms_data_y2d_raw', 'query_ap_ms_data_week_raw', 'query_ap_ms_data_day_raw',
                              # 'query_ap_ao_data_y2d_raw', 'query_ap_ao_data_week_raw', 'query_ap_ao_data_day_raw',
+                             # 'query_ap_ap_des_data_y2d_raw', 'query_ap_ap_des_data_week_raw', 'query_ap_ap_des_data_day_raw',
 
                              "query_state_daio_raw",
                              "query_state_dai_raw",
@@ -64,7 +65,7 @@ if (all_stk_queries) {
   myquery_string <- function_list
   myquery_string_full <- function_list_full
   } else {
-  myquery_string <- "query_st_st_data_y2d_raw"
+  myquery_string <- "query_ap_punct"
   myquery_string_full <- myquery_string
   }
 
