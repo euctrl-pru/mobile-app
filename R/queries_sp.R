@@ -1,5 +1,5 @@
 # ansp traffic  ----
-query_an_traffic_raw <- function(mydate_string) {
+query_sp_traffic_raw <- function(mydate_string) {
   mydate <- date_sql_string(mydate_string)
   paste0("
 WITH LIST_AUA as (
@@ -159,11 +159,9 @@ SELECT
 	a.*,
 	LAG (rw_avg_flt_daio,364) OVER (PARTITION BY ansp_name ORDER BY entry_date) as rw_avg_flt_daio_prev_year,
     LAG (rw_avg_flt_daio, greatest((extract (year from entry_date)-2020) *364+ floor((extract (year from entry_date)-2020)/4)*7,0)  ) OVER (PARTITION BY ansp_name ORDER BY entry_date) as rw_avg_flt_daio_2020,
-    LAG (rw_avg_flt_daio, greatest((extract (year from entry_date)-2019) *364+ floor((extract (year from entry_date)-2019)/4)*7,0)  ) OVER (PARTITION BY ansp_name ORDER BY entry_date) as rw_avg_flt_daio_2019,
-	", mydate, " -1 as last_data_day
+    LAG (rw_avg_flt_daio, greatest((extract (year from entry_date)-2019) *364+ floor((extract (year from entry_date)-2019)/4)*7,0)  ) OVER (PARTITION BY ansp_name ORDER BY entry_date) as rw_avg_flt_daio_2019
 
 FROM ANSP_PERIOD_DATA a
-    WHERE entry_date >=to_date('01-01-2024','dd-mm-yyyy')
 )
 
 -- iceland exception
@@ -246,10 +244,10 @@ SELECT
 		ELSE y2d_avg_flt_daio_2019
 	END y2d_avg_flt_daio_2019,
 
-	last_data_day
+	", mydate, " -1 as last_data_day
 
 FROM ANSP_PERIOD_DATA2
-
+WHERE entry_date >=to_date('01-01-2024','dd-mm-yyyy')
 "
 )
 }
