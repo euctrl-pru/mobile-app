@@ -333,8 +333,49 @@ sp_delay_for_json <- sp_delay_last_day %>%
     Y2D_DELAYED_TFC_15_PERC_DIF_2019
 
   ) %>%
-  ungroup()
+  ##iceland exception
+  mutate(
+    DY_DLY_DIF_PREV_YEAR_PERC = if_else(ANSP_CODE == "IS_ANSP" & year(FLIGHT_DATE) < 2025, NA, DY_DLY_DIF_PREV_YEAR_PERC),
+    DY_DLY_DIF_2019_PERC = if_else(ANSP_CODE == "IS_ANSP", NA, DY_DLY_DIF_2019_PERC),
 
+    WK_DLY_DIF_PREV_YEAR_PERC = if_else(ANSP_CODE == "IS_ANSP" & year(FLIGHT_DATE) < 2025, NA, WK_DLY_DIF_PREV_YEAR_PERC),
+    WK_DLY_DIF_2019_PERC = if_else(ANSP_CODE == "IS_ANSP", NA, WK_DLY_DIF_2019_PERC),
+
+    Y2D_DLY_DIF_PREV_YEAR_PERC = if_else(ANSP_CODE == "IS_ANSP" & year(FLIGHT_DATE) < 2025, NA, Y2D_DLY_DIF_PREV_YEAR_PERC),
+    Y2D_DLY_DIF_2019_PERC = if_else(ANSP_CODE == "IS_ANSP", NA, Y2D_DLY_DIF_2019_PERC),
+
+    #delay per flight
+    DY_DLY_FLT_DIF_PREV_YEAR_PERC = if_else(ANSP_CODE == "IS_ANSP" & year(FLIGHT_DATE) < 2025, NA, DY_DLY_FLT_DIF_PREV_YEAR_PERC),
+    DY_DLY_FLT_DIF_2019_PERC = if_else(ANSP_CODE == "IS_ANSP", NA, DY_DLY_FLT_DIF_2019_PERC),
+
+    WK_DLY_FLT_DIF_PREV_YEAR_PERC = if_else(ANSP_CODE == "IS_ANSP" & year(FLIGHT_DATE) < 2025, NA, WK_DLY_FLT_DIF_PREV_YEAR_PERC),
+    WK_DLY_FLT_DIF_2019_PERC = if_else(ANSP_CODE == "IS_ANSP", NA, WK_DLY_FLT_DIF_2019_PERC),
+
+    Y2D_DLY_FLT_DIF_PREV_YEAR_PERC = if_else(ANSP_CODE == "IS_ANSP" & year(FLIGHT_DATE) < 2025, NA, Y2D_DLY_FLT_DIF_PREV_YEAR_PERC),
+    Y2D_DLY_FLT_DIF_2019_PERC = if_else(ANSP_CODE == "IS_ANSP", NA, Y2D_DLY_FLT_DIF_2019_PERC),
+
+    #% of delayed flights
+    DY_DELAYED_TFC_PERC_DIF_PREV_YEAR = if_else(ANSP_CODE == "IS_ANSP" & year(FLIGHT_DATE) < 2025, NA, DY_DELAYED_TFC_PERC_DIF_PREV_YEAR),
+    DY_DELAYED_TFC_PERC_DIF_2019 = if_else(ANSP_CODE == "IS_ANSP", NA, DY_DELAYED_TFC_PERC_DIF_2019),
+
+    WK_DELAYED_TFC_PERC_DIF_PREV_YEAR = if_else(ANSP_CODE == "IS_ANSP" & year(FLIGHT_DATE) < 2025, NA, WK_DELAYED_TFC_PERC_DIF_PREV_YEAR),
+    WK_DELAYED_TFC_PERC_DIF_2019 = if_else(ANSP_CODE == "IS_ANSP", NA, WK_DELAYED_TFC_PERC_DIF_2019),
+
+    Y2D_DELAYED_TFC_PERC_DIF_PREV_YEAR = if_else(ANSP_CODE == "IS_ANSP" & year(FLIGHT_DATE) < 2025, NA, Y2D_DELAYED_TFC_PERC_DIF_PREV_YEAR),
+    Y2D_DELAYED_TFC_PERC_DIF_2019 = if_else(ANSP_CODE == "IS_ANSP", NA, Y2D_DELAYED_TFC_PERC_DIF_2019),
+
+    #% of delayed flights >15'
+    DY_DELAYED_TFC_15_PERC_DIF_PREV_YEAR = if_else(ANSP_CODE == "IS_ANSP" & year(FLIGHT_DATE) < 2025, NA, DY_DELAYED_TFC_15_PERC_DIF_PREV_YEAR),
+    DY_DELAYED_TFC_15_PERC_DIF_2019 = if_else(ANSP_CODE == "IS_ANSP", NA, DY_DELAYED_TFC_15_PERC_DIF_2019),
+
+    WK_DELAYED_TFC_15_PERC_DIF_PREV_YEAR = if_else(ANSP_CODE == "IS_ANSP" & year(FLIGHT_DATE) < 2025, NA, WK_DELAYED_TFC_15_PERC_DIF_PREV_YEAR),
+    WK_DELAYED_TFC_15_PERC_DIF_2019 = if_else(ANSP_CODE == "IS_ANSP", NA, WK_DELAYED_TFC_15_PERC_DIF_2019),
+
+    Y2D_DELAYED_TFC_15_PERC_DIF_PREV_YEAR = if_else(ANSP_CODE == "IS_ANSP" & year(FLIGHT_DATE) < 2025, NA, Y2D_DELAYED_TFC_15_PERC_DIF_PREV_YEAR),
+    Y2D_DELAYED_TFC_15_PERC_DIF_2019 = if_else(ANSP_CODE == "IS_ANSP", NA, Y2D_DELAYED_TFC_15_PERC_DIF_2019),
+
+  ) %>%
+  ungroup()
 
 
 #### Join strings and save  ----
@@ -404,5 +445,243 @@ sp_traffic_evo_long <- sp_traffic_evo %>%
 sp_traffic_evo_j <- sp_traffic_evo_long %>% toJSON(., pretty = TRUE)
 
 save_json(sp_traffic_evo_j, "sp_traffic_evo_chart_daily")
+
+## DELAY ----
+### Delay category ----
+#### day ----
+sp_delay_cause_day <- sp_delay_calc %>%
+  ungroup() %>%
+  filter(ENTRY_DATE == min(max(ENTRY_DATE),
+                            data_day_date,
+                            na.rm = TRUE)
+  ) %>%
+  mutate(
+    SHARE_TDM_ERT_CS = if_else(TDM_ERT == 0, 0, TDM_ERT_CS / TDM_ERT),
+    SHARE_TDM_ERT_IT = if_else(TDM_ERT == 0, 0, TDM_ERT_IT / TDM_ERT),
+    SHARE_TDM_ERT_WD = if_else(TDM_ERT == 0, 0, TDM_ERT_WD / TDM_ERT),
+    SHARE_TDM_ERT_OTHER = if_else(TDM_ERT == 0, 0, TDM_ERT_OTHER / TDM_ERT)
+  ) %>%
+  select(ANSP_CODE,
+         ANSP_NAME,
+         FLIGHT_DATE = ENTRY_DATE,
+         TDM_ERT_CS,
+         TDM_ERT_IT,
+         TDM_ERT_WD,
+         TDM_ERT_OTHER,
+         TDM_ERT_PREV_YEAR,
+         SHARE_TDM_ERT_CS,
+         SHARE_TDM_ERT_IT,
+         SHARE_TDM_ERT_WD,
+         SHARE_TDM_ERT_OTHER
+  ) %>%   # iceland exception
+  mutate(
+    TDM_ERT_PREV_YEAR = if_else(ANSP_CODE == "IS_ANSP" & year(FLIGHT_DATE) < 2025, NA, TDM_ERT_PREV_YEAR)
+  )
+
+column_names <- c(
+  "ANSP_CODE",
+  "ANSP_NAME",
+  "FLIGHT_DATE",
+  "Capacity/Staffing (ATC)",
+  "Disruptions (ATC)",
+  "Weather",
+  "Other",
+  paste0("En-route delay ", data_day_year - 1),
+  "share_capacity_staffing_atc",
+  "share_disruptions_atc",
+  "share_weather",
+  "share_other"
+)
+
+colnames(sp_delay_cause_day) <- column_names
+
+### nest data
+sp_delay_value_day_long <- sp_delay_cause_day %>%
+  select(-c(share_capacity_staffing_atc,
+            share_disruptions_atc,
+            share_weather,
+            share_other)
+  ) %>%
+  pivot_longer(-c(ANSP_CODE, ANSP_NAME, FLIGHT_DATE), names_to = 'metric', values_to = 'value')
+
+sp_delay_share_day_long <- sp_delay_cause_day %>%
+  select(-c("Capacity/Staffing (ATC)",
+            "Disruptions (ATC)",
+            "Weather",
+            "Other",
+            paste0("En-route delay ", data_day_year - 1)
+  )
+  )  %>%
+  mutate(share_delay_prev_year = NA) %>%
+  pivot_longer(-c(ANSP_CODE, ANSP_NAME, FLIGHT_DATE), names_to = 'name', values_to = 'share') %>%
+  select(name, share)
+
+sp_delay_cause_day_long <- cbind(sp_delay_value_day_long, sp_delay_share_day_long) %>%
+  select(-name) %>%
+  group_by(ANSP_CODE, ANSP_NAME, FLIGHT_DATE) %>%
+  nest_legacy(.key = "statistics")
+
+sp_delay_cause_evo_dy_j <- sp_delay_cause_day_long %>% toJSON(., pretty = TRUE)
+
+save_json(sp_delay_cause_evo_dy_j, "sp_delay_category_evo_chart_dy")
+
+#### week ----
+sp_delay_cause_week <- sp_delay_calc %>%
+  filter(ENTRY_DATE >= min(max(ENTRY_DATE),
+                           data_day_date,
+                           na.rm = TRUE) -6,
+         ENTRY_DATE <= min(max(ENTRY_DATE),
+                           data_day_date,
+                           na.rm = TRUE)
+  )  %>%
+  reframe(
+    ANSP_CODE,
+    ANSP_NAME,
+    FLIGHT_DATE = ENTRY_DATE,
+    TDM_ERT_CS,
+    TDM_ERT_IT,
+    TDM_ERT_WD,
+    TDM_ERT_OTHER,
+    TDM_ERT_PREV_YEAR,
+    WK_TDM_ERT_CS = sum(TDM_ERT_CS),
+    WK_TDM_ERT_IT = sum(TDM_ERT_IT),
+    WK_TDM_ERT_WD = sum(TDM_ERT_WD),
+    WK_TDM_ERT_OTHER = sum(TDM_ERT_OTHER),
+    WK_TDM_ERT = sum(TDM_ERT)
+  ) %>%
+  ungroup()%>%
+  mutate(
+    WK_SHARE_TDM_ERT_CS = if_else(WK_TDM_ERT == 0, 0, WK_TDM_ERT_CS / WK_TDM_ERT),
+    WK_SHARE_TDM_ERT_IT = if_else(WK_TDM_ERT == 0, 0, WK_TDM_ERT_IT / WK_TDM_ERT),
+    WK_SHARE_TDM_ERT_WD = if_else(WK_TDM_ERT == 0, 0, WK_TDM_ERT_WD / WK_TDM_ERT),
+    WK_SHARE_TDM_ERT_OTHER = if_else(WK_TDM_ERT == 0, 0, WK_TDM_ERT_OTHER / WK_TDM_ERT)
+  ) %>%
+  select(
+    ANSP_CODE,
+    ANSP_NAME,
+    FLIGHT_DATE,
+    TDM_ERT_CS,
+    TDM_ERT_IT,
+    TDM_ERT_WD,
+    TDM_ERT_OTHER,
+    TDM_ERT_PREV_YEAR,
+    WK_SHARE_TDM_ERT_CS,
+    WK_SHARE_TDM_ERT_IT,
+    WK_SHARE_TDM_ERT_WD,
+    WK_SHARE_TDM_ERT_OTHER
+  ) %>%   # iceland exception
+  mutate(
+    TDM_ERT_PREV_YEAR = if_else(ANSP_CODE == "IS_ANSP" & year(FLIGHT_DATE) < 2025, NA, TDM_ERT_PREV_YEAR)
+  )
+
+colnames(sp_delay_cause_week) <- column_names
+
+### nest data
+sp_delay_value_week_long <- sp_delay_cause_week %>%
+  select(-c(share_capacity_staffing_atc,
+            share_disruptions_atc,
+            share_weather,
+            share_other)
+  ) %>%
+  pivot_longer(-c(ANSP_CODE, ANSP_NAME, FLIGHT_DATE), names_to = 'metric', values_to = 'value')
+
+sp_delay_share_week_long <- sp_delay_cause_week %>%
+  select(-c("Capacity/Staffing (ATC)",
+            "Disruptions (ATC)",
+            "Weather",
+            "Other",
+            paste0("En-route delay ", data_day_year - 1)
+  )
+  )  %>%
+  mutate(share_delay_prev_year = NA) %>%
+  pivot_longer(-c(ANSP_CODE, ANSP_NAME, FLIGHT_DATE), names_to = 'name', values_to = 'share') %>%
+  select(name, share)
+
+sp_delay_cause_week_long <- cbind(sp_delay_value_week_long, sp_delay_share_week_long) %>%
+  select(-name) %>%
+  group_by(ANSP_CODE, ANSP_NAME, FLIGHT_DATE) %>%
+  nest_legacy(.key = "statistics")
+
+sp_delay_cause_evo_wk_j <- sp_delay_cause_week_long %>% toJSON(., pretty = TRUE)
+
+save_json(sp_delay_cause_evo_wk_j, "sp_delay_category_evo_chart_wk")
+
+#### y2d ----
+sp_delay_cause_y2d <- sp_delay_calc %>%
+  filter(ENTRY_DATE <= data_day_date,
+         year(ENTRY_DATE) == year(data_day_date)) %>%
+  reframe(
+    ANSP_CODE,
+    ANSP_NAME,
+    FLIGHT_DATE = ENTRY_DATE,
+    WK_DLY_CS_AVG_ROLLING,
+    WK_DLY_IT_AVG_ROLLING,
+    WK_DLY_WD_AVG_ROLLING,
+    WK_DLY_OTHER_AVG_ROLLING,
+    WK_DLY_AVG_ROLLING_PREV_YEAR,
+    Y2D_TDM_ERT_CS = sum(TDM_ERT_CS),
+    Y2D_TDM_ERT_IT = sum(TDM_ERT_IT),
+    Y2D_TDM_ERT_WD = sum(TDM_ERT_WD),
+    Y2D_TDM_ERT_OTHER = sum(TDM_ERT_OTHER),
+    Y2D_TDM_ERT = sum(TDM_ERT)
+  ) %>%
+  ungroup() %>%
+  mutate(
+    Y2D_SHARE_TDM_ERT_CS = if_else(Y2D_TDM_ERT == 0, 0, Y2D_TDM_ERT_CS / Y2D_TDM_ERT),
+    Y2D_SHARE_TDM_ERT_IT = if_else(Y2D_TDM_ERT == 0, 0, Y2D_TDM_ERT_IT / Y2D_TDM_ERT),
+    Y2D_SHARE_TDM_ERT_WD = if_else(Y2D_TDM_ERT == 0, 0, Y2D_TDM_ERT_WD / Y2D_TDM_ERT),
+    Y2D_SHARE_TDM_ERT_OTHER = if_else(Y2D_TDM_ERT == 0, 0, Y2D_TDM_ERT_OTHER / Y2D_TDM_ERT)
+  ) %>%
+  select(
+    ANSP_CODE,
+    ANSP_NAME,
+    FLIGHT_DATE,
+    WK_DLY_CS_AVG_ROLLING,
+    WK_DLY_IT_AVG_ROLLING,
+    WK_DLY_WD_AVG_ROLLING,
+    WK_DLY_OTHER_AVG_ROLLING,
+    WK_DLY_AVG_ROLLING_PREV_YEAR,
+    Y2D_SHARE_TDM_ERT_CS,
+    Y2D_SHARE_TDM_ERT_IT,
+    Y2D_SHARE_TDM_ERT_WD,
+    Y2D_SHARE_TDM_ERT_OTHER
+  ) %>%   # iceland exception
+  mutate(
+    WK_DLY_AVG_ROLLING_PREV_YEAR = if_else(ANSP_CODE == "IS_ANSP" & year(FLIGHT_DATE) < 2025, NA, WK_DLY_AVG_ROLLING_PREV_YEAR)
+  )
+
+
+colnames(sp_delay_cause_y2d) <- column_names
+
+### nest data
+sp_delay_value_y2d_long <- sp_delay_cause_y2d %>%
+  select(-c(share_capacity_staffing_atc,
+            share_disruptions_atc,
+            share_weather,
+            share_other)
+  ) %>%
+  pivot_longer(-c(ANSP_CODE, ANSP_NAME, FLIGHT_DATE), names_to = 'metric', values_to = 'value')
+
+sp_delay_share_y2d_long <- sp_delay_cause_y2d %>%
+  select(-c("Capacity/Staffing (ATC)",
+            "Disruptions (ATC)",
+            "Weather",
+            "Other",
+            paste0("En-route delay ", data_day_year - 1)
+  )
+  )  %>%
+  mutate(share_delay_prev_year = NA) %>%
+  pivot_longer(-c(ANSP_CODE, ANSP_NAME, FLIGHT_DATE), names_to = 'name', values_to = 'share') %>%
+  select(name, share)
+
+sp_delay_cause_y2d_long <- cbind(sp_delay_value_y2d_long, sp_delay_share_y2d_long) %>%
+  select(-name) %>%
+  group_by(ANSP_CODE, ANSP_NAME, FLIGHT_DATE) %>%
+  nest_legacy(.key = "statistics")
+
+
+sp_delay_cause_evo_y2d_j <- sp_delay_cause_y2d_long %>% toJSON(., pretty = TRUE)
+
+save_json(sp_delay_cause_evo_y2d_j, "sp_delay_category_evo_chart_y2d")
 
 
