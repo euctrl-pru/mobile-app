@@ -22,8 +22,8 @@ network_data_folder_dev <- here(destination_dir, "data", "v5")
 archive_mode <- FALSE
 
 if (archive_mode) {
-  wef <- "2025-03-25"  #included in output
-  til <- "2025-03-25"  #included in output
+  wef <- "2024-01-01"  #included in output
+  til <- "2024-10-23"  #included in output
   data_day_date <- seq(ymd(wef), ymd(til), by = "day")
 } else {
   data_day_date <- lubridate::today(tzone = "") +  days(-1)
@@ -31,7 +31,7 @@ if (archive_mode) {
 
 # set the stakeholders you want to generate when using archive mode
 stakeholders <- if(!archive_mode) {
-  c("nw","st","ao","ap",NULL) # don't touch this line
+  c("nw","st","ao","ap", "sp", NULL) # don't touch this line
   } else {c(
     # "nw",
     # "st",
@@ -189,3 +189,19 @@ if (archive_mode == FALSE){
            subject = sbj, msg = msg,
            control = control)
 }
+
+
+temp_function <- function(data_day_date) {
+  # data_day_date <- as.Date("2024-10-23")
+  data_day_text_dash <- data_day_date %>% format("%Y-%m-%d")
+  network_data_folder_prod_date <- here(network_data_folder_prod, data_day_text_dash)
+  network_data_folder_dev_date <- here(network_data_folder_dev, data_day_text_dash)
+
+  files_to_copy <- list.files(network_data_folder_prod_date, full.names = TRUE)
+
+  file.copy(from = network_data_folder_prod_date,
+            to = network_data_folder_dev,
+            overwrite = TRUE, recursive = TRUE)
+
+}
+
