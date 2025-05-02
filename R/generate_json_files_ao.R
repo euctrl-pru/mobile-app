@@ -1619,7 +1619,7 @@ save_json(ao_traffic_evo_j, "ao_traffic_evo_chart_daily")
 
 
 ## DELAY ----
-### 7-day % of delay per flight ----
+### 7-day delay per flight ----
 ao_delay_flt_evo <- ao_traffic_delay_data  %>%
   filter(FLIGHT_DATE <= min(data_day_date,
                             max(LAST_DATA_DAY, na.rm = TRUE),

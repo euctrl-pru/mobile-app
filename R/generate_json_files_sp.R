@@ -108,6 +108,7 @@ sp_traffic_for_json <- sp_traffic_last_day %>%
   )
 
 #### Delay data ----
+##### import ----
 sp_delay_data <-  read_xlsx(
   path  = fs::path_abs(
     str_glue(sp_base_file),
@@ -118,7 +119,7 @@ sp_delay_data <-  read_xlsx(
   mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
   left_join(ansp_list, by = c("ANSP_NAME"))
 
-
+##### calc ----
 sp_delay_calc <-  sp_delay_data %>%
   group_by(ANSP_NAME) %>%
   mutate(
@@ -216,8 +217,7 @@ sp_delay_calc <-  sp_delay_data %>%
 
   )
 
-## y2d prev year and 2019
-
+##### y2d prev year and 2019 ----
 sp_delay_calc_prev_year <- sp_delay_calc %>%
   mutate(
     ENTRY_DATE_PREV_YEAR = add_with_rollback(ENTRY_DATE, years(1))
@@ -243,8 +243,7 @@ sp_delay_calc_2019 <- sp_delay_calc %>%
     Y2D_DELAYED_TFC_15_PERC_2019 = Y2D_DELAYED_TFC_15_PERC
   )
 
-##
-
+##### full dataset ----
 sp_delay <- sp_delay_calc %>%
   left_join(sp_delay_calc_prev_year, by = c("ANSP_NAME", "ENTRY_DATE" = "ENTRY_DATE_PREV_YEAR")) %>%
   left_join(sp_delay_calc_2019, by = c("ANSP_NAME", "ENTRY_DATE" = "ENTRY_DATE_2019")) %>%
@@ -267,6 +266,7 @@ sp_delay <- sp_delay_calc %>%
     Y2D_DELAYED_TFC_15_PERC_DIF_2019 = Y2D_DELAYED_TFC_15_PERC - Y2D_DELAYED_TFC_15_PERC_2019
   )
 
+##### last day -----
 sp_delay_last_day <- sp_delay %>%
   filter(ENTRY_DATE == min(data_day_date,
                            max(ENTRY_DATE, na.rm = TRUE),
@@ -408,8 +408,8 @@ save_json(sp_json_app, "sp_json_app")
 ### 7-day traffic avg ----
 
 #### create date sequence
-wef <- paste0(year(data_day_date), "-01-01")
-til <- paste0(year(data_day_date), "-12-31")
+wef <- paste0(data_day_year, "-01-01")
+til <- paste0(data_day_year, "-12-31")
 days_current_year <- seq(ymd(wef), ymd(til), by = "1 day") %>%
   as_tibble() %>%
   select(ENTRY_DATE = value)
@@ -685,3 +685,117 @@ sp_delay_cause_evo_y2d_j <- sp_delay_cause_y2d_long %>% toJSON(., pretty = TRUE)
 save_json(sp_delay_cause_evo_y2d_j, "sp_delay_category_evo_chart_y2d")
 
 
+### Delay per flight ----
+sp_delay_flt_evo <- sp_delay_calc %>%
+  filter(ENTRY_DATE <= min(data_day_date,
+                            max(ENTRY_DATE, na.rm = TRUE),
+                            na.rm = TRUE),
+         year(ENTRY_DATE) == year(data_day_date)
+  ) %>%
+  mutate(
+    WK_DLY_FLT = coalesce(WK_DLY_FLT, 0),
+    WK_DLY_FLT_PREV_YEAR = coalesce(WK_DLY_FLT_PREV_YEAR, 0)
+  ) %>%
+  select(
+    ANSP_CODE,
+    ANSP_NAME,
+    FLIGHT_DATE = ENTRY_DATE,
+    WK_DLY_FLT,
+    WK_DLY_FLT_PREV_YEAR
+    )
+
+y2d_delay_flt <- sp_delay_last_day %>% ungroup() %>% select(ANSP_CODE, Y2D_DLY_FLT, Y2D_DLY_FLT_PREV_YEAR)
+
+
+column_names <- c('ANSP_CODE',
+                  'ANSP_NAME',
+                  'FLIGHT_DATE',
+                  paste0('En-route ATFM delay/flight ', data_day_year),
+                  paste0('En-route ATFM delay/flight ', data_day_year -1)
+)
+
+colnames(sp_delay_flt_evo) <- column_names
+
+### nest data
+sp_delay_flt_evo_long <- sp_delay_flt_evo %>%
+  pivot_longer(-c(ANSP_CODE, ANSP_NAME, FLIGHT_DATE), names_to = 'year', values_to = 'daio') %>%
+  left_join(y2d_delay_flt, by = "ANSP_CODE") %>%
+  mutate(
+    year = if_else(str_detect(year, as.character(data_day_year)),
+                   paste0(year, " (", format(round(Y2D_DLY_FLT,2), nsmall=2),"')"),
+                   paste0(year, " (", format(round(Y2D_DLY_FLT_PREV_YEAR,2), nsmall=2),"')"))
+  ) %>%
+  select(-Y2D_DLY_FLT, -Y2D_DLY_FLT_PREV_YEAR) %>%
+  group_by(ANSP_CODE, ANSP_NAME, FLIGHT_DATE) %>%
+  nest_legacy(.key = "statistics")
+
+###convert to json and save
+sp_delay_flt_evo_j <- sp_delay_flt_evo_long %>% toJSON(., pretty = TRUE)
+
+save_json(sp_delay_flt_evo_j, "sp_delay_per_flight_evo_chart_daily")
+
+### % of delayed flights ----
+#### create date sequence
+wef <- paste0(data_day_year-1, "-01-01")
+til <- paste0(data_day_year, "-12-31")
+days_current_year <- seq(ymd(wef), ymd(til), by = "1 day") %>%
+  as_tibble() %>%
+  select(ENTRY_DATE = value)
+
+#### combine with ansp list to get full sequence
+days_ansp <- crossing(days_current_year, ansp_list) %>%
+  arrange(ANSP_CODE, ENTRY_DATE)
+
+sp_delayed_flights_evo <- days_ansp %>%
+  left_join(sp_delay_calc, by = c("ENTRY_DATE", "ANSP_CODE", "ANSP_NAME")) %>%   mutate(
+    WK_DELAYED_TFC_PERC = case_when(
+      ENTRY_DATE > min(data_day_date,
+                        max(ENTRY_DATE, na.rm = TRUE),
+                        na.rm = TRUE) ~ NA,
+      .default = coalesce(WK_DELAYED_TFC_PERC,0)),
+
+    WK_DELAYED_TFC_15_PERC = case_when(
+      ENTRY_DATE > min(data_day_date,
+                        max(ENTRY_DATE, na.rm = TRUE),
+                        na.rm = TRUE) ~ NA,
+      .default = coalesce(WK_DELAYED_TFC_15_PERC,0)),
+  ) %>%
+  group_by(ANSP_CODE) %>%
+  arrange(ANSP_CODE, ENTRY_DATE) %>%
+  mutate(
+    WK_DELAYED_TFC_PERC_PREV_YEAR = lag(WK_DELAYED_TFC_PERC, 364),
+    WK_DELAYED_TFC_15_PERC_PREV_YEAR = lag(WK_DELAYED_TFC_15_PERC, 364)
+  ) %>%
+  ungroup() %>%
+  filter(year(ENTRY_DATE) == data_day_year) %>%
+  select(
+    ANSP_CODE,
+    ANSP_NAME,
+    FLIGHT_DATE = ENTRY_DATE,
+    WK_DELAYED_TFC_PERC,
+    WK_DELAYED_TFC_PERC_PREV_YEAR,
+    WK_DELAYED_TFC_15_PERC,
+    WK_DELAYED_TFC_15_PERC_PREV_YEAR
+  )
+
+column_names <- c('ANSP_CODE',
+                  'ANSP_NAME',
+                  'FLIGHT_DATE',
+                  paste0('% of delayed flights ', data_day_year),
+                  paste0('% of delayed flights ', data_day_year -1),
+                  paste0("% of delayed flights >15' ", data_day_year),
+                  paste0("% of delayed flights >15' ", data_day_year -1)
+)
+
+colnames(sp_delayed_flights_evo) <- column_names
+
+### nest data
+sp_delayed_flights_evo_long <- sp_delayed_flights_evo %>%
+  pivot_longer(-c(ANSP_CODE, ANSP_NAME, FLIGHT_DATE), names_to = 'year', values_to = 'daio') %>%
+  group_by(ANSP_CODE, ANSP_NAME, FLIGHT_DATE) %>%
+  nest_legacy(.key = "statistics")
+
+
+sp_delayed_flights_evo_j <- sp_delayed_flights_evo_long %>% toJSON(., pretty = TRUE)
+
+save_json(sp_delayed_flights_evo_j, "sp_delayed_flights_evo_chart_daily")
