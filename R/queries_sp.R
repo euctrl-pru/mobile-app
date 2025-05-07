@@ -252,3 +252,174 @@ WHERE entry_date >=to_date('01-01-2024','dd-mm-yyyy')
 )
 }
 
+
+# ansp delay  ----
+query_sp_delay_raw <- function(mydate_string) {
+  mydate <- date_sql_string(mydate_string)
+  paste0(
+"
+WITH
+LIST_AUA as (
+SELECT
+AUA_CODE,
+ANSP_NAME, WEF, TILL , ANSP_ID
+FROM PRUDEV.V_PRU_REL_CFMU_AUA_ANSP
+WHERE ANSP_ID  in (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,26,27,28,29,30,31,32,33,39,42,44,45,46,50,53,56,57)
+
+),
+
+LIST_ANSP AS (
+select ANSP_ID, ANSP_NAME FROM LIST_AUA
+group by  ANSP_ID, ANSP_NAME
+),
+
+ANSP_DAY AS (
+	SELECT
+		a.ansp_id,
+		a.ansp_name,
+		t.day_date,
+		t.month,
+		t.week,
+		t.week_nb_year,
+		t.day_type,
+		t.day_of_week_nb AS day_of_week,
+		t.year
+	FROM
+		LIST_ANSP a ,
+		prudev.pru_time_references t
+	WHERE
+		t.day_date >= to_date('01-01-2019', 'dd-mm-yyyy')-10
+			AND t.day_date < ", mydate, "
+),
+
+ANSP_DATA AS (
+	SELECT
+		unit_id,
+		entry_date,
+		syn_tdm AS tdm,
+		syn_tdm_ert AS tdm_ert,
+		syn_tdf_ert AS tdf_ert,
+		syn_tdm_15_ert AS tdm_15_ert,
+		syn_tdf_15_ert AS tdf_15_ert,
+		syn_tdm_ert_a AS tdm_ert_a,
+		syn_tdm_ert_c AS tdm_ert_c,
+		syn_tdm_ert_d AS tdm_ert_d,
+		syn_tdm_ert_e AS tdm_ert_e,
+		syn_tdm_ert_g AS tdm_ert_g,
+		syn_tdm_ert_i AS tdm_ert_i,
+		syn_tdm_ert_m AS tdm_ert_m,
+		syn_tdm_ert_n AS tdm_ert_n,
+		syn_tdm_ert_o AS tdm_ert_o,
+		syn_tdm_ert_p AS tdm_ert_p,
+		syn_tdm_ert_r AS tdm_ert_r,
+		syn_tdm_ert_s AS tdm_ert_s,
+		syn_tdm_ert_t AS tdm_ert_t,
+		syn_tdm_ert_v AS tdm_ert_v,
+		syn_tdm_ert_w AS tdm_ert_w,
+		syn_tdm_ert_na AS tdm_ert_na
+	FROM
+		prudev.V_SYN12_FAC_DC_DD
+	WHERE
+		entry_date >= to_date('01-01-2019', 'dd-mm-yyyy')-10
+			AND unit_type = 'ANSP'
+),
+
+-- flights
+OP_AUA_DATA as
+(
+SELECT
+FLT_MODEL_FLT_UID flight_sk, c.ansp_id,  c.ansp_name,
+ASP_PROF_TIME_ENTRY as asp_time_entry
+FROM prudev.aiu_Asp_Prof_calc a
+inner join prudev.v_aiu_flt b on (a.FLT_MODEL_FLT_UID = b.flt_uid)
+inner join list_aua C ON (a.ASP_PROF_ID = c.aua_code)
+where a.FLT_MODEL_TY =3
+ and a.flt_model_lobt >= ", mydate, "-8 and a.flt_model_lobt < ", mydate, "+1
+   and b.flt_lobt >= ", mydate, "-8 and b.flt_lobt < ", mydate, "+1
+and a.asp_prof_time_entry >= ", mydate, "-8  and a.asp_prof_time_entry < ", mydate, "+1   and asp_prof_ty = 'AUA'
+and b.flt_state IN ('TE', 'TA', 'AA')
+and a.ASP_PROF_ID = c.aua_code and  a.ASP_PROF_TIME_ENTRY >= c.wef and  ASP_PROF_TIME_ENTRY <= c.till
+),
+
+ OP_ANSP_DATA as (
+SELECT flight_sk, ansp_id, ansp_name,asp_time_entry as first_entry_time,
+     row_number() OVER ( PARTITION BY  ansp_id,flight_sk ORDER BY  asp_time_entry) row_num
+FROM OP_AUA_DATA
+ ),
+
+OP_ANSP_DATA2  as (
+SELECT  ansp_id,  ansp_name
+       , trunc(first_entry_time) as ENTRY_DATE
+       , count(*) as FLT_DAIO
+FROM  OP_ANSP_DATA
+WHERE
+       row_num = 1
+GROUP BY trunc(first_entry_time), ansp_name, ansp_id
+)
+,
+
+FLT_ANSP_DATA as (
+SELECT ansp_name, ansp_id,
+       entry_date,
+       flt_daio
+FROM op_ansp_data2
+where entry_date >=", mydate, "-7 and entry_date < ", mydate, "
+
+UNION
+SELECT unit_name as ansp_name, unit_id as ansp_id,
+       FLIGHT_DATE as entry_date,
+       TTF_FLT as FLT_DAIO
+FROM  PRUDEV.V_PRU_FAC_TD_DD
+WHERE  unit_kind = 'ANSP' and
+      flight_date >=to_date('01-01-2019', 'dd-mm-yyyy')-10 and
+      flight_date < ", mydate, "-7
+)
+
+SELECT
+	a.ansp_name,
+	a.ansp_id,
+	a.year,
+	a.month,
+	a.week,
+	a.week_nb_year,
+	a.day_type,
+	a.day_of_week,
+	a.day_date AS entry_date,
+	COALESCE(tdm, 0) AS tdm,
+	COALESCE(tdm_ert, 0) AS tdm_ert,
+	COALESCE(tdf_ert, 0) AS tdf_ert,
+	COALESCE(tdm_15_ert, 0) AS tdm_15_ert,
+	COALESCE(tdf_15_ert, 0) AS tdf_15_ert,
+	COALESCE(tdm_ert_a, 0) AS tdm_ert_a,
+	COALESCE(tdm_ert_c, 0) AS tdm_ert_c,
+	COALESCE(tdm_ert_d, 0) AS tdm_ert_d,
+	COALESCE(tdm_ert_e, 0) AS tdm_ert_e,
+	COALESCE(tdm_ert_g, 0) AS tdm_ert_g,
+	COALESCE(tdm_ert_i, 0) AS tdm_ert_i,
+	COALESCE(tdm_ert_m, 0) AS tdm_ert_m,
+	COALESCE(tdm_ert_n, 0) AS tdm_ert_n,
+	COALESCE(tdm_ert_o, 0) AS tdm_ert_o,
+	COALESCE(tdm_ert_p, 0) AS tdm_ert_p,
+	COALESCE(tdm_ert_r, 0) AS tdm_ert_r,
+	COALESCE(tdm_ert_s, 0) AS tdm_ert_s,
+	COALESCE(tdm_ert_t, 0) AS tdm_ert_t,
+	COALESCE(tdm_ert_v, 0) AS tdm_ert_v,
+	COALESCE(tdm_ert_w, 0) AS tdm_ert_w,
+	COALESCE(tdm_ert_na, 0) AS tdm_ert_na,
+	COALESCE(c.flt_daio, 0) AS flt_daio
+FROM
+	ANSP_DAY a
+LEFT JOIN ANSP_DATA b
+ON
+	(
+		a.day_date = b.entry_DATE
+			AND a.ansp_id = b.unit_id
+	)
+LEFT JOIN FLT_ANSP_DATA c
+ON (
+		a.day_date = c.entry_DATE
+			AND a.ansp_id = c.ansp_id
+)
+ORDER BY a.ansp_name, a.day_date
+"
+  )}

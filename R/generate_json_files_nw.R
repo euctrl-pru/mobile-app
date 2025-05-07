@@ -175,7 +175,7 @@ if (archive_mode & year(data_day_date) < year(today(tzone = "") +  days(-1))) {
       start = nw_base_dir
     ),
     sheet = "NM_Daily_Delay_All",
-    range = cell_limits(c(2, 1), c(NA, 39))
+    range = cell_limits(c(2, 1), c(NA, NA))
   ) %>%
     as_tibble() %>%
     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
