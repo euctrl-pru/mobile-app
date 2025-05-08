@@ -487,31 +487,111 @@ st_delay_for_json  <- st_delay_last_day %>%
     )
 
   ) %>%
+  #En-route delay
+  mutate(
+    DAY_DLY_ERT_FLT = DAY_ERT_DLY / DAY_TFC,
+    DAY_DLY_ERT_DIF_PREV_YEAR_PERC = if_else(
+      DAY_ERT_DLY_PREV_YEAR == 0, NA , DAY_ERT_DLY / DAY_ERT_DLY_PREV_YEAR -1
+    ),
+    DAY_DLY_ERT_DIF_2019_PERC = if_else(
+      DAY_ERT_DLY_2019 == 0, NA , DAY_ERT_DLY / DAY_ERT_DLY_2019 -1
+    ),
+    DAY_DLY_ERT_FLT_PY = DAY_ERT_DLY_PREV_YEAR / DAY_TFC_PREV_YEAR,
+    DAY_DLY_ERT_FLT_2019 = DAY_ERT_DLY_2019 / DAY_TFC_2019,
+    DAY_DLY_ERT_FLT_DIF_PY_PERC = if_else(
+      DAY_DLY_ERT_FLT_PY == 0, NA , DAY_DLY_ERT_FLT / DAY_DLY_ERT_FLT_PY -1
+    ),
+    DAY_DLY_ERT_FLT_DIF_2019_PERC = if_else(
+      DAY_DLY_ERT_FLT_2019 == 0, NA , DAY_DLY_ERT_FLT / DAY_DLY_ERT_FLT_2019 -1
+    ),
+
+    WEEK_DLY_ERT_FLT = AVG_ERT_DLY_ROLLING_WEEK / AVG_TFC_ROLLING_WEEK,
+    DIF_DLY_ERT_ROLLING_WEEK_PREV_YEAR_PERC = if_else(
+      AVG_ERT_DLY_ROLLING_WEEK_PREV_YEAR  == 0, NA , AVG_ERT_DLY_ROLLING_WEEK / AVG_ERT_DLY_ROLLING_WEEK_PREV_YEAR  -1
+    ),
+    DIF_DLY_ERT_ROLLING_WEEK_2019_PERC = if_else(
+      AVG_ERT_DLY_ROLLING_WEEK_2019== 0, NA , AVG_ERT_DLY_ROLLING_WEEK / AVG_ERT_DLY_ROLLING_WEEK_2019 -1
+    ),
+    WEEK_DLY_ERT_FLT_PY = AVG_ERT_DLY_ROLLING_WEEK_PREV_YEAR / AVG_TFC_ROLLING_WEEK_PREV_YEAR,
+    WEEK_DLY_ERT_FLT_2019 = AVG_ERT_DLY_ROLLING_WEEK_2019 / AVG_TFC_ROLLING_WEEK_2019,
+    WEEK_DLY_ERT_FLT_DIF_PY_PERC = if_else(
+      WEEK_DLY_ERT_FLT_PY == 0, NA , WEEK_DLY_ERT_FLT / WEEK_DLY_ERT_FLT_PY -1
+    ),
+    WEEK_DLY_ERT_FLT_DIF_2019_PERC = if_else(
+      WEEK_DLY_ERT_FLT_2019 == 0, NA , WEEK_DLY_ERT_FLT / WEEK_DLY_ERT_FLT_2019 -1
+    ),
+
+    Y2D_DLY_ERT_DIF_PREV_YEAR_PERC = if_else(
+      Y2D_AVG_ERT_DLY_PREV_YEAR == 0, NA , Y2D_AVG_ERT_DLY_YEAR / Y2D_AVG_ERT_DLY_PREV_YEAR  -1
+    ),
+    Y2D_DLY_ERT_DIF_2019_PERC = if_else(
+      Y2D_AVG_ERT_DLY_2019 == 0, NA , Y2D_AVG_ERT_DLY_YEAR / Y2D_AVG_ERT_DLY_2019 -1
+    ),
+    Y2D_DLY_ERT_FLT = Y2D_ERT_DLY_YEAR / Y2D_TFC_YEAR,
+    Y2D_DLY_ERT_FLT_PY = Y2D_AVG_ERT_DLY_PREV_YEAR / Y2D_AVG_TFC_PREV_YEAR,
+    Y2D_DLY_ERT_FLT_2019 = Y2D_AVG_ERT_DLY_2019 / Y2D_AVG_TFC_2019,
+    Y2D_DLY_ERT_FLT_DIF_PY_PERC = if_else(
+      Y2D_DLY_ERT_FLT_PY == 0, NA , Y2D_DLY_ERT_FLT / Y2D_DLY_ERT_FLT_PY -1
+    ),
+    Y2D_DLY_ERT_FLT_DIF_2019_PERC = if_else(
+      Y2D_DLY_ERT_FLT_2019 == 0, NA , Y2D_DLY_ERT_FLT / Y2D_DLY_ERT_FLT_2019 -1
+    )
+
+  ) %>%
+  #Airport delay
+  mutate(
+    DAY_DLY_APT_DIF_PREV_YEAR_PERC = if_else(
+      DAY_ARP_DLY_PREV_YEAR == 0, NA , DAY_ARP_DLY / DAY_ARP_DLY_PREV_YEAR -1
+    ),
+    DAY_DLY_APT_DIF_2019_PERC = if_else(
+      DAY_ARP_DLY_2019 == 0, NA , DAY_ARP_DLY / DAY_ARP_DLY_2019 -1
+    ),
+    DAY_DLY_APT_FLT = DAY_ARP_DLY / DAY_TFC,
+    DAY_DLY_APT_FLT_PY = DAY_ARP_DLY_PREV_YEAR / DAY_TFC_PREV_YEAR,
+    DAY_DLY_APT_FLT_2019 = DAY_ARP_DLY_2019 / DAY_TFC_2019,
+    DAY_DLY_APT_FLT_DIF_PY_PERC = if_else(
+      DAY_DLY_APT_FLT_PY == 0, NA , DAY_DLY_APT_FLT / DAY_DLY_APT_FLT_PY -1
+    ),
+    DAY_DLY_APT_FLT_DIF_2019_PERC = if_else(
+      DAY_DLY_APT_FLT_2019 == 0, NA , DAY_DLY_APT_FLT / DAY_DLY_APT_FLT_2019 -1
+    ),
+
+    WEEK_DLY_APT_FLT = AVG_ARP_DLY_ROLLING_WEEK / AVG_TFC_ROLLING_WEEK,
+    DIF_DLY_APT_ROLLING_WEEK_PREV_YEAR_PERC = if_else(
+      AVG_ARP_DLY_ROLLING_WEEK_PREV_YEAR  == 0, NA , AVG_ARP_DLY_ROLLING_WEEK / AVG_ARP_DLY_ROLLING_WEEK_PREV_YEAR  -1
+    ),
+    DIF_DLY_APT_ROLLING_WEEK_2019_PERC = if_else(
+      AVG_ARP_DLY_ROLLING_WEEK_2019== 0, NA , AVG_ARP_DLY_ROLLING_WEEK / AVG_ARP_DLY_ROLLING_WEEK_2019 -1
+    ),
+    WEEK_DLY_APT_FLT_PY = AVG_ARP_DLY_ROLLING_WEEK_PREV_YEAR / AVG_TFC_ROLLING_WEEK_PREV_YEAR,
+    WEEK_DLY_APT_FLT_2019 = AVG_ARP_DLY_ROLLING_WEEK_2019 / AVG_TFC_ROLLING_WEEK_2019,
+    WEEK_DLY_APT_FLT_DIF_PY_PERC = if_else(
+      WEEK_DLY_APT_FLT_PY == 0, NA , WEEK_DLY_APT_FLT / WEEK_DLY_APT_FLT_PY -1
+    ),
+    WEEK_DLY_APT_FLT_DIF_2019_PERC = if_else(
+      WEEK_DLY_APT_FLT_2019 == 0, NA , WEEK_DLY_APT_FLT / WEEK_DLY_APT_FLT_2019 -1
+    ),
+
+    Y2D_DLY_APT_DIF_PREV_YEAR_PERC = if_else(
+      Y2D_AVG_ARP_DLY_PREV_YEAR == 0, NA , Y2D_AVG_ARP_DLY_YEAR / Y2D_AVG_ARP_DLY_PREV_YEAR  -1
+    ),
+    Y2D_DLY_APT_DIF_2019_PERC = if_else(
+      Y2D_AVG_ARP_DLY_2019 == 0, NA , Y2D_AVG_ARP_DLY_YEAR / Y2D_AVG_ARP_DLY_2019 -1
+    ),
+    Y2D_DLY_APT_FLT = Y2D_ARP_DLY_YEAR / Y2D_TFC_YEAR,
+    Y2D_DLY_APT_FLT_PY = Y2D_AVG_ARP_DLY_PREV_YEAR / Y2D_AVG_TFC_PREV_YEAR,
+    Y2D_DLY_APT_FLT_2019 = Y2D_AVG_ARP_DLY_2019 / Y2D_AVG_TFC_2019,
+    Y2D_DLY_APT_FLT_DIF_PY_PERC = if_else(
+      Y2D_DLY_APT_FLT_PY == 0, NA , Y2D_DLY_APT_FLT / Y2D_DLY_APT_FLT_PY -1
+    ),
+    Y2D_DLY_APT_FLT_DIF_2019_PERC = if_else(
+      Y2D_DLY_APT_FLT_2019 == 0, NA , Y2D_DLY_APT_FLT / Y2D_DLY_APT_FLT_2019 -1
+    )
+
+  ) %>%
   select(
     iso_2letter,
     FLIGHT_DATE,
-    DAY_DLY,
-    DAY_DLY_DIF_PREV_YEAR_PERC,
-    DAY_DLY_DIF_2019_PERC,
-    DAY_DLY_FLT,
-    DAY_DLY_FLT_DIF_PY_PERC,
-    DAY_DLY_FLT_DIF_2019_PERC,
-
-    AVG_DLY_ROLLING_WEEK,
-    DIF_DLY_ROLLING_WEEK_PREV_YEAR_PERC,
-    DIF_DLY_ROLLING_WEEK_2019_PERC,
-    WEEK_DLY_FLT,
-    WEEK_DLY_FLT_DIF_PY_PERC,
-    WEEK_DLY_FLT_DIF_2019_PERC,
-
-    Y2D_AVG_DLY_YEAR,
-    Y2D_DLY_DIF_PREV_YEAR_PERC,
-    Y2D_DLY_DIF_2019_PERC,
-    Y2D_DLY_FLT,
-    Y2D_DLY_FLT_DIF_PY_PERC,
-    Y2D_DLY_FLT_DIF_2019_PERC
-  ) %>%
-  rename(
     DY_DLY = DAY_DLY,
     DY_DLY_DIF_PREV_YEAR_PERC = DAY_DLY_DIF_PREV_YEAR_PERC,
     DY_DLY_DIF_2019_PERC = DAY_DLY_DIF_2019_PERC,
@@ -521,13 +601,62 @@ st_delay_for_json  <- st_delay_last_day %>%
 
     WK_DLY_AVG_ROLLING = AVG_DLY_ROLLING_WEEK,
     WK_DLY_DIF_PREV_YEAR_PERC = DIF_DLY_ROLLING_WEEK_PREV_YEAR_PERC,
-    WK_DLY_DIF_2019_PERC = DIF_DLY_ROLLING_WEEK_2019_PERC,
+    WK_DLY_DIF_2019_PERC = DIF_DLY_ROLLING_WEEK_2019_PERC,,
     WK_DLY_FLT = WEEK_DLY_FLT,
     WK_DLY_FLT_DIF_PREV_YEAR_PERC = WEEK_DLY_FLT_DIF_PY_PERC,
     WK_DLY_FLT_DIF_2019_PERC = WEEK_DLY_FLT_DIF_2019_PERC,
 
     Y2D_DLY_AVG = Y2D_AVG_DLY_YEAR,
-    Y2D_DLY_FLT_DIF_PREV_YEAR_PERC = Y2D_DLY_FLT_DIF_PY_PERC
+    Y2D_DLY_DIF_PREV_YEAR_PERC,
+    Y2D_DLY_DIF_2019_PERC,
+    Y2D_DLY_FLT,
+    Y2D_DLY_FLT_DIF_PREV_YEAR_PERC = Y2D_DLY_FLT_DIF_PY_PERC,
+    Y2D_DLY_FLT_DIF_2019_PERC,
+
+    #En-route delay
+    DY_DLY_ERT = DAY_ERT_DLY,
+    DY_DLY_ERT_DIF_PREV_YEAR_PERC = DAY_DLY_ERT_DIF_PREV_YEAR_PERC,
+    DY_DLY_ERT_DIF_2019_PERC = DAY_DLY_ERT_DIF_2019_PERC,
+    DY_DLY_ERT_FLT = DAY_DLY_ERT_FLT,
+    DY_DLY_ERT_FLT_DIF_PREV_YEAR_PERC = DAY_DLY_ERT_FLT_DIF_PY_PERC,
+    DY_DLY_ERT_FLT_DIF_2019_PERC = DAY_DLY_ERT_FLT_DIF_2019_PERC,
+
+    WK_DLY_ERT_AVG_ROLLING = AVG_ERT_DLY_ROLLING_WEEK,
+    WK_DLY_ERT_DIF_PREV_YEAR_PERC = DIF_DLY_ERT_ROLLING_WEEK_PREV_YEAR_PERC,
+    WK_DLY_ERT_DIF_2019_PERC = DIF_DLY_ERT_ROLLING_WEEK_2019_PERC,
+    WK_DLY_ERT_FLT = WEEK_DLY_ERT_FLT,
+    WK_DLY_ERT_FLT_DIF_PREV_YEAR_PERC = WEEK_DLY_ERT_FLT_DIF_PY_PERC,
+    WK_DLY_ERT_FLT_DIF_2019_PERC = WEEK_DLY_ERT_FLT_DIF_2019_PERC,
+
+    Y2D_DLY_ERT_AVG = Y2D_AVG_ERT_DLY_YEAR,
+    Y2D_DLY_ERT_DIF_PREV_YEAR_PERC,
+    Y2D_DLY_ERT_DIF_2019_PERC,
+    Y2D_DLY_ERT_FLT,
+    Y2D_DLY_ERT_FLT_DIF_PREV_YEAR_PERC = Y2D_DLY_ERT_FLT_DIF_PY_PERC,
+    Y2D_DLY_ERT_FLT_DIF_2019_PERC,
+
+
+    #Airport delay
+    DY_DLY_APT = DAY_ARP_DLY,
+    DY_DLY_APT_DIF_PREV_YEAR_PERC = DAY_DLY_APT_DIF_PREV_YEAR_PERC,
+    DY_DLY_APT_DIF_2019_PERC = DAY_DLY_APT_DIF_2019_PERC,
+    DY_DLY_APT_FLT = DAY_DLY_APT_FLT,
+    DY_DLY_APT_FLT_DIF_PREV_YEAR_PERC = DAY_DLY_APT_FLT_DIF_PY_PERC,
+    DY_DLY_APT_FLT_DIF_2019_PERC = DAY_DLY_APT_FLT_DIF_2019_PERC,
+
+    WK_DLY_APT_AVG_ROLLING = AVG_ARP_DLY_ROLLING_WEEK,
+    WK_DLY_APT_DIF_PREV_YEAR_PERC = DIF_DLY_APT_ROLLING_WEEK_PREV_YEAR_PERC,
+    WK_DLY_APT_DIF_2019_PERC = DIF_DLY_APT_ROLLING_WEEK_2019_PERC,
+    WK_DLY_APT_FLT = WEEK_DLY_APT_FLT,
+    WK_DLY_APT_FLT_DIF_PREV_YEAR_PERC = WEEK_DLY_APT_FLT_DIF_PY_PERC,
+    WK_DLY_APT_FLT_DIF_2019_PERC = WEEK_DLY_APT_FLT_DIF_2019_PERC,
+
+    Y2D_DLY_APT_AVG = Y2D_AVG_ARP_DLY_YEAR,
+    Y2D_DLY_APT_DIF_PREV_YEAR_PERC,
+    Y2D_DLY_APT_DIF_2019_PERC,
+    Y2D_DLY_APT_FLT,
+    Y2D_DLY_APT_FLT_DIF_PREV_YEAR_PERC = Y2D_DLY_APT_FLT_DIF_PY_PERC,
+    Y2D_DLY_APT_FLT_DIF_2019_PERC
   ) %>%
   # Iceland exception
   mutate(
@@ -545,7 +674,41 @@ st_delay_for_json  <- st_delay_last_day %>%
 
     DY_DLY_FLT_DIF_2019_PERC =  if_else(iso_2letter == "IS", NA, DY_DLY_FLT_DIF_2019_PERC),
     WK_DLY_FLT_DIF_2019_PERC =  if_else(iso_2letter == "IS", NA, WK_DLY_FLT_DIF_2019_PERC),
-    Y2D_DLY_FLT_DIF_2019_PERC = if_else(iso_2letter == "IS", NA, Y2D_DLY_FLT_DIF_2019_PERC)
+    Y2D_DLY_FLT_DIF_2019_PERC = if_else(iso_2letter == "IS", NA, Y2D_DLY_FLT_DIF_2019_PERC),
+
+    #En-route delay
+    DY_DLY_ERT_DIF_PREV_YEAR_PERC =  if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, DY_DLY_ERT_DIF_PREV_YEAR_PERC),
+    WK_DLY_ERT_DIF_PREV_YEAR_PERC =  if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, WK_DLY_ERT_DIF_PREV_YEAR_PERC),
+    Y2D_DLY_ERT_DIF_PREV_YEAR_PERC = if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, Y2D_DLY_ERT_DIF_PREV_YEAR_PERC),
+
+    DY_DLY_ERT_FLT_DIF_PREV_YEAR_PERC =  if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, DY_DLY_ERT_FLT_DIF_PREV_YEAR_PERC),
+    WK_DLY_ERT_FLT_DIF_PREV_YEAR_PERC =  if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, WK_DLY_ERT_FLT_DIF_PREV_YEAR_PERC),
+    Y2D_DLY_ERT_FLT_DIF_PREV_YEAR_PERC = if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, Y2D_DLY_ERT_FLT_DIF_PREV_YEAR_PERC),
+
+    DY_DLY_ERT_DIF_2019_PERC =  if_else(iso_2letter == "IS", NA, DY_DLY_ERT_DIF_2019_PERC),
+    WK_DLY_ERT_DIF_2019_PERC =  if_else(iso_2letter == "IS", NA, WK_DLY_ERT_DIF_2019_PERC),
+    Y2D_DLY_ERT_DIF_2019_PERC = if_else(iso_2letter == "IS", NA, Y2D_DLY_ERT_DIF_2019_PERC),
+
+    DY_DLY_ERT_FLT_DIF_2019_PERC =  if_else(iso_2letter == "IS", NA, DY_DLY_ERT_FLT_DIF_2019_PERC),
+    WK_DLY_ERT_FLT_DIF_2019_PERC =  if_else(iso_2letter == "IS", NA, WK_DLY_ERT_FLT_DIF_2019_PERC),
+    Y2D_DLY_ERT_FLT_DIF_2019_PERC = if_else(iso_2letter == "IS", NA, Y2D_DLY_ERT_FLT_DIF_2019_PERC),
+
+    #Airport delay
+    DY_DLY_APT_DIF_PREV_YEAR_PERC =  if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, DY_DLY_APT_DIF_PREV_YEAR_PERC),
+    WK_DLY_APT_DIF_PREV_YEAR_PERC =  if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, WK_DLY_APT_DIF_PREV_YEAR_PERC),
+    Y2D_DLY_APT_DIF_PREV_YEAR_PERC = if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, Y2D_DLY_APT_DIF_PREV_YEAR_PERC),
+
+    DY_DLY_APT_FLT_DIF_PREV_YEAR_PERC =  if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, DY_DLY_APT_FLT_DIF_PREV_YEAR_PERC),
+    WK_DLY_APT_FLT_DIF_PREV_YEAR_PERC =  if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, WK_DLY_APT_FLT_DIF_PREV_YEAR_PERC),
+    Y2D_DLY_APT_FLT_DIF_PREV_YEAR_PERC = if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, Y2D_DLY_APT_FLT_DIF_PREV_YEAR_PERC),
+
+    DY_DLY_APT_DIF_2019_PERC =  if_else(iso_2letter == "IS", NA, DY_DLY_APT_DIF_2019_PERC),
+    WK_DLY_APT_DIF_2019_PERC =  if_else(iso_2letter == "IS", NA, WK_DLY_APT_DIF_2019_PERC),
+    Y2D_DLY_APT_DIF_2019_PERC = if_else(iso_2letter == "IS", NA, Y2D_DLY_APT_DIF_2019_PERC),
+
+    DY_DLY_APT_FLT_DIF_2019_PERC =  if_else(iso_2letter == "IS", NA, DY_DLY_APT_FLT_DIF_2019_PERC),
+    WK_DLY_APT_FLT_DIF_2019_PERC =  if_else(iso_2letter == "IS", NA, WK_DLY_APT_FLT_DIF_2019_PERC),
+    Y2D_DLY_APT_FLT_DIF_2019_PERC = if_else(iso_2letter == "IS", NA, Y2D_DLY_APT_FLT_DIF_2019_PERC)
 
   ) %>%
   right_join(state_iso, by ="iso_2letter") %>%
@@ -2855,7 +3018,9 @@ st_delay_type_data <- st_delay_data %>%
     RWK_DLY_FLT = if_else(AVG_TFC_ROLLING_WEEK == 0, 0, AVG_DLY_ROLLING_WEEK/AVG_TFC_ROLLING_WEEK),
     RWK_DLY_FLT_ERT = if_else(AVG_TFC_ROLLING_WEEK == 0, 0, AVG_ERT_DLY_ROLLING_WEEK/AVG_TFC_ROLLING_WEEK),
     RWK_DLY_FLT_APT = if_else(AVG_TFC_ROLLING_WEEK == 0, 0, AVG_ARP_DLY_ROLLING_WEEK/AVG_TFC_ROLLING_WEEK),
-    RWK_DLY_FLT_PREV_YEAR = if_else(AVG_TFC_ROLLING_WEEK_PREV_YEAR == 0, 0, AVG_DLY_ROLLING_PREV_WEEK / AVG_TFC_ROLLING_WEEK_PREV_YEAR),
+    RWK_DLY_FLT_PREV_YEAR = if_else(AVG_TFC_ROLLING_WEEK_PREV_YEAR == 0, 0, AVG_DLY_ROLLING_WEEK_PREV_YEAR / AVG_TFC_ROLLING_WEEK_PREV_YEAR),
+    RWK_DLY_ERT_FLT_PREV_YEAR = if_else(AVG_TFC_ROLLING_WEEK_PREV_YEAR == 0, 0, AVG_ERT_DLY_ROLLING_WEEK_PREV_YEAR / AVG_TFC_ROLLING_WEEK_PREV_YEAR),
+    RWK_DLY_APT_FLT_PREV_YEAR = if_else(AVG_TFC_ROLLING_WEEK_PREV_YEAR == 0, 0, AVG_ARP_DLY_ROLLING_WEEK_PREV_YEAR / AVG_TFC_ROLLING_WEEK_PREV_YEAR),
 
     Y2D_DLY_FLT = if_else(Y2D_TFC_YEAR == 0, 0, Y2D_DLY_YEAR/Y2D_TFC_YEAR),
     Y2D_DLY_FLT_ERT = if_else(Y2D_TFC_YEAR == 0, 0, Y2D_ERT_DLY_YEAR/Y2D_TFC_YEAR),
@@ -3069,6 +3234,87 @@ st_delay_type_evo_y2d_j <- st_delay_type_y2d_long %>% toJSON(., pretty = TRUE)
 
 save_json(st_delay_type_evo_y2d_j, "st_delay_flt_type_evo_chart_y2d")
 
+### Delay breakdown----
+#### En-route ----
+st_delay_ERT_type_y2d <- st_delay_type_data %>%
+  filter(FLIGHT_DATE <= data_day_date) %>%
+  group_by(iso_2letter) %>%
+  reframe(
+    iso_2letter,
+    daio_zone,
+    FLIGHT_DATE,
+    RWK_DLY_FLT_ERT,
+    RWK_DLY_ERT_FLT_PREV_YEAR) %>%
+  select(iso_2letter,
+         daio_zone,
+         FLIGHT_DATE,
+         RWK_DLY_FLT_ERT,
+         RWK_DLY_ERT_FLT_PREV_YEAR
+  ) %>%   # iceland exception
+  mutate(
+    RWK_DLY_ERT_FLT_PREV_YEAR = if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, RWK_DLY_ERT_FLT_PREV_YEAR)
+  )
+
+column_names <- c(
+  "iso_2letter",
+  "daio_zone",
+  "FLIGHT_DATE",
+  paste0("En-route ATFM delay/flight ", data_day_year),
+  paste0("En-route ATFM delay/flight ", data_day_year - 1)
+)
+
+
+colnames(st_delay_ERT_type_y2d) <- column_names
+
+### nest data
+st_delay_ERT_type_value_y2d_long <- st_delay_ERT_type_y2d %>%
+  group_by(iso_2letter, daio_zone, FLIGHT_DATE) %>%
+  nest_legacy(.key = "statistics")
+
+st_delay_ERT_type_value_y2d_long_j <- st_delay_ERT_type_value_y2d_long %>% toJSON(., pretty = TRUE)
+
+save_json(st_delay_ERT_type_value_y2d_long_j, "st_delay_flt_ERT_evo_chart_y2d")
+
+
+#### Airport ----
+st_delay_APT_type_y2d <- st_delay_type_data %>%
+  filter(FLIGHT_DATE <= data_day_date) %>%
+  group_by(iso_2letter) %>%
+  reframe(
+    iso_2letter,
+    daio_zone,
+    FLIGHT_DATE,
+    RWK_DLY_FLT_APT,
+    RWK_DLY_APT_FLT_PREV_YEAR) %>%
+  select(iso_2letter,
+         daio_zone,
+         FLIGHT_DATE,
+         RWK_DLY_FLT_APT,
+         RWK_DLY_APT_FLT_PREV_YEAR
+  ) %>%   # iceland exception
+  mutate(
+    RWK_DLY_APT_FLT_PREV_YEAR = if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, RWK_DLY_APT_FLT_PREV_YEAR)
+  )
+
+column_names <- c(
+  "iso_2letter",
+  "daio_zone",
+  "FLIGHT_DATE",
+  paste0("Airport ATFM delay/flight ", data_day_year),
+  paste0("Airport ATFM delay/flight ", data_day_year - 1)
+)
+
+
+colnames(st_delay_APT_type_y2d) <- column_names
+
+### nest data
+st_delay_APT_type_value_y2d_long <- st_delay_APT_type_y2d %>%
+  group_by(iso_2letter, daio_zone, FLIGHT_DATE) %>%
+  nest_legacy(.key = "statistics")
+
+st_delay_APT_type_value_y2d_long_j <- st_delay_APT_type_value_y2d_long %>% toJSON(., pretty = TRUE)
+
+save_json(st_delay_APT_type_value_y2d_long_j, "st_delay_flt_APT_evo_chart_y2d")
 
 ## BILLING ----
 st_billing_evo <- st_billing %>%

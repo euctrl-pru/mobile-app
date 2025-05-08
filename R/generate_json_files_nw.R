@@ -1106,11 +1106,11 @@ nw_delay_flt_y2d_long <- cbind(nw_delay_flt_value_y2d_long, nw_delay_flt_share_y
 
 #### convert to json and save in data folder and archive
 nw_delay_flt_y2d_j <- nw_delay_flt_y2d_long %>% toJSON(., pretty = TRUE)
-save_json(nw_delay_flt_y2d_j, "nw_delay_flt_type_evo_chart_y2d")
+save_json(nw_delay_flt_y2d_j, "nw_delay_ERT_flt_type_evo_chart_y2d")
 
 ### delay per flight per type v3----
 #### En-route ----
-nw_delay_flt_ERP_evo <- nw_delay_raw %>%
+nw_delay_flt_ERT_evo <- nw_delay_raw %>%
   filter(FLIGHT_DATE <= data_day_date) %>%
   mutate(
     ROLL_WK_AVG_FLT = rollmeanr(DAY_FLT, 7, fill = NA, align = "right"),
@@ -1125,7 +1125,7 @@ nw_delay_flt_ERP_evo <- nw_delay_raw %>%
     ROLL_WK_AVG_DLY_FLT_ERT_PREV_YEAR
   )
 
-nw_delay_flt_ERP_evo_app <- nw_delay_flt_ERP_evo %>%
+nw_delay_flt_ERT_evo_app <- nw_delay_flt_ERT_evo %>%
   select(
     FLIGHT_DATE,
     ROLL_WK_AVG_DLY_FLT_ERT,
@@ -1138,7 +1138,19 @@ column_names <- c(
   paste0("En-route ATFM delay/flight ", data_day_year - 1)
 )
 
-colnames(nw_delay_flt_ERP_evo_app) <- column_names
+colnames(nw_delay_flt_ERT_evo_app) <- column_names
+
+### nest data
+#### values
+nw_delay_ERT_flt_value_day_long <- nw_delay_flt_ERT_evo_app %>%
+  pivot_longer(-c(FLIGHT_DATE), names_to = 'metric', values_to = 'value') %>%
+  group_by(FLIGHT_DATE) %>%
+  nest_legacy(.key = "statistics")
+
+#### convert to json and save in data folder and archive
+nw_delay_ERT_flt_value_day_long_j <- nw_delay_ERT_flt_value_day_long %>% toJSON(., pretty = TRUE)
+save_json(nw_delay_ERT_flt_value_day_long_j, "nw_delay_ERT_flt_chart_y2d_j")
+
 
 
 #### Airport ----
@@ -1172,6 +1184,16 @@ column_names <- c(
 
 colnames(nw_delay_flt_APT_evo_app) <- column_names
 
+### nest data
+#### values
+nw_delay_APT_flt_value_day_long <- nw_delay_flt_APT_evo_app %>%
+  pivot_longer(-c(FLIGHT_DATE), names_to = 'metric', values_to = 'value') %>%
+  group_by(FLIGHT_DATE) %>%
+  nest_legacy(.key = "statistics")
+
+#### convert to json and save in data folder and archive
+nw_delay_APT_flt_value_day_long_j <- nw_delay_APT_flt_value_day_long %>% toJSON(., pretty = TRUE)
+save_json(nw_delay_APT_flt_value_day_long_j, "nw_delay_APT_flt_type_evo_chart_y2d")
 
 
 
