@@ -1125,11 +1125,14 @@ nw_delay_flt_ERT_evo <- nw_delay_raw %>%
     ROLL_WK_AVG_DLY_FLT_ERT_PREV_YEAR
   )
 
-nw_delay_flt_ERT_evo_app <- nw_delay_flt_ERT_evo %>%
-  select(
-    FLIGHT_DATE,
-    ROLL_WK_AVG_DLY_FLT_ERT,
-    ROLL_WK_AVG_DLY_FLT_ERT_PREV_YEAR
+
+y2d_delay_ERT_flt <- st_delay_last_day %>%
+  ungroup() %>%
+  mutate(Y2D_DLY_ERT_FLT = Y2D_ERT_DLY_YEAR / Y2D_TFC_YEAR,
+         Y2D_DLY_ERT_FLT_PREV_YEAR = Y2D_AVG_ERT_DLY_PREV_YEAR / Y2D_AVG_TFC_PREV_YEAR) %>%
+  select(daio_zone = COUNTRY_NAME,
+         Y2D_DLY_ERT_FLT,
+         Y2D_DLY_ERT_FLT_PREV_YEAR
   )
 
 column_names <- c(

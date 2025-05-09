@@ -3236,7 +3236,7 @@ save_json(st_delay_type_evo_y2d_j, "st_delay_flt_type_evo_chart_y2d")
 
 ### Delay breakdown----
 #### En-route ----
-st_delay_ERT_type_y2d <- st_delay_type_data %>%
+st_delay_ERT_flt_evo <- st_delay_type_data %>%
   filter(FLIGHT_DATE <= data_day_date) %>%
   group_by(iso_2letter) %>%
   reframe(
@@ -3244,7 +3244,8 @@ st_delay_ERT_type_y2d <- st_delay_type_data %>%
     daio_zone,
     FLIGHT_DATE,
     RWK_DLY_FLT_ERT,
-    RWK_DLY_ERT_FLT_PREV_YEAR) %>%
+    RWK_DLY_ERT_FLT_PREV_YEAR
+  ) %>%
   select(iso_2letter,
          daio_zone,
          FLIGHT_DATE,
@@ -3253,6 +3254,79 @@ st_delay_ERT_type_y2d <- st_delay_type_data %>%
   ) %>%   # iceland exception
   mutate(
     RWK_DLY_ERT_FLT_PREV_YEAR = if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, RWK_DLY_ERT_FLT_PREV_YEAR)
+  )
+
+
+y2d_delay_ERT_flt <- st_delay_last_day %>%
+  ungroup() %>%
+  mutate(Y2D_DLY_ERT_FLT = Y2D_ERT_DLY_YEAR / Y2D_TFC_YEAR,
+         Y2D_DLY_ERT_FLT_PREV_YEAR = Y2D_AVG_ERT_DLY_PREV_YEAR / Y2D_AVG_TFC_PREV_YEAR) %>%
+  select(daio_zone = COUNTRY_NAME,
+         Y2D_DLY_ERT_FLT,
+         Y2D_DLY_ERT_FLT_PREV_YEAR
+         )
+
+column_names <- c(
+  "iso_2letter",
+  "daio_zone",
+  "FLIGHT_DATE",
+  paste0("En-route ATFM delay/flight ", data_day_year),
+  paste0("En-route ATFM delay/flight ", data_day_year - 1)
+)
+
+
+colnames(st_delay_ERT_flt_evo) <- column_names
+
+### nest data
+st_delay_ERT_flt_evo_long <- st_delay_ERT_flt_evo %>%
+  pivot_longer(-c(iso_2letter, daio_zone, FLIGHT_DATE), names_to = 'year', values_to = 'daio') %>%
+  left_join(y2d_delay_ERT_flt, by = "daio_zone") %>%
+  mutate(
+    year = if_else(str_detect(year, as.character(data_day_year)),
+                   paste0(year, " (", format(round(Y2D_DLY_ERT_FLT,2), nsmall=2),"')"),
+                   paste0(year, " (", format(round(Y2D_DLY_ERT_FLT_PREV_YEAR,2), nsmall=2),"')"))
+  ) %>%
+  select(-Y2D_DLY_ERT_FLT, -Y2D_DLY_ERT_FLT_PREV_YEAR) %>%
+  group_by(iso_2letter, daio_zone, FLIGHT_DATE) %>%
+  nest_legacy(.key = "statistics")
+
+
+
+
+st_delay_ERT_flt_evo_long_j <- st_delay_ERT_flt_evo_long %>% toJSON(., pretty = TRUE)
+
+save_json(st_delay_ERT_flt_evo_long_j, "st_delay_ERT_flt_evo_chart_y2d")
+
+
+#### Airport ----
+st_delay_APT_flt_evo <- st_delay_type_data %>%
+  filter(FLIGHT_DATE <= data_day_date) %>%
+  group_by(iso_2letter) %>%
+  reframe(
+    iso_2letter,
+    daio_zone,
+    FLIGHT_DATE,
+    RWK_DLY_FLT_APT,
+    RWK_DLY_APT_FLT_PREV_YEAR
+  ) %>%
+  select(iso_2letter,
+         daio_zone,
+         FLIGHT_DATE,
+         RWK_DLY_FLT_APT,
+         RWK_DLY_APT_FLT_PREV_YEAR
+  ) %>%   # iceland exception
+  mutate(
+    RWK_DLY_APT_FLT_PREV_YEAR = if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, RWK_DLY_APT_FLT_PREV_YEAR)
+  )
+
+
+y2d_delay_APT_flt <- st_delay_last_day %>%
+  ungroup() %>%
+  mutate(Y2D_DLY_APT_FLT = Y2D_ARP_DLY_YEAR / Y2D_TFC_YEAR,
+         Y2D_DLY_APT_FLT_PREV_YEAR = Y2D_AVG_ARP_DLY_PREV_YEAR / Y2D_AVG_TFC_PREV_YEAR) %>%
+  select(daio_zone = COUNTRY_NAME,
+         Y2D_DLY_APT_FLT,
+         Y2D_DLY_APT_FLT_PREV_YEAR
   )
 
 column_names <- c(
@@ -3264,57 +3338,27 @@ column_names <- c(
 )
 
 
-colnames(st_delay_ERT_type_y2d) <- column_names
+colnames(st_delay_APT_flt_evo) <- column_names
 
 ### nest data
-st_delay_ERT_type_value_y2d_long <- st_delay_ERT_type_y2d %>%
-  group_by(iso_2letter, daio_zone, FLIGHT_DATE) %>%
-  nest_legacy(.key = "statistics")
-
-st_delay_ERT_type_value_y2d_long_j <- st_delay_ERT_type_value_y2d_long %>% toJSON(., pretty = TRUE)
-
-save_json(st_delay_ERT_type_value_y2d_long_j, "st_delay_flt_ERT_evo_chart_y2d")
-
-
-#### Airport ----
-st_delay_APT_type_y2d <- st_delay_type_data %>%
-  filter(FLIGHT_DATE <= data_day_date) %>%
-  group_by(iso_2letter) %>%
-  reframe(
-    iso_2letter,
-    daio_zone,
-    FLIGHT_DATE,
-    RWK_DLY_FLT_APT,
-    RWK_DLY_APT_FLT_PREV_YEAR) %>%
-  select(iso_2letter,
-         daio_zone,
-         FLIGHT_DATE,
-         RWK_DLY_FLT_APT,
-         RWK_DLY_APT_FLT_PREV_YEAR
-  ) %>%   # iceland exception
+st_delay_APT_flt_evo_long <- st_delay_APT_flt_evo %>%
+  pivot_longer(-c(iso_2letter, daio_zone, FLIGHT_DATE), names_to = 'year', values_to = 'daio') %>%
+  left_join(y2d_delay_APT_flt, by = "daio_zone") %>%
   mutate(
-    RWK_DLY_APT_FLT_PREV_YEAR = if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, RWK_DLY_APT_FLT_PREV_YEAR)
-  )
-
-column_names <- c(
-  "iso_2letter",
-  "daio_zone",
-  "FLIGHT_DATE",
-  paste0("Airport ATFM delay/flight ", data_day_year),
-  paste0("Airport ATFM delay/flight ", data_day_year - 1)
-)
-
-
-colnames(st_delay_APT_type_y2d) <- column_names
-
-### nest data
-st_delay_APT_type_value_y2d_long <- st_delay_APT_type_y2d %>%
+    year = if_else(str_detect(year, as.character(data_day_year)),
+                   paste0(year, " (", format(round(Y2D_DLY_APT_FLT,2), nsmall=2),"')"),
+                   paste0(year, " (", format(round(Y2D_DLY_APT_FLT_PREV_YEAR,2), nsmall=2),"')"))
+  ) %>%
+  select(-Y2D_DLY_APT_FLT, -Y2D_DLY_APT_FLT_PREV_YEAR) %>%
   group_by(iso_2letter, daio_zone, FLIGHT_DATE) %>%
   nest_legacy(.key = "statistics")
 
-st_delay_APT_type_value_y2d_long_j <- st_delay_APT_type_value_y2d_long %>% toJSON(., pretty = TRUE)
 
-save_json(st_delay_APT_type_value_y2d_long_j, "st_delay_flt_APT_evo_chart_y2d")
+
+
+st_delay_APT_flt_evo_long_j <- st_delay_APT_flt_evo_long %>% toJSON(., pretty = TRUE)
+
+save_json(st_delay_APT_flt_evo_long_j, "st_delay_APT_flt_evo_chart_y2d")
 
 ## BILLING ----
 st_billing_evo <- st_billing %>%
