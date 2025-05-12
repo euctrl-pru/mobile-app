@@ -1106,7 +1106,7 @@ nw_delay_flt_y2d_long <- cbind(nw_delay_flt_value_y2d_long, nw_delay_flt_share_y
 
 #### convert to json and save in data folder and archive
 nw_delay_flt_y2d_j <- nw_delay_flt_y2d_long %>% toJSON(., pretty = TRUE)
-save_json(nw_delay_flt_y2d_j, "nw_delay_ERT_flt_type_evo_chart_y2d")
+save_json(nw_delay_flt_y2d_j, "nw_delay_flt_type_evo_chart_y2d")
 
 ### delay per flight per type v5----
 #### En-route ----
@@ -1141,11 +1141,11 @@ column_names <- c(
   paste0("En-route ATFM delay/flight ", data_day_year - 1)
 )
 
-colnames(nw_delay_flt_ERT_evo_app) <- column_names
+colnames(nw_delay_flt_ERT_evo) <- column_names
 
 ### nest data
 #### values
-nw_delay_ERT_flt_value_day_long <- nw_delay_flt_ERT_evo_app %>%
+nw_delay_ERT_flt_value_day_long <- nw_delay_flt_ERT_evo %>%
   pivot_longer(-c(FLIGHT_DATE), names_to = 'metric', values_to = 'value') %>%
   group_by(FLIGHT_DATE) %>%
   nest_legacy(.key = "statistics")
