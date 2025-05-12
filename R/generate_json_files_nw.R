@@ -191,7 +191,7 @@ if (archive_mode & year(data_day_date) < year(today(tzone = "") +  days(-1))) {
 nw_delay_data <- assign(mydataframe, df)
 
 # calcs
-nw_delay_for_json <- nw_delay_data %>%
+nw_delay_last_day <- nw_delay_data %>%
   mutate(FLIGHT_DATE = as.Date(FLIGHT_DATE)) %>%
   filter(FLIGHT_DATE == min(max(LAST_DATA_DAY),
                             data_day_date)) %>%
@@ -324,7 +324,9 @@ nw_delay_for_json <- nw_delay_data %>%
     Y2D_DLY_APT_FLT_DIF_2019_PERC = if_else(
       Y2D_DLY_APT_FLT_2019 == 0, NA, Y2D_DLY_APT_FLT / Y2D_DLY_APT_FLT_2019 - 1
     )
-  ) %>%
+  )
+
+nw_delay_for_json <- nw_delay_last_day %>%
   select(
     FLIGHT_DATE,
     DY_DLY = DAY_DLY,
@@ -1108,7 +1110,7 @@ nw_delay_flt_y2d_long <- cbind(nw_delay_flt_value_y2d_long, nw_delay_flt_share_y
 nw_delay_flt_y2d_j <- nw_delay_flt_y2d_long %>% toJSON(., pretty = TRUE)
 save_json(nw_delay_flt_y2d_j, "nw_delay_flt_type_evo_chart_y2d")
 
-### delay per flight per type v5----
+### delay per flight split ert/apt ----
 #### En-route ----
 nw_delay_flt_ERT_evo <- nw_delay_raw %>%
   filter(FLIGHT_DATE <= data_day_date) %>%
@@ -1126,19 +1128,16 @@ nw_delay_flt_ERT_evo <- nw_delay_raw %>%
   )
 
 
-y2d_delay_ERT_flt <- st_delay_last_day %>%
+y2d_delay_ERT_flt <- nw_delay_last_day %>%
   ungroup() %>%
-  mutate(Y2D_DLY_ERT_FLT = Y2D_ERT_DLY_YEAR / Y2D_TFC_YEAR,
-         Y2D_DLY_ERT_FLT_PREV_YEAR = Y2D_AVG_ERT_DLY_PREV_YEAR / Y2D_AVG_TFC_PREV_YEAR) %>%
-  select(daio_zone = COUNTRY_NAME,
-         Y2D_DLY_ERT_FLT,
-         Y2D_DLY_ERT_FLT_PREV_YEAR
+  select(Y2D_DLY_ERT_FLT,
+         Y2D_DLY_ERT_FLT_PY
   )
 
 column_names <- c(
   "FLIGHT_DATE",
-  paste0("En-route ATFM delay/flight ", data_day_year),
-  paste0("En-route ATFM delay/flight ", data_day_year - 1)
+  paste0("En-route ATFM delay/flight ", data_day_year, " (", format(round(y2d_delay_ERT_flt$Y2D_DLY_ERT_FLT,2), nsmall=2),"')"),
+  paste0("En-route ATFM delay/flight ", data_day_year - 1, " (", format(round(y2d_delay_ERT_flt$Y2D_DLY_ERT_FLT_PY,2), nsmall=2),"')")
 )
 
 colnames(nw_delay_flt_ERT_evo) <- column_names
@@ -1146,7 +1145,7 @@ colnames(nw_delay_flt_ERT_evo) <- column_names
 ### nest data
 #### values
 nw_delay_ERT_flt_value_day_long <- nw_delay_flt_ERT_evo %>%
-  pivot_longer(-c(FLIGHT_DATE), names_to = 'metric', values_to = 'value') %>%
+  pivot_longer(-c(FLIGHT_DATE), names_to = 'year', values_to = 'daio') %>%
   group_by(FLIGHT_DATE) %>%
   nest_legacy(.key = "statistics")
 
@@ -1179,18 +1178,25 @@ nw_delay_flt_APT_evo_app <- nw_delay_flt_APT_evo %>%
     ROLL_WK_AVG_DLY_FLT_APT_PREV_YEAR
   )
 
+y2d_delay_APT_flt <- nw_delay_last_day %>%
+  ungroup() %>%
+  select(Y2D_DLY_APT_FLT,
+         Y2D_DLY_APT_FLT_PY
+  )
+
 column_names <- c(
   "FLIGHT_DATE",
-  paste0("Airport ATFM delay/flight ", data_day_year),
-  paste0("Airport ATFM delay/flight ", data_day_year - 1)
+  paste0("Airport ATFM delay/flight ", data_day_year, " (", format(round(y2d_delay_APT_flt$Y2D_DLY_APT_FLT,2), nsmall=2),"')"),
+  paste0("Airport ATFM delay/flight ", data_day_year - 1, " (", format(round(y2d_delay_APT_flt$Y2D_DLY_APT_FLT_PY,2), nsmall=2),"')")
 )
+
 
 colnames(nw_delay_flt_APT_evo_app) <- column_names
 
 ### nest data
 #### values
 nw_delay_APT_flt_value_day_long <- nw_delay_flt_APT_evo_app %>%
-  pivot_longer(-c(FLIGHT_DATE), names_to = 'metric', values_to = 'value') %>%
+  pivot_longer(-c(FLIGHT_DATE), names_to = 'year', values_to = 'daio') %>%
   group_by(FLIGHT_DATE) %>%
   nest_legacy(.key = "statistics")
 
