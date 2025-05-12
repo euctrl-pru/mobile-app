@@ -1108,7 +1108,7 @@ nw_delay_flt_y2d_long <- cbind(nw_delay_flt_value_y2d_long, nw_delay_flt_share_y
 nw_delay_flt_y2d_j <- nw_delay_flt_y2d_long %>% toJSON(., pretty = TRUE)
 save_json(nw_delay_flt_y2d_j, "nw_delay_ERT_flt_type_evo_chart_y2d")
 
-### delay per flight per type v3----
+### delay per flight per type v5----
 #### En-route ----
 nw_delay_flt_ERT_evo <- nw_delay_raw %>%
   filter(FLIGHT_DATE <= data_day_date) %>%
@@ -1152,7 +1152,7 @@ nw_delay_ERT_flt_value_day_long <- nw_delay_flt_ERT_evo_app %>%
 
 #### convert to json and save in data folder and archive
 nw_delay_ERT_flt_value_day_long_j <- nw_delay_ERT_flt_value_day_long %>% toJSON(., pretty = TRUE)
-save_json(nw_delay_ERT_flt_value_day_long_j, "nw_delay_ERT_flt_chart_y2d_j")
+save_json(nw_delay_ERT_flt_value_day_long_j, "nw_delay_ert_per_flight_evo_chart")
 
 
 
@@ -1196,7 +1196,7 @@ nw_delay_APT_flt_value_day_long <- nw_delay_flt_APT_evo_app %>%
 
 #### convert to json and save in data folder and archive
 nw_delay_APT_flt_value_day_long_j <- nw_delay_APT_flt_value_day_long %>% toJSON(., pretty = TRUE)
-save_json(nw_delay_APT_flt_value_day_long_j, "nw_delay_APT_flt_type_evo_chart_y2d")
+save_json(nw_delay_APT_flt_value_day_long_j, "nw_delay_apt_per_flight_evo_chart")
 
 
 

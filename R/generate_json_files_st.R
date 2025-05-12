@@ -3295,7 +3295,7 @@ st_delay_ERT_flt_evo_long <- st_delay_ERT_flt_evo %>%
 
 st_delay_ERT_flt_evo_long_j <- st_delay_ERT_flt_evo_long %>% toJSON(., pretty = TRUE)
 
-save_json(st_delay_ERT_flt_evo_long_j, "st_delay_ERT_flt_evo_chart_y2d")
+save_json(st_delay_ERT_flt_evo_long_j, "st_delay_ert_per_flight_evo_chart")
 
 
 #### Airport ----
@@ -3358,7 +3358,7 @@ st_delay_APT_flt_evo_long <- st_delay_APT_flt_evo %>%
 
 st_delay_APT_flt_evo_long_j <- st_delay_APT_flt_evo_long %>% toJSON(., pretty = TRUE)
 
-save_json(st_delay_APT_flt_evo_long_j, "st_delay_APT_flt_evo_chart_y2d")
+save_json(st_delay_APT_flt_evo_long_j, "st_delay_apt_per_flight_evo_chart")
 
 ## BILLING ----
 st_billing_evo <- st_billing %>%
