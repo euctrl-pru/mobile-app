@@ -91,16 +91,30 @@ sp_traffic_last_day <- sp_traffic_calc %>%
   arrange(ANSP_NAME, ENTRY_DATE)
 
 sp_traffic_for_json <- sp_traffic_last_day %>%
+  ### rank calculation
+  mutate(
+    DY_TFC_RANK = min_rank(desc(DAY_FLT_DAIO)),
+    WK_TFC_RANK = min_rank(desc(RW_AVG_FLT_DAIO)),
+    Y2D_TFC_RANK = min_rank(desc(Y2D_AVG_FLT_DAIO_YEAR)),
+    TFC_RANK_TEXT = "*Top rank for highest.",
+
+  ) %>%
   select(
     ANSP_NAME,
     ANSP_CODE,
     FLIGHT_DATE = ENTRY_DATE,
+
+    DY_TFC_RANK,
     DY_TFC = DAY_FLT_DAIO,
     DY_TFC_DIF_PREV_YEAR_PERC,
     DY_TFC_DIF_2019_PERC,
+
+    WK_TFC_RANK,
     WK_TFC_AVG_ROLLING = RW_AVG_FLT_DAIO,
     WK_TFC_DIF_PREV_YEAR_PERC,
     WK_TFC_DIF_2019_PERC,
+
+    Y2D_TFC_RANK,
     Y2D_TFC = Y2D_FLT_DAIO_YEAR,
     Y2D_TFC_AVG = Y2D_AVG_FLT_DAIO_YEAR,
     Y2D_TFC_DIF_PREV_YEAR_PERC,
@@ -375,7 +389,30 @@ sp_delay_for_json <- sp_delay_last_day %>%
     Y2D_DELAYED_TFC_15_PERC_DIF_2019 = if_else(ANSP_CODE == "IS_ANSP", NA, Y2D_DELAYED_TFC_15_PERC_DIF_2019),
 
   ) %>%
-  ungroup()
+  ### rank calculation
+  mutate(
+    ## delay
+    DY_DLY_RANK = min_rank(DY_DLY),
+    WK_DLY_RANK = min_rank(WK_DLY_AVG_ROLLING),
+    Y2D_DLY_RANK = min_rank(Y2D_DLY_AVG),
+
+    ## delay per flight
+    DY_DLY_FLT_RANK = min_rank(DY_DLY_FLT),
+    WK_DLY_FLT_RANK = min_rank(WK_DLY_FLT),
+    Y2D_DLY_FLT_RANK = min_rank(Y2D_DLY_FLT),
+
+    ## % delayed flights
+    DY_DELAYED_TFC_PERC_RANK = min_rank(DY_DELAYED_TFC_PERC),
+    WK_DELAYED_TFC_PERC_RANK = min_rank(WK_DELAYED_TFC_PERC),
+    Y2D_DELAYED_TFC_PERC_RANK = min_rank(Y2D_DELAYED_TFC_PERC),
+
+    ## % delayed flights
+    DY_DELAYED_TFC_15_PERC_RANK = min_rank(DY_DELAYED_TFC_15_PERC),
+    WK_DELAYED_TFC_15_PERC_RANK = min_rank(WK_DELAYED_TFC_15_PERC),
+    Y2D_DELAYED_TFC_15_PERC_RANK = min_rank(Y2D_DELAYED_TFC_15_PERC),
+
+    DLY_RANK_TEXT = "*Top rank for lowest."
+  )
 
 
 #### Join strings and save  ----
