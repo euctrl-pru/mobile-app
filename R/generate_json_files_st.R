@@ -94,12 +94,20 @@ st_billed_for_json <- st_billing %>%
   ) %>%
   filter(Year == last_billing_year,
          month == last_billing_month) %>%
+  ### rank calculation
+  mutate(
+    MM_BILLED_RANK = min_rank(desc(MM_BILLED)),
+    Y2D_BILLED_RANK = min_rank(desc(Y2D_BILLED)),
+    BILLED_RANK_TEXT = "*Top rank for highest.",
+  ) %>%
   select(iso_2letter,
          BILLING_DATE,
          MONTH_TEXT,
+         MM_BILLED_RANK,
          MM_BILLED,
          MM_BILLED_DIF_PREV_YEAR,
          MM_BILLED_DIF_2019,
+         Y2D_BILLED_RANK,
          Y2D_BILLED,
          Y2D_BILLED_DIF_PREV_YEAR,
          Y2D_BILLED_DIF_2019
@@ -146,6 +154,13 @@ st_daio_last_day <- st_daio_data_zone %>%
   filter(FLIGHT_DATE == data_day_date)
 
 st_daio_for_json <- st_daio_last_day %>%
+  ### rank calculation
+  mutate(
+    DY_DAIO_RANK = min_rank(desc(DAY_TFC)),
+    WK_DAIO_RANK = min_rank(desc(AVG_ROLLING_WEEK)),
+    Y2D_DAIO_RANK = min_rank(desc(Y2D_TFC_YEAR)),
+    DAIO_RANK_TEXT = "*Top rank for highest.",
+  ) %>%
   # Iceland exception
   mutate(
     DAY_DIFF_PREV_YEAR_PERC =  if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, DAY_DIFF_PREV_YEAR_PERC),
@@ -159,28 +174,23 @@ st_daio_for_json <- st_daio_last_day %>%
   select(
     iso_2letter,
     FLIGHT_DATE,
-    DAY_TFC,
-    DAY_DIFF_PREV_YEAR_PERC,
-    DAY_TFC_DIFF_2019_PERC,
-    AVG_ROLLING_WEEK,
-    DIF_WEEK_PREV_YEAR_PERC,
-    DIF_ROLLING_WEEK_2019_PERC,
-    Y2D_TFC_YEAR,
-    Y2D_AVG_TFC_YEAR,
-    Y2D_DIFF_PREV_YEAR_PERC,
-    Y2D_DIFF_2019_PERC
-  ) %>%
-  rename(
+
+    DY_DAIO_RANK,
     DY_DAIO = DAY_TFC,
     DY_DAIO_DIF_PREV_YEAR_PERC = DAY_DIFF_PREV_YEAR_PERC,
     DY_DAIO_DIF_2019_PERC = DAY_TFC_DIFF_2019_PERC,
+
+    WK_DAIO_RANK,
     WK_DAIO_AVG_ROLLING = AVG_ROLLING_WEEK,
     WK_DAIO_DIF_PREV_YEAR_PERC = DIF_WEEK_PREV_YEAR_PERC,
     WK_DAIO_DIF_2019_PERC = DIF_ROLLING_WEEK_2019_PERC,
+
+    Y2D_DAIO_RANK,
     Y2D_DAIO = Y2D_TFC_YEAR,
     Y2D_DAIO_AVG = Y2D_AVG_TFC_YEAR,
     Y2D_DAIO_DIF_PREV_YEAR_PERC = Y2D_DIFF_PREV_YEAR_PERC,
-    Y2D_DAIO_DIF_2019_PERC = Y2D_DIFF_2019_PERC
+    Y2D_DAIO_DIF_2019_PERC = Y2D_DIFF_2019_PERC,
+    DAIO_RANK_TEXT
   ) %>%
   right_join(state_iso, by ="iso_2letter") %>%
   select(-state) %>%
@@ -224,6 +234,13 @@ st_dai_last_day <- st_dai_data_zone %>%
   filter(FLIGHT_DATE == data_day_date)
 
 st_dai_for_json <- st_dai_last_day %>%
+  ### rank calculation
+  mutate(
+    DY_DAI_RANK = min_rank(desc(DAY_TFC)),
+    WK_DAI_RANK = min_rank(desc(AVG_ROLLING_WEEK)),
+    Y2D_DAI_RANK = min_rank(desc(Y2D_TFC_YEAR)),
+    DAI_RANK_TEXT = "*Top rank for highest.",
+  ) %>%
   # Iceland exception
   mutate(
     DAY_DIFF_PREV_YEAR_PERC =  if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, DAY_DIFF_PREV_YEAR_PERC),
@@ -237,28 +254,23 @@ st_dai_for_json <- st_dai_last_day %>%
   select(
     iso_2letter,
     FLIGHT_DATE,
-    DAY_TFC,
-    DAY_DIFF_PREV_YEAR_PERC,
-    DAY_TFC_DIFF_2019_PERC,
-    AVG_ROLLING_WEEK,
-    DIF_WEEK_PREV_YEAR_PERC,
-    DIF_ROLLING_WEEK_2019_PERC,
-    Y2D_TFC_YEAR,
-    Y2D_AVG_TFC_YEAR,
-    Y2D_DIFF_PREV_YEAR_PERC,
-    Y2D_DIFF_2019_PERC
-  ) %>%
-  rename(
+
+    DY_DAI_RANK,
     DY_DAI = DAY_TFC,
     DY_DAI_DIF_PREV_YEAR_PERC = DAY_DIFF_PREV_YEAR_PERC,
     DY_DAI_DIF_2019_PERC = DAY_TFC_DIFF_2019_PERC,
+
+    WK_DAI_RANK,
     WK_DAI_AVG_ROLLING = AVG_ROLLING_WEEK,
     WK_DAI_DIF_PREV_YEAR_PERC = DIF_WEEK_PREV_YEAR_PERC,
     WK_DAI_DIF_2019_PERC = DIF_ROLLING_WEEK_2019_PERC,
+
+    Y2D_DAI_RANK,
     Y2D_DAI = Y2D_TFC_YEAR,
     Y2D_DAI_AVG = Y2D_AVG_TFC_YEAR,
     Y2D_DAI_DIF_PREV_YEAR_PERC = Y2D_DIFF_PREV_YEAR_PERC,
-    Y2D_DAI_DIF_2019_PERC = Y2D_DIFF_2019_PERC
+    Y2D_DAI_DIF_2019_PERC = Y2D_DIFF_2019_PERC,
+    DAI_RANK_TEXT
   ) %>%
   right_join(state_iso, by ="iso_2letter") %>%
   select(-state) %>%
@@ -377,6 +389,13 @@ mycolnames <- colnames(st_overflight_last_day) %>%
 
 st_overflight_for_json <- st_overflight_last_day %>%
   mutate(DAY_TFC =  if_else(DAY_TFC<0, 0, DAY_TFC)) %>%    #temporary correction
+  ### rank calculation
+  mutate(
+    DY_OVF_RANK = min_rank(desc(DAY_TFC)),
+    WK_OVF_RANK = min_rank(desc(AVG_ROLLING_WEEK)),
+    Y2D_OVF_RANK = min_rank(desc(Y2D_TFC_YEAR)),
+    OVF_RANK_TEXT = "*Top rank for highest.",
+  ) %>%
   # Iceland exception
   mutate(
     DAY_DIFF_PREV_YEAR_PERC =  if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, DAY_DIFF_PREV_YEAR_PERC),
@@ -390,28 +409,24 @@ st_overflight_for_json <- st_overflight_last_day %>%
   select(
     iso_2letter,
     FLIGHT_DATE,
-    DAY_TFC,
-    DAY_DIFF_PREV_YEAR_PERC,
-    DAY_TFC_DIFF_2019_PERC,
-    AVG_ROLLING_WEEK,
-    DIF_WEEK_PREV_YEAR_PERC,
-    DIF_ROLLING_WEEK_2019_PERC,
-    Y2D_TFC_YEAR,
-    Y2D_AVG_TFC_YEAR,
-    Y2D_DIFF_PREV_YEAR_PERC,
-    Y2D_DIFF_2019_PERC
-  ) %>%
-  rename(
+
+    DY_OVF_RANK,
     DY_OVF = DAY_TFC,
     DY_OVF_DIF_PREV_YEAR_PERC = DAY_DIFF_PREV_YEAR_PERC,
     DY_OVF_DIF_2019_PERC = DAY_TFC_DIFF_2019_PERC,
+
+    WK_OVF_RANK,
     WK_OVF_AVG_ROLLING = AVG_ROLLING_WEEK,
     WK_OVF_DIF_PREV_YEAR_PERC = DIF_WEEK_PREV_YEAR_PERC,
     WK_OVF_DIF_2019_PERC = DIF_ROLLING_WEEK_2019_PERC,
+
+    Y2D_OVF_RANK,
     Y2D_OVF = Y2D_TFC_YEAR,
     Y2D_OVF_AVG = Y2D_AVG_TFC_YEAR,
     Y2D_OVF_DIF_PREV_YEAR_PERC = Y2D_DIFF_PREV_YEAR_PERC,
-    Y2D_OVF_DIF_2019_PERC = Y2D_DIFF_2019_PERC
+    Y2D_OVF_DIF_2019_PERC = Y2D_DIFF_2019_PERC,
+
+    OVF_RANK_TEXT
   ) %>%
   right_join(state_iso, by ="iso_2letter") %>%
   select(-state) %>%
@@ -723,6 +738,36 @@ st_delay_for_json  <- st_delay_last_day %>%
     Y2D_DLY_APT_FLT_DIF_2019_PERC = if_else(iso_2letter == "IS", NA, Y2D_DLY_APT_FLT_DIF_2019_PERC)
 
   ) %>%
+  ### rank calculation
+  mutate(
+    ## delay
+    DY_DLY_RANK = min_rank(DY_DLY),
+    WK_DLY_RANK = min_rank(WK_DLY_AVG_ROLLING),
+    Y2D_DLY_RANK = min_rank(Y2D_DLY_AVG),
+
+    DY_DLY_ERT_RANK = min_rank(DY_DLY_ERT),
+    WK_DLY_ERT_RANK = min_rank(WK_DLY_ERT_AVG_ROLLING),
+    Y2D_DLY_ERT_RANK = min_rank(Y2D_DLY_ERT_AVG),
+
+    DY_DLY_APT_RANK = min_rank(DY_DLY_APT),
+    WK_DLY_APT_RANK = min_rank(WK_DLY_APT_AVG_ROLLING),
+    Y2D_DLY_APT_RANK = min_rank(Y2D_DLY_APT_AVG),
+
+    ## delay per flight
+    DY_DLY_FLT_RANK = min_rank(DY_DLY_FLT),
+    WK_DLY_FLT_RANK = min_rank(WK_DLY_FLT),
+    Y2D_DLY_FLT_RANK = min_rank(Y2D_DLY_FLT),
+
+    DY_DLY_ERT_FLT_RANK = min_rank(DY_DLY_ERT_FLT),
+    WK_DLY_ERT_FLT_RANK = min_rank(WK_DLY_ERT_FLT),
+    Y2D_DLY_ERT_FLT_RANK = min_rank(Y2D_DLY_ERT_FLT),
+
+    DY_DLY_APT_FLT_RANK = min_rank(DY_DLY_APT_FLT),
+    WK_DLY_APT_FLT_RANK = min_rank(WK_DLY_APT_FLT),
+    Y2D_DLY_APT_FLT_RANK = min_rank(Y2D_DLY_APT_FLT),
+
+    DLY_RANK_TEXT = "*Top rank for lowest."
+  ) %>%
   right_join(state_iso, by ="iso_2letter") %>%
   select(-state) %>%
   arrange(iso_2letter)
@@ -907,6 +952,18 @@ st_punct_for_json <- merge(st_punct_d_w, st_punct_y2d, by="ISO_2LETTER") %>%
     WK_DEP_PUN_DIF_2019 =  if_else(ISO_2LETTER == "IS", NA, WK_DEP_PUN_DIF_2019),
     Y2D_DEP_PUN_DIF_2019 = if_else(ISO_2LETTER == "IS", NA, Y2D_DEP_PUN_DIF_2019)
   ) %>%
+  ### rank calculation
+  mutate(
+    DY_ARR_PUN_RANK = min_rank(desc(DY_ARR_PUN)),
+    WK_ARR_PUN_RANK = min_rank(desc(WK_ARR_PUN)),
+    Y2D_ARR_PUN_RANK = min_rank(desc(Y2D_ARR_PUN)),
+
+    DY_DEP_PUN_RANK = min_rank(desc(DY_DEP_PUN)),
+    WK_DEP_PUN_RANK = min_rank(desc(WK_DEP_PUN)),
+    Y2D_DEP_PUN_RANK = min_rank(desc(Y2D_DEP_PUN)),
+
+    PUN_RANK_TEXT = "*Top rank for highest."
+  ) %>%
   rename(iso_2letter = ISO_2LETTER) %>%
   right_join(state_iso, by = "iso_2letter") %>%
   select (-state) %>%
@@ -1019,6 +1076,15 @@ st_co2_for_json <- st_co2_data %>%
     Y2D_CO2_DEP_DIF_2019
   ) %>%
   filter(FLIGHT_MONTH == st_co2_last_date) %>%
+  ### rank calculation
+  mutate(
+    MM_CO2_RANK = min_rank(MM_CO2),
+    Y2D_CO2_RANK = min_rank(Y2D_CO2),
+
+    MM_CO2_DEP_RANK = min_rank(MM_CO2_DEP),
+    Y2D_CO2_DEP_RANK = min_rank(Y2D_CO2_DEP),
+    CO2_RANK_TEXT = "*Top rank for lowest"
+  ) %>%
   right_join(state_iso, by = "iso_2letter") %>%
   select(-state) %>%
   arrange(iso_2letter)

@@ -423,12 +423,12 @@ ao_punct_for_json <- merge(ao_punct_d_w, ao_punct_y2d, by= c("AO_GRP_NAME", "AO_
     DY_ARR_PUN_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(desc(DY_ARR_PUN))),
     WK_ARR_PUN_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(desc(WK_ARR_PUN))),
     Y2D_ARR_PUN_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(desc(Y2D_ARR_PUN))),
-    ARR_PUN_RANK_TEXT = "*Rank within top 40 aircraft operators.\nTop rank for highest.",
 
     DY_DEP_PUN_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(desc(DY_DEP_PUN))),
     WK_DEP_PUN_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(desc(WK_DEP_PUN))),
     Y2D_DEP_PUN_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(desc(Y2D_DEP_PUN))),
-    DEP_PUN_RANK_TEXT = "*Rank within top 40 aircraft operators.\nTop rank for highest.",
+
+    PUN_RANK_TEXT = "*Rank within top 40 aircraft operators.\nTop rank for highest."
   ) %>%
   ungroup()
 
@@ -656,11 +656,10 @@ ao_co2_for_json <- ao_co2_data %>%
   mutate(
     MM_CO2_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(MM_CO2)),
     Y2D_CO2_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(Y2D_CO2)),
-    CO2_RANK_TEXT = "*Rank within top 40 aircraft operators.\nTop rank for lowest",
 
     MM_CO2_DEP_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(MM_CO2_DEP)),
     Y2D_CO2_DEP_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(Y2D_CO2_DEP)),
-    CO2_DEP_RANK_TEXT = "*Rank within top 40 aircraft operators.\nTop rank for lowest",
+    CO2_RANK_TEXT = "*Rank within top 40 aircraft operators.\nTop rank for lowest"
   ) %>%
   ungroup() %>%
   select(
@@ -688,8 +687,8 @@ ao_co2_for_json <- ao_co2_data %>%
     Y2D_CO2_DEP,
     Y2D_CO2_DEP_DIF_PREV_YEAR,
     Y2D_CO2_DEP_DIF_2019,
-    CO2_RANK_TEXT,
-    CO2_DEP_RANK_TEXT
+
+    CO2_RANK_TEXT
   )
 
 #### Join strings and save  ----
