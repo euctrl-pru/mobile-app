@@ -735,6 +735,40 @@ st_delay_for_json  <- st_delay_last_day %>%
 
     DY_DLY_APT_FLT_DIF_2019_PERC =  if_else(iso_2letter == "IS", NA, DY_DLY_APT_FLT_DIF_2019_PERC),
     WK_DLY_APT_FLT_DIF_2019_PERC =  if_else(iso_2letter == "IS", NA, WK_DLY_APT_FLT_DIF_2019_PERC),
+    Y2D_DLY_APT_FLT_DIF_2019_PERC = if_else(iso_2letter == "IS", NA, Y2D_DLY_APT_FLT_DIF_2019_PERC),
+
+    #En-route delay
+    DY_DLY_ERT_DIF_PREV_YEAR_PERC =  if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, DY_DLY_ERT_DIF_PREV_YEAR_PERC),
+    WK_DLY_ERT_DIF_PREV_YEAR_PERC =  if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, WK_DLY_ERT_DIF_PREV_YEAR_PERC),
+    Y2D_DLY_ERT_DIF_PREV_YEAR_PERC = if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, Y2D_DLY_ERT_DIF_PREV_YEAR_PERC),
+
+    DY_DLY_ERT_FLT_DIF_PREV_YEAR_PERC =  if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, DY_DLY_ERT_FLT_DIF_PREV_YEAR_PERC),
+    WK_DLY_ERT_FLT_DIF_PREV_YEAR_PERC =  if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, WK_DLY_ERT_FLT_DIF_PREV_YEAR_PERC),
+    Y2D_DLY_ERT_FLT_DIF_PREV_YEAR_PERC = if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, Y2D_DLY_ERT_FLT_DIF_PREV_YEAR_PERC),
+
+    DY_DLY_ERT_DIF_2019_PERC =  if_else(iso_2letter == "IS", NA, DY_DLY_ERT_DIF_2019_PERC),
+    WK_DLY_ERT_DIF_2019_PERC =  if_else(iso_2letter == "IS", NA, WK_DLY_ERT_DIF_2019_PERC),
+    Y2D_DLY_ERT_DIF_2019_PERC = if_else(iso_2letter == "IS", NA, Y2D_DLY_ERT_DIF_2019_PERC),
+
+    DY_DLY_ERT_FLT_DIF_2019_PERC =  if_else(iso_2letter == "IS", NA, DY_DLY_ERT_FLT_DIF_2019_PERC),
+    WK_DLY_ERT_FLT_DIF_2019_PERC =  if_else(iso_2letter == "IS", NA, WK_DLY_ERT_FLT_DIF_2019_PERC),
+    Y2D_DLY_ERT_FLT_DIF_2019_PERC = if_else(iso_2letter == "IS", NA, Y2D_DLY_ERT_FLT_DIF_2019_PERC),
+
+    #Airport delay
+    DY_DLY_APT_DIF_PREV_YEAR_PERC =  if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, DY_DLY_APT_DIF_PREV_YEAR_PERC),
+    WK_DLY_APT_DIF_PREV_YEAR_PERC =  if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, WK_DLY_APT_DIF_PREV_YEAR_PERC),
+    Y2D_DLY_APT_DIF_PREV_YEAR_PERC = if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, Y2D_DLY_APT_DIF_PREV_YEAR_PERC),
+
+    DY_DLY_APT_FLT_DIF_PREV_YEAR_PERC =  if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, DY_DLY_APT_FLT_DIF_PREV_YEAR_PERC),
+    WK_DLY_APT_FLT_DIF_PREV_YEAR_PERC =  if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, WK_DLY_APT_FLT_DIF_PREV_YEAR_PERC),
+    Y2D_DLY_APT_FLT_DIF_PREV_YEAR_PERC = if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, Y2D_DLY_APT_FLT_DIF_PREV_YEAR_PERC),
+
+    DY_DLY_APT_DIF_2019_PERC =  if_else(iso_2letter == "IS", NA, DY_DLY_APT_DIF_2019_PERC),
+    WK_DLY_APT_DIF_2019_PERC =  if_else(iso_2letter == "IS", NA, WK_DLY_APT_DIF_2019_PERC),
+    Y2D_DLY_APT_DIF_2019_PERC = if_else(iso_2letter == "IS", NA, Y2D_DLY_APT_DIF_2019_PERC),
+
+    DY_DLY_APT_FLT_DIF_2019_PERC =  if_else(iso_2letter == "IS", NA, DY_DLY_APT_FLT_DIF_2019_PERC),
+    WK_DLY_APT_FLT_DIF_2019_PERC =  if_else(iso_2letter == "IS", NA, WK_DLY_APT_FLT_DIF_2019_PERC),
     Y2D_DLY_APT_FLT_DIF_2019_PERC = if_else(iso_2letter == "IS", NA, Y2D_DLY_APT_FLT_DIF_2019_PERC)
 
   ) %>%
