@@ -110,7 +110,8 @@ st_billed_for_json <- st_billing %>%
          Y2D_BILLED_RANK,
          Y2D_BILLED,
          Y2D_BILLED_DIF_PREV_YEAR,
-         Y2D_BILLED_DIF_2019
+         Y2D_BILLED_DIF_2019,
+         BILLED_RANK_TEXT
   ) %>%
   right_join(state_iso, by ="iso_2letter") %>%
   select(-state) %>%
