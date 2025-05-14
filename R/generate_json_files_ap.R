@@ -109,7 +109,9 @@ apt_traffic_for_json <- apt_traffic_delay_last_day %>%
     Y2D_TFC = Y2D_DEP_ARR_YEAR,
     Y2D_TFC_AVG = Y2D_AVG_DEP_ARR_YEAR,
     Y2D_TFC_DIF_PREV_YEAR_PERC = Y2D_DEP_ARR_DIF_PREV_YEAR_PERC,
-    Y2D_TFC_DIF_2019_PERC = Y2D_DEP_ARR_DIF_2019_PERC
+    Y2D_TFC_DIF_2019_PERC = Y2D_DEP_ARR_DIF_2019_PERC,
+
+    TFC_RANK_TEXT
   )
 
 
@@ -404,7 +406,9 @@ apt_delay_for_json  <- apt_delay_last_day %>%
     Y2D_DELAYED_TFC_15_PERC_RANK,
     Y2D_DELAYED_TFC_15_PERC,
     Y2D_DELAYED_TFC_15_PERC_DIF_PREV_YEAR,
-    Y2D_DELAYED_TFC_15_PERC_DIF_2019
+    Y2D_DELAYED_TFC_15_PERC_DIF_2019,
+
+    DLY_RANK_TEXT
   ) %>%
   arrange(ARP_CODE,
           ARP_NAME)

@@ -110,7 +110,8 @@ st_billed_for_json <- st_billing %>%
          Y2D_BILLED_RANK,
          Y2D_BILLED,
          Y2D_BILLED_DIF_PREV_YEAR,
-         Y2D_BILLED_DIF_2019
+         Y2D_BILLED_DIF_2019,
+         BILLED_RANK_TEXT
   ) %>%
   right_join(state_iso, by ="iso_2letter") %>%
   select(-state) %>%
@@ -159,7 +160,7 @@ st_daio_for_json <- st_daio_last_day %>%
     DY_DAIO_RANK = min_rank(desc(DAY_TFC)),
     WK_DAIO_RANK = min_rank(desc(AVG_ROLLING_WEEK)),
     Y2D_DAIO_RANK = min_rank(desc(Y2D_TFC_YEAR)),
-    DAIO_RANK_TEXT = "*Top rank for highest.",
+    # DAIO_RANK_TEXT = "*Top rank for highest.",
   ) %>%
   # Iceland exception
   mutate(
@@ -190,7 +191,7 @@ st_daio_for_json <- st_daio_last_day %>%
     Y2D_DAIO_AVG = Y2D_AVG_TFC_YEAR,
     Y2D_DAIO_DIF_PREV_YEAR_PERC = Y2D_DIFF_PREV_YEAR_PERC,
     Y2D_DAIO_DIF_2019_PERC = Y2D_DIFF_2019_PERC,
-    DAIO_RANK_TEXT
+    # DAIO_RANK_TEXT
   ) %>%
   right_join(state_iso, by ="iso_2letter") %>%
   select(-state) %>%
@@ -239,7 +240,7 @@ st_dai_for_json <- st_dai_last_day %>%
     DY_DAI_RANK = min_rank(desc(DAY_TFC)),
     WK_DAI_RANK = min_rank(desc(AVG_ROLLING_WEEK)),
     Y2D_DAI_RANK = min_rank(desc(Y2D_TFC_YEAR)),
-    DAI_RANK_TEXT = "*Top rank for highest.",
+    # DAI_RANK_TEXT = "*Top rank for highest.",
   ) %>%
   # Iceland exception
   mutate(
@@ -270,7 +271,7 @@ st_dai_for_json <- st_dai_last_day %>%
     Y2D_DAI_AVG = Y2D_AVG_TFC_YEAR,
     Y2D_DAI_DIF_PREV_YEAR_PERC = Y2D_DIFF_PREV_YEAR_PERC,
     Y2D_DAI_DIF_2019_PERC = Y2D_DIFF_2019_PERC,
-    DAI_RANK_TEXT
+    # DAI_RANK_TEXT
   ) %>%
   right_join(state_iso, by ="iso_2letter") %>%
   select(-state) %>%
@@ -394,7 +395,7 @@ st_overflight_for_json <- st_overflight_last_day %>%
     DY_OVF_RANK = min_rank(desc(DAY_TFC)),
     WK_OVF_RANK = min_rank(desc(AVG_ROLLING_WEEK)),
     Y2D_OVF_RANK = min_rank(desc(Y2D_TFC_YEAR)),
-    OVF_RANK_TEXT = "*Top rank for highest.",
+    # OVF_RANK_TEXT = "*Top rank for highest.",
   ) %>%
   # Iceland exception
   mutate(
@@ -426,7 +427,7 @@ st_overflight_for_json <- st_overflight_last_day %>%
     Y2D_OVF_DIF_PREV_YEAR_PERC = Y2D_DIFF_PREV_YEAR_PERC,
     Y2D_OVF_DIF_2019_PERC = Y2D_DIFF_2019_PERC,
 
-    OVF_RANK_TEXT
+    # OVF_RANK_TEXT
   ) %>%
   right_join(state_iso, by ="iso_2letter") %>%
   select(-state) %>%
