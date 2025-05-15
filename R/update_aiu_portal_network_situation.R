@@ -12,7 +12,7 @@ source(here::here("R", "helpers.R"))
 
 # TODO: use ph_list_records()
 
-weeks_back <- 5
+weeks_back <- 55
 
 # TODO
 retrieve_from_excell <- function(wef = today(tzone = "UTC") - dweeks(weeks_back)) {
@@ -120,6 +120,7 @@ retrieve_from_api <- function(wef = today(tzone = "UTC") - dweeks(weeks_back)) {
   url <- str_c(base_url,
                "network_situation/records",
                "?perPage=200&filter=", filter_param) |>
+    URLencode() |>
     url()
 
   cols <- c(
@@ -185,12 +186,12 @@ db <- bb |>
   select(date, day_traffic, day_delay)
 
 # dates that aren't yet in the API
-dd_missing <- dplyr::setdiff(db |> select(date), api |> select(date)) |>
+dd_missing <- dplyr::setdiff(db |> select(date),
+                             api |> select(date)) |>
   dplyr::pull(date)
 
 # dates that are different in the API -> candidates for update
-dd_update <- dplyr::setdiff(
-  db |> dplyr::filter(!date %in% dd_missing),
+dd_update <- dplyr::setdiff(db |> dplyr::filter(!date %in% dd_missing),
   api) |>
   dplyr::pull(date)
 
