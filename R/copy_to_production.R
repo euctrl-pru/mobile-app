@@ -190,18 +190,3 @@ if (archive_mode == FALSE){
            control = control)
 }
 
-
-temp_function <- function(data_day_date) {
-  # data_day_date <- as.Date("2024-10-23")
-  data_day_text_dash <- data_day_date %>% format("%Y-%m-%d")
-  network_data_folder_prod_date <- here(network_data_folder_prod, data_day_text_dash)
-  network_data_folder_dev_date <- here(network_data_folder_dev, data_day_text_dash)
-
-  files_to_copy <- list.files(network_data_folder_prod_date, full.names = TRUE)
-
-  file.copy(from = network_data_folder_prod_date,
-            to = network_data_folder_dev,
-            overwrite = TRUE, recursive = TRUE)
-
-}
-

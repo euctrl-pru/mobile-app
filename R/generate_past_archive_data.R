@@ -36,7 +36,7 @@ get_functions_from_script <- function(script_path) {
   funcs[sapply(funcs, function(f) is.function(get(f, env)))] # Filter functions
 }
 
-stakeholder <- 'ap' # set the 2 letter stakeholder to retrieve query list
+stakeholder <- 'nw' # set the 2 letter stakeholder to retrieve query list
 script_path <- here("R", paste0("queries_", stakeholder, ".R"))
 function_list_full <- get_functions_from_script(script_path)
 # these queries only need to be executed if the date is 31 december
@@ -65,7 +65,7 @@ if (all_stk_queries) {
   myquery_string <- function_list
   myquery_string_full <- function_list_full
   } else {
-  myquery_string <- "query_ap_punct"
+  myquery_string <- "query_nw_delay_data"
   myquery_string_full <- myquery_string
   }
 

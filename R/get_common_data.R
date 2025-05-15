@@ -122,7 +122,7 @@ airport <- export_query(query) %>%
   #                                   "IC", ISO_COUNTRY_CODE)) %>%
   rename(iso_2letter = ISO_COUNTRY_CODE)
 
-ao_grp_icao <-  read_xlsx(
+ao_grp_icao_full <-  read_xlsx(
   path  = fs::path_abs(
     str_glue(ao_base_file),
     start = ao_base_dir),
@@ -130,7 +130,10 @@ ao_grp_icao <-  read_xlsx(
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   as_tibble()
 
-apt_icao <-  read_xlsx(
+ao_grp_icao <- ao_grp_icao_full %>%
+  select('AO_GRP_CODE', 'AO_GRP_NAME')
+
+apt_icao_full <-  read_xlsx(
   path  = fs::path_abs(
     str_glue(ap_base_file),
     start = ap_base_dir),
@@ -138,3 +141,5 @@ apt_icao <-  read_xlsx(
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   as_tibble() %>%
   janitor::clean_names()
+
+apt_icao <- apt_icao_full %>% select (apt_icao_code, apt_name)

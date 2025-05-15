@@ -229,8 +229,10 @@ query_nw_delay_data <- function(mydate_string) {
     AS
         (SELECT
                 a_first_entry_time_date FLIGHT_DATE ,
-                SUM(nvl(a.total_delay_in_minutes,0)) DAY_DLY
-           FROM  v_aiu_agg_global_daily_counts a
+                SUM(nvl(a.total_delay_in_minutes,0)) DAY_DLY,
+                SUM(nvl(a.airport_delay_in_minutes,0)) DAY_DLY_APT
+
+           FROM  prudev.v_aiu_agg_global_daily_counts a
            WHERE
                  a.a_first_entry_time_date  >= to_date('24-12-2018','dd-mm-yyyy')
             AND a.a_first_entry_time_date  < ", mydate, "
@@ -247,7 +249,7 @@ SELECT
                 t.day_type,
                 t.day_of_week_nb,
                 t.day_date
-           FROM  pru_time_references t
+           FROM  prudev.pru_time_references t
           WHERE day_date  >= to_date('24-12-2018','dd-mm-yyyy')
 --          and  day_date  <  ", mydate, "
             and day_date <= to_date('31-12-'|| extract(year from (", mydate, "-1)),'dd-mm-yyyy')
@@ -263,7 +265,9 @@ NM_AREA_DATA_DAY as
                 t.day_of_week_nb day_of_week,
                 t.day_date,
                 coalesce(a.flight_date,t.day_date) as flight_date,
-                coalesce(a.DAY_DLY,0) as DAY_DLY ,
+                coalesce(a.DAY_DLY,0) as day_dly ,
+                coalesce(a.DAY_DLY_APT,0) as day_dly_apt ,
+                coalesce(a.DAY_DLY,0) - coalesce(a.DAY_DLY_APT,0) AS day_dly_ert,
                 'ZONE_AUA' as UNIT_KIND,
                'NM_AREA' as UNIT_CODE,
                '-Total Network Manager Area'  AS unit_name
@@ -273,46 +277,88 @@ NM_AREA_DATA_DAY as
 
 NM_AREA_Y2D as
 (select day_date ,
-       SUM (DAY_DLY) OVER (PARTITION BY unit_code ORDER BY flight_date ROWS BETWEEN (TO_NUMBER(TO_CHAR(day_date, 'DDD'))-1) PRECEDING AND CURRENT ROW) Y2D_DLY_YEAR,
-       SUM (DAY_DLY) OVER (PARTITION BY unit_code ORDER BY flight_date ROWS BETWEEN (TO_NUMBER(TO_CHAR(day_date, 'DDD'))-1) PRECEDING AND CURRENT ROW)/Count (DAY_DLY) OVER (PARTITION BY unit_code ORDER BY flight_date ROWS BETWEEN (TO_NUMBER(TO_CHAR(day_date, 'DDD'))-1) PRECEDING AND CURRENT ROW) Y2D_AVG_dly_YEAR
+       SUM (DAY_DLY) OVER (PARTITION BY unit_code ORDER BY flight_date ROWS BETWEEN (TO_NUMBER(TO_CHAR(day_date, 'DDD'))-1) PRECEDING AND CURRENT ROW) y2d_dly_year,
+       SUM (DAY_DLY) OVER (PARTITION BY unit_code ORDER BY flight_date ROWS BETWEEN (TO_NUMBER(TO_CHAR(day_date, 'DDD'))-1) PRECEDING AND CURRENT ROW)/Count (flight_date) OVER (PARTITION BY unit_code ORDER BY flight_date ROWS BETWEEN (TO_NUMBER(TO_CHAR(day_date, 'DDD'))-1) PRECEDING AND CURRENT ROW) y2d_avg_dly_year,
+
+       SUM (DAY_DLY_ERT) OVER (PARTITION BY unit_code ORDER BY flight_date ROWS BETWEEN (TO_NUMBER(TO_CHAR(day_date, 'DDD'))-1) PRECEDING AND CURRENT ROW) y2d_dly_ert_year,
+       SUM (DAY_DLY_ERT) OVER (PARTITION BY unit_code ORDER BY flight_date ROWS BETWEEN (TO_NUMBER(TO_CHAR(day_date, 'DDD'))-1) PRECEDING AND CURRENT ROW)/Count (flight_date) OVER (PARTITION BY unit_code ORDER BY flight_date ROWS BETWEEN (TO_NUMBER(TO_CHAR(day_date, 'DDD'))-1) PRECEDING AND CURRENT ROW) y2d_avg_dly_ert_year,
+
+       SUM (DAY_DLY_APT) OVER (PARTITION BY unit_code ORDER BY flight_date ROWS BETWEEN (TO_NUMBER(TO_CHAR(day_date, 'DDD'))-1) PRECEDING AND CURRENT ROW) y2d_dly_apt_year,
+       SUM (DAY_DLY_APT) OVER (PARTITION BY unit_code ORDER BY flight_date ROWS BETWEEN (TO_NUMBER(TO_CHAR(day_date, 'DDD'))-1) PRECEDING AND CURRENT ROW)/Count (flight_date) OVER (PARTITION BY unit_code ORDER BY flight_date ROWS BETWEEN (TO_NUMBER(TO_CHAR(day_date, 'DDD'))-1) PRECEDING AND CURRENT ROW) y2d_avg_dly_apt_year
 
 FROM NM_AREA_DATA_DAY
 ),
 
 NM_AREA_CALC as
-(select YEAR,
-       MONTH,
-       a.day_date as FLIGHT_DATE,
-       UNIT_KIND,
+(SELECT
+	   year,
+       month,
+       a.day_date AS flight_date,
+       unit_kind,
        unit_code,
-       UNIT_NAME,
-       DAY_DLY,
-       WEEK,
-       WEEK_NB_YEAR,
-       DAY_TYPE,
-       day_of_week,
-       LAG (DAY_DLY, greatest((extract (year from flight_date)-2019) *364+ floor((extract (year from flight_date)-2019)/4)*7,0)  ) OVER (PARTITION BY unit_code ORDER BY flight_date)  DAY_DLY_2019,
-       LAG (flight_date,greatest((extract (year from flight_date)-2019) *364+ floor((extract (year from flight_date)-2019)/4)*7,0)  ) OVER (PARTITION BY unit_code ORDER BY flight_date)FLIGHT_DATE_2019,
+       unit_name,
 
-       LAG (DAY_DLY, greatest((extract (year from flight_date)-2020) *364+ floor((extract (year from flight_date)-2019)/4)*7,0)  ) OVER (PARTITION BY unit_code ORDER BY flight_date)  DAY_DLY_2020,
+       week,
+       week_nb_year,
+       day_type,
+       day_of_week,
+
+       day_dly,
+       day_dly_ert,
+       day_dly_apt,
+       LAG (day_dly, greatest((extract (year from flight_date)-2019) *364+ floor((extract (year from flight_date)-2019)/4)*7,0)  ) OVER (PARTITION BY unit_code ORDER BY flight_date) day_dly_2019,
+       LAG (day_dly_ert, greatest((extract (year from flight_date)-2019) *364+ floor((extract (year from flight_date)-2019)/4)*7,0)  ) OVER (PARTITION BY unit_code ORDER BY flight_date) day_dly_ert_2019,
+       LAG (day_dly_apt, greatest((extract (year from flight_date)-2019) *364+ floor((extract (year from flight_date)-2019)/4)*7,0)  ) OVER (PARTITION BY unit_code ORDER BY flight_date) day_dly_apt_2019,
+       LAG (flight_date, greatest((extract (year from flight_date)-2019) *364+ floor((extract (year from flight_date)-2019)/4)*7,0)  ) OVER (PARTITION BY unit_code ORDER BY flight_date) flight_date_2019,
+
+       LAG (day_dly, greatest((extract (year from flight_date)-2020) *364+ floor((extract (year from flight_date)-2019)/4)*7,0)  ) OVER (PARTITION BY unit_code ORDER BY flight_date)  DAY_DLY_2020,
        LAG (flight_date,greatest((extract (year from flight_date)-2019) *364+ floor((extract (year from flight_date)-2019)/4)*7,0)  ) OVER (PARTITION BY unit_code ORDER BY flight_date)FLIGHT_DATE_2020,
 
-       LAG (DAY_DLY, 7) OVER (PARTITION BY unit_code ORDER BY flight_date)  DAY_DLY_PREV_WEEK,
-       LAG (flight_date,7) OVER (PARTITION BY unit_code ORDER BY flight_date)FLIGHT_DATE_PREV_WEEK,
+       LAG (day_dly, 7) OVER (PARTITION BY unit_code ORDER BY flight_date)  day_dly_prev_week,
+       LAG (day_dly_ert, 7) OVER (PARTITION BY unit_code ORDER BY flight_date)  day_dly_ert_prev_week,
+       LAG (day_dly_apt, 7) OVER (PARTITION BY unit_code ORDER BY flight_date)  day_dly_apt_prev_week,
+       LAG (flight_date,7) OVER (PARTITION BY unit_code ORDER BY flight_date)   flight_date_prev_week,
 
-       LAG (DAY_DLY,  364) OVER (PARTITION BY unit_code ORDER BY flight_date)  DAY_DLY_PREV_YEAR,
+       LAG (DAY_DLY,  364) OVER (PARTITION BY unit_code ORDER BY flight_date)  day_dly_prev_year,
+       LAG (DAY_DLY_ERT,  364) OVER (PARTITION BY unit_code ORDER BY flight_date)  DAY_DLY_ERT_PREV_YEAR,
+       LAG (DAY_DLY_APT,  364) OVER (PARTITION BY unit_code ORDER BY flight_date)  DAY_DLY_APT_PREV_YEAR,
        LAG (flight_date, 364) OVER (PARTITION BY unit_code ORDER BY flight_date)FLIGHT_DATE_PREV_YEAR,
+
        b.Y2D_dly_YEAR,
        c.Y2D_dly_YEAR as Y2D_dly_PREV_YEAR,
        d.Y2D_dly_YEAR as Y2D_dly_2019,
+
+       b.Y2D_dly_ert_YEAR,
+       c.Y2D_dly_ert_YEAR as Y2D_dly_ert_PREV_YEAR,
+       d.Y2D_dly_ert_YEAR as Y2D_dly_ert_2019,
+
+       b.Y2D_dly_apt_YEAR,
+       c.Y2D_dly_apt_YEAR as Y2D_dly_apt_PREV_YEAR,
+       d.Y2D_dly_apt_YEAR as Y2D_dly_apt_2019,
+
        b.Y2D_AVG_dly_YEAR,
        c.Y2D_AVG_dly_YEAR as Y2D_AVG_dly_PREV_YEAR,
        d.Y2D_AVG_dly_YEAR as Y2D_AVG_dly_2019,
---       e.Y2D_dly_YEAR as Y2D_dly_2020,
+
+       b.Y2D_AVG_dly_ert_YEAR,
+       c.Y2D_AVG_dly_ert_YEAR as Y2D_AVG_dly_ert_PREV_YEAR,
+       d.Y2D_AVG_dly_ert_YEAR as Y2D_AVG_dly_ert_2019,
+
+       b.Y2D_AVG_dly_apt_YEAR,
+       c.Y2D_AVG_dly_apt_YEAR as Y2D_AVG_dly_apt_PREV_YEAR,
+       d.Y2D_AVG_dly_apt_YEAR as Y2D_AVG_dly_apt_2019,
+
        AVG (DAY_DLY)  OVER (PARTITION BY unit_code ORDER BY flight_date ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) AS AVG_rolling_week,
        SUM (DAY_DLY)  OVER (PARTITION BY unit_code ORDER BY flight_date ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) AS TOTAL_rolling_week,
-       AVG (DAY_DLY)  OVER (PARTITION BY unit_code ORDER BY flight_date ROWS BETWEEN 13 PRECEDING AND 7 PRECEDING) AS AVG_rolling_PREV_WEEK
-      FROM NM_AREA_DATA_DAY a
+       AVG (DAY_DLY)  OVER (PARTITION BY unit_code ORDER BY flight_date ROWS BETWEEN 13 PRECEDING AND 7 PRECEDING) AS AVG_rolling_PREV_WEEK,
+
+       AVG (DAY_DLY_ert)  OVER (PARTITION BY unit_code ORDER BY flight_date ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) AS AVG_ert_rolling_week,
+       AVG (DAY_DLY_ert)  OVER (PARTITION BY unit_code ORDER BY flight_date ROWS BETWEEN 13 PRECEDING AND 7 PRECEDING) AS AVG_ert_rolling_PREV_WEEK,
+
+       AVG (DAY_DLY_apt)  OVER (PARTITION BY unit_code ORDER BY flight_date ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) AS AVG_apt_rolling_week,
+       AVG (DAY_DLY_apt)  OVER (PARTITION BY unit_code ORDER BY flight_date ROWS BETWEEN 13 PRECEDING AND 7 PRECEDING) AS AVG_apt_rolling_PREV_WEEK
+
+FROM NM_AREA_DATA_DAY a
       left join NM_AREA_Y2D b on a.day_date = b.day_date
       left join NM_AREA_Y2D c on add_months(a.day_date,-12) = c.day_date
       left join NM_AREA_Y2D d on add_months(a.day_date,-12*(extract (year from a.day_date)-2019)) = d.day_date
@@ -322,38 +368,85 @@ where a.day_date >='24-dec-2018'
 
  NM_AREA_CALC_PREV  as
   (
-      select YEAR,
-       MONTH,
-       FLIGHT_DATE,
-       UNIT_KIND,
+      SELECT
+       unit_kind,
        unit_code,
-       UNIT_NAME,
-       DAY_DLY,
-       WEEK,
-       WEEK_NB_YEAR,
-       DAY_TYPE,
+       unit_name,
+
+       year,
+       month,
+       flight_date,
+       flight_date_prev_week,
+       flight_date_prev_year,
+       flight_date_2019,
+       flight_date_2020,
+       week,
+       week_nb_year,
+       day_type,
        day_of_week,
-       TOTAL_rolling_week,
-       DAY_DLY_PREV_WEEK,
-       FLIGHT_DATE_PREV_WEEK,
-       DAY_DLY_PREV_YEAR,
-       FLIGHT_DATE_PREV_YEAR,
-       DAY_DLY_2019,
-       FLIGHT_DATE_2019,
-       DAY_DLY_2020,
-       FLIGHT_DATE_2020,
-       Y2D_dly_YEAR,
-       Y2D_dly_PREV_YEAR,
-       Y2D_dly_2019,
-       Y2D_AVG_dly_YEAR,
-       Y2D_AVG_dly_PREV_YEAR,
-       Y2D_AVG_dly_2019,
 
-       AVG_rolling_week, AVG_rolling_PREV_WEEK,
+       --total
+       day_dly,
+       day_dly_prev_week,
+       day_dly_prev_year,
+       day_dly_2019,
+       day_dly_2020,
 
-       LAG (AVG_rolling_week,364) OVER (PARTITION BY unit_code ORDER BY flight_date)AVG_rolling_week_PREV_YEAR,
-       LAG (AVG_rolling_week,greatest((extract (year from flight_date)-2020) *364+ floor((extract (year from flight_date)-2020)/4)*7,0)  ) OVER (PARTITION BY unit_code ORDER BY flight_date)AVG_rolling_week_2020,
-       LAG (AVG_rolling_week,greatest((extract (year from flight_date)-2019) *364+ floor((extract (year from flight_date)-2019)/4)*7,0)  ) OVER (PARTITION BY unit_code ORDER BY flight_date)AVG_rolling_week_2019
+       total_rolling_week,
+       avg_rolling_week,
+       avg_rolling_prev_week,
+
+       y2d_dly_year,
+       y2d_dly_prev_year,
+       y2d_dly_2019,
+
+       y2d_avg_dly_year,
+       y2d_avg_dly_prev_year,
+       y2d_avg_dly_2019,
+
+       LAG (avg_rolling_week, 364) OVER (PARTITION BY unit_code ORDER BY flight_date) avg_rolling_week_prev_year,
+       LAG (avg_rolling_week, greatest((extract (year from flight_date)-2020) *364+ floor((extract (year from flight_date)-2020)/4)*7,0)  ) OVER (PARTITION BY unit_code ORDER BY flight_date) avg_rolling_week_2020,
+       LAG (avg_rolling_week, greatest((extract (year from flight_date)-2019) *364+ floor((extract (year from flight_date)-2019)/4)*7,0)  ) OVER (PARTITION BY unit_code ORDER BY flight_date) avg_rolling_week_2019,
+
+       --en-route
+       day_dly_ert,
+       day_dly_ert_prev_week,
+       day_dly_ert_prev_year,
+       day_dly_ert_2019,
+
+       avg_ert_rolling_week,
+       avg_ert_rolling_prev_week,
+
+       y2d_dly_ert_year,
+       y2d_dly_ert_prev_year,
+       y2d_dly_ert_2019,
+
+       y2d_avg_dly_ert_year,
+       y2d_avg_dly_ert_prev_year,
+       y2d_avg_dly_ert_2019,
+
+       LAG (avg_ert_rolling_week, 364) OVER (PARTITION BY unit_code ORDER BY flight_date) avg_ert_rolling_week_prev_year,
+       LAG (avg_ert_rolling_week, greatest((extract (year from flight_date)-2019) *364+ floor((extract (year from flight_date)-2019)/4)*7,0)  ) OVER (PARTITION BY unit_code ORDER BY flight_date) avg_ert_rolling_week_2019,
+
+       --airport
+       day_dly_apt,
+       day_dly_apt_prev_week,
+       day_dly_apt_prev_year,
+       day_dly_apt_2019,
+
+       avg_apt_rolling_week,
+       avg_apt_rolling_prev_week,
+
+       y2d_dly_apt_year,
+       y2d_dly_apt_prev_year,
+       y2d_dly_apt_2019,
+
+       y2d_avg_dly_apt_year,
+       y2d_avg_dly_apt_prev_year,
+       y2d_avg_dly_apt_2019,
+
+       LAG (avg_apt_rolling_week, 364) OVER (PARTITION BY unit_code ORDER BY flight_date) avg_apt_rolling_week_prev_year,
+       LAG (avg_apt_rolling_week, greatest((extract (year from flight_date)-2019) *364+ floor((extract (year from flight_date)-2019)/4)*7,0)  ) OVER (PARTITION BY unit_code ORDER BY flight_date) avg_apt_rolling_week_2019
 
       FROM NM_AREA_CALC
   )
@@ -366,76 +459,123 @@ where a.day_date >='24-dec-2018'
        DAY_TYPE,
        day_of_week,
 
-       FLIGHT_DATE,
-       FLIGHT_DATE_PREV_YEAR,
-       FLIGHT_DATE_2020,
-       FLIGHT_DATE_2019,
+       flight_date,
+       flight_date_prev_year,
+       flight_date_2020,
+       flight_date_2019,
 
-       DAY_DLY,
-       DAY_DLY_PREV_YEAR,
-       DAY_DLY_2020,
-       DAY_DLY_2019,
+       day_dly,
+       day_dly_prev_year,
+       day_dly_2020,
+       day_dly_2019,
 
-       DAY_DLY - DAY_DLY_PREV_WEEK as DAY_DLY_DIFF_PREV_WEEK,
-       DAY_DLY - DAY_DLY_PREV_YEAR  as DAY_DLY_DIFF_PREV_YEAR,
-       DAY_DLY - DAY_DLY_2019  as DAY_DLY_DIFF_2019,
+       day_dly - day_dly_prev_week AS day_dly_diff_prev_week,
+       day_dly - day_dly_prev_year  AS day_dly_diff_prev_year,
+       day_dly - day_dly_2019  AS day_dly_diff_2019,
 
-       CASE WHEN DAY_DLY_PREV_WEEK  <>0  then
-            DAY_DLY/DAY_DLY_PREV_WEEK -1
+       CASE WHEN day_dly_prev_week  <>0  THEN
+            day_dly/day_dly_prev_week -1
             ELSE NULL
-       END as DAY_DLY_PREV_WEEK_perc,
-       CASE WHEN DAY_DLY_PREV_YEAR <>0
-           THEN DAY_DLY/DAY_DLY_PREV_YEAR -1
+       END as day_dly_prev_week_perc,
+       CASE WHEN day_dly_prev_year <>0
+           THEN day_dly/day_dly_prev_year -1
        	   ELSE NULL
-       END  DAY_DIFF_PREV_YEAR_PERC,
-       CASE WHEN DAY_DLY_2019 <>0
-           THEN DAY_DLY/DAY_DLY_2019 -1
+       END  day_diff_prev_year_perc,
+       CASE WHEN day_dly_2019 <>0
+           THEN day_dly/day_dly_2019 -1
        	   ELSE NULL
-       END  DAY_DLY_DIFF_2019_PERC,
+       END  day_dly_diff_2019_perc,
 
-       TOTAL_rolling_week,
+       total_rolling_week,
        CASE WHEN flight_date >= ", mydate, "
            THEN NULL
-           ELSE AVG_rolling_week
-       END AVG_rolling_week,
-       AVG_rolling_PREV_WEEK,
-       AVG_rolling_week_PREV_YEAR,
-       AVG_rolling_week_2020,
-       AVG_rolling_week_2019,
+           ELSE avg_rolling_week
+       END avg_rolling_week,
+       avg_rolling_prev_week,
+       avg_rolling_week_prev_year,
+       avg_rolling_week_2020,
+       avg_rolling_week_2019,
 
-       CASE WHEN AVG_rolling_PREV_WEEK  <>0  then
-            AVG_rolling_week/AVG_rolling_PREV_WEEK -1
+       CASE WHEN avg_rolling_prev_week  <>0  THEN
+            avg_rolling_week/avg_rolling_prev_week -1
             ELSE NULL
-       END as DIF_PREV_week_PERC,
-       CASE WHEN AVG_rolling_week_PREV_YEAR  <>0  then
-            AVG_rolling_week/AVG_rolling_week_PREV_YEAR -1
+       END dif_prev_week_perc,
+       CASE WHEN avg_rolling_week_prev_year  <>0  THEN
+            avg_rolling_week/avg_rolling_week_prev_year -1
             ELSE NULL
-       END as DIF_WEEK_PREV_YEAR_perc,
-       CASE WHEN AVG_rolling_week_2019  <>0  then
+       END dif_week_prev_year_perc,
+       CASE WHEN avg_rolling_week_2019  <>0  THEN
             AVG_rolling_week/AVG_rolling_week_2019 -1
             ELSE NULL
-       END as DIF_rolling_week_2019_PERC,
+       END dif_rolling_week_2019_perc,
 
-       Y2D_dly_YEAR,
-       Y2D_dly_PREV_YEAR,
-       Y2D_dly_2019,
+       y2d_dly_year,
+       y2d_dly_prev_year,
+       y2d_dly_2019,
        CASE WHEN flight_date >= ", mydate, "
            THEN NULL
-      	   ELSE Y2D_AVG_dly_YEAR
-       END Y2D_AVG_dly_YEAR,
-       Y2D_AVG_dly_PREV_YEAR,
-       Y2D_AVG_dly_2019,
+      	   ELSE y2d_avg_dly_year
+       END y2d_avg_dly_year,
+       y2d_avg_dly_prev_year,
+       y2d_avg_dly_2019,
 
-       CASE WHEN Y2D_AVG_dly_PREV_YEAR <> 0 THEN
-        Y2D_AVG_dly_YEAR/Y2D_AVG_dly_PREV_YEAR - 1
+       CASE WHEN y2d_avg_dly_prev_year <> 0 THEN
+        y2d_avg_dly_year/y2d_avg_dly_prev_year - 1
         ELSE NULL
-       END Y2D_DIFF_PREV_YEAR_PERC,
-       CASE WHEN Y2D_AVG_dly_2019 <> 0 THEN
-           Y2D_AVG_dly_YEAR/Y2D_AVG_dly_2019 - 1
+       END y2d_diff_prev_year_perc,
+       CASE WHEN y2d_avg_dly_2019 <> 0 THEN
+           y2d_avg_dly_year/y2d_avg_dly_2019 - 1
            ELSE NULL
-       END Y2D_DIFF_2019_PERC,
+       END y2d_diff_2019_perc,
 
-      ", mydate, "-1 as LAST_DATA_DAY
+      ", mydate, "-1 as last_data_day,
+
+      --en-route
+       day_dly_ert,
+       day_dly_ert_prev_year,
+       day_dly_ert_2019,
+
+       CASE WHEN flight_date >= ", mydate, "
+           THEN NULL
+           ELSE avg_ert_rolling_week
+       END avg_ert_rolling_week,
+       avg_ert_rolling_prev_week,
+       avg_ert_rolling_week_prev_year,
+       avg_ert_rolling_week_2019,
+
+       y2d_dly_ert_year,
+       y2d_dly_ert_prev_year,
+       y2d_dly_ert_2019,
+       CASE WHEN flight_date >= ", mydate, "
+           THEN NULL
+      	   ELSE y2d_avg_dly_ert_year
+       END y2d_avg_dly_ert_year,
+       y2d_avg_dly_ert_prev_year,
+       y2d_avg_dly_ert_2019,
+
+       --airport
+       day_dly_apt,
+       day_dly_apt_prev_year,
+       day_dly_apt_2019,
+
+       CASE WHEN flight_date >= ", mydate, "
+           THEN NULL
+           ELSE avg_apt_rolling_week
+       END avg_apt_rolling_week,
+       avg_apt_rolling_prev_week,
+       avg_apt_rolling_week_prev_year,
+       avg_apt_rolling_week_2019,
+
+       y2d_dly_apt_year,
+       y2d_dly_apt_prev_year,
+       y2d_dly_apt_2019,
+       CASE WHEN flight_date >= ", mydate, "
+           THEN NULL
+      	   ELSE y2d_avg_dly_apt_year
+       END y2d_avg_dly_apt_year,
+       y2d_avg_dly_apt_prev_year,
+       y2d_avg_dly_apt_2019
+
       FROM NM_AREA_CALC_PREV
       where flight_date >=to_date('01-01-'||extract(year from (", mydate, "-1)),'dd-mm-yyyy')
 "
