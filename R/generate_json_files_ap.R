@@ -34,8 +34,21 @@ if (exists("apt_icao") == FALSE) {
   query <- "SELECT
 arp_code AS apt_icao_code,
 arp_name AS apt_name,
-flag_top_apt
-FROM pruprod.v_aiu_app_dim_airport"
+flag_top_apt,
+latitude,
+longitude
+
+FROM pruprod.v_aiu_app_dim_airport a
+INNER JOIN (
+  SELECT ec_ap_code, latitude, longitude
+  FROM (
+    SELECT ec_ap_code, latitude, longitude,
+           ROW_NUMBER() OVER (PARTITION BY ec_ap_code ORDER BY sk_ap_id DESC) AS rn
+    FROM swh_fct.dim_airport
+  ) t
+  WHERE rn = 1
+) b ON a.arp_code = b.ec_ap_code
+"
 
   apt_icao_full <- export_query(query) %>%
     janitor::clean_names()
@@ -414,9 +427,6 @@ apt_delay_for_json  <- apt_delay_last_day %>%
           ARP_NAME)
 
 
-
-
-
 #### Punctuality data ----
 #querying the data in SQL
 apt_punct_raw <- export_query(query_ap_punct(format(data_day_date, "%Y-%m-%d"))) %>%
@@ -568,7 +578,13 @@ apt_punct_for_json <- merge(apt_punct_d_w, apt_punct_y2d, by= c("ARP_CODE", "ARP
   ungroup()
 
 #### Join strings and save  ----
-apt_json_app_j <- apt_icao %>% arrange(apt_name)
+apt_json_app_j <- apt_icao_full %>%
+  select (
+    -flag_top_apt,
+    APT_LATITUDE = latitude,
+    APT_LONGITUDE = longitude
+  ) %>%
+  arrange(apt_name)
 apt_json_app_j$apt_traffic <- select(arrange(apt_traffic_for_json, ARP_NAME), -c(ARP_NAME, ARP_CODE))
 apt_json_app_j$apt_delay <- select(arrange(apt_delay_for_json, ARP_NAME), -c(ARP_NAME, ARP_CODE))
 apt_json_app_j$apt_punct <- select(arrange(apt_punct_for_json, ARP_NAME), -c(ARP_NAME, ARP_CODE))
