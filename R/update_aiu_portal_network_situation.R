@@ -15,17 +15,20 @@ source(here::here("R", "helpers.R"))
 weeks_back <- 55
 
 # TODO
-retrieve_from_excell <- function(wef = today(tzone = "UTC") - dweeks(weeks_back)) {
-  today <- (lubridate::now() +  days(-1)) |> format("%Y%m%d")
+retrieve_from_excell <- function(
+  wef = today(tzone = "UTC") - dweeks(weeks_back)
+) {
+  today <- (lubridate::now() + days(-1)) |> format("%Y%m%d")
 
   base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/'
   base_file <- '099_Traffic_Landing_Page_dataset_new_{today}.xlsx'
 
   # import traffic data
   nw_traffic_data <- read_xlsx(
-    path  = fs::path_abs(str_glue(base_file), start = base_dir),
+    path = fs::path_abs(str_glue(base_file), start = base_dir),
     sheet = "NM_Daily_Traffic_All",
-    range = cell_limits(c(2, 1), c(NA, 39))) |>
+    range = cell_limits(c(2, 1), c(NA, 39))
+  ) |>
     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
   # process data for traffic update on the portal landing page
@@ -34,7 +37,7 @@ retrieve_from_excell <- function(wef = today(tzone = "UTC") - dweeks(weeks_back)
     filter(FLIGHT_DATE >= wef) |>
     select(
       date = FLIGHT_DATE,
-      day_traffic =  DAY_TFC,
+      day_traffic = DAY_TFC,
       dif_day_prev_week = DAY_TFC_PREV_WEEK_PERC,
       dif_day_prev_year = DAY_DIFF_PREV_YEAR_PERC,
       dif_day_2019 = DAY_TFC_DIFF_2019_PERC,
@@ -46,15 +49,14 @@ retrieve_from_excell <- function(wef = today(tzone = "UTC") - dweeks(weeks_back)
       y2d_flights_daily_average = Y2D_AVG_TFC_YEAR,
       y2d_diff_previous_year_percentage = Y2D_DIFF_PREV_YEAR_PERC,
       y2d_diff_2019_year_percentage = Y2D_DIFF_2019_PERC
-      )
-
-
+    )
 
   # import delay data
   nw_delay_data <- read_xlsx(
-    path  = fs::path_abs(str_glue(base_file), start = base_dir),
+    path = fs::path_abs(str_glue(base_file), start = base_dir),
     sheet = "NM_Daily_Delay_All",
-    range = cell_limits(c(2, 1), c(NA, 39))) |>
+    range = cell_limits(c(2, 1), c(NA, 39))
+  ) |>
     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
   # process data for traffic update on the portal landing page
@@ -117,9 +119,12 @@ retrieve_from_excell <- function(wef = today(tzone = "UTC") - dweeks(weeks_back)
 retrieve_from_api <- function(wef = today(tzone = "UTC") - dweeks(weeks_back)) {
   base_url <- "https://aiu-portal.pockethost.io/api/collections/"
   filter_param <- URLencode(stringr::str_glue("(date>'{wef}')"))
-  url <- str_c(base_url,
-               "network_situation/records",
-               "?perPage=200&filter=", filter_param) |>
+  url <- str_c(
+    base_url,
+    "network_situation/records",
+    "?perPage=1000&filter=",
+    filter_param
+  ) |>
     URLencode() |>
     url()
 
@@ -161,9 +166,10 @@ retrieve_from_api <- function(wef = today(tzone = "UTC") - dweeks(weeks_back)) {
     magrittr::use_series("items") |>
     dplyr::as_tibble() |>
     dplyr::mutate(
-      date    = lubridate::as_date(date),
+      date = lubridate::as_date(date),
       created = lubridate::as_date(created),
-      updated = lubridate::as_date(updated)) |>
+      updated = lubridate::as_date(updated)
+    ) |>
     select(all_of(cols))
 
   aa
@@ -186,13 +192,11 @@ db <- bb |>
   select(date, day_traffic, day_delay)
 
 # dates that aren't yet in the API
-dd_missing <- dplyr::setdiff(db |> select(date),
-                             api |> select(date)) |>
+dd_missing <- dplyr::setdiff(db |> select(date), api |> select(date)) |>
   dplyr::pull(date)
 
 # dates that are different in the API -> candidates for update
-dd_update <- dplyr::setdiff(db |> dplyr::filter(!date %in% dd_missing),
-  api) |>
+dd_update <- dplyr::setdiff(db |> dplyr::filter(!date %in% dd_missing), api) |>
   dplyr::pull(date)
 
 # push missing/changed data points
@@ -207,10 +211,24 @@ adm_main <- ph_authenticate_admin_username_password(
   app_main,
   "/api/admins/auth-with-password",
   username,
-  password)
+  password
+)
 
 
 # 2. upload new data points
+# test for 1 row
+# bb |>
+#   dplyr::filter(date %in% dd_missing) |>
+#   dplyr::filter(row_number() == 1) |>
+#   purrr::transpose() |>
+#   unlist() -> nnnnnnn
+# ph_create_record(
+#   app = app_main,
+#   api = "/api/collections",
+#   collection = collection,
+#   token = adm_main$token,
+#   body = nnnnnnn)
+
 bb |>
   dplyr::filter(date %in% dd_missing) |>
   purrr::pwalk(.f = function(
@@ -275,7 +293,8 @@ bb |>
       api = "/api/collections",
       collection = collection,
       token = adm_main$token,
-      body = body)
+      body = body
+    )
   })
 
 
@@ -375,5 +394,6 @@ bb |>
       api = "/api/collections",
       collection = collection,
       token = adm_main$token,
-      body = body)
+      body = body
+    )
   })
