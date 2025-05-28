@@ -20,6 +20,7 @@ source(here::here("..", "mobile-app", "R", "helpers.R"))
 # Parameters ----
 source(here("..", "mobile-app", "R", "params.R"))
 
+# Dimensions ----
 if (exists("ansp_list") == FALSE) {
   ansp_list <-  read_xlsx(
     path  = fs::path_abs(
@@ -29,6 +30,20 @@ if (exists("ansp_list") == FALSE) {
     range = cell_limits(c(1, 1), c(NA, NA))) %>%
     as_tibble()
 }
+
+rel_ansp_acc <- ansp_list %>% 
+  mutate(
+    iso_2letter = str_remove_all(ANSP_CODE, "_ANSP"),
+    ## smatsa exception
+    iso_2letter = str_replace(iso_2letter, "MERS", "RS"),
+  ) %>% 
+  left_join(acc, by = "iso_2letter") %>% 
+  select(
+    ICAO_CODE = ICAO_code,
+    PRU_ID,
+    ANSP_CODE,
+    ANSP_NAME
+  )
 
 # archive mode for past dates
 if (exists("archive_mode") == FALSE) {archive_mode <- FALSE}
@@ -836,3 +851,204 @@ sp_delayed_flights_evo_long <- sp_delayed_flights_evo %>%
 sp_delayed_flights_evo_j <- sp_delayed_flights_evo_long %>% toJSON(., pretty = TRUE)
 
 save_json(sp_delayed_flights_evo_j, "sp_delayed_flights_evo_chart_daily")
+
+# ____________________________________________________________________________________________
+#
+#    ANSP ranking tables  -----
+#
+# ____________________________________________________________________________________________
+
+## TRAFFIC ----
+### ACC ----
+#### day ----
+mydataframe <- "nw_acc_delay_day_raw"
+myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+stakeholder <- str_sub(mydataframe, 1, 2)
+
+if (archive_mode) {
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
+  
+} else {
+  df <-  read_xlsx(
+    path  = fs::path_abs(
+      str_glue(nw_base_file),
+      start = nw_base_dir),
+    sheet = "ACC_DAY_DELAY",
+    range = cell_limits(c(5, 1), c(NA, NA))) %>%
+    as_tibble() %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+}
+
+# process data
+sp_acc_traffic_day_int <- assign(mydataframe, df) %>% 
+  left_join(rel_ansp_acc, by = c("UNIT_CODE" = "ICAO_CODE")) %>% 
+  group_by(PRU_ID) %>% 
+  mutate(
+    DY_RANK = rank(desc(FLIGHT), ties.method = "max"),
+    SP_RANK = paste0(ANSP_CODE, DY_RANK),
+    DY_FLT_DIF_PREV_WEEK_PERC = if_else(FLIGHT_7DAY == 0, NA, FLIGHT / FLIGHT_7DAY -1),
+    DY_FLT_DIF_PREV_YEAR_PERC = if_else(FLIGHT_PREV_YEAR == 0, NA, FLIGHT / FLIGHT_PREV_YEAR -1),
+     
+    DY_FLT_DIF_PREV_WEEK = FLIGHT - FLIGHT_7DAY
+    ) %>% 
+  arrange(PRU_ID, SP_RANK) %>% 
+  ungroup()
+
+sp_acc_traffic_day <- sp_acc_traffic_day_int %>% 
+  select(
+    SP_RANK,
+    DY_RANK,
+    DY_ACC_NAME = NAME,
+    DY_TO_DATE = ENTRY_DATE,
+    DY_FLT = FLIGHT,
+    DY_FLT_DIF_PREV_WEEK_PERC,
+    DY_FLT_DIF_PREV_YEAR_PERC
+  )
+  
+#### week ----
+mydataframe <- "nw_acc_delay_week_raw"
+myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+stakeholder <- str_sub(mydataframe, 1, 2)
+
+if (archive_mode) {
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
+  
+} else {
+  df <-  read_xlsx(
+    path  = fs::path_abs(
+      str_glue(nw_base_file),
+      start = nw_base_dir),
+    sheet = "ACC_WEEK_DELAY",
+    range = cell_limits(c(5, 1), c(NA, NA))) %>%
+    as_tibble() %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+}
+
+# process data
+sp_acc_traffic_week <- assign(mydataframe, df) %>% 
+  left_join(rel_ansp_acc, by = c("UNIT_CODE" = "ICAO_CODE")) %>% 
+  group_by(PRU_ID) %>% 
+  mutate(
+    WK_RANK = rank(desc(FLIGHT), ties.method = "max"),
+    SP_RANK = paste0(ANSP_CODE, WK_RANK),
+    WK_FLT_DIF_PREV_WEEK_PERC = if_else(FLIGHT_7DAY == 0, NA, FLIGHT / FLIGHT_7DAY -1),
+    WK_FLT_DIF_PREV_YEAR_PERC = if_else(FLIGHT_PREV_YEAR == 0, NA, FLIGHT / FLIGHT_PREV_YEAR -1)
+  ) %>% 
+  arrange(PRU_ID, SP_RANK) %>% 
+  ungroup() %>% 
+  select(
+    SP_RANK,
+    WK_RANK,
+    WK_ACC_NAME = NAME,
+    WK_FROM_DATE = MIN_ENTRY_DATE,
+    WK_TO_DATE = MAX_ENTRY_DATE,
+    WK_FLT = FLIGHT,
+    WK_FLT_DIF_PREV_WEEK_PERC,
+    WK_FLT_DIF_PREV_YEAR_PERC
+  )
+
+#### y2d ----
+mydataframe <- "nw_acc_delay_y2d_raw"
+myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+stakeholder <- str_sub(mydataframe, 1, 2)
+
+if (archive_mode) {
+  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
+  
+} else {
+  df <-  read_xlsx(
+    path  = fs::path_abs(
+      str_glue(nw_base_file),
+      start = nw_base_dir),
+    sheet = "ACC_Y2D_DELAY",
+    range = cell_limits(c(7, 1), c(NA, NA))) %>%
+    as_tibble() %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+}
+
+# process data
+sp_acc_traffic_y2d <- assign(mydataframe, df) %>% 
+  left_join(rel_ansp_acc, by = c("UNIT_CODE" = "ICAO_CODE")) %>% 
+  group_by(PRU_ID) %>% 
+  mutate(
+    Y2D_RANK = rank(desc(FLIGHT), ties.method = "max"),
+    SP_RANK = paste0(ANSP_CODE, Y2D_RANK),
+    Y2D_FLT_DIF_PREV_YEAR_PERC = if_else(Y2D_AVG_FLIGHT_PY == 0, NA,  Y2D_AVG_FLIGHT /  Y2D_AVG_FLIGHT_PY-1),
+    Y2D_FLT_DIF_2019_PERC = if_else(Y2D_AVG_FLIGHT_2019 == 0, NA, Y2D_AVG_FLIGHT / Y2D_AVG_FLIGHT_2019 -1)
+  ) %>% 
+  arrange(PRU_ID, SP_RANK) %>% 
+  ungroup() %>% 
+  select(
+    SP_RANK,
+    Y2D_RANK,
+    Y2D_ACC_NAME = NAME,
+    Y2D_FROM_DATE = MIN_DATE,
+    Y2D_TO_DATE = ENTRY_DATE,
+    Y2D_FLT = FLIGHT,
+    Y2D_FLT_DIF_PREV_YEAR_PERC,
+    Y2D_FLT_DIF_2019_PERC
+  )
+
+
+#### main card ----
+sp_acc_main_traffic <- sp_acc_traffic_day_int %>%
+  select(
+    SP_RANK,
+    MAIN_TFC_ACC_NAME = NAME,
+    MAIN_TFC_ACC_CODE = UNIT_CODE,
+    MAIN_TFC_ACC_FLT = FLIGHT
+    )
+
+sp_acc_main_traffic_dif <- sp_acc_traffic_day_int %>%
+  arrange(ANSP_CODE, desc(abs(DY_FLT_DIF_PREV_WEEK)), DY_RANK) %>%
+  group_by(ANSP_CODE) %>%
+  mutate(RANK_DIF_AO_TFC = row_number()) %>%
+  ungroup() %>%
+  mutate(
+    MAIN_TFC_DIF_ACC_NAME = NAME,
+    MAIN_TFC_DIF_ACC_CODE = UNIT_CODE,
+    MAIN_TFC_DIF_ACC_FLT_DIF = DY_FLT_DIF_PREV_WEEK
+  ) %>%
+  arrange(ANSP_CODE, desc(MAIN_TFC_DIF_ACC_FLT_DIF)) %>%
+  group_by(ANSP_CODE) %>%
+  mutate(
+    RANK_MAIN_DIF = row_number(),
+    SP_RANK = paste0(ANSP_CODE, RANK_MAIN_DIF)
+  ) %>%
+  ungroup() %>%
+  select(SP_RANK, MAIN_TFC_DIF_ACC_NAME, MAIN_TFC_DIF_ACC_CODE, MAIN_TFC_DIF_ACC_FLT_DIF)
+
+#### join tables ----
+# create list of state/rankings for left join
+ansp_ranking <- list()
+i = 0
+for (i in 1:10) {
+  i = i + 1
+  ansp_ranking <- ansp_ranking %>%
+    bind_rows(ansp_list, .)
+}
+
+ansp_ranking <- ansp_ranking %>%
+  select(-PRU_ID) %>% 
+  arrange(ANSP_CODE) %>%
+  group_by(ANSP_CODE) %>%
+  mutate(
+    RANK = row_number(),
+    SP_RANK = paste0(ANSP_CODE, RANK)
+  )
+
+# join and reorder tables
+sp_acc_data <- ansp_ranking %>%
+  left_join(sp_acc_main_traffic, by = "SP_RANK") %>%
+  left_join(sp_acc_main_traffic_dif, by = "SP_RANK") %>%
+  left_join(sp_acc_traffic_day, by = "SP_RANK") %>%
+  left_join(sp_acc_traffic_week, by = "SP_RANK") %>%
+  left_join(sp_acc_traffic_y2d, by = "SP_RANK") %>%
+  ungroup() %>%
+  select(-SP_RANK) %>%
+  arrange (ANSP_CODE, RANK)
+
+# covert to json and save in app data folder and archive
+st_ao_data_j <- st_ao_data %>% toJSON(., pretty = TRUE)
+
+save_json(st_ao_data_j, "sp_acc_ranking_traffic")

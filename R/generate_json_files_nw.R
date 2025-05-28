@@ -2093,7 +2093,7 @@ if (archive_mode) {
       str_glue(nw_base_file),
       start = nw_base_dir),
     sheet = "ACC_DAY_DELAY",
-    range = cell_limits(c(5, 2), c(NA, 20))) %>%
+    range = cell_limits(c(5, 2), c(NA, NA))) %>%
     as_tibble() %>%
     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
@@ -2135,7 +2135,7 @@ if (archive_mode) {
       str_glue(nw_base_file),
       start = nw_base_dir),
     sheet = "ACC_WEEK_DELAY",
-    range = cell_limits(c(5, 2), c(NA, 16))) %>%
+    range = cell_limits(c(5, 2), c(NA, NA))) %>%
     as_tibble() %>%
     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
@@ -2178,7 +2178,7 @@ if (archive_mode) {
       str_glue(nw_base_file),
       start = nw_base_dir),
     sheet = "ACC_Y2D_DELAY",
-    range = cell_limits(c(7, 2), c(NA, 13))) %>%
+    range = cell_limits(c(7, 2), c(NA, NA))) %>%
     as_tibble() %>%
     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
