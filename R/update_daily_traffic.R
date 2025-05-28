@@ -41,6 +41,7 @@ retrieve_from_api <- function(wef) {
   url <- str_c(base_url,
                "network_traffic/records",
                stringr::str_glue("?perPage=200&filter=(date>'{wef}')")) |>
+    URLencode() |>
     url()
   aa <- yyjsonr::read_json_conn(url) |>
     magrittr::use_series("items") |>

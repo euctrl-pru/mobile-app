@@ -160,23 +160,24 @@ if (nw_billed_latest$BILLING_DATE > ll) {
 
 
 #---------- Network punctuality ----
-collection <- "nw_punct"
-
-nw_punct_latest <- network_punctuality_latest()
-
-ph_create_record(
-  app = app_test,
-  api = "/api/collections",
-  collection = collection,
-  token = adm_test$token,
-  body = nw_punct_latest)
-
-ph_create_record(
-  app = app_main,
-  api = "/api/collections",
-  collection = collection,
-  token = adm_main$token,
-  body = nw_punct_latest)
+# NOTE: disable for now
+# collection <- "nw_punct"
+#
+# nw_punct_latest <- network_punctuality_latest()
+#
+# ph_create_record(
+#   app = app_test,
+#   api = "/api/collections",
+#   collection = collection,
+#   token = adm_test$token,
+#   body = nw_punct_latest)
+#
+# ph_create_record(
+#   app = app_main,
+#   api = "/api/collections",
+#   collection = collection,
+#   token = adm_main$token,
+#   body = nw_punct_latest)
 
 # ## ------ Punctuality init -----
 # for (d in seq(from = ymd("2024-02-03"), to = ymd("2024-02-05"), by = "1 day")) {
