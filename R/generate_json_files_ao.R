@@ -158,7 +158,7 @@ ao_traffic_delay_last_day <- ao_traffic_delay_data %>%
     Y2D_DLY_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(desc(Y2D_AVG_DLY_YEAR))),
 
     DY_DLY_FLT_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(desc(DAY_DLY_FLT))),
-    WK_DLY_FLT_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rankdesc((RWK_DLY_FLT))),
+    WK_DLY_FLT_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(desc(RWK_DLY_FLT))),
     Y2D_DLY_FLT_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(desc(Y2D_DLY_FLT_YEAR))),
 
     DY_DELAYED_TFC_PERC_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(desc(DAY_DELAYED_TFC_PERC))),
