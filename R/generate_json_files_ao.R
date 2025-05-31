@@ -153,23 +153,23 @@ ao_traffic_delay_last_day <- ao_traffic_delay_data %>%
     Y2D_TFC_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(desc(Y2D_TFC_YEAR))),
     TFC_RANK_TEXT = "*Rank within top 40 aircraft operators.\nTop rank for highest.",
 
-    DY_DLY_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(DAY_DLY)),
-    WK_DLY_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(RWK_AVG_DLY)),
-    Y2D_DLY_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(Y2D_AVG_DLY_YEAR)),
+    DY_DLY_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(desc(DAY_DLY))),
+    WK_DLY_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(desc(RWK_AVG_DLY))),
+    Y2D_DLY_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(desc(Y2D_AVG_DLY_YEAR))),
 
-    DY_DLY_FLT_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(DAY_DLY_FLT)),
-    WK_DLY_FLT_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(RWK_DLY_FLT)),
-    Y2D_DLY_FLT_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(Y2D_DLY_FLT_YEAR)),
+    DY_DLY_FLT_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(desc(DAY_DLY_FLT))),
+    WK_DLY_FLT_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rankdesc((RWK_DLY_FLT))),
+    Y2D_DLY_FLT_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(desc(Y2D_DLY_FLT_YEAR))),
 
-    DY_DELAYED_TFC_PERC_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(DAY_DELAYED_TFC_PERC)),
-    WK_DELAYED_TFC_PERC_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(RWK_DELAYED_TFC_PERC)),
-    Y2D_DELAYED_TFC_PERC_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(Y2D_DELAYED_TFC_PERC)),
+    DY_DELAYED_TFC_PERC_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(desc(DAY_DELAYED_TFC_PERC))),
+    WK_DELAYED_TFC_PERC_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(desc(RWK_DELAYED_TFC_PERC))),
+    Y2D_DELAYED_TFC_PERC_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(desc(Y2D_DELAYED_TFC_PERC))),
 
-    DY_DELAYED_TFC_15_PERC_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(DAY_DELAYED_TFC_15_PERC)),
-    WK_DELAYED_TFC_15_PERC_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(RWK_DELAYED_TFC_15_PERC)),
-    Y2D_DELAYED_TFC_15_PERC_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(Y2D_DELAYED_TFC_15_PERC)),
+    DY_DELAYED_TFC_15_PERC_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(desc(DAY_DELAYED_TFC_15_PERC))),
+    WK_DELAYED_TFC_15_PERC_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(desc(RWK_DELAYED_TFC_15_PERC))),
+    Y2D_DELAYED_TFC_15_PERC_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(desc(Y2D_DELAYED_TFC_15_PERC))),
 
-    DLY_RANK_TEXT = "*Rank within top 40 aircraft operators.\nTop rank for lowest."
+    DLY_RANK_TEXT = "*Rank within top 40 aircraft operators.\nTop rank for highest."
   ) %>%
   ungroup()
 
@@ -654,12 +654,12 @@ ao_co2_for_json <- ao_co2_data %>%
   right_join(ao_grp_icao_full, by = c("AO_GRP_NAME", "AO_GRP_CODE")) %>%
   group_by(FLAG_TOP_AO) %>%
   mutate(
-    MM_CO2_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(MM_CO2)),
-    Y2D_CO2_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(Y2D_CO2)),
+    MM_CO2_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(desc(MM_CO2))),
+    Y2D_CO2_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(desc(Y2D_CO2))),
 
-    MM_CO2_DEP_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(MM_CO2_DEP)),
-    Y2D_CO2_DEP_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(Y2D_CO2_DEP)),
-    CO2_RANK_TEXT = "*Rank within top 40 aircraft operators.\nTop rank for lowest"
+    MM_CO2_DEP_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(desc(MM_CO2_DEP))),
+    Y2D_CO2_DEP_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(desc(Y2D_CO2_DEP))),
+    CO2_RANK_TEXT = "*Rank within top 40 aircraft operators.\nTop rank for highest."
   ) %>%
   ungroup() %>%
   select(

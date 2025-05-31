@@ -882,10 +882,12 @@ if (archive_mode) {
 # process data
 sp_acc_traffic_day_int <- assign(mydataframe, df) %>% 
   left_join(rel_ansp_acc, by = c("UNIT_CODE" = "ICAO_CODE")) %>% 
-  group_by(PRU_ID) %>% 
   mutate(
     DY_RANK = rank(desc(FLIGHT), ties.method = "max"),
-    SP_RANK = paste0(ANSP_CODE, DY_RANK),
+  ) %>% 
+  group_by(PRU_ID) %>% 
+  mutate(
+    SP_RANK = paste0(ANSP_CODE, row_number()),
     DY_FLT_DIF_PREV_WEEK_PERC = if_else(FLIGHT_7DAY == 0, NA, FLIGHT / FLIGHT_7DAY -1),
     DY_FLT_DIF_PREV_YEAR_PERC = if_else(FLIGHT_PREV_YEAR == 0, NA, FLIGHT / FLIGHT_PREV_YEAR -1),
      
@@ -897,9 +899,8 @@ sp_acc_traffic_day_int <- assign(mydataframe, df) %>%
 sp_acc_traffic_day <- sp_acc_traffic_day_int %>% 
   select(
     SP_RANK,
-    DY_RANK,
-    DY_ACC_NAME = NAME,
-    DY_TO_DATE = ENTRY_DATE,
+    DY_FLT_ACC_NAME = NAME,
+    DY_FLT_TO_DATE = ENTRY_DATE,
     DY_FLT = FLIGHT,
     DY_FLT_DIF_PREV_WEEK_PERC,
     DY_FLT_DIF_PREV_YEAR_PERC
@@ -925,24 +926,28 @@ if (archive_mode) {
 }
 
 # process data
-sp_acc_traffic_week <- assign(mydataframe, df) %>% 
+sp_acc_traffic_week_int <- assign(mydataframe, df) %>% 
   left_join(rel_ansp_acc, by = c("UNIT_CODE" = "ICAO_CODE")) %>% 
-  group_by(PRU_ID) %>% 
   mutate(
     WK_RANK = rank(desc(FLIGHT), ties.method = "max"),
-    SP_RANK = paste0(ANSP_CODE, WK_RANK),
+    
+  ) %>% 
+  group_by(PRU_ID) %>% 
+  mutate(
+    SP_RANK = paste0(ANSP_CODE, row_number()),
     WK_FLT_DIF_PREV_WEEK_PERC = if_else(FLIGHT_7DAY == 0, NA, FLIGHT / FLIGHT_7DAY -1),
     WK_FLT_DIF_PREV_YEAR_PERC = if_else(FLIGHT_PREV_YEAR == 0, NA, FLIGHT / FLIGHT_PREV_YEAR -1)
   ) %>% 
   arrange(PRU_ID, SP_RANK) %>% 
-  ungroup() %>% 
+  ungroup() 
+
+sp_acc_traffic_week <- sp_acc_traffic_week_int %>% 
   select(
     SP_RANK,
-    WK_RANK,
-    WK_ACC_NAME = NAME,
-    WK_FROM_DATE = MIN_ENTRY_DATE,
-    WK_TO_DATE = MAX_ENTRY_DATE,
-    WK_FLT = FLIGHT,
+    WK_FLT_ACC_NAME = NAME,
+    WK_FLT_FROM_DATE = MIN_ENTRY_DATE,
+    WK_FLT_TO_DATE = MAX_ENTRY_DATE,
+    WK_FLT =  DAILY_FLIGHT,
     WK_FLT_DIF_PREV_WEEK_PERC,
     WK_FLT_DIF_PREV_YEAR_PERC
   )
@@ -967,24 +972,27 @@ if (archive_mode) {
 }
 
 # process data
-sp_acc_traffic_y2d <- assign(mydataframe, df) %>% 
+sp_acc_traffic_y2d_int <- assign(mydataframe, df) %>% 
   left_join(rel_ansp_acc, by = c("UNIT_CODE" = "ICAO_CODE")) %>% 
-  group_by(PRU_ID) %>% 
   mutate(
     Y2D_RANK = rank(desc(FLIGHT), ties.method = "max"),
-    SP_RANK = paste0(ANSP_CODE, Y2D_RANK),
+  ) %>% 
+  group_by(PRU_ID) %>% 
+  mutate(
+    SP_RANK = paste0(ANSP_CODE, row_number()),
     Y2D_FLT_DIF_PREV_YEAR_PERC = if_else(Y2D_AVG_FLIGHT_PY == 0, NA,  Y2D_AVG_FLIGHT /  Y2D_AVG_FLIGHT_PY-1),
     Y2D_FLT_DIF_2019_PERC = if_else(Y2D_AVG_FLIGHT_2019 == 0, NA, Y2D_AVG_FLIGHT / Y2D_AVG_FLIGHT_2019 -1)
   ) %>% 
   arrange(PRU_ID, SP_RANK) %>% 
-  ungroup() %>% 
+  ungroup()
+
+sp_acc_traffic_y2d <- sp_acc_traffic_y2d_int %>% 
   select(
     SP_RANK,
-    Y2D_RANK,
-    Y2D_ACC_NAME = NAME,
-    Y2D_FROM_DATE = MIN_DATE,
-    Y2D_TO_DATE = ENTRY_DATE,
-    Y2D_FLT = FLIGHT,
+    Y2D_FLT_ACC_NAME = NAME,
+    Y2D_FLT_FROM_DATE = MIN_DATE,
+    Y2D_FLT_TO_DATE = ENTRY_DATE,
+    Y2D_FLT =  Y2D_AVG_FLIGHT,
     Y2D_FLT_DIF_PREV_YEAR_PERC,
     Y2D_FLT_DIF_2019_PERC
   )
@@ -1002,18 +1010,12 @@ sp_acc_main_traffic <- sp_acc_traffic_day_int %>%
 sp_acc_main_traffic_dif <- sp_acc_traffic_day_int %>%
   arrange(ANSP_CODE, desc(abs(DY_FLT_DIF_PREV_WEEK)), DY_RANK) %>%
   group_by(ANSP_CODE) %>%
-  mutate(RANK_DIF_AO_TFC = row_number()) %>%
-  ungroup() %>%
   mutate(
+    RANK_MAIN_DIF = row_number(),
+    SP_RANK = paste0(ANSP_CODE, RANK_MAIN_DIF),
     MAIN_TFC_DIF_ACC_NAME = NAME,
     MAIN_TFC_DIF_ACC_CODE = UNIT_CODE,
     MAIN_TFC_DIF_ACC_FLT_DIF = DY_FLT_DIF_PREV_WEEK
-  ) %>%
-  arrange(ANSP_CODE, desc(MAIN_TFC_DIF_ACC_FLT_DIF)) %>%
-  group_by(ANSP_CODE) %>%
-  mutate(
-    RANK_MAIN_DIF = row_number(),
-    SP_RANK = paste0(ANSP_CODE, RANK_MAIN_DIF)
   ) %>%
   ungroup() %>%
   select(SP_RANK, MAIN_TFC_DIF_ACC_NAME, MAIN_TFC_DIF_ACC_CODE, MAIN_TFC_DIF_ACC_FLT_DIF)
@@ -1049,6 +1051,209 @@ sp_acc_data <- ansp_ranking %>%
   arrange (ANSP_CODE, RANK)
 
 # covert to json and save in app data folder and archive
-st_ao_data_j <- st_ao_data %>% toJSON(., pretty = TRUE)
+sp_acc_data_j <- sp_acc_data %>% toJSON(., pretty = TRUE)
 
-save_json(st_ao_data_j, "sp_acc_ranking_traffic")
+save_json(sp_acc_data_j, "sp_acc_ranking_traffic")
+
+## DELAY ----
+### ACC ----
+#### day ----
+# process data
+sp_acc_delay_day_int <- sp_acc_traffic_day_int %>% 
+  mutate(
+    DY_RANK = rank(desc(DLY), ties.method = "max")
+  ) %>% 
+  group_by(PRU_ID) %>% 
+  mutate(
+    SP_RANK = paste0(ANSP_CODE, row_number()),
+    DY_DLY_DIF_PREV_WEEK_PERC = if_else(DLY_7DAY == 0, NA, DLY / DLY_7DAY -1),
+    DY_DLY_DIF_PREV_YEAR_PERC = if_else(DLY_PREV_YEAR == 0, NA, DLY / DLY_PREV_YEAR -1),
+    
+    DY_DLY_FLT = DLY / FLIGHT,
+    DY_DLY_FLT_PREV_WEEK = DLY_7DAY / FLIGHT_7DAY,
+    DY_DLY_FLT_PREV_YEAR = DLY_PREV_YEAR / FLIGHT_PREV_YEAR,
+    DY_DLY_FLT_DIF_PREV_WEEK_PERC = if_else(DY_DLY_FLT_PREV_WEEK == 0, NA, DY_DLY_FLT / DY_DLY_FLT_PREV_WEEK -1),
+    DY_DLY_FLT_DIF_PREV_YEAR_PERC = if_else(DY_DLY_FLT_PREV_YEAR == 0, NA, DY_DLY_FLT / DY_DLY_FLT_PREV_YEAR -1),
+    
+    
+  ) %>% 
+  arrange(PRU_ID, SP_RANK) %>% 
+  ungroup()
+
+sp_acc_delay_day <- sp_acc_delay_day_int %>% 
+  select(
+    SP_RANK,
+    DY_DLY_ACC_NAME = NAME,
+    DY_DLY_TO_DATE = ENTRY_DATE,
+    DY_DLY = DLY,
+    DY_DLY_DIF_PREV_WEEK_PERC,
+    DY_DLY_DIF_PREV_YEAR_PERC
+  )
+
+sp_acc_delay_flight_day <- sp_acc_delay_day_int %>% 
+  mutate(
+    DY_RANK = rank(desc(DY_DLY_FLT), ties.method = "max"),
+  ) %>% 
+  group_by(PRU_ID) %>% 
+  mutate(
+    SP_RANK = paste0(ANSP_CODE, row_number()),
+  ) %>% 
+  arrange(PRU_ID, SP_RANK) %>% 
+  ungroup() %>% 
+  select(
+    SP_RANK,
+    DY_DLY_FLT_ACC_NAME = NAME,
+    DY_DLY_FLT_TO_DATE = ENTRY_DATE,
+    DY_DLY_FLT,
+    DY_DLY_FLT_DIF_PREV_WEEK_PERC,
+    DY_DLY_FLT_DIF_PREV_YEAR_PERC
+  ) 
+
+
+#### week ----
+# process data
+sp_acc_delay_week_int <- sp_acc_traffic_week_int %>% 
+  mutate(
+    WK_RANK = rank(desc(DAILY_DLY), ties.method = "max")
+  ) %>%
+  group_by(PRU_ID) %>% 
+  mutate(
+    SP_RANK = paste0(ANSP_CODE, row_number()),
+    WK_DLY_DIF_PREV_WEEK_PERC = if_else(DAILY_DLY_7DAY == 0, NA,  DAILY_DLY / DAILY_DLY_7DAY -1),
+    WK_DLY_DIF_PREV_YEAR_PERC = if_else( DAILY_DLY_PREV_YEAR == 0, NA, DAILY_DLY /  DAILY_DLY_PREV_YEAR -1),
+    
+    WK_DLY_FLT = DAILY_DLY /  DAILY_FLIGHT,
+    WK_DLY_FLT_PREV_WEEK = DAILY_DLY_7DAY / DAILY_FLIGHT_7DAY,
+    WK_DLY_FLT_PREV_YEAR = DAILY_DLY_PREV_YEAR / DAILY_FLIGHT_PREV_YEAR,
+    WK_DLY_FLT_DIF_PREV_WEEK_PERC = if_else(WK_DLY_FLT_PREV_WEEK == 0, NA, WK_DLY_FLT / WK_DLY_FLT_PREV_WEEK -1),
+    WK_DLY_FLT_DIF_PREV_YEAR_PERC = if_else(WK_DLY_FLT_PREV_YEAR == 0, NA, WK_DLY_FLT / WK_DLY_FLT_PREV_YEAR -1),
+    
+    
+  ) %>% 
+  arrange(PRU_ID, SP_RANK) %>% 
+  ungroup()
+
+sp_acc_delay_week <- sp_acc_delay_week_int %>% 
+  select(
+    SP_RANK,
+    WK_DLY_ACC_NAME = NAME,
+    WK_DLY_FROM_DATE = MIN_ENTRY_DATE,
+    WK_DLY_TO_DATE = MAX_ENTRY_DATE,
+    WK_DLY = DAILY_DLY,
+    WK_DLY_DIF_PREV_WEEK_PERC,
+    WK_DLY_DIF_PREV_YEAR_PERC
+  )
+
+sp_acc_delay_flight_week <- sp_acc_delay_week_int %>% 
+  mutate(
+    WK_RANK = rank(desc(WK_DLY_FLT), ties.method = "max"),
+  ) %>% 
+  group_by(PRU_ID) %>% 
+  mutate(
+    SP_RANK = paste0(ANSP_CODE, row_number()),
+  ) %>% 
+  arrange(PRU_ID, SP_RANK) %>% 
+  ungroup() %>% 
+  select(
+    SP_RANK,
+    WK_DLY_FLT_ACC_NAME = NAME,
+    WK_DLY_FLT_FROM_DATE = MIN_ENTRY_DATE,
+    WK_DLY_FLT_TO_DATE = MAX_ENTRY_DATE,
+    WK_DLY_FLT,
+    WK_DLY_FLT_DIF_PREV_WEEK_PERC,
+    WK_DLY_FLT_DIF_PREV_YEAR_PERC
+  )
+
+#### y2d ----
+# process data
+sp_acc_delay_y2d_int <- sp_acc_traffic_y2d_int %>% 
+  mutate(
+    Y2D_RANK = rank(desc(Y2D_AVG_DLY), ties.method = "max"),
+    ) %>% 
+  group_by(PRU_ID) %>% 
+  mutate(
+    SP_RANK = paste0(ANSP_CODE, row_number()),
+    Y2D_DLY_DIF_PREV_YEAR_PERC = if_else(Y2D_AVG_DLY_PY == 0, NA,  Y2D_AVG_DLY /  Y2D_AVG_DLY_PY -1),
+    Y2D_DLY_DIF_2019_PERC = if_else(Y2D_AVG_DLY_2019 == 0, NA,  Y2D_AVG_DLY /  Y2D_AVG_DLY_2019 -1),
+    
+    Y2D_DLY_FLT = Y2D_AVG_DLY / Y2D_AVG_FLIGHT,
+    Y2D_DLY_FLT_PREV_YEAR = Y2D_AVG_DLY_PY / Y2D_AVG_FLIGHT_PY,
+    Y2D_DLY_FLT_2019 = Y2D_AVG_DLY_2019 / Y2D_AVG_FLIGHT_2019,
+    Y2D_DLY_FLT_DIF_PREV_YEAR_PERC = if_else(Y2D_DLY_FLT_PREV_YEAR == 0, NA, Y2D_DLY_FLT / Y2D_DLY_FLT_PREV_YEAR -1),
+    Y2D_DLY_FLT_DIF_2019_PERC = if_else(Y2D_DLY_FLT_2019 == 0, NA, Y2D_DLY_FLT / Y2D_DLY_FLT_2019 -1),
+    
+  ) %>% 
+  arrange(PRU_ID, SP_RANK) %>% 
+  ungroup()
+
+sp_acc_delay_y2d <- sp_acc_delay_y2d_int %>% 
+  select(
+    SP_RANK,
+    Y2D_DLY_ACC_NAME = NAME,
+    Y2D_DLY_TO_DATE = ENTRY_DATE,
+    Y2D_DLY = Y2D_AVG_DLY,
+    Y2D_DLY_DIF_PREV_YEAR_PERC,
+    Y2D_DLY_DIF_2019_PERC
+  )
+
+sp_acc_delay_flight_y2d <- sp_acc_delay_y2d_int %>% 
+  mutate(
+    Y2D_RANK = rank(desc(Y2D_DLY_FLT), ties.method = "max"),
+  ) %>% 
+  group_by(PRU_ID) %>% 
+  mutate(
+    SP_RANK = paste0(ANSP_CODE, row_number()),
+  ) %>% 
+  arrange(PRU_ID, SP_RANK) %>% 
+  ungroup() %>% 
+  select(
+    SP_RANK,
+    Y2D_DLY_FLT_ACC_NAME = NAME,
+    Y2D_DLY_FLT_TO_DATE = ENTRY_DATE,
+    Y2D_DLY_FLT,
+    Y2D_DLY_FLT_DIF_PREV_YEAR_PERC,
+    Y2D_DLY_FLT_DIF_2019_PERC
+  )
+
+
+#### main card ----
+sp_acc_main_delay <- sp_acc_traffic_day_int %>%
+  select(
+    SP_RANK,
+    MAIN_DLY_ACC_NAME = NAME,
+    MAIN_DLY_ACC_CODE = UNIT_CODE,
+    MAIN_DLY_ACC_FLT = DLY
+  )
+
+sp_acc_main_delay_flight <- sp_acc_delay_day_int %>%
+  arrange(ANSP_CODE, desc(DY_DLY_FLT), DY_RANK) %>%
+  group_by(ANSP_CODE) %>%
+  mutate(
+    RANK_ACC_DLY_FLT = row_number(),
+    SP_RANK = paste0(ANSP_CODE, RANK_ACC_DLY_FLT),
+    MAIN_DLY_FLT_ACC_NAME = NAME,
+    MAIN_DLY_FLT_ACC_CODE = UNIT_CODE,
+    MAIN_DLY_FLT_ACC_DLY_FLT = DY_DLY_FLT
+  ) %>%
+  ungroup() %>%
+  select(SP_RANK, MAIN_DLY_FLT_ACC_NAME, MAIN_DLY_FLT_ACC_CODE, MAIN_DLY_FLT_ACC_DLY_FLT)
+
+#### join tables ----
+# join and reorder tables
+sp_acc_delay_data <- ansp_ranking %>%
+  left_join(sp_acc_main_delay, by = "SP_RANK") %>%
+  left_join(sp_acc_main_delay_flight, by = "SP_RANK") %>%
+  left_join(sp_acc_delay_day, by = "SP_RANK") %>%
+  left_join(sp_acc_delay_week, by = "SP_RANK") %>%
+  left_join(sp_acc_delay_y2d, by = "SP_RANK") %>%
+  left_join(sp_acc_delay_flight_day, by = "SP_RANK") %>%
+  left_join(sp_acc_delay_flight_week, by = "SP_RANK") %>%
+  left_join(sp_acc_delay_flight_y2d, by = "SP_RANK") %>%
+  ungroup() %>%
+  select(-SP_RANK) %>%
+  arrange (ANSP_CODE, RANK)
+
+# covert to json and save in app data folder and archive
+sp_acc_delay_data_j <- sp_acc_delay_data %>% toJSON(., pretty = TRUE)
+
+save_json(sp_acc_delay_data_j, "sp_acc_ranking_delay")

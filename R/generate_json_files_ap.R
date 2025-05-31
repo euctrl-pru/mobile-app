@@ -333,23 +333,23 @@ apt_delay_for_json  <- apt_delay_last_day %>%
   right_join(apt_icao_full, by = c("ARP_CODE" = "apt_icao_code", "ARP_NAME" = "apt_name")) %>%
   group_by(flag_top_apt) %>%
   mutate(
-    DY_DLY_RANK = if_else(flag_top_apt == "N", NA, min_rank(DAY_DLY)),
-    WK_DLY_RANK = if_else(flag_top_apt == "N", NA, min_rank(AVG_DLY_ROLLING_WEEK)),
-    Y2D_DLY_RANK = if_else(flag_top_apt == "N", NA, min_rank(Y2D_DLY_YEAR)),
+    DY_DLY_RANK = if_else(flag_top_apt == "N", NA, min_rank(desc(DAY_DLY))),
+    WK_DLY_RANK = if_else(flag_top_apt == "N", NA, min_rank(desc(AVG_DLY_ROLLING_WEEK))),
+    Y2D_DLY_RANK = if_else(flag_top_apt == "N", NA, min_rank(desc(Y2D_DLY_YEAR))),
 
-    DY_DLY_FLT_RANK = if_else(flag_top_apt == "N", NA, min_rank(DY_DLY_FLT)),
-    WK_DLY_FLT_RANK = if_else(flag_top_apt == "N", NA, min_rank(WK_DLY_FLT)),
-    Y2D_DLY_FLT_RANK = if_else(flag_top_apt == "N", NA, min_rank(Y2D_DLY_FLT)),
+    DY_DLY_FLT_RANK = if_else(flag_top_apt == "N", NA, min_rank(desc(DY_DLY_FLT))),
+    WK_DLY_FLT_RANK = if_else(flag_top_apt == "N", NA, min_rank(desc(WK_DLY_FLT))),
+    Y2D_DLY_FLT_RANK = if_else(flag_top_apt == "N", NA, min_rank(desc(Y2D_DLY_FLT))),
 
-    DY_DELAYED_TFC_PERC_RANK = if_else(flag_top_apt == "N", NA, min_rank(DY_DELAYED_TFC_PERC)),
-    WK_DELAYED_TFC_PERC_RANK = if_else(flag_top_apt == "N", NA, min_rank(WK_DELAYED_TFC_PERC)),
-    Y2D_DELAYED_TFC_PERC_RANK = if_else(flag_top_apt == "N", NA, min_rank(Y2D_DELAYED_TFC_PERC)),
+    DY_DELAYED_TFC_PERC_RANK = if_else(flag_top_apt == "N", NA, min_rank(desc(DY_DELAYED_TFC_PERC))),
+    WK_DELAYED_TFC_PERC_RANK = if_else(flag_top_apt == "N", NA, min_rank(desc(WK_DELAYED_TFC_PERC))),
+    Y2D_DELAYED_TFC_PERC_RANK = if_else(flag_top_apt == "N", NA, min_rank(desc(Y2D_DELAYED_TFC_PERC))),
 
-    DY_DELAYED_TFC_15_PERC_RANK = if_else(flag_top_apt == "N", NA, min_rank(DY_DELAYED_TFC_15_PERC)),
-    WK_DELAYED_TFC_15_PERC_RANK = if_else(flag_top_apt == "N", NA, min_rank(WK_DELAYED_TFC_15_PERC)),
-    Y2D_DELAYED_TFC_15_PERC_RANK = if_else(flag_top_apt == "N", NA, min_rank(Y2D_DELAYED_TFC_15_PERC)),
+    DY_DELAYED_TFC_15_PERC_RANK = if_else(flag_top_apt == "N", NA, min_rank(desc(DY_DELAYED_TFC_15_PERC))),
+    WK_DELAYED_TFC_15_PERC_RANK = if_else(flag_top_apt == "N", NA, min_rank(desc(WK_DELAYED_TFC_15_PERC))),
+    Y2D_DELAYED_TFC_15_PERC_RANK = if_else(flag_top_apt == "N", NA, min_rank(desc(Y2D_DELAYED_TFC_15_PERC))),
 
-    DLY_RANK_TEXT = "*Rank within top 40 airports.\nTop rank for lowest."
+    DLY_RANK_TEXT = "*Rank within top 40 airports.\nTop rank for highest."
   ) %>%
   ungroup() %>%
   select(
