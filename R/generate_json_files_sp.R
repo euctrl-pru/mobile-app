@@ -1274,3 +1274,4 @@ sp_acc_delay_data <- ansp_ranking %>%
 sp_acc_delay_data_j <- sp_acc_delay_data %>% toJSON(., pretty = TRUE)
 
 save_json(sp_acc_delay_data_j, "sp_acc_ranking_delay")
+

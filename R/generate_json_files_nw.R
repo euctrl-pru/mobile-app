@@ -1502,7 +1502,7 @@ ao_main_traffic_dif <- nw_ao_day_raw %>%
   mutate(WK_R_RANK_BY_DAY = row_number()) %>%
   filter(WK_R_RANK_BY_DAY <= 10) %>%
   mutate(across(-WK_R_RANK_BY_DAY, ~ ifelse(WK_R_RANK_BY_DAY > 4, NA, .))) %>%
-  arrange(abs(FLIGHT_7DAY_DIFF)) %>%
+  # arrange(abs(FLIGHT_7DAY_DIFF)) %>%
   mutate(WK_R_RANK_BY_DAY = row_number()) %>%
   select(
     WK_R_RANK_BY_DAY,
@@ -1698,7 +1698,7 @@ apt_main_traffic_dif <- nw_apt_day_raw %>%
   mutate(DY_R_RANK_BY_DAY = row_number()) %>%
   filter(DY_R_RANK_BY_DAY <= 10) %>%
   mutate(across(-DY_R_RANK_BY_DAY, ~ ifelse(DY_R_RANK_BY_DAY > 4, NA, .))) %>%
-  arrange(abs(DEP_ARR_7DAY_DIFF)) %>%
+  # arrange(abs(DEP_ARR_7DAY_DIFF)) %>%
   mutate(DY_R_RANK_BY_DAY = row_number()) %>%
   select(
     DY_R_RANK_BY_DAY,
@@ -1906,7 +1906,7 @@ st_main_traffic_dif <- nw_st_dai_day_raw %>%
   filter(DY_R_RANK_BY_DAY <= 10) %>%
   mutate(across(-DY_R_RANK_BY_DAY,
                 ~ ifelse(DY_R_RANK_BY_DAY > 4, NA, .))) %>%
-  arrange(abs(MAIN_TFC_CTRY_DIF)) %>%
+  # arrange(abs(MAIN_TFC_CTRY_DIF)) %>%
   mutate(DY_R_RANK_BY_DAY = row_number()) %>%
   select(
     DY_R_RANK_BY_DAY,
