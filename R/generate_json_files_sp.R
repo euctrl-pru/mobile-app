@@ -1235,7 +1235,7 @@ sp_acc_main_delay <- sp_acc_delay_day_int %>%
     SP_RANK,
     MAIN_DLY_ACC_RANK = DY_DLY_RANK,
     MAIN_DLY_ACC_NAME = NAME,
-    MAIN_DLY_ACC_FLT = DLY
+    MAIN_DLY_ACC_DLY = DLY
   )
 
 sp_acc_main_delay_flight <- sp_acc_delay_day_int %>% 
