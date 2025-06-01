@@ -1004,23 +1004,28 @@ sp_acc_traffic_y2d <- sp_acc_traffic_y2d_int %>%
 sp_acc_main_traffic <- sp_acc_traffic_day_int %>%
   select(
     SP_RANK,
+    MAIN_TFC_ACC_RANK = DY_FLT_RANK,
     MAIN_TFC_ACC_NAME = NAME,
-    MAIN_TFC_ACC_CODE = UNIT_CODE,
     MAIN_TFC_ACC_FLT = FLIGHT
     )
 
 sp_acc_main_traffic_dif <- sp_acc_traffic_day_int %>%
-  arrange(ANSP_CODE, desc(abs(DY_FLT_DIF_PREV_WEEK)), DY_RANK) %>%
+  mutate(
+    MAIN_TFC_DIF_ACC_RANK = rank(desc(abs(DY_FLT_DIF_PREV_WEEK)), ties.method = "max"),
+  ) %>% 
+  arrange(ANSP_CODE, desc(abs(DY_FLT_DIF_PREV_WEEK)), NAME) %>%
   group_by(ANSP_CODE) %>%
   mutate(
-    RANK_MAIN_DIF = row_number(),
-    SP_RANK = paste0(ANSP_CODE, RANK_MAIN_DIF),
+    SP_RANK = paste0(ANSP_CODE, row_number()),
+    MAIN_TFC_DIF_ACC_RANK,
     MAIN_TFC_DIF_ACC_NAME = NAME,
-    MAIN_TFC_DIF_ACC_CODE = UNIT_CODE,
     MAIN_TFC_DIF_ACC_FLT_DIF = DY_FLT_DIF_PREV_WEEK
   ) %>%
   ungroup() %>%
-  select(SP_RANK, MAIN_TFC_DIF_ACC_NAME, MAIN_TFC_DIF_ACC_CODE, MAIN_TFC_DIF_ACC_FLT_DIF)
+  select(SP_RANK,
+         MAIN_TFC_DIF_ACC_RANK,
+         MAIN_TFC_DIF_ACC_NAME, 
+         MAIN_TFC_DIF_ACC_FLT_DIF)
 
 #### join tables ----
 # create list of state/rankings for left join
@@ -1063,7 +1068,7 @@ save_json(sp_acc_data_j, "sp_acc_ranking_traffic")
 # process data
 sp_acc_delay_day_int <- sp_acc_traffic_day_int %>% 
   mutate(
-    DY_RANK = rank(desc(DLY), ties.method = "max")
+    DY_DLY_RANK = rank(desc(DLY), ties.method = "max")
   ) %>% 
   group_by(PRU_ID) %>% 
   mutate(
@@ -1085,6 +1090,7 @@ sp_acc_delay_day_int <- sp_acc_traffic_day_int %>%
 sp_acc_delay_day <- sp_acc_delay_day_int %>% 
   select(
     SP_RANK,
+    DY_DLY_RANK,
     DY_DLY_ACC_NAME = NAME,
     DY_DLY_TO_DATE = ENTRY_DATE,
     DY_DLY = DLY,
@@ -1117,7 +1123,7 @@ sp_acc_delay_flight_day <- sp_acc_delay_day_int %>%
 # process data
 sp_acc_delay_week_int <- sp_acc_traffic_week_int %>% 
   mutate(
-    WK_RANK = rank(desc(DAILY_DLY), ties.method = "max")
+    WK_DLY_RANK = rank(desc(DAILY_DLY), ties.method = "max")
   ) %>%
   group_by(PRU_ID) %>% 
   mutate(
@@ -1139,6 +1145,7 @@ sp_acc_delay_week_int <- sp_acc_traffic_week_int %>%
 sp_acc_delay_week <- sp_acc_delay_week_int %>% 
   select(
     SP_RANK,
+    WK_DLY_RANK,
     WK_DLY_ACC_NAME = NAME,
     WK_DLY_FROM_DATE = MIN_ENTRY_DATE,
     WK_DLY_TO_DATE = MAX_ENTRY_DATE,
@@ -1149,7 +1156,7 @@ sp_acc_delay_week <- sp_acc_delay_week_int %>%
 
 sp_acc_delay_flight_week <- sp_acc_delay_week_int %>% 
   mutate(
-    WK_RANK = rank(desc(WK_DLY_FLT), ties.method = "max"),
+    WK_DLY_FLT_RANK = rank(desc(WK_DLY_FLT), ties.method = "max"),
   ) %>% 
   group_by(PRU_ID) %>% 
   mutate(
@@ -1159,6 +1166,7 @@ sp_acc_delay_flight_week <- sp_acc_delay_week_int %>%
   ungroup() %>% 
   select(
     SP_RANK,
+    WK_DLY_FLT_RANK,
     WK_DLY_FLT_ACC_NAME = NAME,
     WK_DLY_FLT_FROM_DATE = MIN_ENTRY_DATE,
     WK_DLY_FLT_TO_DATE = MAX_ENTRY_DATE,
@@ -1171,7 +1179,7 @@ sp_acc_delay_flight_week <- sp_acc_delay_week_int %>%
 # process data
 sp_acc_delay_y2d_int <- sp_acc_traffic_y2d_int %>% 
   mutate(
-    Y2D_RANK = rank(desc(Y2D_AVG_DLY), ties.method = "max"),
+    Y2D_DLY_RANK = rank(desc(Y2D_AVG_DLY), ties.method = "max"),
     ) %>% 
   group_by(PRU_ID) %>% 
   mutate(
@@ -1192,6 +1200,7 @@ sp_acc_delay_y2d_int <- sp_acc_traffic_y2d_int %>%
 sp_acc_delay_y2d <- sp_acc_delay_y2d_int %>% 
   select(
     SP_RANK,
+    Y2D_DLY_RANK,
     Y2D_DLY_ACC_NAME = NAME,
     Y2D_DLY_TO_DATE = ENTRY_DATE,
     Y2D_DLY = Y2D_AVG_DLY,
@@ -1201,7 +1210,7 @@ sp_acc_delay_y2d <- sp_acc_delay_y2d_int %>%
 
 sp_acc_delay_flight_y2d <- sp_acc_delay_y2d_int %>% 
   mutate(
-    Y2D_RANK = rank(desc(Y2D_DLY_FLT), ties.method = "max"),
+    Y2D_DLY_FLT_RANK = rank(desc(Y2D_DLY_FLT), ties.method = "max"),
   ) %>% 
   group_by(PRU_ID) %>% 
   mutate(
@@ -1211,6 +1220,7 @@ sp_acc_delay_flight_y2d <- sp_acc_delay_y2d_int %>%
   ungroup() %>% 
   select(
     SP_RANK,
+    Y2D_DLY_FLT_RANK,
     Y2D_DLY_FLT_ACC_NAME = NAME,
     Y2D_DLY_FLT_TO_DATE = ENTRY_DATE,
     Y2D_DLY_FLT,
@@ -1220,19 +1230,19 @@ sp_acc_delay_flight_y2d <- sp_acc_delay_y2d_int %>%
 
 
 #### main card ----
-sp_acc_main_delay <- sp_acc_traffic_day_int %>%
+sp_acc_main_delay <- sp_acc_delay_day_int %>%
   select(
     SP_RANK,
-    MAIN_DLY_ACC_RANK = DY_RANK,
+    MAIN_DLY_ACC_RANK = DY_DLY_RANK,
     MAIN_DLY_ACC_NAME = NAME,
     MAIN_DLY_ACC_FLT = DLY
   )
 
 sp_acc_main_delay_flight <- sp_acc_delay_day_int %>% 
   mutate(
-    MAIN_DLY_FLT_RANK_ACC = rank(desc(DY_DLY_FLT), ties.method = "max"),
+    MAIN_DLY_FLT_ACC_RANK = rank(desc(DY_DLY_FLT), ties.method = "max"),
   ) %>% 
-  arrange(ANSP_CODE, desc(DY_DLY_FLT), MAIN_DLY_FLT_RANK_ACC) %>%
+  arrange(ANSP_CODE, desc(DY_DLY_FLT), MAIN_DLY_FLT_ACC_RANK) %>%
   group_by(ANSP_CODE) %>%
   mutate(
     SP_RANK = paste0(ANSP_CODE, row_number()),
@@ -1240,7 +1250,10 @@ sp_acc_main_delay_flight <- sp_acc_delay_day_int %>%
     MAIN_DLY_FLT_ACC_DLY_FLT = DY_DLY_FLT
   ) %>%
   ungroup() %>%
-  select(SP_RANK, MAIN_DLY_FLT_RANK_ACC, MAIN_DLY_FLT_ACC_NAME, MAIN_DLY_FLT_ACC_DLY_FLT)
+  select(SP_RANK, 
+         MAIN_DLY_FLT_ACC_RANK,
+         MAIN_DLY_FLT_ACC_NAME,
+         MAIN_DLY_FLT_ACC_DLY_FLT)
 
 #### join tables ----
 # join and reorder tables
@@ -1261,3 +1274,4 @@ sp_acc_delay_data <- ansp_ranking %>%
 sp_acc_delay_data_j <- sp_acc_delay_data %>% toJSON(., pretty = TRUE)
 
 save_json(sp_acc_delay_data_j, "sp_acc_ranking_delay")
+
