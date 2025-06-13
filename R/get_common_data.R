@@ -103,6 +103,14 @@ state_co2 <-  read_xlsx(
   range = cell_limits(c(2, 16), c(NA, 17))) %>%
   as_tibble()
 
+state_statfor <-  read_xlsx(
+  path  = fs::path_abs(
+    str_glue(st_base_file),
+    start = st_base_dir),
+  sheet = "lists",
+  range = cell_limits(c(2, 20), c(NA, 21))) %>%
+  as_tibble()
+
 acc <-  read_xlsx(
   path  = fs::path_abs(
     str_glue(nw_base_file),
