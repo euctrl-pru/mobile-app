@@ -63,9 +63,14 @@ last_year <- min((df_clean %>%
 
 df_actual <- df_clean |> filter(year <= last_year 
                                 & scenario == "Base") |> 
-  ungroup()
+  ungroup()|>
+  mutate(
+    scenario = "Actual"
+  )
 
-df_forecast <- df_clean |> filter(year > last_year ) |> 
+##  this duplicates the values for the last actual year, but we need them for the % yoy calculation.
+## We'll filter the duplicate values when processing the data for the graph
+df_forecast <- df_clean |> filter(year >= last_year ) |> 
   ungroup()
 
 
