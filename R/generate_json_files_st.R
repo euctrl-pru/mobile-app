@@ -3585,4 +3585,7 @@ st_co2_evo_j <- st_co2_evo_long %>% toJSON(., pretty = TRUE)
 
 save_json(st_co2_evo_j, "st_co2_evo")
 
+## TRAFFIC FORECAST ----
+### input data
+forecast_raw <-  read_csv(here("..", "mobile-app", "data", "statfor_data.csv"), show_col_types = FALSE)
 

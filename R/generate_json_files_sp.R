@@ -31,6 +31,16 @@ if (exists("ansp_list") == FALSE) {
     as_tibble()
 }
 
+if (exists("acc") == FALSE) {
+  acc <-  read_xlsx(
+    path  = fs::path_abs(
+      str_glue(nw_base_file),
+      start = nw_base_dir),
+    sheet = "ACC_names",
+    range = cell_limits(c(2, 3), c(NA, NA))) %>%
+    as_tibble()
+}
+
 rel_ansp_acc <- ansp_list %>% 
   mutate(
     iso_2letter = str_remove_all(ANSP_CODE, "_ANSP"),
@@ -901,7 +911,8 @@ sp_acc_traffic_day <- sp_acc_traffic_day_int %>%
     SP_RANK,
     DY_FLT_RANK,
     DY_FLT_ACC_NAME = NAME,
-    DY_FLT_TO_DATE = ENTRY_DATE,
+    DY_TO_DATE = ENTRY_DATE,
+    # DY_FLT_TO_DATE = ENTRY_DATE,
     DY_FLT = FLIGHT,
     DY_FLT_DIF_PREV_WEEK_PERC,
     DY_FLT_DIF_PREV_YEAR_PERC
@@ -946,8 +957,10 @@ sp_acc_traffic_week <- sp_acc_traffic_week_int %>%
     SP_RANK,
     WK_FLT_RANK,
     WK_FLT_ACC_NAME = NAME,
-    WK_FLT_FROM_DATE = MIN_ENTRY_DATE,
-    WK_FLT_TO_DATE = MAX_ENTRY_DATE,
+    WK_FROM_DATE = MIN_ENTRY_DATE,
+    WK_TO_DATE = MAX_ENTRY_DATE,
+    # WK_FLT_FROM_DATE = MIN_ENTRY_DATE,
+    # WK_FLT_TO_DATE = MAX_ENTRY_DATE,
     WK_FLT =  DAILY_FLIGHT,
     WK_FLT_DIF_PREV_WEEK_PERC,
     WK_FLT_DIF_PREV_YEAR_PERC
@@ -992,8 +1005,10 @@ sp_acc_traffic_y2d <- sp_acc_traffic_y2d_int %>%
     SP_RANK,
     Y2D_FLT_RANK,
     Y2D_FLT_ACC_NAME = NAME,
-    Y2D_FLT_FROM_DATE = MIN_DATE,
-    Y2D_FLT_TO_DATE = ENTRY_DATE,
+    Y2D_FROM_DATE = MIN_DATE,
+    Y2D_TO_DATE = ENTRY_DATE,
+    # Y2D_FLT_FROM_DATE = MIN_DATE,
+    # Y2D_FLT_TO_DATE = ENTRY_DATE,
     Y2D_FLT =  Y2D_AVG_FLIGHT,
     Y2D_FLT_DIF_PREV_YEAR_PERC,
     Y2D_FLT_DIF_2019_PERC
@@ -1092,7 +1107,8 @@ sp_acc_delay_day <- sp_acc_delay_day_int %>%
     SP_RANK,
     DY_DLY_RANK,
     DY_DLY_ACC_NAME = NAME,
-    DY_DLY_TO_DATE = ENTRY_DATE,
+    DY_TO_DATE = ENTRY_DATE,
+    # DY_DLY_TO_DATE = ENTRY_DATE,
     DY_DLY = DLY,
     DY_DLY_DIF_PREV_WEEK_PERC,
     DY_DLY_DIF_PREV_YEAR_PERC
@@ -1112,7 +1128,7 @@ sp_acc_delay_flight_day <- sp_acc_delay_day_int %>%
     SP_RANK,
     DY_DLY_FLT_RANK,
     DY_DLY_FLT_ACC_NAME = NAME,
-    DY_DLY_FLT_TO_DATE = ENTRY_DATE,
+    # DY_DLY_FLT_TO_DATE = ENTRY_DATE,
     DY_DLY_FLT,
     DY_DLY_FLT_DIF_PREV_WEEK_PERC,
     DY_DLY_FLT_DIF_PREV_YEAR_PERC
@@ -1147,8 +1163,10 @@ sp_acc_delay_week <- sp_acc_delay_week_int %>%
     SP_RANK,
     WK_DLY_RANK,
     WK_DLY_ACC_NAME = NAME,
-    WK_DLY_FROM_DATE = MIN_ENTRY_DATE,
-    WK_DLY_TO_DATE = MAX_ENTRY_DATE,
+    WK_FROM_DATE = MIN_ENTRY_DATE,
+    WK_TO_DATE = MAX_ENTRY_DATE,
+    # WK_DLY_FROM_DATE = MIN_ENTRY_DATE,
+    # WK_DLY_TO_DATE = MAX_ENTRY_DATE,
     WK_DLY = DAILY_DLY,
     WK_DLY_DIF_PREV_WEEK_PERC,
     WK_DLY_DIF_PREV_YEAR_PERC
@@ -1168,8 +1186,8 @@ sp_acc_delay_flight_week <- sp_acc_delay_week_int %>%
     SP_RANK,
     WK_DLY_FLT_RANK,
     WK_DLY_FLT_ACC_NAME = NAME,
-    WK_DLY_FLT_FROM_DATE = MIN_ENTRY_DATE,
-    WK_DLY_FLT_TO_DATE = MAX_ENTRY_DATE,
+    # WK_DLY_FLT_FROM_DATE = MIN_ENTRY_DATE,
+    # WK_DLY_FLT_TO_DATE = MAX_ENTRY_DATE,
     WK_DLY_FLT,
     WK_DLY_FLT_DIF_PREV_WEEK_PERC,
     WK_DLY_FLT_DIF_PREV_YEAR_PERC
@@ -1202,7 +1220,8 @@ sp_acc_delay_y2d <- sp_acc_delay_y2d_int %>%
     SP_RANK,
     Y2D_DLY_RANK,
     Y2D_DLY_ACC_NAME = NAME,
-    Y2D_DLY_TO_DATE = ENTRY_DATE,
+    Y2D_TO_DATE = ENTRY_DATE,
+    # Y2D_DLY_TO_DATE = ENTRY_DATE,
     Y2D_DLY = Y2D_AVG_DLY,
     Y2D_DLY_DIF_PREV_YEAR_PERC,
     Y2D_DLY_DIF_2019_PERC
@@ -1222,7 +1241,7 @@ sp_acc_delay_flight_y2d <- sp_acc_delay_y2d_int %>%
     SP_RANK,
     Y2D_DLY_FLT_RANK,
     Y2D_DLY_FLT_ACC_NAME = NAME,
-    Y2D_DLY_FLT_TO_DATE = ENTRY_DATE,
+    # Y2D_DLY_FLT_TO_DATE = ENTRY_DATE,
     Y2D_DLY_FLT,
     Y2D_DLY_FLT_DIF_PREV_YEAR_PERC,
     Y2D_DLY_FLT_DIF_2019_PERC
