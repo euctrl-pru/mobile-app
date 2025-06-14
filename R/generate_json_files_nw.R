@@ -16,25 +16,23 @@ library(RODBC)
 # functions
 source(here("..", "mobile-app", "R", "helpers.R")) # so it can be launched from the checkupdates script in grounded aircraft
 
-# parameters ----
-source(here("..", "mobile-app", "R", "params.R")) # so it can be launched from the checkupdates script in grounded aircraft
-
 # archive mode for past dates
+# run this before the params script to set up the forecast params
 if (exists("archive_mode") == FALSE) {archive_mode <- FALSE}
 if (exists("data_day_date") == FALSE) {
   data_day_date <- lubridate::today(tzone = "") +  days(-1)
-  }
-
-# archive_mode <- TRUE
-# data_day_date <- ymd("2024-10-31")
-
+}
 data_day_text <- data_day_date %>% format("%Y%m%d")
 data_day_year <- as.numeric(format(data_day_date,'%Y'))
 
-nw_json_app <- ""
+# parameters ----
+source(here("..", "mobile-app", "R", "params.R")) # so it can be launched from the checkupdates script in grounded aircraft
 
 # common data ----
 source(here("..", "mobile-app", "R", "get_common_data.R")) # so it can be launched from the checkupdates script in grounded aircraft
+
+# MAIN PAGE ----
+nw_json_app <- ""
 
 ## Network billed ----
 #### billing json - we do this first to avoid 'R fatal error'
@@ -678,7 +676,7 @@ nw_json_app <- paste0(
 save_json(nw_json_app, "nw_json_app")
 
 
-# jsons for graphs -------
+# GRAPHS -------
 ## traffic -----
 nw_traffic_evo <- nw_traffic_data %>%
   mutate(AVG_ROLLING_WEEK = if_else(FLIGHT_DATE > min(data_day_date,
@@ -1351,8 +1349,65 @@ nw_co2_evo_v2_long <- nw_co2_evo %>%
 nw_co2_evo_v2_j <- nw_co2_evo_v2_long %>% toJSON(., pretty = TRUE)
 save_json(nw_co2_evo_v2_j, "nw_co2_evo_chart")
 
+## traffic forecast ----
+### input data
+if (!exists("forecast_raw")) {
+  forecast_raw <-  read_csv(here("..", "mobile-app", "data", forecast_file_name), show_col_types = FALSE)
+}
 
-# jsons for ranking tables ----
+### process data
+forecast_max_actual_year <- forecast_raw %>% 
+  filter(scenario == "High") %>% 
+  summarise(min(year)) %>% pull()
+
+nw_forecast_graph <- forecast_raw %>% 
+  filter(tz_name == "NM Area") %>% 
+  mutate(
+    forecast_name = forecast_name_value
+  ) 
+
+nw_forecast_graph_daio <- nw_forecast_graph %>% 
+  filter(daio == "T") %>% 
+  group_by(scenario) %>% 
+  arrange(year) %>% 
+  mutate(
+    yoy = flights / lag(flights,1) -1,
+    label_flights = if_else(year == forecast_max_actual_year & scenario != "Actual", 
+                            NA_character_, 
+                            paste0(round(flights/10^6, 1), "M")),
+    label_yoy = if_else(year == forecast_max_actual_year & scenario != "Actual", 
+                        NA_character_,
+                        paste0(if_else(yoy >= 0, "+", ""),round(yoy*100, 1), "%")),
+    
+    label_tooltip = if_else(year == forecast_max_actual_year & scenario != "Actual", 
+                            NA_character_,
+                            paste0(label_flights, " (", label_yoy, ")")),
+    label_flights = if_else(scenario == "High" | scenario == "Low", 
+                            NA_character_, 
+                            label_flights),
+    label_yoy = if_else(scenario == "High" | scenario == "Low",
+                        NA_character_, 
+                        label_yoy),
+    
+  )%>% 
+  select(-yoy, -daio) %>% 
+  filter(year >= forecast_min_year_graph) %>% 
+  filter((year <= forecast_max_actual_year & scenario == "Actual") | year >= forecast_max_actual_year) %>% 
+  ungroup()
+
+
+### nest and save data
+nw_forecast_graph_daio_nest <- nw_forecast_graph_daio %>%
+  group_by(forecast_name, tz_name) %>% 
+  nest_legacy(.key = "statistics")
+
+nw_forecast_graph_daio_nest_j <- nw_forecast_graph_daio_nest %>% toJSON(., pretty = TRUE)
+
+save_json(nw_forecast_graph_daio_nest_j, "nw_traffic_forecast_chart")
+
+
+
+# RANKING TABLES ----
 
 ## Aircraft operators traffic ----
 ### day ----

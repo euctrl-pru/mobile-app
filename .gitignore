@@ -1,5 +1,5 @@
 .RData
-data
+data/*/
 iframes
 .Rhistory
 R/.Rhistory
@@ -10,4 +10,3 @@ update_daily_traffic.log
 R/update_pockethost_data.log
 .Rproj.user/
 
-/data/

@@ -1,9 +1,16 @@
 library(tidyverse)
+## To install the "statfor" package, follow the steps here: https://dev.azure.com/ECTL-AZURE/Aviation%20Intelligence%20Unit/_git/statfor
+## If you cannot access the page in Azure, then contact the STATFOR team and/or Sebastien Thonnard
+## Note: Enrico has another stafor package in GitHub (do no confuse it with the stafor package in Azure)
 library(statfor)
 library(tsibble)
 library(lubridate)
 library(readxl)
 library(here)
+
+
+# parameters 
+source(here("..", "mobile-app", "R", "params.R")) 
 
 # Final Version:
 # Obtain actual data and MTFs since 2014.
@@ -13,8 +20,12 @@ use_dwh_on_prisme_live()
 ############################################# Get the actual data from the latest MTF ####################################
 
 ##must contact STATFOR team when a new forecast is released to change the 'statfor_id'
-statfor_id <- 3950
-#might be able to find the id here: list_fc_set_table()
+statfor_id <- 3693
+#might be able to find the id here: list_fc_set_table() %>% arrange(desc(id))
+
+# set up data file name
+# update the list in the params script, if necessary
+forecast_data_file <- forecast_list %>% filter(id == statfor_id) %>% select(name) %>% pull()
 
 df <- unpack_fc_pts_to_dataset(find_fc_method_in_fc_set(statfor_id, method=218)) %>% 
   
@@ -93,7 +104,7 @@ df_final_all <- df_final %>%
          flights)
 
 # save csv file
-df_final_all |> write_csv(here("..", "mobile-app", "data", "statfor_data.csv")) 
+df_final_all |> write_csv(here("..", "mobile-app", "data", forecast_data_file)) 
 
 
 

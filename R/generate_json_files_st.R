@@ -17,12 +17,8 @@ library(RODBC)
 # functions
 source(here("..", "mobile-app", "R", "helpers.R")) # so it can be launched from the checkupdates script in grounded aircraft
 
-# parameters ----
-source(here("..", "mobile-app", "R", "params.R")) # so it can be launched from the checkupdates script in grounded aircraft
-
-# archive_mode <- TRUE
-
 # archive mode for past dates
+# run this before the params script to set up the forecast params
 if (!exists("archive_mode")) {archive_mode <- FALSE}
 if (!exists("data_day_date")) {
   data_day_date <- lubridate::today(tzone = "") +  days(-1)
@@ -30,6 +26,9 @@ if (!exists("data_day_date")) {
 
 data_day_text <- data_day_date %>% format("%Y%m%d")
 data_day_year <- as.numeric(format(data_day_date,'%Y'))
+
+# parameters ----
+source(here("..", "mobile-app", "R", "params.R")) # so it can be launched from the checkupdates script in grounded aircraft
 
 # dimensions ----
 statfor_states <- read_xlsx(
@@ -3598,12 +3597,12 @@ save_json(st_co2_evo_j, "st_co2_evo")
 
 ## TRAFFIC FORECAST ----
 ### input data
-forecast_raw <-  read_csv(here("..", "mobile-app", "data", "statfor_data.csv"), show_col_types = FALSE)
+if (!exists("forecast_raw")) {
+  forecast_raw <-  read_csv(here("..", "mobile-app", "data", forecast_file_name), show_col_types = FALSE)
+}
 
 ### process data
-forecast_name_value <- "February 2025 Forecast"
-min_year_graph <- 2019
-max_actual_year <- forecast_raw %>% 
+forecast_max_actual_year <- forecast_raw %>% 
   filter(scenario == "High") %>% 
   summarise(min(year)) %>% pull()
 
@@ -3625,14 +3624,14 @@ forecast_graph_daio <- forecast_graph %>%
   arrange(year) %>% 
   mutate(
     yoy = flights / lag(flights,1) -1,
-    label_flights = if_else(year == max_actual_year & scenario != "Actual", 
+    label_flights = if_else(year == forecast_max_actual_year & scenario != "Actual", 
                             NA_character_, 
                             paste0(round(flights/1000, 0), "k")),
-    label_yoy = if_else(year == max_actual_year & scenario != "Actual", 
+    label_yoy = if_else(year == forecast_max_actual_year & scenario != "Actual", 
                         NA_character_,
                         paste0(if_else(yoy >= 0, "+", ""),round(yoy*100, 1), "%")),
     
-    label_tooltip = if_else(year == max_actual_year & scenario != "Actual", 
+    label_tooltip = if_else(year == forecast_max_actual_year & scenario != "Actual", 
                             NA_character_,
                             paste0(label_flights, " (", label_yoy, ")")),
     label_flights = if_else(scenario == "High" | scenario == "Low", 
@@ -3643,9 +3642,9 @@ forecast_graph_daio <- forecast_graph %>%
                         label_yoy),
     
   )%>% 
-  select(-yoy, -daio) %>% 
-  filter(year >= min_year_graph) %>% 
-  filter((year <= max_actual_year & scenario == "Actual") | year >= max_actual_year) %>% 
+  select(-yoy, -daio, -state) %>% 
+  filter(year >= forecast_min_year_graph) %>% 
+  filter((year <= forecast_max_actual_year & scenario == "Actual") | year >= forecast_max_actual_year) %>% 
   ungroup()
 
 
@@ -3668,14 +3667,14 @@ forecast_graph_dai <- forecast_graph %>%
   arrange(year) %>% 
   mutate(
     yoy = flights / lag(flights,1) -1,
-    label_flights = if_else(year == max_actual_year & scenario != "Actual", 
+    label_flights = if_else(year == forecast_max_actual_year & scenario != "Actual", 
                             NA_character_, 
                             paste0(round(flights/1000, 0), "k")),
-    label_yoy = if_else(year == max_actual_year & scenario != "Actual", 
+    label_yoy = if_else(year == forecast_max_actual_year & scenario != "Actual", 
                         NA_character_,
                         paste0(if_else(yoy >= 0, "+", ""),round(yoy*100, 1), "%")),
     
-    label_tooltip = if_else(year == max_actual_year & scenario != "Actual", 
+    label_tooltip = if_else(year == forecast_max_actual_year & scenario != "Actual", 
                             NA_character_,
                             paste0(label_flights, " (", label_yoy, ")")),
     label_flights = if_else(scenario == "High" | scenario == "Low", 
@@ -3686,9 +3685,9 @@ forecast_graph_dai <- forecast_graph %>%
                         label_yoy),
     
   )%>% 
-  select(-yoy, -daio) %>% 
-  filter(year >= min_year_graph) %>% 
-  filter((year <= max_actual_year & scenario == "Actual") | year >= max_actual_year) %>% 
+  select(-yoy) %>% 
+  filter(year >= forecast_min_year_graph) %>% 
+  filter((year <= forecast_max_actual_year & scenario == "Actual") | year >= forecast_max_actual_year) %>% 
   ungroup()
 
 
@@ -3710,14 +3709,14 @@ forecast_graph_over <- forecast_graph %>%
   arrange(year) %>% 
   mutate(
     yoy = flights / lag(flights,1) -1,
-    label_flights = if_else(year == max_actual_year & scenario != "Actual", 
+    label_flights = if_else(year == forecast_max_actual_year & scenario != "Actual", 
                             NA_character_, 
                             paste0(round(flights/1000, 0), "k")),
-    label_yoy = if_else(year == max_actual_year & scenario != "Actual", 
+    label_yoy = if_else(year == forecast_max_actual_year & scenario != "Actual", 
                         NA_character_,
                         paste0(if_else(yoy >= 0, "+", ""),round(yoy*100, 1), "%")),
     
-    label_tooltip = if_else(year == max_actual_year & scenario != "Actual", 
+    label_tooltip = if_else(year == forecast_max_actual_year & scenario != "Actual", 
                             NA_character_,
                             paste0(label_flights, " (", label_yoy, ")")),
     label_flights = if_else(scenario == "High" | scenario == "Low", 
@@ -3728,10 +3727,9 @@ forecast_graph_over <- forecast_graph %>%
                         label_yoy),
     
   )%>% 
-  select(-yoy, -daio) %>% 
-  filter(year >= min_year_graph) %>% 
-  filter((year <= max_actual_year & scenario == "Actual") | year >= max_actual_year) %>% 
-  ungroup()
+  select(-yoy, -daio, -state) %>% 
+  filter(year >= forecast_min_year_graph) %>% 
+  filter((year <= forecast_max_actual_year & scenario == "Actual") | year >= forecast_max_actual_year) %>%   ungroup()
 
 
 ### nest and save data

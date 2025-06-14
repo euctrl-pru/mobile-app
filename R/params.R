@@ -48,3 +48,48 @@ archive_dir_raw_backup <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru
 usr <- Sys.getenv("PRU_DEV_USR")
 pwd <- Sys.getenv("PRU_DEV_PWD")
 dbn <- Sys.getenv("PRU_DEV_DBNAME")
+
+# STATFOR forecast params
+# list of forecast names and Ids
+forecast_list <- data.frame(
+  id = c(
+    3693,
+    3731,
+    3910,
+    3950,
+    NULL
+  ),
+  name = c(
+    "october_2023_forecast.csv",
+    "february_2024_forecast.csv",
+    "october_2024_forecast.csv",
+    "february_2025_forecast.csv",
+    NULL),
+  publication_date = c(
+    "2023-10-18",
+    "2024-02-26",
+    "2024-10-15",
+    "2025-02-28",
+    NULL
+  )
+)
+
+if (!exists("data_day_date")) {
+  data_day_date <- lubridate::today(tzone = "") +  days(-1)
+  # data_day_date <- ymd("2025-03-01")
+}
+
+# Filter and select the latest valid forecast
+valid_rows <- forecast_list[as.Date(forecast_list$publication_date) < data_day_date, ]
+latest_row <- valid_rows[which.max(as.Date(valid_rows$publication_date)), ]
+
+forecast_id <- latest_row$id
+forecast_file_name <-  latest_row$name
+
+forecast_name_value <- stringr::str_to_title(
+  stringr::str_replace_all(
+    stringr::str_replace_all(forecast_file_name,".csv", ""),
+    "_"," ")
+  )
+forecast_min_year_graph <- 2019
+
