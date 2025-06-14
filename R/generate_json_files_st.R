@@ -17,12 +17,8 @@ library(RODBC)
 # functions
 source(here("..", "mobile-app", "R", "helpers.R")) # so it can be launched from the checkupdates script in grounded aircraft
 
-# parameters ----
-source(here("..", "mobile-app", "R", "params.R")) # so it can be launched from the checkupdates script in grounded aircraft
-
-# archive_mode <- TRUE
-
 # archive mode for past dates
+# run this before the params script to set up the forecast params
 if (!exists("archive_mode")) {archive_mode <- FALSE}
 if (!exists("data_day_date")) {
   data_day_date <- lubridate::today(tzone = "") +  days(-1)
@@ -30,6 +26,9 @@ if (!exists("data_day_date")) {
 
 data_day_text <- data_day_date %>% format("%Y%m%d")
 data_day_year <- as.numeric(format(data_day_date,'%Y'))
+
+# parameters ----
+source(here("..", "mobile-app", "R", "params.R")) # so it can be launched from the checkupdates script in grounded aircraft
 
 # dimensions ----
 statfor_states <- read_xlsx(
@@ -3599,7 +3598,7 @@ save_json(st_co2_evo_j, "st_co2_evo")
 ## TRAFFIC FORECAST ----
 ### input data
 if (!exists("forecast_raw")) {
-  forecast_raw <-  read_csv(here("..", "mobile-app", "data", "statfor_data.csv"), show_col_types = FALSE)
+  forecast_raw <-  read_csv(here("..", "mobile-app", "data", forecast_file_name), show_col_types = FALSE)
 }
 
 ### process data
@@ -3686,7 +3685,7 @@ forecast_graph_dai <- forecast_graph %>%
                         label_yoy),
     
   )%>% 
-  select(-yoy, -daio, -state) %>% 
+  select(-yoy) %>% 
   filter(year >= forecast_min_year_graph) %>% 
   filter((year <= forecast_max_actual_year & scenario == "Actual") | year >= forecast_max_actual_year) %>% 
   ungroup()

@@ -16,27 +16,24 @@ library(RODBC)
 # functions
 source(here("..", "mobile-app", "R", "helpers.R")) # so it can be launched from the checkupdates script in grounded aircraft
 
-# parameters ----
-source(here("..", "mobile-app", "R", "params.R")) # so it can be launched from the checkupdates script in grounded aircraft
-
 # archive mode for past dates
+# run this before the params script to set up the forecast params
 if (exists("archive_mode") == FALSE) {archive_mode <- FALSE}
 if (exists("data_day_date") == FALSE) {
   data_day_date <- lubridate::today(tzone = "") +  days(-1)
-  }
-
-# archive_mode <- TRUE
-# data_day_date <- ymd("2024-10-31")
-
+}
 data_day_text <- data_day_date %>% format("%Y%m%d")
 data_day_year <- as.numeric(format(data_day_date,'%Y'))
 
-nw_json_app <- ""
+# parameters ----
+source(here("..", "mobile-app", "R", "params.R")) # so it can be launched from the checkupdates script in grounded aircraft
 
 # common data ----
 source(here("..", "mobile-app", "R", "get_common_data.R")) # so it can be launched from the checkupdates script in grounded aircraft
 
 # MAIN PAGE ----
+nw_json_app <- ""
+
 ## Network billed ----
 #### billing json - we do this first to avoid 'R fatal error'
 
@@ -1355,7 +1352,7 @@ save_json(nw_co2_evo_v2_j, "nw_co2_evo_chart")
 ## traffic forecast ----
 ### input data
 if (!exists("forecast_raw")) {
-  forecast_raw <-  read_csv(here("..", "mobile-app", "data", "statfor_data.csv"), show_col_types = FALSE)
+  forecast_raw <-  read_csv(here("..", "mobile-app", "data", forecast_file_name), show_col_types = FALSE)
 }
 
 ### process data
@@ -1363,13 +1360,13 @@ forecast_max_actual_year <- forecast_raw %>%
   filter(scenario == "High") %>% 
   summarise(min(year)) %>% pull()
 
-forecast_graph <- forecast_raw %>% 
+nw_forecast_graph <- forecast_raw %>% 
   filter(tz_name == "NM Area") %>% 
   mutate(
     forecast_name = forecast_name_value
   ) 
 
-forecast_graph_daio <- forecast_graph %>% 
+nw_forecast_graph_daio <- nw_forecast_graph %>% 
   filter(daio == "T") %>% 
   group_by(scenario) %>% 
   arrange(year) %>% 
@@ -1400,13 +1397,13 @@ forecast_graph_daio <- forecast_graph %>%
 
 
 ### nest and save data
-forecast_graph_daio_nest <- forecast_graph_daio %>%
+nw_forecast_graph_daio_nest <- nw_forecast_graph_daio %>%
   group_by(forecast_name, tz_name) %>% 
   nest_legacy(.key = "statistics")
 
-forecast_graph_daio_nest_j <- forecast_graph_daio_nest %>% toJSON(., pretty = TRUE)
+nw_forecast_graph_daio_nest_j <- nw_forecast_graph_daio_nest %>% toJSON(., pretty = TRUE)
 
-save_json(forecast_graph_daio_nest_j, "nw_traffic_forecast_chart")
+save_json(nw_forecast_graph_daio_nest_j, "nw_traffic_forecast_chart")
 
 
 
