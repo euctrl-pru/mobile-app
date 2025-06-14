@@ -3603,7 +3603,7 @@ if (!exists("forecast_raw")) {
 }
 
 ### process data
-max_actual_year <- forecast_raw %>% 
+forecast_max_actual_year <- forecast_raw %>% 
   filter(scenario == "High") %>% 
   summarise(min(year)) %>% pull()
 
@@ -3625,14 +3625,14 @@ forecast_graph_daio <- forecast_graph %>%
   arrange(year) %>% 
   mutate(
     yoy = flights / lag(flights,1) -1,
-    label_flights = if_else(year == max_actual_year & scenario != "Actual", 
+    label_flights = if_else(year == forecast_max_actual_year & scenario != "Actual", 
                             NA_character_, 
                             paste0(round(flights/1000, 0), "k")),
-    label_yoy = if_else(year == max_actual_year & scenario != "Actual", 
+    label_yoy = if_else(year == forecast_max_actual_year & scenario != "Actual", 
                         NA_character_,
                         paste0(if_else(yoy >= 0, "+", ""),round(yoy*100, 1), "%")),
     
-    label_tooltip = if_else(year == max_actual_year & scenario != "Actual", 
+    label_tooltip = if_else(year == forecast_max_actual_year & scenario != "Actual", 
                             NA_character_,
                             paste0(label_flights, " (", label_yoy, ")")),
     label_flights = if_else(scenario == "High" | scenario == "Low", 
@@ -3668,14 +3668,14 @@ forecast_graph_dai <- forecast_graph %>%
   arrange(year) %>% 
   mutate(
     yoy = flights / lag(flights,1) -1,
-    label_flights = if_else(year == max_actual_year & scenario != "Actual", 
+    label_flights = if_else(year == forecast_max_actual_year & scenario != "Actual", 
                             NA_character_, 
                             paste0(round(flights/1000, 0), "k")),
-    label_yoy = if_else(year == max_actual_year & scenario != "Actual", 
+    label_yoy = if_else(year == forecast_max_actual_year & scenario != "Actual", 
                         NA_character_,
                         paste0(if_else(yoy >= 0, "+", ""),round(yoy*100, 1), "%")),
     
-    label_tooltip = if_else(year == max_actual_year & scenario != "Actual", 
+    label_tooltip = if_else(year == forecast_max_actual_year & scenario != "Actual", 
                             NA_character_,
                             paste0(label_flights, " (", label_yoy, ")")),
     label_flights = if_else(scenario == "High" | scenario == "Low", 
@@ -3710,14 +3710,14 @@ forecast_graph_over <- forecast_graph %>%
   arrange(year) %>% 
   mutate(
     yoy = flights / lag(flights,1) -1,
-    label_flights = if_else(year == max_actual_year & scenario != "Actual", 
+    label_flights = if_else(year == forecast_max_actual_year & scenario != "Actual", 
                             NA_character_, 
                             paste0(round(flights/1000, 0), "k")),
-    label_yoy = if_else(year == max_actual_year & scenario != "Actual", 
+    label_yoy = if_else(year == forecast_max_actual_year & scenario != "Actual", 
                         NA_character_,
                         paste0(if_else(yoy >= 0, "+", ""),round(yoy*100, 1), "%")),
     
-    label_tooltip = if_else(year == max_actual_year & scenario != "Actual", 
+    label_tooltip = if_else(year == forecast_max_actual_year & scenario != "Actual", 
                             NA_character_,
                             paste0(label_flights, " (", label_yoy, ")")),
     label_flights = if_else(scenario == "High" | scenario == "Low", 
