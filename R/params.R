@@ -76,6 +76,7 @@ forecast_list <- data.frame(
 
 if (!exists("data_day_date")) {
   data_day_date <- lubridate::today(tzone = "") +  days(-1)
+  # data_day_date <- ymd("2025-03-01")
 }
 
 # Filter and select the latest valid forecast
