@@ -31,18 +31,29 @@ if (!exists("data_day_date")) {
 data_day_text <- data_day_date %>% format("%Y%m%d")
 data_day_year <- as.numeric(format(data_day_date,'%Y'))
 
+# dimensions ----
+statfor_states <- read_xlsx(
+  path  = fs::path_abs(
+    str_glue(st_base_file),
+    start = st_base_dir),
+  sheet = "lists",
+  range = cell_limits(c(2, 20), c(NA, 21))) %>%
+  as_tibble()
+
+
 # common data ----
 if (exists("state_crco") == FALSE) {
   source(here("..", "mobile-app", "R", "get_common_data.R")) # so it can be launched from the checkupdates script in grounded aircraft
 }
 
-st_json_app <-""
 
 # ____________________________________________________________________________________________
 #
 #    State landing page -----
 #
 # ____________________________________________________________________________________________
+
+st_json_app <-""
 
 #### Billing data ----
 ## we do this first to avoid 'R fatal error'
@@ -3588,4 +3599,147 @@ save_json(st_co2_evo_j, "st_co2_evo")
 ## TRAFFIC FORECAST ----
 ### input data
 forecast_raw <-  read_csv(here("..", "mobile-app", "data", "statfor_data.csv"), show_col_types = FALSE)
+
+### process data
+forecast_name_value <- "February 2025 Forecast"
+min_year_graph <- 2019
+max_actual_year <- forecast_raw %>% 
+  filter(scenario == "High") %>% 
+  summarise(min(year)) %>% pull()
+
+forecast_graph <- forecast_raw %>% 
+  right_join(statfor_states, by = c("tz_name" = "statfor_tz"), relationship = "many-to-many") %>% 
+  right_join(state_iso, by ="iso_2letter", relationship = "many-to-many") %>%
+  # select(-state) %>%
+  arrange(iso_2letter) %>% 
+  mutate(
+    forecast_name = forecast_name_value
+  ) 
+
+### DAIO----
+forecast_graph_daio <- forecast_graph %>% 
+  filter(daio == "T") %>% 
+  # group_by(forecast_name, iso_2letter, tz_name, scenario, year) %>% 
+  # summarise(flights = sum(flights, na.rm = TRUE)) %>% 
+  group_by(iso_2letter,scenario) %>% 
+  arrange(year) %>% 
+  mutate(
+    yoy = flights / lag(flights,1) -1,
+    label_flights = if_else(year == max_actual_year & scenario != "Actual", 
+                            NA_character_, 
+                            paste0(round(flights/1000, 0), "k")),
+    label_yoy = if_else(year == max_actual_year & scenario != "Actual", 
+                        NA_character_,
+                        paste0(if_else(yoy >= 0, "+", ""),round(yoy*100, 1), "%")),
+    
+    label_tooltip = if_else(year == max_actual_year & scenario != "Actual", 
+                            NA_character_,
+                            paste0(label_flights, " (", label_yoy, ")")),
+    label_flights = if_else(scenario == "High" | scenario == "Low", 
+                            NA_character_, 
+                            label_flights),
+    label_yoy = if_else(scenario == "High" | scenario == "Low",
+                        NA_character_, 
+                        label_yoy),
+    
+  )%>% 
+  select(-yoy, -daio) %>% 
+  filter(year >= min_year_graph) %>% 
+  filter((year <= max_actual_year & scenario == "Actual") | year >= max_actual_year) %>% 
+  ungroup()
+
+
+### nest and save data
+forecast_graph_daio_nest <- forecast_graph_daio %>%
+  group_by(forecast_name, iso_2letter, tz_name) %>% 
+  nest_legacy(.key = "statistics")
+
+forecast_graph_daio_nest_j <- forecast_graph_daio_nest %>% toJSON(., pretty = TRUE)
+
+save_json(forecast_graph_daio_nest_j, "st_daio_forecast_chart")
+
+### DAI----
+forecast_graph_dai <- forecast_graph %>% 
+  filter(daio == "AD" | daio == "I") %>% 
+  group_by(forecast_name, iso_2letter, tz_name, scenario, year) %>% 
+  summarise(flights = sum(flights, na.rm = TRUE)) %>% 
+  ungroup() %>% 
+  group_by(iso_2letter,scenario) %>% 
+  arrange(year) %>% 
+  mutate(
+    yoy = flights / lag(flights,1) -1,
+    label_flights = if_else(year == max_actual_year & scenario != "Actual", 
+                            NA_character_, 
+                            paste0(round(flights/1000, 0), "k")),
+    label_yoy = if_else(year == max_actual_year & scenario != "Actual", 
+                        NA_character_,
+                        paste0(if_else(yoy >= 0, "+", ""),round(yoy*100, 1), "%")),
+    
+    label_tooltip = if_else(year == max_actual_year & scenario != "Actual", 
+                            NA_character_,
+                            paste0(label_flights, " (", label_yoy, ")")),
+    label_flights = if_else(scenario == "High" | scenario == "Low", 
+                            NA_character_, 
+                            label_flights),
+    label_yoy = if_else(scenario == "High" | scenario == "Low",
+                        NA_character_, 
+                        label_yoy),
+    
+  )%>% 
+  select(-yoy, -daio) %>% 
+  filter(year >= min_year_graph) %>% 
+  filter((year <= max_actual_year & scenario == "Actual") | year >= max_actual_year) %>% 
+  ungroup()
+
+
+### nest and save data
+forecast_graph_dai_nest <- forecast_graph_dai %>%
+  group_by(forecast_name, iso_2letter, tz_name) %>% 
+  nest_legacy(.key = "statistics")
+
+forecast_graph_dai_nest_j <- forecast_graph_dai_nest %>% toJSON(., pretty = TRUE)
+
+save_json(forecast_graph_dai_nest_j, "st_dai_forecast_chart")
+
+### Oveflights----
+forecast_graph_over <- forecast_graph %>% 
+  filter(daio == "O") %>% 
+  # group_by(forecast_name, iso_2letter, tz_name, scenario, year) %>% 
+  # summarise(flights = sum(flights, na.rm = TRUE)) %>% 
+  group_by(iso_2letter,scenario) %>% 
+  arrange(year) %>% 
+  mutate(
+    yoy = flights / lag(flights,1) -1,
+    label_flights = if_else(year == max_actual_year & scenario != "Actual", 
+                            NA_character_, 
+                            paste0(round(flights/1000, 0), "k")),
+    label_yoy = if_else(year == max_actual_year & scenario != "Actual", 
+                        NA_character_,
+                        paste0(if_else(yoy >= 0, "+", ""),round(yoy*100, 1), "%")),
+    
+    label_tooltip = if_else(year == max_actual_year & scenario != "Actual", 
+                            NA_character_,
+                            paste0(label_flights, " (", label_yoy, ")")),
+    label_flights = if_else(scenario == "High" | scenario == "Low", 
+                            NA_character_, 
+                            label_flights),
+    label_yoy = if_else(scenario == "High" | scenario == "Low",
+                        NA_character_, 
+                        label_yoy),
+    
+  )%>% 
+  select(-yoy, -daio) %>% 
+  filter(year >= min_year_graph) %>% 
+  filter((year <= max_actual_year & scenario == "Actual") | year >= max_actual_year) %>% 
+  ungroup()
+
+
+### nest and save data
+forecast_graph_over_nest <- forecast_graph_over %>%
+  group_by(forecast_name, iso_2letter, tz_name) %>% 
+  nest_legacy(.key = "statistics")
+
+forecast_graph_over_nest_j <- forecast_graph_over_nest %>% toJSON(., pretty = TRUE)
+
+save_json(forecast_graph_over_nest_j, "st_ovf_forecast_chart")
 
