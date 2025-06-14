@@ -3598,11 +3598,11 @@ save_json(st_co2_evo_j, "st_co2_evo")
 
 ## TRAFFIC FORECAST ----
 ### input data
-forecast_raw <-  read_csv(here("..", "mobile-app", "data", "statfor_data.csv"), show_col_types = FALSE)
+if (!exists("forecast_raw")) {
+  forecast_raw <-  read_csv(here("..", "mobile-app", "data", "statfor_data.csv"), show_col_types = FALSE)
+}
 
 ### process data
-forecast_name_value <- "February 2025 Forecast"
-min_year_graph <- 2019
 max_actual_year <- forecast_raw %>% 
   filter(scenario == "High") %>% 
   summarise(min(year)) %>% pull()
@@ -3643,9 +3643,9 @@ forecast_graph_daio <- forecast_graph %>%
                         label_yoy),
     
   )%>% 
-  select(-yoy, -daio) %>% 
-  filter(year >= min_year_graph) %>% 
-  filter((year <= max_actual_year & scenario == "Actual") | year >= max_actual_year) %>% 
+  select(-yoy, -daio, -state) %>% 
+  filter(year >= forecast_min_year_graph) %>% 
+  filter((year <= forecast_max_actual_year & scenario == "Actual") | year >= forecast_max_actual_year) %>% 
   ungroup()
 
 
@@ -3686,9 +3686,9 @@ forecast_graph_dai <- forecast_graph %>%
                         label_yoy),
     
   )%>% 
-  select(-yoy, -daio) %>% 
-  filter(year >= min_year_graph) %>% 
-  filter((year <= max_actual_year & scenario == "Actual") | year >= max_actual_year) %>% 
+  select(-yoy, -daio, -state) %>% 
+  filter(year >= forecast_min_year_graph) %>% 
+  filter((year <= forecast_max_actual_year & scenario == "Actual") | year >= forecast_max_actual_year) %>% 
   ungroup()
 
 
@@ -3728,9 +3728,9 @@ forecast_graph_over <- forecast_graph %>%
                         label_yoy),
     
   )%>% 
-  select(-yoy, -daio) %>% 
-  filter(year >= min_year_graph) %>% 
-  filter((year <= max_actual_year & scenario == "Actual") | year >= max_actual_year) %>% 
+  select(-yoy, -daio, -state) %>% 
+  filter(year >= forecast_min_year_graph) %>% 
+  filter((year <= forecast_max_actual_year & scenario == "Actual") | year >= forecast_max_actual_year) %>% 
   ungroup()
 
 

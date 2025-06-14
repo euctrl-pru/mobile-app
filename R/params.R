@@ -48,3 +48,8 @@ archive_dir_raw_backup <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru
 usr <- Sys.getenv("PRU_DEV_USR")
 pwd <- Sys.getenv("PRU_DEV_PWD")
 dbn <- Sys.getenv("PRU_DEV_DBNAME")
+
+# STATFOR forecast params
+forecast_id <- 3950
+forecast_name_value <- "February 2025 Forecast"
+forecast_min_year_graph <- 2019
