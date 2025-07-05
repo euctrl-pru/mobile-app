@@ -23,8 +23,8 @@ test_archive_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Proje
 # file.rename(files_to_rename, new_filenames)
 
 # set period
-wef <- "2024-12-31"  #included in output
-til <- "2024-12-31"  #included in output
+wef <- "2025-03-31"  #included in output
+til <- "2025-03-31"  #included in output
 
 # functions list -----
 # get functions list for multiple queries
@@ -60,7 +60,7 @@ function_list <- function_list_full[!sapply(function_list_full, function(x) x %i
 # create archive -----
 # set to true to execute all queries for the stakeholder
 # set to false to execute only the query below regardless of the stakeholders selected
-all_stk_queries <- FALSE
+all_stk_queries <- TRUE
 if (all_stk_queries) {
   myquery_string <- function_list
   myquery_string_full <- function_list_full
