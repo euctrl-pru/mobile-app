@@ -17,15 +17,22 @@ source(here("..", "mobile-app", "R", "params.R"))
 
 use_dwh_on_prisme_live()
 
+
 ############################################# Get the actual data from the latest MTF ####################################
 
 ##must contact STATFOR team when a new forecast is released to change the 'statfor_id'
-statfor_id <- 3693
+statfor_id <- 3716
 #might be able to find the id here: list_fc_set_table() %>% arrange(desc(id))
 
 # set up data file name
 # update the list in the params script, if necessary
-forecast_data_file <- forecast_list %>% filter(id == statfor_id) %>% select(name) %>% pull()
+forecast_data_file <- forecast_list %>% filter(id == statfor_id) %>% select(name) %>% 
+  mutate(name =tolower(
+    paste0(
+      stringr::str_replace_all(name, " ", "_"),
+      ".csv"))
+  ) %>% pull()
+
 
 df <- unpack_fc_pts_to_dataset(find_fc_method_in_fc_set(statfor_id, method=218)) %>% 
   

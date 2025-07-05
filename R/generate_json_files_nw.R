@@ -2519,12 +2519,12 @@ last_punctuality_day <- min(max(nw_apt_punct_raw$DAY_DATE),
 ### calc
 apt_punct_calc <- nw_apt_punct_raw %>%
   group_by(DAY_DATE) %>%
-  arrange(desc(ARR_PUNCTUALITY_PERCENTAGE), ARP_NAME) %>%
+  arrange(DAY_DATE, desc(ARR_PUNCTUALITY_PERCENTAGE), ARP_NAME) %>%
   mutate(RANK = row_number()) %>%
   ungroup() %>%
   # select(DAY_DATE, ARP_NAME, ARR_PUNCTUALITY_PERCENTAGE, RANK)
   group_by(ARP_NAME) %>%
-  arrange(DAY_DATE) %>%
+  arrange(ARP_NAME, DAY_DATE) %>%
   mutate(
     DY_RANK_DIF_PREV_WEEK = lag(RANK, 7) - RANK,
     DY_PUNCT_DIF_PREV_WEEK_PERC = (ARR_PUNCTUALITY_PERCENTAGE - lag(ARR_PUNCTUALITY_PERCENTAGE, 7)) / 100,
@@ -2576,14 +2576,14 @@ apt_punct_dy_bottom <- apt_punct_calc %>%
 ### week ----
 apt_punct_wk <- apt_punct_calc %>%
   group_by(DAY_DATE) %>%
-  arrange(desc(WK_APT_ARR_PUNCT), ARP_NAME) %>%
+  arrange(DAY_DATE, desc(WK_APT_ARR_PUNCT), ARP_NAME) %>%
   mutate(
     RANK = row_number(),
     WK_RANK = RANK
   ) %>%
   ungroup() %>%
   group_by(ARP_NAME) %>%
-  arrange(DAY_DATE) %>%
+  arrange(ARP_NAME, DAY_DATE) %>%
   mutate(
     WK_RANK_DIF_PREV_WEEK = lag(RANK, 7) - RANK,
     WK_PUNCT_DIF_PREV_WEEK_PERC = (WK_APT_ARR_PUNCT - lag(WK_APT_ARR_PUNCT, 7)),
@@ -2636,19 +2636,19 @@ apt_punct_wk_bottom <- apt_punct_wk %>%
 apt_punct_y2d <- apt_punct_calc %>%
   mutate(MONTH_DAY = as.numeric(format(DAY_DATE, format = "%m%d"))) %>%
   filter(MONTH_DAY <= as.numeric(format(last_punctuality_day, format = "%m%d"))) %>%
-  mutate(YEAR = as.numeric(format(DAY_DATE, format = "%Y"))) %>%
+  # mutate(YEAR = as.numeric(format(DAY_DATE, format = "%Y"))) %>%
   group_by(ARP_NAME, ARP_CODE, YEAR) %>%
   summarise(Y2D_APT_ARR_PUNCT = sum(ARR_PUNCTUAL_FLIGHTS, na.rm = TRUE) / sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE)) %>%
   ungroup() %>%
   group_by(YEAR) %>%
-  arrange(desc(Y2D_APT_ARR_PUNCT), ARP_NAME) %>%
+  arrange(YEAR, desc(Y2D_APT_ARR_PUNCT), ARP_NAME) %>%
   mutate(
     RANK = row_number(),
     Y2D_RANK = RANK
   ) %>%
   ungroup() %>%
   group_by(ARP_NAME, ARP_CODE) %>%
-  arrange(YEAR) %>%
+  arrange(ARP_NAME, ARP_CODE, YEAR) %>%
   mutate(
     Y2D_RANK_DIF_PREV_YEAR = lag(RANK, 1) - RANK,
     Y2D_PUNCT_DIF_PREV_YEAR_PERC = (Y2D_APT_ARR_PUNCT - lag(Y2D_APT_ARR_PUNCT, 1)),
@@ -2816,7 +2816,7 @@ select(
 st_punct_dy_calc_bottom <- st_punct_calc %>%
 filter(DATE == last_punctuality_day,
        RANK > max(RANK) - 11) %>%
-arrange(ARR_PUNCTUALITY_PERCENTAGE) %>%
+arrange(DATE, ARR_PUNCTUALITY_PERCENTAGE) %>%
 mutate(
   RANK = max(RANK) + 1 - RANK,
   DY_CTRY_NAME_BOTTOM = EC_ISO_CT_NAME,
@@ -2838,14 +2838,14 @@ select(
 ### week ----
 st_punct_wk <- st_punct_calc %>%
 group_by(DATE) %>%
-arrange(desc(WK_CTRY_ARR_PUNCT), EC_ISO_CT_NAME) %>%
+arrange(DATE, desc(WK_CTRY_ARR_PUNCT), EC_ISO_CT_NAME) %>%
 mutate(
   RANK = row_number(),
   WK_RANK = RANK
 ) %>%
 ungroup() %>%
 group_by(EC_ISO_CT_NAME) %>%
-arrange(DATE) %>%
+arrange(EC_ISO_CT_NAME, DATE) %>%
 mutate(
   WK_RANK_DIF_PREV_WEEK = lag(RANK, 7) - RANK,
   WK_PUNCT_DIF_PREV_WEEK_PERC = (WK_CTRY_ARR_PUNCT - lag(WK_CTRY_ARR_PUNCT, 7)),
@@ -2903,14 +2903,14 @@ group_by(EC_ISO_CT_NAME, YEAR) %>%
 summarise(Y2D_CTRY_ARR_PUNCT = sum(ARR_PUNCTUAL_FLIGHTS, na.rm = TRUE) / sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE)) %>%
 ungroup() %>%
 group_by(YEAR) %>%
-arrange(desc(Y2D_CTRY_ARR_PUNCT), EC_ISO_CT_NAME) %>%
+arrange(YEAR, desc(Y2D_CTRY_ARR_PUNCT), EC_ISO_CT_NAME) %>%
 mutate(
   RANK = row_number(),
   Y2D_RANK = RANK
 ) %>%
 ungroup() %>%
 group_by(EC_ISO_CT_NAME) %>%
-arrange(YEAR) %>%
+arrange(EC_ISO_CT_NAME, YEAR) %>%
 mutate(
   Y2D_RANK_DIF_PREV_YEAR = lag(RANK, 1) - RANK,
   Y2D_PUNCT_DIF_PREV_YEAR_PERC = (Y2D_CTRY_ARR_PUNCT - lag(Y2D_CTRY_ARR_PUNCT, 1)),

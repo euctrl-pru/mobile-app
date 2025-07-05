@@ -2457,7 +2457,7 @@ st_apt_punct_dy_all <- st_apt_punct_calc %>%
     ) %>%
   ungroup() %>%
   group_by(ARP_NAME) %>%
-  arrange(DAY_DATE) %>%
+  arrange(ARP_NAME, DAY_DATE) %>%
   mutate(
          # DY_RANK_DIF_PREV_WEEK = lag(RANK, 7) - RANK,          #not used anymore
          DY_APT_NAME = ARP_NAME,
@@ -2496,7 +2496,7 @@ st_apt_punct_wk <- st_apt_punct_calc %>%
   ) %>%
   ungroup() %>%
   group_by(ARP_NAME) %>%
-  arrange(DAY_DATE) %>%
+  arrange(ARP_NAME, DAY_DATE) %>%
   mutate(
     # WK_RANK_DIF_PREV_WEEK = lag(RANK, 7) - RANK,            #not used anymore
     WK_APT_NAME = ARP_NAME,
@@ -2536,7 +2536,7 @@ st_apt_punct_y2d <- st_apt_punct_calc %>%
   ) %>%
   ungroup() %>%
   group_by(state, YEAR) %>%
-  arrange(desc(Y2D_APT_ARR_PUNCT), ARP_NAME) %>%
+  arrange(state, YEAR, desc(Y2D_APT_ARR_PUNCT), ARP_NAME) %>%
   mutate(
     ST_RANK = row_number(),
     ST_RANK = paste0(tolower(state), ST_RANK)     #index for joining tables later
@@ -2553,7 +2553,7 @@ st_apt_punct_y2d <- st_apt_punct_calc %>%
   mutate(Y2D_RANK = rank(desc(Y2D_APT_ARR_PUNCT), ties.method = "max")) %>%
   mutate(Y2D_APT_NAME = ARP_NAME) %>%
   group_by(state) %>%
-  arrange(Y2D_RANK, Y2D_APT_NAME) %>%
+  arrange(state, Y2D_RANK, Y2D_APT_NAME) %>%
   mutate(
     NO_APTS = row_number(),
     Y2D_TO_DATE = lubridate::round_date(last_day_punct, unit = 'day')
@@ -3729,7 +3729,8 @@ forecast_graph_over <- forecast_graph %>%
   )%>% 
   select(-yoy, -daio, -state) %>% 
   filter(year >= forecast_min_year_graph) %>% 
-  filter((year <= forecast_max_actual_year & scenario == "Actual") | year >= forecast_max_actual_year) %>%   ungroup()
+  filter((year <= forecast_max_actual_year & scenario == "Actual") | year >= forecast_max_actual_year) %>% 
+  ungroup()
 
 
 ### nest and save data
