@@ -26,7 +26,12 @@ statfor_id <- 3716
 
 # set up data file name
 # update the list in the params script, if necessary
-forecast_data_file <- forecast_list %>% filter(id == statfor_id) %>% select(name) %>% pull()
+forecast_data_file <- forecast_list %>% filter(id == statfor_id) %>% select(name) %>% 
+  mutate(name =tolower(
+    paste0(
+      stringr::str_replace_all(name, " ", "_"),
+      ".csv"))
+  ) %>% pull()
 
 
 df <- unpack_fc_pts_to_dataset(find_fc_method_in_fc_set(statfor_id, method=218)) %>% 

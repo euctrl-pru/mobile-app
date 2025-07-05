@@ -60,10 +60,10 @@ forecast_list <- data.frame(
     NULL
   ),
   name = c(
-    "october_2023_forecast.csv",
-    "february_2024_forecast.csv",
-    "october_2024_forecast.csv",
-    "february_2025_forecast.csv",
+    "October 2023 Forecast",
+    "February 2024 Forecast",
+    "October 2024 Forecast",
+    "February 2025 Forecast",
     NULL),
   publication_date = c(
     "2023-10-18",
@@ -72,7 +72,7 @@ forecast_list <- data.frame(
     "2025-02-28",
     NULL
   )
-)
+) 
 
 if (!exists("data_day_date")) {
   data_day_date <- lubridate::today(tzone = "") +  days(-1)
@@ -84,12 +84,13 @@ valid_rows <- forecast_list[as.Date(forecast_list$publication_date) < data_day_d
 latest_row <- valid_rows[which.max(as.Date(valid_rows$publication_date)), ]
 
 forecast_id <- latest_row$id
-forecast_file_name <-  latest_row$name
+forecast_name_value <-  latest_row$name
 
-forecast_name_value <- stringr::str_to_title(
-  stringr::str_replace_all(
-    stringr::str_replace_all(forecast_file_name,".csv", ""),
-    "_"," ")
+forecast_file_name <- tolower(
+  paste0(
+    stringr::str_replace_all(forecast_name_value," ", "_"),
+    ".csv")
   )
+
 forecast_min_year_graph <- 2019
 
