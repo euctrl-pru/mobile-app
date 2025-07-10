@@ -1369,8 +1369,9 @@ nw_forecast_graph <- forecast_raw %>%
 nw_forecast_graph_daio <- nw_forecast_graph %>% 
   filter(daio == "T") %>% 
   group_by(scenario) %>% 
-  arrange(year) %>% 
+  arrange(scenario, year) %>% 
   mutate(
+    FLIGHT_DATE = ymd(paste0(year, "01","01")), #to make mapping easier for ewasoft
     yoy = flights / lag(flights,1) -1,
     label_flights = if_else(year == forecast_max_actual_year & scenario != "Actual", 
                             NA_character_, 
@@ -1398,7 +1399,7 @@ nw_forecast_graph_daio <- nw_forecast_graph %>%
 
 ### nest and save data
 nw_forecast_graph_daio_nest <- nw_forecast_graph_daio %>%
-  group_by(forecast_name, tz_name) %>% 
+  group_by(forecast_name, tz_name, year, FLIGHT_DATE) %>% 
   nest_legacy(.key = "statistics")
 
 nw_forecast_graph_daio_nest_j <- nw_forecast_graph_daio_nest %>% toJSON(., pretty = TRUE)
@@ -2288,8 +2289,9 @@ acc_rank_data <- merge(x = acc_rank_data, y = acc_main_delay, by = "DY_RANK")
 acc_rank_data <- merge(x = acc_rank_data, y = acc_main_delay_flt, by = "DY_RANK")
 
 acc_rank_data <- acc_rank_data %>%
+  mutate(RANK = DY_RANK) %>% 
   select(
-    RANK = DY_RANK,
+    RANK,
     MAIN_DLY_ACC_NAME,
     MAIN_DLY_ACC_DLY,
     MAIN_DLY_FLT_ACC_NAME,
