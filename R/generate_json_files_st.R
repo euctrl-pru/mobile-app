@@ -3662,7 +3662,7 @@ save_json(forecast_graph_daio_nest_j, "st_daio_forecast_chart")
 ### DAI----
 forecast_graph_dai <- forecast_graph %>% 
   filter(daio == "AD" | daio == "I") %>% 
-  group_by(forecast_name, iso_2letter, tz_name, scenario, year) %>% 
+  group_by(forecast_name, forecast_date, iso_2letter, tz_name, scenario, year) %>% 
   summarise(flights = sum(flights, na.rm = TRUE)) %>% 
   ungroup() %>% 
   group_by(iso_2letter, scenario) %>% 
