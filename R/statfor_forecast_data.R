@@ -17,8 +17,6 @@ source(here("..", "mobile-app", "R", "params.R"))
 
 use_dwh_on_prisme_live()
 
-
-  
 ############################################# Get the actual data from the latest MTF ####################################
 
 ##must contact STATFOR team when a new forecast is released to change the 'statfor_id'

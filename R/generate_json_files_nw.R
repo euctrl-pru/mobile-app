@@ -1363,7 +1363,8 @@ forecast_max_actual_year <- forecast_raw %>%
 nw_forecast_graph <- forecast_raw %>% 
   filter(tz_name == "NM Area") %>% 
   mutate(
-    forecast_name = forecast_name_value
+    forecast_name = forecast_name_value,
+    forecast_date = forecast_name_date
   ) 
 
 nw_forecast_graph_daio <- nw_forecast_graph %>% 
@@ -1371,7 +1372,7 @@ nw_forecast_graph_daio <- nw_forecast_graph %>%
   group_by(scenario) %>% 
   arrange(scenario, year) %>% 
   mutate(
-    FLIGHT_DATE = ymd(paste0(year, "01","01")), #to make mapping easier for ewasoft
+    FLIGHT_DATE = forecast_date, #to make mapping easier for ewasoft
     yoy = flights / lag(flights,1) -1,
     label_flights = if_else(year == forecast_max_actual_year & scenario != "Actual", 
                             NA_character_, 
@@ -1391,7 +1392,7 @@ nw_forecast_graph_daio <- nw_forecast_graph %>%
                         label_yoy),
     
   )%>% 
-  select(-yoy, -daio) %>% 
+  select(-yoy, -daio, -forecast_date) %>% 
   filter(year >= forecast_min_year_graph) %>% 
   filter((year <= forecast_max_actual_year & scenario == "Actual") | year >= forecast_max_actual_year) %>% 
   ungroup()

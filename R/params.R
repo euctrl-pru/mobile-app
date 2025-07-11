@@ -71,6 +71,13 @@ forecast_list <- data.frame(
     "2024-10-15",
     "2025-02-28",
     NULL
+  ),
+  name_date = c(
+    "2023-10-01",
+    "2024-02-01",
+    "2024-10-01",
+    "2025-02-01",
+    NULL
   )
 ) 
 
@@ -85,6 +92,7 @@ latest_row <- valid_rows[which.max(as.Date(valid_rows$publication_date)), ]
 
 forecast_id <- latest_row$id
 forecast_name_value <-  latest_row$name
+forecast_name_date <-  latest_row$name_date
 
 forecast_file_name <- tolower(
   paste0(

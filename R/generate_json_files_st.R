@@ -3612,7 +3612,8 @@ forecast_graph <- forecast_raw %>%
   # select(-state) %>%
   arrange(iso_2letter) %>% 
   mutate(
-    forecast_name = forecast_name_value
+    forecast_name = forecast_name_value,
+    forecast_date = forecast_name_date
   ) 
 
 ### DAIO----
@@ -3620,11 +3621,10 @@ forecast_graph_daio <- forecast_graph %>%
   filter(daio == "T") %>% 
   # group_by(forecast_name, iso_2letter, tz_name, scenario, year) %>% 
   # summarise(flights = sum(flights, na.rm = TRUE)) %>% 
-
   group_by(iso_2letter, scenario) %>% 
   arrange(iso_2letter, scenario, year) %>% 
   mutate(
-    FLIGHT_DATE = ymd(paste0(year, "01","01")), #to make mapping easier for ewasoft
+    FLIGHT_DATE = forecast_date, #to make mapping easier for ewasoft
     yoy = flights / lag(flights,1) -1,
     label_flights = if_else(year == forecast_max_actual_year & scenario != "Actual", 
                             NA_character_, 
@@ -3644,7 +3644,7 @@ forecast_graph_daio <- forecast_graph %>%
                         label_yoy),
     
   )%>% 
-  select(-yoy, -daio, -state) %>% 
+  select(-yoy, -daio, -state, -forecast_date) %>% 
   filter(year >= forecast_min_year_graph) %>% 
   filter((year <= forecast_max_actual_year & scenario == "Actual") | year >= forecast_max_actual_year) %>% 
   ungroup()
@@ -3662,13 +3662,13 @@ save_json(forecast_graph_daio_nest_j, "st_daio_forecast_chart")
 ### DAI----
 forecast_graph_dai <- forecast_graph %>% 
   filter(daio == "AD" | daio == "I") %>% 
-  group_by(forecast_name, iso_2letter, tz_name, scenario, year) %>% 
+  group_by(forecast_name, forecast_date, iso_2letter, tz_name, scenario, year) %>% 
   summarise(flights = sum(flights, na.rm = TRUE)) %>% 
   ungroup() %>% 
   group_by(iso_2letter, scenario) %>% 
   arrange(year, iso_2letter, scenario) %>% 
   mutate(
-    FLIGHT_DATE = ymd(paste0(year, "01","01")), #to make mapping easier for ewasoft
+    FLIGHT_DATE = forecast_date, #to make mapping easier for ewasoft
     yoy = flights / lag(flights,1) -1,
     label_flights = if_else(year == forecast_max_actual_year & scenario != "Actual", 
                             NA_character_, 
@@ -3688,7 +3688,7 @@ forecast_graph_dai <- forecast_graph %>%
                         label_yoy),
     
   )%>% 
-  select(-yoy) %>% 
+  select(-yoy, -forecast_date) %>% 
   filter(year >= forecast_min_year_graph) %>% 
   filter((year <= forecast_max_actual_year & scenario == "Actual") | year >= forecast_max_actual_year) %>% 
   ungroup()
@@ -3711,7 +3711,7 @@ forecast_graph_over <- forecast_graph %>%
   group_by(iso_2letter, scenario) %>% 
   arrange(iso_2letter, scenario, year) %>% 
   mutate(
-    FLIGHT_DATE = ymd(paste0(year, "01","01")), #to make mapping easier for ewasoft
+    FLIGHT_DATE = forecast_date, #to make mapping easier for ewasoft
     yoy = flights / lag(flights,1) -1,
     label_flights = if_else(year == forecast_max_actual_year & scenario != "Actual", 
                             NA_character_, 
@@ -3731,7 +3731,7 @@ forecast_graph_over <- forecast_graph %>%
                         label_yoy),
     
   )%>% 
-  select(-yoy, -daio, -state) %>% 
+  select(-yoy, -daio, -state, -forecast_date) %>% 
   filter(year >= forecast_min_year_graph) %>% 
   filter((year <= forecast_max_actual_year & scenario == "Actual") | year >= forecast_max_actual_year) %>% 
   ungroup()
