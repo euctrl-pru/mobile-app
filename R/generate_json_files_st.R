@@ -3612,8 +3612,8 @@ forecast_graph <- forecast_raw %>%
   # select(-state) %>%
   arrange(iso_2letter) %>% 
   mutate(
-    forecast_name = forecast_name_value,
-    forecast_date = forecast_name_date
+    forecast_name = forecast_name_value
+    # , forecast_date = forecast_name_date
   ) 
 
 ### DAIO----
@@ -3624,7 +3624,7 @@ forecast_graph_daio <- forecast_graph %>%
   group_by(iso_2letter, scenario) %>% 
   arrange(iso_2letter, scenario, year) %>% 
   mutate(
-    FLIGHT_DATE = forecast_date, #to make mapping easier for ewasoft
+    FLIGHT_DATE = lubridate::ymd(paste0(year,'01','01')), #represents the year - requested by ewasoft for mapping
     yoy = flights / lag(flights,1) -1,
     label_flights = if_else(year == forecast_max_actual_year & scenario != "Actual", 
                             NA_character_, 
@@ -3644,15 +3644,16 @@ forecast_graph_daio <- forecast_graph %>%
                         label_yoy),
     
   )%>% 
-  select(-yoy, -daio, -state, -forecast_date) %>% 
+  select(-yoy, -daio, -state) %>% 
   filter(year >= forecast_min_year_graph) %>% 
   filter((year <= forecast_max_actual_year & scenario == "Actual") | year >= forecast_max_actual_year) %>% 
+  select(-year) %>% 
   ungroup()
 
 
 ### nest and save data
 forecast_graph_daio_nest <- forecast_graph_daio %>%
-  group_by(forecast_name, iso_2letter, tz_name, year, FLIGHT_DATE) %>% 
+  group_by(forecast_name, iso_2letter, tz_name, FLIGHT_DATE) %>% 
   nest_legacy(.key = "statistics")
 
 forecast_graph_daio_nest_j <- forecast_graph_daio_nest %>% toJSON(., pretty = TRUE)
@@ -3662,13 +3663,13 @@ save_json(forecast_graph_daio_nest_j, "st_daio_forecast_chart")
 ### DAI----
 forecast_graph_dai <- forecast_graph %>% 
   filter(daio == "AD" | daio == "I") %>% 
-  group_by(forecast_name, forecast_date, iso_2letter, tz_name, scenario, year) %>% 
+  group_by(forecast_name, iso_2letter, tz_name, scenario, year) %>% 
   summarise(flights = sum(flights, na.rm = TRUE)) %>% 
   ungroup() %>% 
   group_by(iso_2letter, scenario) %>% 
   arrange(year, iso_2letter, scenario) %>% 
   mutate(
-    FLIGHT_DATE = forecast_date, #to make mapping easier for ewasoft
+    FLIGHT_DATE = lubridate::ymd(paste0(year,'01','01')), #represents the year - requested by ewasoft for mapping
     yoy = flights / lag(flights,1) -1,
     label_flights = if_else(year == forecast_max_actual_year & scenario != "Actual", 
                             NA_character_, 
@@ -3688,15 +3689,16 @@ forecast_graph_dai <- forecast_graph %>%
                         label_yoy),
     
   )%>% 
-  select(-yoy, -forecast_date) %>% 
+  select(-yoy) %>% 
   filter(year >= forecast_min_year_graph) %>% 
   filter((year <= forecast_max_actual_year & scenario == "Actual") | year >= forecast_max_actual_year) %>% 
+  select(-year) %>% 
   ungroup()
 
 
 ### nest and save data
 forecast_graph_dai_nest <- forecast_graph_dai %>%
-  group_by(forecast_name, iso_2letter, tz_name, year, FLIGHT_DATE) %>% 
+  group_by(forecast_name, iso_2letter, tz_name, FLIGHT_DATE) %>% 
   nest_legacy(.key = "statistics")
 
 forecast_graph_dai_nest_j <- forecast_graph_dai_nest %>% toJSON(., pretty = TRUE)
@@ -3711,7 +3713,7 @@ forecast_graph_over <- forecast_graph %>%
   group_by(iso_2letter, scenario) %>% 
   arrange(iso_2letter, scenario, year) %>% 
   mutate(
-    FLIGHT_DATE = forecast_date, #to make mapping easier for ewasoft
+    FLIGHT_DATE = lubridate::ymd(paste0(year,'01','01')), #represents the year - requested by ewasoft for mapping
     yoy = flights / lag(flights,1) -1,
     label_flights = if_else(year == forecast_max_actual_year & scenario != "Actual", 
                             NA_character_, 
@@ -3731,15 +3733,16 @@ forecast_graph_over <- forecast_graph %>%
                         label_yoy),
     
   )%>% 
-  select(-yoy, -daio, -state, -forecast_date) %>% 
+  select(-yoy, -daio, -state) %>% 
   filter(year >= forecast_min_year_graph) %>% 
   filter((year <= forecast_max_actual_year & scenario == "Actual") | year >= forecast_max_actual_year) %>% 
+  select(-year) %>% 
   ungroup()
 
 
 ### nest and save data
 forecast_graph_over_nest <- forecast_graph_over %>%
-  group_by(forecast_name, iso_2letter, tz_name, year, FLIGHT_DATE) %>% 
+  group_by(forecast_name, iso_2letter, tz_name, FLIGHT_DATE) %>% 
   nest_legacy(.key = "statistics")
 
 forecast_graph_over_nest_j <- forecast_graph_over_nest %>% toJSON(., pretty = TRUE)
