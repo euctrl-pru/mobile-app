@@ -1401,7 +1401,7 @@ nw_forecast_graph_daio <- nw_forecast_graph %>%
 
 ### nest and save data
 nw_forecast_graph_daio_nest <- nw_forecast_graph_daio %>%
-  group_by(forecast_name, tz_name, year, FLIGHT_DATE) %>% 
+  group_by(forecast_name, tz_name, FLIGHT_DATE) %>% 
   nest_legacy(.key = "statistics")
 
 nw_forecast_graph_daio_nest_j <- nw_forecast_graph_daio_nest %>% toJSON(., pretty = TRUE)
