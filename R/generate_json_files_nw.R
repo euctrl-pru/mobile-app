@@ -1363,7 +1363,6 @@ forecast_max_actual_year <- forecast_raw %>%
 nw_forecast_graph <- forecast_raw %>% 
   filter(tz_name == "NM Area") %>% 
   mutate(
-
     forecast_name = forecast_name_value
     # , forecast_date = forecast_name_date
   ) 
@@ -2203,7 +2202,7 @@ if (archive_mode) {
 }
 
 # process data
-acc_rank_data_week <- assign(mydataframe, df) %>%
+acc_rank_data_week_all <- assign(mydataframe, df) %>%
   left_join(distinct(acc, Name, ICAO_code), by = c("UNIT_CODE" = "ICAO_code")) %>%
   relocate(Name, .before = everything()) %>%
   rename(NAME = Name) %>%
@@ -2220,7 +2219,9 @@ acc_rank_data_week <- assign(mydataframe, df) %>%
          WK_FROM_DATE = MIN_ENTRY_DATE,
          WK_TO_DATE = MAX_ENTRY_DATE,
          WK_ACC_DLY = DAILY_DLY_ER,
-         WK_ACC_DLY_PER_FLT) %>%
+         WK_ACC_DLY_PER_FLT) 
+
+acc_rank_data_week <- acc_rank_data_week_all %>% 
   filter(DY_RANK <= 10)
 
 ### y2d ----
@@ -2246,7 +2247,7 @@ if (archive_mode) {
 }
 
 # process data
-acc_rank_data_y2d <- assign(mydataframe, df) %>%
+acc_rank_data_y2d_all <- assign(mydataframe, df) %>%
   rename(Y2D_FROM_DATE = MIN_DATE) %>%
   left_join(distinct(acc, Name, ICAO_code), by = c("UNIT_CODE" = "ICAO_code")) %>%
   relocate(Name, .before = everything()) %>%
@@ -2264,7 +2265,9 @@ acc_rank_data_y2d <- assign(mydataframe, df) %>%
          Y2D_TO_DATE = ENTRY_DATE,
          Y2D_ACC_DLY = Y2D_AVG_DLY_ER,
          Y2D_ACC_DLY_PER_FLT
-         ) %>%
+         ) 
+
+acc_rank_data_y2d <- acc_rank_data_y2d_all %>%
   filter(DY_RANK <= 10)
 
 ### main card ----
@@ -3027,3 +3030,54 @@ relocate (Y2D_TO_DATE_BOTTOM, .before = Y2D_CTRY_ARR_PUNCT_BOTTOM)
 st_punct_data_j <- st_punct_data %>% toJSON(., pretty = TRUE)
 save_json(st_punct_data_j, "nw_ctry_ranking_punctuality")
 
+
+# MAPS ----
+## ACC delay ----
+### day ----
+nw_acc_delay_map_dy <- acc_rank_data_day_all %>% 
+  left_join(acc, by = c("DY_ACC_NAME" = "Name")) %>% 
+  mutate(
+    DY_ACC_ICAO_CODE = stringr::str_sub(ICAO_code,1,4)
+  ) %>% 
+  select(
+    DY_ACC_ICAO_CODE,
+    DY_ACC_NAME,
+    DY_TO_DATE,
+    DY_ACC_DLY_PER_FLT
+  )
+
+nw_acc_delay_map_dy_j <- nw_acc_delay_map_dy %>% toJSON(., pretty = TRUE)
+save_json(nw_acc_delay_map_dy_j, "nw_acc_delay_map_dy")
+
+### week ----
+nw_acc_delay_map_wk <- acc_rank_data_week_all %>% 
+  left_join(acc, by = c("WK_ACC_NAME" = "Name")) %>% 
+  mutate(
+    WK_ACC_ICAO_CODE = stringr::str_sub(ICAO_code,1,4)
+  ) %>% 
+  select(
+    WK_ACC_ICAO_CODE,
+    WK_ACC_NAME,
+    WK_FROM_DATE,
+    WK_TO_DATE,
+    WK_ACC_DLY_PER_FLT
+  )
+
+nw_acc_delay_map_wk_j <- nw_acc_delay_map_wk %>% toJSON(., pretty = TRUE)
+save_json(nw_acc_delay_map_wk_j, "nw_acc_delay_map_wk")
+
+### y2d ----
+nw_acc_delay_map_y2d <- acc_rank_data_y2d_all %>% 
+  left_join(acc, by = c("Y2D_ACC_NAME" = "Name")) %>% 
+  mutate(
+    Y2D_ACC_ICAO_CODE = stringr::str_sub(ICAO_code,1,4)
+  ) %>% 
+  select(
+    Y2D_ACC_ICAO_CODE,
+    Y2D_ACC_NAME,
+    Y2D_TO_DATE,
+    Y2D_ACC_DLY_PER_FLT
+  )
+
+nw_acc_delay_map_y2d_j <- nw_acc_delay_map_y2d %>% toJSON(., pretty = TRUE)
+save_json(nw_acc_delay_map_y2d_j, "nw_acc_delay_map_y2d")
