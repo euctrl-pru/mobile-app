@@ -1171,7 +1171,7 @@ st_co2_for_json <- st_co2_data %>%
   #   toJSON(., pretty = TRUE)
 
 
-st_json_app_j <- state_iso %>% select(iso_2letter, state) %>% arrange(iso_2letter)
+st_json_app_j <- state_iso_icao %>% select(iso_2letter, icao_code, state) %>% rename(icao_2letter=icao_code) %>% arrange(iso_2letter)
 st_json_app_j$st_daio <- select(st_daio_for_json, -c(iso_2letter))
 st_json_app_j$st_dai <- select(st_dai_for_json, -c(iso_2letter))
 st_json_app_j$st_ovf <- select(st_overflight_for_json, -c(iso_2letter))
