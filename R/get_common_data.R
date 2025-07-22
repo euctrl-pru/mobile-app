@@ -79,6 +79,14 @@ state_iso <-  read_xlsx(
   range = cell_limits(c(2, 2), c(NA, 3))) %>%
   as_tibble()
 
+state_iso_icao <-  read_xlsx(
+  path  = fs::path_abs(
+    str_glue(st_base_file),
+    start = st_base_dir),
+  sheet = "lists",
+  range = cell_limits(c(2, 24), c(NA, 26))) %>%
+  as_tibble()
+
 state_crco <-  read_xlsx(
   path  = fs::path_abs(
     str_glue(st_base_file),
