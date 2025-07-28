@@ -222,7 +222,8 @@ nw_delay_last_day <- nw_delay_data %>%
       Y2D_DLY_FLT_2019 == 0, NA, Y2D_DLY_FLT / Y2D_DLY_FLT_2019 - 1
     )
   ) %>%
-  #en-route delay
+#en-route delay
+
   mutate(
     DAY_DLY_ERT_SHARE = if_else(DAY_DLY == 0, 0, DAY_DLY_ERT/DAY_DLY),
     DAY_ERT_DIFF_PREV_YEAR_PERC = if_else(
@@ -246,7 +247,7 @@ nw_delay_last_day <- nw_delay_data %>%
     ERT_DIF_ROLLING_WEEK_2019_PERC = if_else(
       AVG_ERT_ROLLING_WEEK_2019 == 0, NA, AVG_ERT_ROLLING_WEEK / AVG_ERT_ROLLING_WEEK_2019 - 1
     ),
-    
+
     RWEEK_DLY_ERT_SHARE = if_else(AVG_ROLLING_WEEK == 0, 0, AVG_ERT_ROLLING_WEEK / AVG_ROLLING_WEEK),
     RWEEK_DLY_ERT_FLT = AVG_ERT_ROLLING_WEEK / nw_traffic_last_day$AVG_ROLLING_WEEK,
     RWEEK_DLY_ERT_FLT_PY = AVG_ERT_ROLLING_WEEK_PREV_YEAR / nw_traffic_last_day$AVG_ROLLING_WEEK_PREV_YEAR,
@@ -257,7 +258,7 @@ nw_delay_last_day <- nw_delay_data %>%
     RWEEK_DLY_ERT_FLT_DIF_2019_PERC = if_else(
       RWEEK_DLY_ERT_FLT_2019 == 0, NA, RWEEK_DLY_ERT_FLT / RWEEK_DLY_ERT_FLT_2019 - 1
     ),
-    
+
     Y2D_DLY_ERT_SHARE = if_else(Y2D_AVG_DLY_YEAR == 0, 0, Y2D_AVG_DLY_ERT_YEAR/Y2D_AVG_DLY_YEAR),
     Y2D_ERT_DIFF_PREV_YEAR_PERC = if_else(
       Y2D_AVG_DLY_ERT_PREV_YEAR == 0, NA, Y2D_AVG_DLY_ERT_YEAR/ Y2D_AVG_DLY_ERT_PREV_YEAR - 1
@@ -275,7 +276,6 @@ nw_delay_last_day <- nw_delay_data %>%
       Y2D_DLY_ERT_FLT_2019 == 0, NA, Y2D_DLY_ERT_FLT / Y2D_DLY_ERT_FLT_2019 - 1
     )
   ) %>%
-  
   #airport delay
   mutate(
     DAY_DLY_APT_SHARE = if_else(DAY_DLY == 0, 0, DAY_DLY_APT/DAY_DLY),
@@ -300,7 +300,6 @@ nw_delay_last_day <- nw_delay_data %>%
     APT_DIF_ROLLING_WEEK_2019_PERC = if_else(
       AVG_APT_ROLLING_WEEK_2019 == 0, NA, AVG_APT_ROLLING_WEEK / AVG_APT_ROLLING_WEEK_2019 - 1
     ),
-    
     RWEEK_DLY_APT_SHARE = if_else(AVG_ROLLING_WEEK == 0, 0, AVG_APT_ROLLING_WEEK / AVG_ROLLING_WEEK),
     RWEEK_DLY_APT_FLT = AVG_APT_ROLLING_WEEK / nw_traffic_last_day$AVG_ROLLING_WEEK,
     RWEEK_DLY_APT_FLT_PY = AVG_APT_ROLLING_WEEK_PREV_YEAR / nw_traffic_last_day$AVG_ROLLING_WEEK_PREV_YEAR,
@@ -311,7 +310,6 @@ nw_delay_last_day <- nw_delay_data %>%
     RWEEK_DLY_APT_FLT_DIF_2019_PERC = if_else(
       RWEEK_DLY_APT_FLT_2019 == 0, NA, RWEEK_DLY_APT_FLT / RWEEK_DLY_APT_FLT_2019 - 1
     ),
-    
     Y2D_DLY_APT_SHARE = if_else(Y2D_AVG_DLY_YEAR == 0, 0, Y2D_AVG_DLY_APT_YEAR/Y2D_AVG_DLY_YEAR),
     Y2D_APT_DIFF_PREV_YEAR_PERC = if_else(
       Y2D_AVG_DLY_APT_PREV_YEAR == 0, NA, Y2D_AVG_DLY_APT_YEAR/ Y2D_AVG_DLY_APT_PREV_YEAR - 1
@@ -395,7 +393,6 @@ nw_delay_for_json <- nw_delay_last_day %>%
     Y2D_DLY_APT_FLT,
     Y2D_DLY_APT_FLT_DIF_PREV_YEAR_PERC = Y2D_DLY_APT_FLT_DIF_PY_PERC,
     Y2D_DLY_APT_FLT_DIF_2019_PERC
-    
   )
 
 # app json
@@ -2267,6 +2264,7 @@ acc_rank_data_y2d_all <- assign(mydataframe, df) %>%
          Y2D_ACC_DLY_PER_FLT
   ) 
 
+
 acc_rank_data_y2d <- acc_rank_data_y2d_all %>%
   filter(DY_RANK <= 10)
 
@@ -2822,15 +2820,16 @@ st_punct_dy_top <- st_punct_dy_calc_top %>%
 
 ####bottom
 st_punct_dy_calc_bottom <- st_punct_calc %>%
-  filter(DATE == last_punctuality_day,
-         RANK > max(RANK) - 11) %>%
-  arrange(DATE, ARR_PUNCTUALITY_PERCENTAGE) %>%
-  mutate(
-    RANK = max(RANK) + 1 - RANK,
-    DY_CTRY_NAME_BOTTOM = EC_ISO_CT_NAME,
-    DY_CTRY_ARR_PUNCT_BOTTOM = ARR_PUNCTUALITY_PERCENTAGE / 100,
-    DY_TO_DATE_BOTTOM = round_date(DATE, "day")
-  )
+filter(DATE == last_punctuality_day,
+       RANK > max(RANK) - 11) %>%
+arrange(DATE, ARR_PUNCTUALITY_PERCENTAGE) %>%
+mutate(
+  RANK = max(RANK) + 1 - RANK,
+  DY_CTRY_NAME_BOTTOM = EC_ISO_CT_NAME,
+  DY_CTRY_ARR_PUNCT_BOTTOM = ARR_PUNCTUALITY_PERCENTAGE / 100,
+  DY_TO_DATE_BOTTOM = round_date(DATE, "day")
+)
+
 
 st_punct_dy_bottom <-st_punct_dy_calc_bottom %>%
   select(
@@ -2845,21 +2844,22 @@ st_punct_dy_bottom <-st_punct_dy_calc_bottom %>%
 
 ### week ----
 st_punct_wk <- st_punct_calc %>%
-  group_by(DATE) %>%
-  arrange(DATE, desc(WK_CTRY_ARR_PUNCT), EC_ISO_CT_NAME) %>%
-  mutate(
-    RANK = row_number(),
-    WK_RANK = RANK
-  ) %>%
-  ungroup() %>%
-  group_by(EC_ISO_CT_NAME) %>%
-  arrange(EC_ISO_CT_NAME, DATE) %>%
-  mutate(
-    WK_RANK_DIF_PREV_WEEK = lag(RANK, 7) - RANK,
-    WK_PUNCT_DIF_PREV_WEEK_PERC = (WK_CTRY_ARR_PUNCT - lag(WK_CTRY_ARR_PUNCT, 7)),
-    WK_PUNCT_DIF_PREV_YEAR_PERC = (WK_CTRY_ARR_PUNCT - lag(WK_CTRY_ARR_PUNCT, 364))
-  ) %>%
-  ungroup()
+group_by(DATE) %>%
+arrange(DATE, desc(WK_CTRY_ARR_PUNCT), EC_ISO_CT_NAME) %>%
+mutate(
+  RANK = row_number(),
+  WK_RANK = RANK
+) %>%
+ungroup() %>%
+group_by(EC_ISO_CT_NAME) %>%
+arrange(EC_ISO_CT_NAME, DATE) %>%
+mutate(
+  WK_RANK_DIF_PREV_WEEK = lag(RANK, 7) - RANK,
+  WK_PUNCT_DIF_PREV_WEEK_PERC = (WK_CTRY_ARR_PUNCT - lag(WK_CTRY_ARR_PUNCT, 7)),
+  WK_PUNCT_DIF_PREV_YEAR_PERC = (WK_CTRY_ARR_PUNCT - lag(WK_CTRY_ARR_PUNCT, 364))
+) %>%
+ungroup()
+
 
 #### top
 st_punct_wk_top <- st_punct_wk %>%
@@ -2904,27 +2904,28 @@ st_punct_wk_bottom <- st_punct_wk %>%
 
 ### y2d ----
 st_punct_y2d <- st_punct_calc %>%
-  mutate(MONTH_DAY = as.numeric(format(DATE, format = "%m%d"))) %>%
-  filter(MONTH_DAY <= as.numeric(format(last_punctuality_day, format = "%m%d"))) %>%
-  mutate(YEAR = as.numeric(format(DATE, format = "%Y"))) %>%
-  group_by(EC_ISO_CT_NAME, YEAR) %>%
-  summarise(Y2D_CTRY_ARR_PUNCT = sum(ARR_PUNCTUAL_FLIGHTS, na.rm = TRUE) / sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE)) %>%
-  ungroup() %>%
-  group_by(YEAR) %>%
-  arrange(YEAR, desc(Y2D_CTRY_ARR_PUNCT), EC_ISO_CT_NAME) %>%
-  mutate(
-    RANK = row_number(),
-    Y2D_RANK = RANK
-  ) %>%
-  ungroup() %>%
-  group_by(EC_ISO_CT_NAME) %>%
-  arrange(EC_ISO_CT_NAME, YEAR) %>%
-  mutate(
-    Y2D_RANK_DIF_PREV_YEAR = lag(RANK, 1) - RANK,
-    Y2D_PUNCT_DIF_PREV_YEAR_PERC = (Y2D_CTRY_ARR_PUNCT - lag(Y2D_CTRY_ARR_PUNCT, 1)),
-    Y2D_PUNCT_DIF_2019_PERC = (Y2D_CTRY_ARR_PUNCT - lag(Y2D_CTRY_ARR_PUNCT, max(YEAR) - 2019))
-  ) %>%
-  ungroup()
+mutate(MONTH_DAY = as.numeric(format(DATE, format = "%m%d"))) %>%
+filter(MONTH_DAY <= as.numeric(format(last_punctuality_day, format = "%m%d"))) %>%
+mutate(YEAR = as.numeric(format(DATE, format = "%Y"))) %>%
+group_by(EC_ISO_CT_NAME, YEAR) %>%
+summarise(Y2D_CTRY_ARR_PUNCT = sum(ARR_PUNCTUAL_FLIGHTS, na.rm = TRUE) / sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE)) %>%
+ungroup() %>%
+group_by(YEAR) %>%
+arrange(YEAR, desc(Y2D_CTRY_ARR_PUNCT), EC_ISO_CT_NAME) %>%
+mutate(
+  RANK = row_number(),
+  Y2D_RANK = RANK
+) %>%
+ungroup() %>%
+group_by(EC_ISO_CT_NAME) %>%
+arrange(EC_ISO_CT_NAME, YEAR) %>%
+mutate(
+  Y2D_RANK_DIF_PREV_YEAR = lag(RANK, 1) - RANK,
+  Y2D_PUNCT_DIF_PREV_YEAR_PERC = (Y2D_CTRY_ARR_PUNCT - lag(Y2D_CTRY_ARR_PUNCT, 1)),
+  Y2D_PUNCT_DIF_2019_PERC = (Y2D_CTRY_ARR_PUNCT - lag(Y2D_CTRY_ARR_PUNCT, max(YEAR) - 2019))
+) %>%
+ungroup()
+
 
 #### top
 st_punct_y2d_top <- st_punct_y2d %>%
@@ -3104,3 +3105,4 @@ nw_acc_delay_map_j <- nw_acc_delay_map_nest %>% toJSON(., pretty = TRUE)
 
 ### save and archive
 save_json(nw_acc_delay_map_j, "nw_acc_delay_map")
+
