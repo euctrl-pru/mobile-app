@@ -3667,7 +3667,7 @@ forecast_graph_dai <- forecast_graph %>%
   summarise(flights = sum(flights, na.rm = TRUE)) %>% 
   ungroup() %>% 
   group_by(iso_2letter, scenario) %>% 
-  arrange(year, iso_2letter, scenario) %>% 
+  arrange(iso_2letter, scenario, year) %>% 
   mutate(
     FLIGHT_DATE = lubridate::ymd(paste0(year,'01','01')), #represents the year - requested by ewasoft for mapping
     yoy = flights / lag(flights,1) -1,
