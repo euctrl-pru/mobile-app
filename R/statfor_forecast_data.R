@@ -112,8 +112,3 @@ df_final_all <- df_final %>%
 
 # save csv file
 df_final_all |> write_csv(here("..", "mobile-app", "data", forecast_data_file)) 
-
-
-
-
-
