@@ -906,6 +906,14 @@ sp_acc_traffic_day_int <- assign(mydataframe, df) %>%
   arrange(PRU_ID, SP_RANK) %>% 
   ungroup()
 
+if(archive_mode) {
+  sp_acc_traffic_day_int <- sp_acc_traffic_day_int %>% 
+    left_join(
+      select(acc, NAME = Name, UNIT_CODE = ICAO_code), 
+      by = ("UNIT_CODE"),
+      relationship = "many-to-many")
+}
+
 sp_acc_traffic_day <- sp_acc_traffic_day_int %>% 
   select(
     SP_RANK,
@@ -951,6 +959,14 @@ sp_acc_traffic_week_int <- assign(mydataframe, df) %>%
   ) %>% 
   arrange(PRU_ID, SP_RANK) %>% 
   ungroup() 
+
+if(archive_mode) {
+  sp_acc_traffic_week_int <- sp_acc_traffic_week_int %>% 
+    left_join(
+      select(acc, NAME = Name, UNIT_CODE = ICAO_code), 
+      by = ("UNIT_CODE"),
+      relationship = "many-to-many")
+}
 
 sp_acc_traffic_week <- sp_acc_traffic_week_int %>% 
   select(
@@ -999,6 +1015,14 @@ sp_acc_traffic_y2d_int <- assign(mydataframe, df) %>%
   ) %>% 
   arrange(PRU_ID, SP_RANK) %>% 
   ungroup()
+
+if(archive_mode) {
+  sp_acc_traffic_y2d_int <- sp_acc_traffic_y2d_int %>% 
+    left_join(
+      select(acc, NAME = Name, UNIT_CODE = ICAO_code), 
+      by = ("UNIT_CODE"),
+      relationship = "many-to-many")
+}
 
 sp_acc_traffic_y2d <- sp_acc_traffic_y2d_int %>% 
   select(
