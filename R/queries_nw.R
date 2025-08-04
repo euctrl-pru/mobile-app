@@ -3051,12 +3051,17 @@ query_nw_acc_delay_y2d_raw <- function(mydate_string) {
   paste0("
 WITH stat_aua_list
     AS
-        (SELECT stat_aua_id      AS unit_code,
-                aua_name         AS unit_name,
-                aua_country_code AS unit_country,
-                aua_type         AS unit_type_2
-           FROM aru_syn.stat_aua f
-          WHERE stat_aua_id IN ('EBBUACC',
+        (
+	SELECT
+		stat_aua_id AS unit_code,
+		aua_name AS unit_name,
+		aua_country_code AS unit_country,
+		aua_type AS unit_type_2
+	FROM
+		aru_syn.stat_aua f
+	WHERE
+		stat_aua_id IN (
+			'EBBUACC',
                                 'EDGGALL',
                                 'EDMMACC',
                                 'EDUUUAC',
@@ -3064,7 +3069,7 @@ WITH stat_aua_list
                                 'EDYYUAC',
                                 'EETTACC',
                                 'EFINACC',
-                               -- 'EFESACC', -- code change on 22-02-2021
+			-- 'EFESACC', -- code change on 22-02-2021
                                 'EGGXOCA',
                                 'EGPXALL',
                                 'EGTTACC',
@@ -3127,124 +3132,201 @@ WITH stat_aua_list
                                 'UKLVACC',
                                 'UKOVACC',
                                 'BIRDACC'
-                                ,'LQSBACC')
-
-  )
-
-, STAT_AUA_DAY AS (
-SELECT a.unit_code,
-       a.unit_name,
-       a.unit_country,
-       a.unit_type_2,
-        t.day_date,
-        t.month,
-        t.week,
-        t.week_nb_year,
-        t.day_type,
-        t.day_of_week_nb AS day_of_week,
-        t.year
-FROM stat_aua_list a, pru_time_references t
-WHERE
- t.day_date >= TO_DATE ('01-01-2019', 'dd-mm-yyyy')
- AND TO_NUMBER (TO_CHAR (TRUNC (t.day_date), 'mmdd')) <=   TO_NUMBER (TO_CHAR ((", mydate, "-1), 'mmdd'))
-and year <= extract(year from (", mydate, " - 1))
---order by t.day_date desc
-)   ,
-
-DATA_SOURCE as
-(SELECT
-      trunc(agg_asp_entry_date)  AS entry_day,
-      agg_asp_id          AS unit_code,
-      agg_asp_ty          AS unit_type,
-      agg_asp_name        AS unit_name,
-      nvl (a.agg_asp_a_traffic_asp,0)  AS syn_traffic,
-      nvl (a.agg_asp_delay_tvs,0)  AS syn_delay,
-      nvl (a.agg_asp_delay_tvs,0) - nvl(a.agg_asp_delay_airport_tvs,0)  AS syn_er_delay
-  FROM v_aiu_agg_asp a
-  WHERE
-     a.AGG_ASP_ENTRY_DATE >= TO_DATE ('01-01-2019', 'dd-mm-yyyy')
-    AND TO_NUMBER (TO_CHAR (TRUNC (a.AGG_ASP_ENTRY_DATE), 'mmdd')) <=   TO_NUMBER (TO_CHAR ((", mydate, "-1), 'mmdd'))
-    AND A.agg_asp_ty = 'AUA_STAT'
-    AND A.agg_asp_unit_ty <> 'REGION'
+                                , 'LQSBACC'
+		)
+)
+  
+,
+STAT_AUA_DAY AS (
+	SELECT
+		a.unit_code,
+		a.unit_name,
+		a.unit_country,
+		a.unit_type_2,
+		t.day_date,
+		t.month,
+		t.week,
+		t.week_nb_year,
+		t.day_type,
+		t.day_of_week_nb AS day_of_week,
+		t.year
+	FROM
+		stat_aua_list a,
+		prudev.pru_time_references t
+	WHERE
+		t.day_date >= TO_DATE (
+			'01-01-2019',
+			'dd-mm-yyyy'
+		)
+			AND TO_NUMBER (
+				TO_CHAR (
+					TRUNC (t.day_date),
+					'mmdd'
+				)
+			) <= TO_NUMBER (
+				TO_CHAR (
+					(
+						", mydate, "-1
+					),
+					'mmdd'
+				)
+			)
+				AND YEAR <= EXTRACT(YEAR FROM (", mydate, " - 1))
+				--order by t.day_date desc
+) ,    
+ 
+DATA_SOURCE AS
+(
+	SELECT
+		trunc(agg_asp_entry_date) AS entry_day,
+		agg_asp_id AS unit_code,
+		agg_asp_ty AS unit_type,
+		agg_asp_name AS unit_name,
+		nvl (
+			a.agg_asp_a_traffic_asp,
+			0
+		) AS syn_traffic,
+		nvl (
+			a.agg_asp_delay_tvs,
+			0
+		) AS syn_delay,
+		nvl (
+			a.agg_asp_delay_tvs,
+			0
+		) - nvl(a.agg_asp_delay_airport_tvs, 0) AS syn_er_delay
+	FROM
+		prudev.v_aiu_agg_asp a
+	WHERE
+		a.AGG_ASP_ENTRY_DATE >= TO_DATE (
+			'01-01-2019',
+			'dd-mm-yyyy'
+		)
+			AND TO_NUMBER (
+				TO_CHAR (
+					TRUNC (a.AGG_ASP_ENTRY_DATE),
+					'mmdd'
+				)
+			) <= TO_NUMBER (
+				TO_CHAR (
+					(
+						", mydate, "-1
+					),
+					'mmdd'
+				)
+			)
+				AND A.agg_asp_ty = 'AUA_STAT'
+				AND A.agg_asp_unit_ty <> 'REGION'
 ),
 
 
-STAT_AUA_DATA as (
-SELECT n.YEAR,
-       n.MONTH,
-       n.day_date    AS entry_date,
-       nvl(f.UNIT_TYPE,'AUA_STAT')   AS UNIT_KIND,
-       n.unit_code,
-       n.UNIT_NAME,
-       nvl(f.SYN_TRAFFIC,0) AS flight,
-       nvl(f.SYN_delay,0) AS dly,
-       nvl(f.syn_er_delay,0) AS dly_er,
-       n.WEEK,
-       n.WEEK_NB_YEAR,
-       n.DAY_TYPE,
-       n.day_of_week
-  FROM stat_aua_day  N
-       LEFT JOIN DATA_SOURCE F
-           ON n.unit_code = f.unit_code AND f.entry_day = n.day_date
+STAT_AUA_DATA AS (
+	SELECT
+		n.YEAR,
+		n.MONTH,
+		n.day_date AS entry_date,
+		nvl(f.UNIT_TYPE, 'AUA_STAT') AS UNIT_KIND,
+		n.unit_code,
+		n.UNIT_NAME,
+		nvl(f.SYN_TRAFFIC, 0) AS flight,
+		nvl(f.SYN_delay, 0) AS dly,
+		nvl(f.syn_er_delay, 0) AS dly_er,
+		n.WEEK,
+		n.WEEK_NB_YEAR,
+		n.DAY_TYPE,
+		n.day_of_week
+	FROM
+		stat_aua_day N
+	LEFT JOIN DATA_SOURCE F
+           ON
+		n.unit_code = f.unit_code
+		AND f.entry_day = n.day_date
 ),
 
-STAT_AUA_CALC as(
+STAT_AUA_CALC AS(
       SELECT
-      UNIT_NAME,
+      UNIT_NAME, 
       unit_code,
       entry_date,
-      year,
-      min(ENTRY_DATE) over (PARTITION BY unit_name, year) as min_date,
-      max(ENTRY_DATE) over (PARTITION BY unit_name, year ) as max_date,
+      YEAR,
+      min(ENTRY_DATE) OVER (PARTITION BY unit_name, YEAR) AS min_date,
+      max(ENTRY_DATE) OVER (PARTITION BY unit_name, YEAR ) AS max_date,
       flight,
       dly,
       dly_er,
-      sum(dly) over (PARTITION BY unit_name, year ORDER BY ENTRY_DATE range between NUMTODSINTERVAL(to_number(to_char(ENTRY_DATE, 'DDD')), 'day')
-        PRECEDING and  NUMTODSINTERVAL( 0, 'day') PRECEDING ) as y2d_dly,
-      avg(dly) over (PARTITION BY unit_name, year ORDER BY ENTRY_DATE range between NUMTODSINTERVAL(to_number(to_char(ENTRY_DATE, 'DDD')), 'day')
-        PRECEDING and  NUMTODSINTERVAL( 0, 'day') PRECEDING ) as y2d_avg_dly,
-      sum(dly_er) over (PARTITION BY unit_name, year ORDER BY ENTRY_DATE range between NUMTODSINTERVAL(to_number(to_char(ENTRY_DATE, 'DDD')), 'day')
-        PRECEDING and  NUMTODSINTERVAL( 0, 'day') PRECEDING ) as y2d_dly_er,
-      avg(dly_er) over (PARTITION BY unit_name, year ORDER BY ENTRY_DATE range between NUMTODSINTERVAL(to_number(to_char(ENTRY_DATE, 'DDD')), 'day')
-        PRECEDING and  NUMTODSINTERVAL( 0, 'day') PRECEDING ) as y2d_avg_dly_er,
-      sum(flight) over (PARTITION BY unit_name, year ORDER BY ENTRY_DATE range between NUMTODSINTERVAL(to_number(to_char(ENTRY_DATE, 'DDD')), 'day')
-        PRECEDING and  NUMTODSINTERVAL( 0, 'day') PRECEDING ) as y2d_flight,
-      avg(flight) over (PARTITION BY unit_name, year ORDER BY ENTRY_DATE range between NUMTODSINTERVAL(to_number(to_char(ENTRY_DATE, 'DDD')), 'day')
-        PRECEDING and  NUMTODSINTERVAL( 0, 'day') PRECEDING ) as y2d_avg_flight
-
+      sum(dly) OVER (PARTITION BY unit_name, YEAR ORDER BY ENTRY_DATE RANGE BETWEEN NUMTODSINTERVAL(to_number(to_char(ENTRY_DATE, 'DDD')), 'day') 
+        PRECEDING AND NUMTODSINTERVAL( 0, 'day') PRECEDING ) AS y2d_dly,
+      avg(dly) OVER (PARTITION BY unit_name, YEAR ORDER BY ENTRY_DATE RANGE BETWEEN NUMTODSINTERVAL(to_number(to_char(ENTRY_DATE, 'DDD')), 'day') 
+        PRECEDING AND NUMTODSINTERVAL( 0, 'day') PRECEDING ) AS y2d_avg_dly,
+      sum(dly_er) OVER (PARTITION BY unit_name, YEAR ORDER BY ENTRY_DATE RANGE BETWEEN NUMTODSINTERVAL(to_number(to_char(ENTRY_DATE, 'DDD')), 'day') 
+        PRECEDING AND NUMTODSINTERVAL( 0, 'day') PRECEDING ) AS y2d_dly_er,
+      avg(dly_er) OVER (PARTITION BY unit_name, YEAR ORDER BY ENTRY_DATE RANGE BETWEEN NUMTODSINTERVAL(to_number(to_char(ENTRY_DATE, 'DDD')), 'day') 
+        PRECEDING AND NUMTODSINTERVAL( 0, 'day') PRECEDING ) AS y2d_avg_dly_er,
+      sum(flight) OVER (PARTITION BY unit_name, YEAR ORDER BY ENTRY_DATE RANGE BETWEEN NUMTODSINTERVAL(to_number(to_char(ENTRY_DATE, 'DDD')), 'day') 
+        PRECEDING AND NUMTODSINTERVAL( 0, 'day') PRECEDING ) AS y2d_flight,
+      avg(flight) OVER (PARTITION BY unit_name, YEAR ORDER BY ENTRY_DATE RANGE BETWEEN NUMTODSINTERVAL(to_number(to_char(ENTRY_DATE, 'DDD')), 'day') 
+        PRECEDING AND NUMTODSINTERVAL( 0, 'day') PRECEDING ) AS y2d_avg_flight
+ 
       FROM STAT_AUA_DATA
-      where entry_date < ", mydate, "
---      order by UNIT_NAME, entry_date
+      WHERE entry_date < ", mydate, "
+--      order by UNIT_NAME, entry_date 
 ),
 
-STAT_AUA_y2d as
-(
-Select
-      UNIT_NAME,
-      unit_code,
-      entry_date,
-      year,
-      min_date,
-      max_date,
-      flight,
-      dly,
-      y2d_dly,
-      y2d_avg_dly,
-      y2d_dly_er,
-      y2d_avg_dly_er,
-      y2d_flight,
-      y2d_avg_flight,
-    case when ENTRY_DATE = ", mydate, "-1
-        then 'yes'
-        else '-'
-    end flag_last_day
-from STAT_AUA_CALC
+data_last_day AS (
+	SELECT
+		UNIT_NAME,
+		unit_code,
+		entry_date,
+		YEAR,
+		min_date,
+		max_date,
+		flight,
+		dly,
+		y2d_dly,
+		y2d_avg_dly,
+		y2d_dly_er,
+		y2d_avg_dly_er,
+		y2d_flight,
+		y2d_avg_flight
+		--    case when ENTRY_DATE = max_date
+		----    case when ENTRY_DATE = ", mydate, "-1
+		--        then 'yes'
+		--        else '-'
+		--    end flag_last_day
+	FROM
+		STAT_AUA_CALC
+	WHERE
+		entry_date = max_date
 )
 
-Select *
-from STAT_AUA_y2d
-where flag_last_day = 'yes'
-")
+SELECT
+	a.*,
+	b.flight AS flight_py,
+	b.dly AS dly_py,
+	b.y2d_dly AS y2d_dly_py,
+	b.y2d_avg_dly AS y2d_avg_dly_py,
+	b.y2d_dly_er AS y2d_dly_er_py,
+	b.y2d_avg_dly_er AS y2d_avg_dly_er_py,
+	b.y2d_flight AS y2d_flight_py,
+	b.y2d_avg_flight AS y2d_avg_flight_py,
+	
+	c.flight AS flight_2019,
+	c.dly AS dly_2019,
+	c.y2d_dly AS y2d_dly_2019,
+	c.y2d_avg_dly AS y2d_avg_dly_2019,
+	c.y2d_dly_er AS y2d_dly_er_2019,
+	c.y2d_avg_dly_er AS y2d_avg_dly_er_2019,
+	c.y2d_flight AS y2d_flight_2019,
+	c.y2d_avg_flight AS y2d_avg_flight_2019
+FROM
+	data_last_day a
+LEFT JOIN data_last_day b ON
+	a.YEAR -1 = b.YEAR
+	AND a.unit_code = b.unit_code
+LEFT JOIN data_last_day c ON
+	2019 = c.YEAR
+	AND a.unit_code = c.unit_code
+WHERE a.YEAR = EXTRACT (YEAR FROM (", mydate, " -1))
+  ")
 }
 
 # nw airport delay all periods ----
