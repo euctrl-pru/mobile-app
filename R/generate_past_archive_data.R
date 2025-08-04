@@ -13,6 +13,7 @@ source(here("..", "mobile-app", "R", "queries_ao.R"))
 source(here("..", "mobile-app", "R", "queries_nw.R"))
 if(exists("mydate") == FALSE) {mydate <- "2024-01-01"}
 source(here("..", "mobile-app", "R", "queries_ap.R"))
+source(here("..", "mobile-app", "R", "queries_sp.R"))
 
 # params -----
 test_archive_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Project/DDP/AIU app/data_archive'
@@ -23,8 +24,8 @@ test_archive_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Proje
 # file.rename(files_to_rename, new_filenames)
 
 # set period
-wef <- "2025-03-31"  #included in output
-til <- "2025-03-31"  #included in output
+wef <- "2025-08-02"  #included in output
+til <- "2025-08-02"  #included in output
 
 # functions list -----
 # get functions list for multiple queries
@@ -36,7 +37,7 @@ get_functions_from_script <- function(script_path) {
   funcs[sapply(funcs, function(f) is.function(get(f, env)))] # Filter functions
 }
 
-stakeholder <- 'nw' # set the 2 letter stakeholder to retrieve query list
+stakeholder <- 'sp' # set the 2 letter stakeholder to retrieve query list
 script_path <- here("R", paste0("queries_", stakeholder, ".R"))
 function_list_full <- get_functions_from_script(script_path)
 # these queries only need to be executed if the date is 31 december
