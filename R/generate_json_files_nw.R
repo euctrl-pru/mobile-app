@@ -3037,70 +3037,66 @@ save_json(st_punct_data_j, "nw_ctry_ranking_punctuality")
 nw_acc_delay_map_dy <- acc_rank_data_day_all %>% 
   left_join(acc, by = c("DY_ACC_NAME" = "Name")) %>% 
   mutate(
-    ACC_ICAO_CODE = if_else(DY_ACC_NAME == "London TMA TC",
+    DY_ACC_ICAO_CODE = if_else(DY_ACC_NAME == "London TMA TC",
                             stringr::str_sub(ICAO_code,1,5),
                             stringr::str_sub(ICAO_code,1,4))
   ) %>% 
   select(
-    ACC_ICAO_CODE,
-    ACC_NAME = DY_ACC_NAME,
-    TO_DATE = DY_TO_DATE,
+    DY_RANK,
+    DY_ACC_ICAO_CODE,
+    DY_ACC_NAME,
+    DY_TO_DATE,
     DY_ACC_DLY_PER_FLT
   ) %>% 
   unique()
-
-# nw_acc_delay_map_dy_j <- nw_acc_delay_map_dy %>% toJSON(., pretty = TRUE)
-# save_json(nw_acc_delay_map_dy_j, "nw_acc_delay_map_dy")
 
 ### week ----
 nw_acc_delay_map_wk <- acc_rank_data_week_all %>% 
   left_join(acc, by = c("WK_ACC_NAME" = "Name")) %>% 
   mutate(
-    ACC_ICAO_CODE = if_else(WK_ACC_NAME == "London TMA TC",
+    WK_ACC_ICAO_CODE = if_else(WK_ACC_NAME == "London TMA TC",
                             stringr::str_sub(ICAO_code,1,5),
                             stringr::str_sub(ICAO_code,1,4))
   ) %>%  select(
-    ACC_ICAO_CODE,
-    # ACC_NAME = WK_ACC_NAME,
-    # WK_FROM_DATE,
-    # WK_TO_DATE,
+    DY_RANK,
+    WK_ACC_ICAO_CODE,
+    WK_ACC_NAME,
+    WK_FROM_DATE,
+    WK_TO_DATE,
     WK_ACC_DLY_PER_FLT
   )%>% 
   unique()
-
-# nw_acc_delay_map_wk_j <- nw_acc_delay_map_wk %>% toJSON(., pretty = TRUE)
-# save_json(nw_acc_delay_map_wk_j, "nw_acc_delay_map_wk")
 
 ### y2d ----
 nw_acc_delay_map_y2d <- acc_rank_data_y2d_all %>% 
   left_join(acc, by = c("Y2D_ACC_NAME" = "Name")) %>% 
   mutate(
-    ACC_ICAO_CODE = if_else(Y2D_ACC_NAME == "London TMA TC",
+    Y2D_ACC_ICAO_CODE = if_else(Y2D_ACC_NAME == "London TMA TC",
                             stringr::str_sub(ICAO_code,1,5),
                             stringr::str_sub(ICAO_code,1,4))
   ) %>%  select(
-    ACC_ICAO_CODE,
-    # ACC_NAME = Y2D_ACC_NAME,
-    # Y2D_TO_DATE,
+    DY_RANK,
+    Y2D_ACC_ICAO_CODE,
+    Y2D_ACC_NAME,
+    Y2D_TO_DATE,
     Y2D_ACC_DLY_PER_FLT
   )%>% 
   unique()
 
-# nw_acc_delay_map_y2d_j <- nw_acc_delay_map_y2d %>% toJSON(., pretty = TRUE)
-# save_json(nw_acc_delay_map_y2d_j, "nw_acc_delay_map_y2d")
-
 nw_acc_delay_map <- nw_acc_delay_map_dy %>% 
-  left_join(nw_acc_delay_map_wk, by = "ACC_ICAO_CODE") %>% 
-  left_join(nw_acc_delay_map_y2d, by = "ACC_ICAO_CODE") 
+  left_join(nw_acc_delay_map_wk, by = "DY_RANK") %>% 
+  left_join(nw_acc_delay_map_y2d, by = "DY_RANK") %>% 
+  mutate(RANK = DY_RANK) %>% 
+  relocate(RANK, .before = everything())
+  
 
-### nest data
-nw_acc_delay_map_nest <- nw_acc_delay_map %>%
-  # pivot_longer(-c(FLIGHT_DATE), names_to = 'metric', values_to = 'value') %>%
-  group_by(ACC_ICAO_CODE, ACC_NAME, TO_DATE) %>%
-  nest_legacy(.key = "statistics")
+# nw_acc_delay_map_nest <- nw_acc_delay_map %>%
+#   # pivot_longer(-c(FLIGHT_DATE), names_to = 'metric', values_to = 'value') %>%
+#   group_by(ACC_ICAO_CODE, ACC_NAME, TO_DATE) %>%
+#   nest_legacy(.key = "statistics")
 
 ### create json
-nw_acc_delay_map_j <- nw_acc_delay_map_nest %>% toJSON(., pretty = TRUE)
+nw_acc_delay_map_j <- nw_acc_delay_map %>% toJSON(., pretty = TRUE)
 
 ### save and archive
 save_json(nw_acc_delay_map_j, "nw_acc_delay_map")
