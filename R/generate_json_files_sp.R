@@ -436,7 +436,7 @@ sp_delay_for_json <- sp_delay_last_day %>%
     WK_DELAYED_TFC_15_PERC_RANK = min_rank(WK_DELAYED_TFC_15_PERC),
     Y2D_DELAYED_TFC_15_PERC_RANK = min_rank(Y2D_DELAYED_TFC_15_PERC),
 
-    DLY_RANK_TEXT = "*Top rank for lowest."
+    DLY_RANK_TEXT = "*Top rank for highest."
   )
 
 
