@@ -484,7 +484,10 @@ days_ansp <- crossing(days_current_year, ansp_list) %>%
 sp_traffic_evo <- days_ansp %>%
   left_join(sp_traffic_data, by = c("ENTRY_DATE", "ANSP_CODE", "ANSP_NAME"))  %>%
   mutate(RWK_AVG_TFC = if_else(ENTRY_DATE > min(data_day_date,
-                                                 max(LAST_DATA_DAY, na.rm = TRUE),na.rm = TRUE), NA, RW_AVG_FLT_DAIO)) %>%
+                                                 max(LAST_DATA_DAY, na.rm = TRUE),na.rm = TRUE),
+                               NA,
+                               RW_AVG_FLT_DAIO)
+         ) %>%
   select(
     ANSP_CODE,
     ANSP_NAME,

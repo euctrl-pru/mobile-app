@@ -28,7 +28,8 @@ SELECT  a.ansp_id,
         t.year
 FROM LIST_ANSP a ,  prudev.pru_time_references t
 WHERE
-   t.day_date >=  to_date('01-01-2019', 'dd-mm-yyyy')-10 AND t.day_date <  ", mydate, "
+   t.day_date >=  to_date('01-01-2019', 'dd-mm-yyyy')-10 
+   AND t.day_date <  to_date('31-12-' || EXTRACT(YEAR FROM (", mydate, "-1)), 'dd-mm-yyyy')
  ),
 
 OP_AUA_DATA as
@@ -198,11 +199,11 @@ SELECT
 	END day_flt_daio_2019,
 
 	-- week
-	CASE WHEN ansp_id = 46 AND entry_date < TO_DATE('01-01-2024', 'dd-mm-yyyy') THEN NULL
+	CASE WHEN (ansp_id = 46 AND entry_date < TO_DATE('01-01-2024', 'dd-mm-yyyy')) OR (entry_date >= ", mydate, ") THEN NULL
 		ELSE rw_avg_flt_daio
 	END rw_avg_flt_daio,
 
-	CASE WHEN ansp_id = 46 AND entry_date < TO_DATE('01-01-2024', 'dd-mm-yyyy') THEN NULL
+	CASE WHEN (ansp_id = 46 AND entry_date < TO_DATE('01-01-2024', 'dd-mm-yyyy')) OR (entry_date >= ", mydate, ") THEN NULL
 		ELSE rw_avg_flt_daio_prev_week
 	END rw_avg_flt_daio_prev_week,
 
@@ -219,7 +220,7 @@ SELECT
 	END rw_avg_flt_daio_2019,
 
 	-- y2d total
-	CASE WHEN ansp_id = 46 AND entry_date < TO_DATE('01-01-2024', 'dd-mm-yyyy') THEN NULL
+	CASE WHEN (ansp_id = 46 AND entry_date < TO_DATE('01-01-2024', 'dd-mm-yyyy')) OR (entry_date >= ", mydate, ") THEN NULL
 		ELSE y2d_flt_daio_year
 	END y2d_flt_daio_year,
 
