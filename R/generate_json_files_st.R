@@ -786,30 +786,30 @@ st_delay_for_json  <- st_delay_last_day %>%
   ### rank calculation
   mutate(
     ## delay
-    DY_DLY_RANK = min_rank(desc(DY_DLY)),
-    WK_DLY_RANK = min_rank(desc(WK_DLY_AVG_ROLLING)),
-    Y2D_DLY_RANK = min_rank(desc(Y2D_DLY_AVG)),
+    DY_DLY_RANK = rank(desc(DY_DLY), ties.method = "max"),
+    WK_DLY_RANK = rank(desc(WK_DLY_AVG_ROLLING), ties.method = "max"),
+    Y2D_DLY_RANK = rank(desc(Y2D_DLY_AVG), ties.method = "max"),
 
-    DY_DLY_ERT_RANK = min_rank(desc(DY_DLY_ERT)),
-    WK_DLY_ERT_RANK = min_rank(desc(WK_DLY_ERT_AVG_ROLLING)),
-    Y2D_DLY_ERT_RANK = min_rank(desc(Y2D_DLY_ERT_AVG)),
+    DY_DLY_ERT_RANK = rank(desc(DY_DLY_ERT), ties.method = "max"),
+    WK_DLY_ERT_RANK = rank(desc(WK_DLY_ERT_AVG_ROLLING), ties.method = "max"),
+    Y2D_DLY_ERT_RANK = rank(desc(Y2D_DLY_ERT_AVG), ties.method = "max"),
 
-    DY_DLY_APT_RANK = min_rank(desc(DY_DLY_APT)),
-    WK_DLY_APT_RANK = min_rank(desc(WK_DLY_APT_AVG_ROLLING)),
-    Y2D_DLY_APT_RANK = min_rank(desc(Y2D_DLY_APT_AVG)),
+    DY_DLY_APT_RANK = rank(desc(DY_DLY_APT), ties.method = "max"),
+    WK_DLY_APT_RANK = rank(desc(WK_DLY_APT_AVG_ROLLING), ties.method = "max"),
+    Y2D_DLY_APT_RANK = rank(desc(Y2D_DLY_APT_AVG), ties.method = "max"),
 
     ## delay per flight
-    DY_DLY_FLT_RANK = min_rank(desc(DY_DLY_FLT)),
-    WK_DLY_FLT_RANK = min_rank(desc(WK_DLY_FLT)),
-    Y2D_DLY_FLT_RANK = min_rank(desc(Y2D_DLY_FLT)),
+    DY_DLY_FLT_RANK = rank(desc(DY_DLY_FLT), ties.method = "max"),
+    WK_DLY_FLT_RANK = rank(desc(WK_DLY_FLT), ties.method = "max"),
+    Y2D_DLY_FLT_RANK = rank(desc(Y2D_DLY_FLT), ties.method = "max"),
 
-    DY_DLY_ERT_FLT_RANK = min_rank(desc(DY_DLY_ERT_FLT)),
-    WK_DLY_ERT_FLT_RANK = min_rank(desc(WK_DLY_ERT_FLT)),
-    Y2D_DLY_ERT_FLT_RANK = min_rank(desc(Y2D_DLY_ERT_FLT)),
+    DY_DLY_ERT_FLT_RANK = rank(desc(DY_DLY_ERT_FLT), ties.method = "max"),
+    WK_DLY_ERT_FLT_RANK = rank(desc(WK_DLY_ERT_FLT), ties.method = "max"),
+    Y2D_DLY_ERT_FLT_RANK = rank(desc(Y2D_DLY_ERT_FLT), ties.method = "max"),
 
-    DY_DLY_APT_FLT_RANK = min_rank(desc(DY_DLY_APT_FLT)),
-    WK_DLY_APT_FLT_RANK = min_rank(desc(WK_DLY_APT_FLT)),
-    Y2D_DLY_APT_FLT_RANK = min_rank(desc(Y2D_DLY_APT_FLT)),
+    DY_DLY_APT_FLT_RANK = rank(desc(DY_DLY_APT_FLT), ties.method = "max"),
+    WK_DLY_APT_FLT_RANK = rank(desc(WK_DLY_APT_FLT), ties.method = "max"),
+    Y2D_DLY_APT_FLT_RANK = rank(desc(Y2D_DLY_APT_FLT), ties.method = "max"),
 
     DLY_RANK_TEXT = "*Top rank for highest."
   ) %>%
@@ -1123,11 +1123,11 @@ st_co2_for_json <- st_co2_data %>%
   filter(FLIGHT_MONTH == st_co2_last_date) %>%
   ### rank calculation
   mutate(
-    MM_CO2_RANK = min_rank(MM_CO2),
-    Y2D_CO2_RANK = min_rank(Y2D_CO2),
+    MM_CO2_RANK = rank(desc(MM_CO2), ties.method = "max"),
+    Y2D_CO2_RANK = rank(desc(Y2D_CO2), ties.method = "max"),
 
-    MM_CO2_DEP_RANK = min_rank(desc(MM_CO2_DEP)),
-    Y2D_CO2_DEP_RANK = min_rank(desc(Y2D_CO2_DEP)),
+    MM_CO2_DEP_RANK = rank(desc(MM_CO2_DEP), ties.method = "max"),
+    Y2D_CO2_DEP_RANK = rank(desc(Y2D_CO2_DEP), ties.method = "max"),
     CO2_RANK_TEXT = "*Top rank for highest"
   ) %>%
   right_join(state_iso, by = "iso_2letter") %>%

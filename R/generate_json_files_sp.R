@@ -414,27 +414,28 @@ sp_delay_for_json <- sp_delay_last_day %>%
     Y2D_DELAYED_TFC_15_PERC_DIF_2019 = if_else(ANSP_CODE == "IS_ANSP", NA, Y2D_DELAYED_TFC_15_PERC_DIF_2019),
 
   ) %>%
+  ungroup() %>%
   ### rank calculation
   mutate(
     ## delay
-    DY_DLY_RANK = min_rank(DY_DLY),
-    WK_DLY_RANK = min_rank(WK_DLY_AVG_ROLLING),
-    Y2D_DLY_RANK = min_rank(Y2D_DLY_AVG),
+    DY_DLY_RANK = rank(desc(DY_DLY), ties.method = "max"),
+    WK_DLY_RANK = rank(desc(WK_DLY_AVG_ROLLING), ties.method = "max"),
+    Y2D_DLY_RANK = rank(desc(Y2D_DLY_AVG), ties.method = "max"),
 
     ## delay per flight
-    DY_DLY_FLT_RANK = min_rank(DY_DLY_FLT),
-    WK_DLY_FLT_RANK = min_rank(WK_DLY_FLT),
-    Y2D_DLY_FLT_RANK = min_rank(Y2D_DLY_FLT),
+    DY_DLY_FLT_RANK = rank(desc(DY_DLY_FLT), ties.method = "max"),
+    WK_DLY_FLT_RANK = rank(desc(WK_DLY_FLT), ties.method = "max"),
+    Y2D_DLY_FLT_RANK = rank(desc(Y2D_DLY_FLT), ties.method = "max"),
 
     ## % delayed flights
-    DY_DELAYED_TFC_PERC_RANK = min_rank(DY_DELAYED_TFC_PERC),
-    WK_DELAYED_TFC_PERC_RANK = min_rank(WK_DELAYED_TFC_PERC),
-    Y2D_DELAYED_TFC_PERC_RANK = min_rank(Y2D_DELAYED_TFC_PERC),
+    DY_DELAYED_TFC_PERC_RANK = rank(desc(DY_DELAYED_TFC_PERC), ties.method = "max"),
+    WK_DELAYED_TFC_PERC_RANK = rank(desc(WK_DELAYED_TFC_PERC), ties.method = "max"),
+    Y2D_DELAYED_TFC_PERC_RANK = rank(desc(Y2D_DELAYED_TFC_PERC), ties.method = "max"),
 
     ## % delayed flights
-    DY_DELAYED_TFC_15_PERC_RANK = min_rank(DY_DELAYED_TFC_15_PERC),
-    WK_DELAYED_TFC_15_PERC_RANK = min_rank(WK_DELAYED_TFC_15_PERC),
-    Y2D_DELAYED_TFC_15_PERC_RANK = min_rank(Y2D_DELAYED_TFC_15_PERC),
+    DY_DELAYED_TFC_15_PERC_RANK = rank(desc(DY_DELAYED_TFC_15_PERC), ties.method = "max"),
+    WK_DELAYED_TFC_15_PERC_RANK = rank(desc(WK_DELAYED_TFC_15_PERC), ties.method = "max"),
+    Y2D_DELAYED_TFC_15_PERC_RANK = rank(desc(Y2D_DELAYED_TFC_15_PERC), ties.method = "max"),
 
     DLY_RANK_TEXT = "*Top rank for highest."
   )
