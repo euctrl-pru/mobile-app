@@ -30,8 +30,7 @@ source(here("..", "mobile-app", "R", "queries_ap.R"))
 
 
 # airport dimension table (lists the airports and their ICAO codes)
-if (exists("apt_icao") == FALSE) {
-  query <- "SELECT
+query <- "SELECT
 arp_code AS apt_icao_code,
 arp_name AS apt_name,
 flag_top_apt,
@@ -50,11 +49,11 @@ INNER JOIN (
 ) b ON a.arp_code = b.ec_ap_code
 "
 
-  apt_icao_full <- export_query(query) %>%
-    janitor::clean_names()
+apt_icao_full <- export_query(query) %>%
+  janitor::clean_names()
 
-  apt_icao <- apt_icao_full %>% select (apt_icao_code, apt_name)
-}
+apt_icao <- apt_icao_full %>% select (apt_icao_code, apt_name)
+
 
 # archive mode for past dates
 if (exists("archive_mode") == FALSE) {archive_mode <- FALSE}
@@ -1380,8 +1379,18 @@ if (archive_mode) {
   write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
 }
 
+apt_ms_data_day_raw <- assign(mydataframe, df)
+
+# Get unique combinations of all airports and MS names
+apt_list <- distinct(apt_ms_data_day_raw, ARP_CODE)
+ms_list <- distinct(apt_ms_data_day_raw, MARKET_SEGMENT)
+
+# Generate full grid of APT_CODE × DY_MS_NAME
+full_grid <- expand_grid(apt_list, ms_list)
+
+
 # process data
-apt_ms_data_day <- assign(mydataframe, df) |>
+apt_ms_data_day_prep <- apt_ms_data_day_raw |>
   select(-TO_DATE) |>
   spread(key = FLAG_PERIOD, value = DEP_ARR) |>
   arrange(ARP_CODE, R_RANK) |>
@@ -1402,11 +1411,20 @@ apt_ms_data_day <- assign(mydataframe, df) |>
   group_by(ARP_CODE) |>
   mutate(DY_MS_SHARE = ifelse(CURRENT_DAY == 0, 0,
                               CURRENT_DAY/sum(CURRENT_DAY, na.rm = TRUE))) |>
+  ungroup() 
+
+
+apt_ms_data_day <- full_grid |> 
+  left_join(apt_ms_data_day_prep, by = c("ARP_CODE", "MARKET_SEGMENT")) |>
+  group_by(ARP_CODE) |>
+  arrange(ARP_CODE, desc(CURRENT_DAY)) |>
+  mutate(RANK = row_number())|>
+  fill(ARP_NAME, .direction = "down")|>
   ungroup() |>
   select(
     APT_CODE = ARP_CODE,
     APT_NAME = ARP_NAME,
-    RANK = R_RANK,
+    RANK,
     DY_RANK_DIF_PREV_WEEK,
     DY_MS_NAME = MARKET_SEGMENT,
     DY_MS_SHARE,
@@ -1415,7 +1433,6 @@ apt_ms_data_day <- assign(mydataframe, df) |>
     DY_FLT_DIF_PREV_WEEK_PERC,
     DY_FLT_DIF_PREV_YEAR_PERC
   )
-
 
 #### week ----
 mydataframe <- "ap_ms_data_week_raw"
@@ -1439,7 +1456,7 @@ if (archive_mode) {
 }
 
 # process data
-apt_ms_data_week <- assign(mydataframe, df) |>
+apt_ms_data_week_prep <- assign(mydataframe, df) |>
   mutate(
     WK_TO_DATE = max(TO_DATE),
     WK_FROM_DATE = WK_TO_DATE + days(-6)
@@ -1466,11 +1483,19 @@ apt_ms_data_week <- assign(mydataframe, df) |>
   mutate(WK_MS_SHARE = ifelse(CURRENT_ROLLING_WEEK == 0, 0,
                               CURRENT_ROLLING_WEEK/sum(CURRENT_ROLLING_WEEK,
                                                        na.rm = TRUE))) |>
+  ungroup() 
+
+apt_ms_data_week <- full_grid |> 
+  left_join(apt_ms_data_week_prep, by = c("ARP_CODE", "MARKET_SEGMENT")) |>
+  group_by(ARP_CODE) |>
+  arrange(ARP_CODE, desc(CURRENT_ROLLING_WEEK)) |>
+  mutate(RANK = row_number())|>
+  fill(ARP_NAME, .direction = "down")|>
   ungroup() |>
   select(
     APT_CODE = ARP_CODE,
     APT_NAME = ARP_NAME,
-    RANK = R_RANK,
+    RANK,
     WK_RANK_DIF_PREV_WEEK,
     WK_MS_NAME = MARKET_SEGMENT,
     WK_MS_SHARE,
@@ -1510,7 +1535,7 @@ apt_ms_y2d <- assign(mydataframe, df)
 apt_ms_y2d_max_year <-  max(apt_ms_y2d$YEAR, na.rm = TRUE)
 
 # process data
-apt_ms_data_year <- apt_ms_y2d |>
+apt_ms_data_year_prep <- apt_ms_y2d |>
   # calculate number of days to date
   group_by(YEAR) |>
   mutate(Y2D_DAYS = as.numeric(max(TO_DATE, na.rm = TRUE) - min(FROM_DATE, na.rm = TRUE) +1)) |>
@@ -1532,8 +1557,16 @@ apt_ms_data_year <- apt_ms_y2d |>
   group_by(ARP_CODE) |>
   mutate(Y2D_MS_SHARE = ifelse(DEP_ARR == 0, 0,
                                DEP_ARR/sum(DEP_ARR, na.rm = TRUE))) |>
+  ungroup() 
+
+
+apt_ms_data_year <- full_grid |> 
+  left_join(apt_ms_data_year_prep, by = c("ARP_CODE", "MARKET_SEGMENT")) |>
+  group_by(ARP_CODE) |>
+  arrange(ARP_CODE, desc(DEP_ARR)) |>
+  mutate(RANK = row_number())|>
+  fill(ARP_NAME, .direction = "down")|>
   ungroup() |>
-  arrange(ARP_CODE, ARP_NAME, R_RANK) |>
   select(
     APT_CODE = ARP_CODE,
     APT_NAME = ARP_NAME,
@@ -1550,10 +1583,8 @@ apt_ms_data_year <- apt_ms_y2d |>
 
 #### join tables ----
 apt_ms_ranking_traffic <- apt_ms_data_day |>
-  left_join(apt_ms_data_week, by = c("RANK", "APT_CODE", "APT_NAME"),
-            relationship = "many-to-many") |>
-  left_join(apt_ms_data_year, by = c("RANK", "APT_CODE", "APT_NAME"),
-            relationship = "many-to-many") |>
+  left_join(apt_ms_data_week, by = c("RANK", "APT_CODE", "APT_NAME")) |>
+  left_join(apt_ms_data_year, by = c("RANK", "APT_CODE", "APT_NAME")) |>
   arrange(APT_CODE, APT_NAME, RANK) |>
   distinct(RANK, APT_CODE, APT_NAME, .keep_all = TRUE)
 
