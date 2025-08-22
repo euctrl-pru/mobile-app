@@ -2897,7 +2897,7 @@ FROM prudev.v_aiu_flt_mark_seg A
          A.flt_lobt>= TO_DATE ('01-01-2019', 'dd-mm-yyyy') -1  AND A.flt_lobt < ", mydate, "
      AND a.flt_a_asp_prof_time_entry >= TO_DATE ('01-01-2019', 'dd-mm-yyyy')
      AND TO_NUMBER (TO_CHAR (TRUNC (flt_a_asp_prof_time_entry), 'mmdd')) <=   TO_NUMBER (TO_CHAR (", mydate, "-1, 'mmdd'))
-       and extract (year from flt_a_asp_prof_time_entry) <= extract(year from (", mydate, "-1))
+       and extract (year from flt_a_asp_prof_time_entry) in (2019, extract(year from (TRUNC (SYSDATE)-1))-1, extract(year from (TRUNC (SYSDATE)-1)))
 
     AND A.flt_state IN ('TE','TA','AA')
 
