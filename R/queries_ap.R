@@ -2639,7 +2639,7 @@ SELECT
         ROW_NUMBER() OVER (PARTITION BY  ARP_CODE, flag_period
                 ORDER BY DEP_ARR DESC, market_segment) R_RANK,
         RANK() OVER (PARTITION BY  ARP_CODE, flag_period
-                ORDER BY DEP_ARR DESC, market_segment) RANK
+                ORDER BY DEP_ARR DESC) RANK
 FROM DATA_GRP
 where flag_period = 'CURRENT_DAY'
 ),
@@ -2648,8 +2648,8 @@ APT_AO_RANK_PREV as
 (
 SELECT
   ARP_CODE, flag_period, market_segment,
-        ROW_NUMBER() OVER (PARTITION BY  ARP_CODE, flag_period
-                ORDER BY DEP_ARR DESC, market_segment) RANK_PREV
+        RANK() OVER (PARTITION BY  ARP_CODE, flag_period
+                ORDER BY DEP_ARR DESC) RANK_PREV
  FROM DATA_GRP
 where flag_period = 'DAY_PREV_WEEK'
 )
@@ -2828,7 +2828,7 @@ SELECT
         ROW_NUMBER() OVER (PARTITION BY  ARP_CODE, flag_period
                 ORDER BY DEP_ARR DESC, market_segment) R_RANK,
         RANK() OVER (PARTITION BY  ARP_CODE, flag_period
-                ORDER BY DEP_ARR DESC, market_segment) RANK
+                ORDER BY DEP_ARR DESC) RANK
 FROM DATA_GRP
 where flag_period = 'CURRENT_ROLLING_WEEK'
 ),
@@ -2837,8 +2837,8 @@ APT_AO_RANK_PREV as
 (
 SELECT
   ARP_CODE, flag_period, market_segment,
-        ROW_NUMBER() OVER (PARTITION BY  ARP_CODE, flag_period
-                ORDER BY DEP_ARR DESC, market_segment) RANK_PREV
+        RANK() OVER (PARTITION BY  ARP_CODE, flag_period
+                ORDER BY DEP_ARR DESC) RANK_PREV
  FROM DATA_GRP
 where flag_period = 'PREV_ROLLING_WEEK'
 )
@@ -2990,7 +2990,7 @@ SELECT
         ROW_NUMBER() OVER (PARTITION BY  ARP_CODE, year
                 ORDER BY DEP_ARR DESC, market_segment) R_RANK,
         RANK() OVER (PARTITION BY  ARP_CODE, year
-                ORDER BY DEP_ARR DESC, market_segment) RANK
+                ORDER BY DEP_ARR DESC) RANK
 FROM DATA_GRP
 where year = extract (year from (", mydate, "-1))
 ),
@@ -2999,8 +2999,8 @@ APT_AO_RANK_PREV as
 (
 SELECT
   ARP_CODE, year, market_segment,
-        ROW_NUMBER() OVER (PARTITION BY  ARP_CODE, year
-                ORDER BY DEP_ARR DESC, market_segment) RANK_PREV
+        RANK() OVER (PARTITION BY  ARP_CODE, year
+                ORDER BY DEP_ARR DESC) RANK_PREV
  FROM DATA_GRP
 where year = extract (year from (", mydate, "-1))-1
 )
