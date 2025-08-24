@@ -2704,26 +2704,26 @@ FROM prudev.v_aiu_flt_mark_seg A
      left outer join DIM_APT C  ON  (A.flt_ctfm_ades = C.arp_code)
      left outer join dim_market_segment   d  ON (a.SK_FLT_TYPE_RULE_ID = d.SK_FLT_TYPE_RULE_ID )
  WHERE       (
-                     (     A.flt_lobt >= ", mydate, " -7 -1
-                        AND A.flt_lobt < ", mydate, "-0
+                     (     A.flt_lobt >= ", mydate, " - 7 - 2
+                        AND A.flt_lobt < ", mydate, " + 2
                         AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -7
                         AND A.flt_a_asp_prof_time_entry < ", mydate, "-0
                         )
                         or
-                     (     A.flt_lobt >= ", mydate, " -7 -1-7
-                        AND A.flt_lobt < ", mydate, "-0-7
+                     (     A.flt_lobt >= ", mydate, " -7 -2 - 7
+                        AND A.flt_lobt < ", mydate, "+ 2 - 7
                         AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -7-7
                         AND A.flt_a_asp_prof_time_entry < ", mydate, "-0-7
                         )
                         or
-                     (     A.flt_lobt >= ", mydate, " -7 -1-364
-                        AND A.flt_lobt < ", mydate, "-0-364
+                     (     A.flt_lobt >= ", mydate, " -7 -2- 364
+                        AND A.flt_lobt < ", mydate, " + 2 -364
                         AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -7 -364
                         AND A.flt_a_asp_prof_time_entry < ", mydate, "-0 -364
                         )
                         or
-                        (     A.flt_lobt >= ", mydate, " -((extract (year from (", mydate, "-1))-2019) *364)-7 -1- floor((extract (year from (", mydate, "-1))-2019)/4)*7
-                        AND A.flt_lobt < ", mydate, "-((extract (year from (", mydate, "-1))-2019) *364)- floor((extract (year from (", mydate, "-1))-2019)/4)*7
+                        (     A.flt_lobt >= ", mydate, " -((extract (year from (", mydate, "-1))-2019) *364)-7 -2- floor((extract (year from (", mydate, "-1))-2019)/4)*7
+                        AND A.flt_lobt < ", mydate, "-((extract (year from (", mydate, "-1))-2019) *364) + 2 - floor((extract (year from (", mydate, "-1))-2019)/4)*7
                         AND A.flt_a_asp_prof_time_entry >=  ", mydate, " -((extract (year from (", mydate, "-1))-2019) *364)-7- floor((extract (year from (", mydate, "-1))-2019)/4)*7
                         AND A.flt_a_asp_prof_time_entry < ", mydate, "-((extract (year from (", mydate, "-1))-2019) *364) - floor((extract (year from (", mydate, "-1))-2019)/4)*7
                          )
@@ -2894,7 +2894,7 @@ FROM prudev.v_aiu_flt_mark_seg A
      left outer join DIM_APT C  ON  (A.flt_ctfm_ades = C.arp_code)
      left outer join dim_market_segment   d  ON (a.SK_FLT_TYPE_RULE_ID = d.SK_FLT_TYPE_RULE_ID )
  WHERE
-         A.flt_lobt>= TO_DATE ('01-01-2019', 'dd-mm-yyyy') -1  AND A.flt_lobt < ", mydate, "
+         A.flt_lobt>= TO_DATE ('01-01-2019', 'dd-mm-yyyy') -2  AND A.flt_lobt < ", mydate, " + 2
      AND a.flt_a_asp_prof_time_entry >= TO_DATE ('01-01-2019', 'dd-mm-yyyy')
      AND TO_NUMBER (TO_CHAR (TRUNC (flt_a_asp_prof_time_entry), 'mmdd')) <=   TO_NUMBER (TO_CHAR (", mydate, "-1, 'mmdd'))
        and extract (year from flt_a_asp_prof_time_entry) in (2019, extract(year from (TRUNC (SYSDATE)-1))-1, extract(year from (TRUNC (SYSDATE)-1)))

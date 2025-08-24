@@ -40,7 +40,8 @@ export_query <- function(query, schema = "PRU_DEV") {
   )
 
   dplyr::tbl(con, dplyr::sql(query)) |>
-    collect()
+    collect() |>
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
   # data <- DBI::dbSendQuery(con, query)
   # # ~2.5 min for one day
