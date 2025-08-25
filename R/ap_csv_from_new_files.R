@@ -9,7 +9,7 @@ source(here::here("..", "mobile-app", "R", "helpers.R"))
 source(here::here("..", "mobile-app", "R", "params.R"))
 
 # parameters ----
-current_day <- today() - days(1)
+if (!exists("data_day_date")) {current_day <- today() - days(1)} else {current_day <- data_day_date}
 
 # DIMENSIONS ----
 ## ao group ----  
@@ -306,41 +306,75 @@ from  SWH_FCT.DIM_FLIGHT_TYPE_RULE
 dim_marktet_segment <- export_query(query) 
 
 
+# prep data functions ----
+import_dataframe <- function(dfname) {
+  # import data 
+  mydataframe <- dfname
+  myparquetfile <- paste0(mydataframe, "_day_base.parquet")
+  
+  df_base <- read_parquet_duckdb(here(archive_dir_raw, 
+                                      myparquetfile)
+  ) 
+  
+  # filter to keep days and airports needed
+  if ("ARP_PRU_ID" %in% names(df_base)) {
+    df_alldays <- df_base %>% 
+      filter(ARP_PRU_ID %in% list_airport$APT_ID)  
+  } else if ("DEP_ARP_PRU_ID" %in% names(df_base)) {
+    df_alldays <- df_base %>% 
+      filter(DEP_ARP_PRU_ID %in% list_airport$APT_ID)  
+    
+  }
+
+  # pre-process data
+  if (dfname == "ap_ao") {
+    df_app <- df_alldays %>% 
+      filter(AO_ID != 1777) %>%  # undefined
+      compute(prudence = "lavish") %>%
+      left_join(dim_ao_group, by = c("AO_ID", "AO_CODE")) %>% 
+      summarise(
+        DEP_ARR = sum(DEP_ARR, na.rm = TRUE),
+        .by = c(ENTRY_DATE, ARP_PRU_ID, AO_GRP_CODE, AO_GRP_NAME)
+      )
+    
+  } else if (dfname == "ap_ms") {
+    df_app <- df_alldays %>% collect() %>% 
+      mutate(MS_ID = case_when(
+        MS_ID == -1 | MS_ID ==  1 | MS_ID == 5 ~ 0,
+        .default = MS_ID)
+      ) %>% 
+      group_by(ENTRY_DATE, ARP_PRU_ID, MS_ID) %>%
+      summarise(DEP_ARR = sum(DEP_ARR, na.rm = TRUE)) %>% 
+      ungroup() %>% 
+      left_join(dim_marktet_segment, by = "MS_ID") %>% 
+      left_join(dim_airport, by = c("ARP_PRU_ID" = "APT_ID"))
+    
+  } else {
+    df_app <- df_alldays
+  }
+
+  return(df_app) 
+}
+
+
 # ap ao grp ----
-mydataframe <- "ap_ao_day_base"
-myparquetfile <- paste0(mydataframe, ".parquet")
-
-# import data
-df_base <- read_parquet_duckdb(here(archive_dir_raw, 
-                                    myparquetfile)
-) 
-
-# filter to keep days and airports needed
-df_alldays <- df_base %>% 
-  filter(ARP_PRU_ID %in% list_airport$APT_ID) %>% 
-  filter(AO_ID != 1777)  # undefined
-
-df_app <- df_alldays %>% 
-  compute(prudence = "lavish") %>%
-  left_join(dim_ao_group, by = c("AO_ID", "AO_CODE")) %>% 
-  summarise(
-    DEP_ARR = sum(DEP_ARR, na.rm = TRUE),
-    .by = c(ENTRY_DATE, ARP_PRU_ID, AO_GRP_CODE, AO_GRP_NAME)
-  )
-
 ap_ao <- function(mydate =  current_day) {
-  # mydate <- current_day
+  mydataframe <-  "ap_ao"
+  
+  df_app <- import_dataframe(mydataframe)
+
+    # mydate <- current_day
   data_day_text <- mydate %>% format("%Y%m%d")
   day_prev_week <- mydate + days(-7)
   day_prev_year <- mydate + days(-364)
   day_2019 <- mydate - days(364 * (year(mydate) - 2019) + floor((year(mydate) - 2019) / 4) * 7)
   current_year = year(mydate)
   
-  ## day ----
-  mydataframe <- "ap_ao_data_day_raw"
-  mycsvfile <- paste0(data_day_text, "_", mydataframe, ".csv")
   stakeholder <- str_sub(mydataframe, 1, 2)
   
+  ## day ----
+  mycsvfile <- paste0(data_day_text, "_", mydataframe, "_data_day_raw.csv")
+
   df_day <- df_app %>%
     filter(ENTRY_DATE %in% c(mydate, day_prev_week, day_2019, day_prev_year)) %>% 
     left_join(dim_airport, by = c("ARP_PRU_ID" = "APT_ID")) %>% 
@@ -395,36 +429,34 @@ ap_ao <- function(mydate =  current_day) {
   # test <- df_day %>% 
   #   filter(ARP_CODE == "EFHK") 
   
-  # # dcheck
-  df <- read_xlsx(
-    path  = fs::path_abs(
-      str_glue(ap_base_file),
-      start = ap_base_dir),
-    sheet = "apt_ao_day",
-    range = cell_limits(c(1, 1), c(NA, NA))) |>
-    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-  
-  df <- df %>% arrange(ARP_CODE, FLAG_DAY, R_RANK, AO_GRP_NAME)
-  
-  for (i in 1:nrow(list_airport)) {
-    df1 <- df %>% filter(ARP_CODE == list_airport$APT_ICAO_CODE[i])
-    
-    df_day1 <- df_day %>% filter(ARP_CODE == list_airport$APT_ICAO_CODE[i])
-    
-    print(paste(list_airport$APT_ICAO_CODE[i], all.equal(df1, df_day1)))
-    
-    # for (j in 1:nrow(df1)) {
-    # 
-    #   print(paste(j, df1[[j,4]] == df_day1[[j,4]]))
-    # 
-    # }
-  }
+  # dcheck
+  # df <- read_xlsx(
+  #   path  = fs::path_abs(
+  #     str_glue(ap_base_file),
+  #     start = ap_base_dir),
+  #   sheet = "apt_ao_day",
+  #   range = cell_limits(c(1, 1), c(NA, NA))) |>
+  #   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+  # 
+  # df <- df %>% arrange(ARP_CODE, FLAG_DAY, R_RANK, AO_GRP_NAME)
+  # 
+  # for (i in 1:nrow(list_airport)) {
+  #   df1 <- df %>% filter(ARP_CODE == list_airport$APT_ICAO_CODE[i])
+  # 
+  #   df_day1 <- df_day %>% filter(ARP_CODE == list_airport$APT_ICAO_CODE[i])
+  # 
+  #   print(paste(list_airport$APT_ICAO_CODE[i], all.equal(df1, df_day1)))
+  # 
+  #   # for (j in 1:nrow(df1)) {
+  #   #
+  #   #   print(paste(j, df1[[j,4]] == df_day1[[j,4]]))
+  #   #
+  #   # }
+  # }
 
 ## week ----
-  mydataframe <- "ap_ao_data_week_raw"
-  mycsvfile <- paste0(data_day_text, "_", mydataframe, ".csv")
-  stakeholder <- str_sub(mydataframe, 1, 2)
-  
+  mycsvfile <- paste0(data_day_text, "_", mydataframe, "_data_week_raw.csv")
+
   df_week <- df_app %>%
     filter(
       ENTRY_DATE %in% c(seq.Date(mydate-6, mydate)) |
@@ -493,10 +525,10 @@ ap_ao <- function(mydate =  current_day) {
   
   df_week %>% write_csv(here(archive_dir_raw, stakeholder, mycsvfile))
   
-  # test <- df_week %>% 
-  #   filter(ARP_CODE == "LLBG")
-  # 
-  # # dcheck
+  test <- df_week %>%
+    filter(ARP_CODE == "LLBG")
+
+  # dcheck
   # df <- read_xlsx(
   #   path  = fs::path_abs(
   #     str_glue(ap_base_file),
@@ -506,26 +538,24 @@ ap_ao <- function(mydate =  current_day) {
   #   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
   # 
   # df <- df %>% arrange(ARP_CODE, PERIOD_TYPE, R_RANK, AO_GRP_NAME)
-
+  # 
   # for (i in 1:nrow(list_airport)) {
   #   df1 <- df %>% filter(ARP_CODE == list_airport$APT_ICAO_CODE[i])
   # 
   #   df_day1 <- df_week %>% filter(ARP_CODE == list_airport$APT_ICAO_CODE[i])
   # 
   #   print(paste(list_airport$APT_ICAO_CODE[i], all.equal(df1, df_day1)))
-    #
-    # for (j in 1:nrow(df)) {
-    #
-    #   print(paste(j, df1[[j,1]] == df_day1[[j,1]]))
-    #
-    # }
+  # 
+  #   # for (j in 1:nrow(df)) {
+  #   #
+  #   #   print(paste(j, df1[[j,1]] == df_day1[[j,1]]))
+  #   #
+  #   # }
   # }
   
   ## year ----
-  mydataframe <- "ap_ao_data_y2d_raw"
-  mycsvfile <- paste0(data_day_text, "_", mydataframe, ".csv")
-  stakeholder <- str_sub(mydataframe, 1, 2)
-  
+  mycsvfile <- paste0(data_day_text, "_", mydataframe, "_data_y2d_raw.csv")
+
   y2d_dates <- seq.Date(ymd(paste0(2019,"01","01")),
                         mydate) %>% as_tibble() %>% 
     filter(year(value) %in% c(2019, current_year-1, current_year)) %>%
@@ -596,7 +626,7 @@ ap_ao <- function(mydate =  current_day) {
   
   df_y2d %>% write_csv(here(archive_dir_raw, stakeholder, mycsvfile))
   
-  # # dcheck 
+# dcheck
 #   df <- read_xlsx(
 #     path  = fs::path_abs(
 #       str_glue(ap_base_file),
@@ -606,53 +636,44 @@ ap_ao <- function(mydate =  current_day) {
 #     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 # 
 #   df <- df %>% arrange(ARP_CODE, desc(YEAR), R_RANK, AO_GRP_NAME)
-#   
+# 
 #   for (i in 1:nrow(list_airport)) {
 #     df1 <- df %>% filter(ARP_CODE == list_airport$APT_ICAO_CODE[i])
 #     df_y2d1 <- df_y2d %>% filter(ARP_CODE == list_airport$APT_ICAO_CODE[i])
 # 
 #     print(paste(list_airport$APT_ICAO_CODE[i], all.equal(df1, df_y2d1)))
-#     
-# # 
+# 
+# #
 # #       for (j in 1:1) {
-# # 
+# #
 # #         print(paste(j, df1[[j,6]], df_y2d1[[j,6]]))
-# # 
+# #
 # #       }
-#     
+# 
 #   }
   
   print(mydate)
 }
 
 # ap st des ----
-mydataframe <- "ap_st_des_day_base"
-myparquetfile <- paste0(mydataframe, ".parquet")
-
-
-# import data
-df_base <- read_parquet_duckdb(here(archive_dir_raw, 
-                                    myparquetfile)
-) 
-
-# filter to keep days and airports needed
-df_alldays <- df_base %>% 
-  filter(DEP_ARP_PRU_ID %in% list_airport$APT_ID)
-
 ap_st_des <- function(mydate =  current_day) {
-  # mydate <- current_day
+  mydataframe <-  "ap_st_des"
+  
+  df_app <- import_dataframe(mydataframe)
+  
+    # mydate <- current_day
   data_day_text <- mydate %>% format("%Y%m%d")
   day_prev_week <- mydate + days(-7)
   day_prev_year <- mydate + days(-364)
   day_2019 <- mydate - days(364 * (year(mydate) - 2019) + floor((year(mydate) - 2019) / 4) * 7)
   current_year = year(mydate)
   
-  ## day ----
-  mydataframe <- "ap_st_des_data_day_raw"
-  mycsvfile <- paste0(data_day_text, "_", mydataframe, ".csv")
   stakeholder <- str_sub(mydataframe, 1, 2)
   
-  df_day <- df_alldays %>%
+  ## day ----
+  mycsvfile <- paste0(data_day_text, "_", mydataframe, "_data_day_raw.csv")
+
+  df_day <- df_app %>%
     filter(ENTRY_DATE %in% c(mydate, day_prev_week, day_2019, day_prev_year)) %>% 
     left_join(dim_airport, by = c("DEP_ARP_PRU_ID" = "APT_ID")) %>% 
     left_join(dim_iso_country, by = c("ARR_ISO_CTY_CODE" = "ISO_COUNTRY_CODE")) %>% 
@@ -731,11 +752,9 @@ ap_st_des <- function(mydate =  current_day) {
   # }
 
 ## week ----
-  mydataframe <- "ap_st_des_data_week_raw"
-  mycsvfile <- paste0(data_day_text, "_", mydataframe, ".csv")
-  stakeholder <- str_sub(mydataframe, 1, 2)
-  
-  df_week <- df_alldays %>%
+  mycsvfile <- paste0(data_day_text, "_", mydataframe, "_data_week_raw.csv")
+
+  df_week <- df_app %>%
     filter(
       ENTRY_DATE %in% c(seq.Date(mydate-6, mydate)) |
         ENTRY_DATE %in% c(seq.Date(day_prev_week-6, day_prev_week))|
@@ -817,22 +836,21 @@ ap_st_des <- function(mydate =  current_day) {
   # 
   # for (i in 1:nrow(list_airport)) {
   #   df1 <- df %>% filter(ARP_CODE == list_airport$APT_ICAO_CODE[i])
-  #   
+  # 
   #   df_day1 <- df_week %>% filter(ARP_CODE == list_airport$APT_ICAO_CODE[i])
-  #   
+  # 
   #   print(paste(list_airport$APT_ICAO_CODE[i], all.equal(df1, df_day1)))
-  #   
+  # 
   #   # for (j in 1:nrow(df1)) {
-  #   # 
+  #   #
   #   #   print(paste(j, df1[[j,4]] == df_day1[[j,4]]))
-  #   # 
+  #   #
   #   # }
   # }
-  # 
+
+  
   ## year ----
-  mydataframe <- "ap_st_des_data_y2d_raw"
-  mycsvfile <- paste0(data_day_text, "_", mydataframe, ".csv")
-  stakeholder <- str_sub(mydataframe, 1, 2)
+  mycsvfile <- paste0(data_day_text, "_", mydataframe, "_data_y2d_raw.csv")
 
   y2d_dates <- seq.Date(ymd(paste0(2019,"01","01")),
                         mydate) %>% as_tibble() %>%
@@ -840,7 +858,7 @@ ap_st_des <- function(mydate =  current_day) {
     filter(format(value, "%m-%d") <= format(mydate, "%m-%d")) %>%
     pull()
 
-  df_y2d <- df_alldays %>%
+  df_y2d <- df_app %>%
     compute(prudence = "lavish") %>%
     mutate(
       YEAR = year(ENTRY_DATE)
@@ -927,37 +945,23 @@ ap_st_des <- function(mydate =  current_day) {
 }
   
 # ap ap des ----
-mydataframe <- "ap_ap_des_day_base"
-myparquetfile <- paste0(mydataframe, ".parquet")
-
-# import data
-df_base <- read_parquet_duckdb(here(archive_dir_raw, 
-                                    myparquetfile)
-) 
-
-# filter to keep days and airports needed
-df_alldays <- df_base %>% 
-  filter(DEP_ARP_PRU_ID %in% list_airport$APT_ID) 
-
-df_app <- df_alldays %>% 
-  # group_by(ENTRY_DATE, DEP_ARP_PRU_ID, ARR_ARP_PRU_ID) %>%
-  summarise(DEP = sum(DEP, na.rm = TRUE),
-            .by = c(ENTRY_DATE, DEP_ARP_PRU_ID, ARR_ARP_PRU_ID)) %>% 
-  arrange(desc(ENTRY_DATE), DEP_ARP_PRU_ID, desc(DEP)) 
-
 ap_ap_des <- function(mydate =  current_day) {
-    # mydate <- current_day
+    
+  mydataframe <-  "ap_ap_des"
+  df_app <- import_dataframe(mydataframe)
+  
+  # mydate <- current_day
   data_day_text <- mydate %>% format("%Y%m%d")
   day_prev_week <- mydate + days(-7)
   day_prev_year <- mydate + days(-364)
   day_2019 <- mydate - days(364 * (year(mydate) - 2019) + floor((year(mydate) - 2019) / 4) * 7)
   current_year = year(mydate)
   
-  ## day ----
-  mydataframe <- "ap_ap_des_data_day_raw"
-  mycsvfile <- paste0(data_day_text, "_", mydataframe, ".csv")
   stakeholder <- str_sub(mydataframe, 1, 2)
   
+  ## day ----
+  mycsvfile <- paste0(data_day_text, "_", mydataframe, "_data_day_raw.csv")
+
   df_day <- df_app %>%
     filter(ENTRY_DATE %in% c(mydate, day_prev_week, day_2019, day_prev_year)) %>% 
     left_join(dim_airport, by = c("DEP_ARP_PRU_ID" = "APT_ID")) %>% 
@@ -1026,7 +1030,7 @@ ap_ap_des <- function(mydate =  current_day) {
   # for (i in 1:nrow(list_airport)) {
   #   df1 <- df %>% filter(ARP_CODE_DEP == list_airport$APT_ICAO_CODE[i])
   # 
-  #   df_day1 <- df_day %>% filter(ARP_CODE_DEP == list_airport$APT_ICAO_CODE[i]) 
+  #   df_day1 <- df_day %>% filter(ARP_CODE_DEP == list_airport$APT_ICAO_CODE[i])
   # 
   #   print(paste(list_airport$APT_ICAO_CODE[i], all.equal(df1, df_day1)))
   #   #
@@ -1038,10 +1042,8 @@ ap_ap_des <- function(mydate =  current_day) {
   # }
   
   ## week ----
-  mydataframe <- "ap_ap_des_data_week_raw"
-  mycsvfile <- paste0(data_day_text, "_", mydataframe, ".csv")
-  stakeholder <- str_sub(mydataframe, 1, 2)
-  
+  mycsvfile <- paste0(data_day_text, "_", mydataframe, "_data_week_raw.csv")
+
   df_week <- df_app %>%
     filter(
       ENTRY_DATE %in% c(seq.Date(mydate-6, mydate)) |
@@ -1124,9 +1126,9 @@ ap_ap_des <- function(mydate =  current_day) {
   # df <- df %>% arrange(ARP_CODE_DEP, FLAG_PERIOD, R_RANK, ARP_NAME_ARR)
   # 
   # for (i in 1:nrow(list_airport)) {
-  #   df1 <- df %>% filter(ARP_CODE_DEP == list_airport$APT_ICAO_CODE[i]) 
+  #   df1 <- df %>% filter(ARP_CODE_DEP == list_airport$APT_ICAO_CODE[i])
   # 
-  #   df_day1 <- df_week %>% filter(ARP_CODE_DEP == list_airport$APT_ICAO_CODE[i]) 
+  #   df_day1 <- df_week %>% filter(ARP_CODE_DEP == list_airport$APT_ICAO_CODE[i])
   # 
   #   print(paste(list_airport$APT_ICAO_CODE[i], all.equal(df1, df_day1)))
   #   #
@@ -1136,12 +1138,10 @@ ap_ap_des <- function(mydate =  current_day) {
   #   #
   #   # }
   # }
-  
+  # 
   ## year ----
-  mydataframe <- "ap_ap_des_data_y2d_raw"
-  mycsvfile <- paste0(data_day_text, "_", mydataframe, ".csv")
-  stakeholder <- str_sub(mydataframe, 1, 2)
-  
+  mycsvfile <- paste0(data_day_text, "_", mydataframe, "_data_y2d_raw.csv")
+
   y2d_dates <- seq.Date(ymd(paste0(2019,"01","01")),
            mydate) %>% as_tibble() %>% 
     filter(year(value) %in% c(2019, current_year-1, current_year)) %>%
@@ -1231,48 +1231,28 @@ ap_ap_des <- function(mydate =  current_day) {
   # 
   #   print(paste(list_airport$APT_ICAO_CODE[i], all.equal(df1, ap_ms_app_day1)))
   # }
-  # 
+
   
   print(mydate)
   
 }
 
 # ap ms ----
-mydataframe <- "ap_ms_day_base"
-myparquetfile <- paste0(mydataframe, ".parquet")
-
-# import data
-df_base <- read_parquet_duckdb(here(archive_dir_raw, 
-                                    myparquetfile)
-) 
-
-# filter to keep days and airports needed
-df_alldays <- df_base %>% 
-  filter(ARP_PRU_ID %in% list_airport$APT_ID) 
-
-df_app <- df_alldays %>% collect() %>% 
-  mutate(MS_ID = case_when(
-    MS_ID == -1 | MS_ID ==  1 | MS_ID == 5 ~ 0,
-    .default = MS_ID)
-  ) %>% 
-  group_by(ENTRY_DATE, ARP_PRU_ID, MS_ID) %>%
-  summarise(DEP_ARR = sum(DEP_ARR, na.rm = TRUE)) %>% 
-  ungroup() %>% 
-  left_join(dim_marktet_segment, by = "MS_ID") %>% 
-  left_join(dim_airport, by = c("ARP_PRU_ID" = "APT_ID"))
-
 ap_ms <- function(mydate =  current_day) {
-  ## day ----
+  mydataframe <-  "ap_ms"
+  df_app <- import_dataframe(mydataframe)
+  
   data_day_text <- mydate %>% format("%Y%m%d")
   day_prev_week <- mydate + days(-7)
   day_prev_year <- mydate + days(-364)
   day_2019 <- mydate - days(364 * (year(mydate) - 2019) + floor((year(mydate) - 2019) / 4) * 7)
   current_year = year(mydate)
   
-  mydataframe <- "ap_ms_data_day_raw"
-  mycsvfile <- paste0(data_day_text, "_", mydataframe, ".csv")
   stakeholder <- str_sub(mydataframe, 1, 2)
-  
+
+  ## day ----
+  mycsvfile <- paste0(data_day_text, "_", mydataframe, "_data_day_raw.csv")
+
   df_day <- df_app %>% 
     filter(ENTRY_DATE %in% c(mydate, day_prev_week, day_2019, day_prev_year)) %>% 
     group_by(APT_ICAO_CODE, ENTRY_DATE) %>% 
@@ -1341,13 +1321,11 @@ ap_ms <- function(mydate =  current_day) {
   # 
   #   print(paste(list_airport$APT_ICAO_CODE[i], all.equal(df1, ap_ms_app_day1)))
   # }
-  # 
+
   
   ## week ----
-  mydataframe <- "ap_ms_data_week_raw"
-  mycsvfile <- paste0(data_day_text, "_", mydataframe, ".csv")
-  stakeholder <- str_sub(mydataframe, 1, 2)
-  
+  mycsvfile <- paste0(data_day_text, "_", mydataframe, "_data_week_raw.csv")
+
   df_week <- df_app %>% 
     filter(
       (ENTRY_DATE >= mydate - days(6) & ENTRY_DATE <= mydate) | 
@@ -1433,9 +1411,7 @@ ap_ms <- function(mydate =  current_day) {
   # }
   
   ## year ----
-  mydataframe <- "ap_ms_data_y2d_raw"
-  mycsvfile <- paste0(data_day_text, "_", mydataframe, ".csv")
-  stakeholder <- str_sub(mydataframe, 1, 2)
+  mycsvfile <- paste0(data_day_text, "_", mydataframe, "_data_y2d_raw.csv")
   
   df_y2d <- df_app %>% 
     filter(format(ENTRY_DATE, "%m-%d") <= format(mydate, "%m-%d")) %>%
@@ -1517,7 +1493,9 @@ ap_ms <- function(mydate =  current_day) {
 
 
 # define days
-wef <- "2024-01-01"  
-til <- "2025-08-23"
+wef <- "2025-08-24"  
+til <- "2025-08-24"
 
-purrr::walk(seq(ymd(til), ymd(wef), by = "-1 day"), ap_st_des)
+purrr::walk(seq(ymd(til), ymd(wef), by = "-1 day"), ap_ms)
+
+

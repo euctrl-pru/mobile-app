@@ -4,9 +4,42 @@ library(duckplyr)
 library(lubridate)
 library(here)
 library(RODBC)
+library(sendmailR)
 
 source(here::here("..", "mobile-app", "R", "helpers.R"))
 source(here::here("..", "mobile-app", "R", "params.R"))
+
+# check if base aiu_flt table is updated
+check_synthesis <- read_xlsx(
+  path  = here(nw_base_dir, "000_Initial_check.xlsx"),
+  sheet = "Sheet1",
+  range = cell_limits(c(6, 7), c(7, 7))) %>%
+  pull()
+
+if (check_synthesis == 0) {
+  from    <- "oscar.alfaro@eurocontrol.int"
+  to      <- c("oscar.alfaro@eurocontrol.int"
+               # ,
+               # "quinten.goens@eurocontrol.int",
+               # "enrico.spinielli@eurocontrol.int",
+               # "delia.budulan@eurocontrol.int",
+               # "nora.cashman@eurocontrol.int"
+               # ,  "denis.huet@eurocontrol.int"
+  )
+  # cc      <- c("enrico.spinielli@eurocontrol.int")
+  control <- list(smtpServer="mailservices.eurocontrol.int")
+  sbj = "Synthesis 0 flights detected - update halted"
+  msg = "Check Synthesis update"
+  
+  sendmail(from = from, to = to,
+           # cc = cc,
+           subject = sbj, msg = msg,
+           control = control)
+  
+  stop()
+}
+
+
 
 query_from <- "TRUNC (SYSDATE) - 7"
 source(here::here("..", "mobile-app", "R", "z_base_queries_ap.R"))

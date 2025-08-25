@@ -11,6 +11,9 @@ library(purrr)
 ## params
 source(here("..", "mobile-app", "R", "params.R"))
 
+## update basic tables
+source(here("..", "mobile-app", "R", "update_base_tables.R"))
+
 destination_dir <- '//ihx-vdm05/LIVE_var_www_performance$/briefing'
 network_data_folder_prod <- here(destination_dir, "data", "v4")
 network_data_folder_dev <- here(destination_dir, "data", "v5")
@@ -22,12 +25,15 @@ network_data_folder_dev <- here(destination_dir, "data", "v5")
 archive_mode <- FALSE
 
 if (archive_mode) {
-  wef <- "2024-01-01"  #included in output
-  til <- "2024-10-23"  #included in output
+  wef <- "2025-08-02"  #included in output
+  til <- "2025-08-02"  #included in output
   data_day_date <- seq(ymd(wef), ymd(til), by = "day")
 } else {
   data_day_date <- lubridate::today(tzone = "") +  days(-1)
 }
+
+## create csvs from basic tables
+source(here("..", "mobile-app", "R", "ap_csv_from_new_files.R"))
 
 # set the stakeholders you want to generate when using archive mode
 stakeholders <- if(!archive_mode) {
@@ -36,12 +42,13 @@ stakeholders <- if(!archive_mode) {
     # "nw",
     # "st",
     # "ao",
-    "ap",
+    # "ap",
+    "sp",
     NULL)
 }
 
 # check data status ----
-files_to_read <- stakeholders %>%
+files_to_read <- setdiff(stakeholders, "ap") %>%
   compact() %>%  # Remove NULLs
   map_chr(~ here(get(paste0(.x, "_base_dir")), get(paste0(.x, "_base_file"))))
 
@@ -172,12 +179,12 @@ if (data_status) {
 
 from    <- "oscar.alfaro@eurocontrol.int"
 to      <- c("oscar.alfaro@eurocontrol.int"
-             ,
-             "quinten.goens@eurocontrol.int",
-             "enrico.spinielli@eurocontrol.int",
-             "delia.budulan@eurocontrol.int",
-             "nora.cashman@eurocontrol.int"
-             ,  "denis.huet@eurocontrol.int"
+             # ,
+             # "quinten.goens@eurocontrol.int",
+             # "enrico.spinielli@eurocontrol.int",
+             # "delia.budulan@eurocontrol.int",
+             # "nora.cashman@eurocontrol.int"
+             # ,  "denis.huet@eurocontrol.int"
 )
 # cc      <- c("enrico.spinielli@eurocontrol.int")
 control <- list(smtpServer="mailservices.eurocontrol.int")
