@@ -13,9 +13,10 @@ source(here::here("..", "mobile-app", "R", "z_base_queries_ap.R"))
 
 # update base table ----
 mydataframes <- c(
+  "ap_ao_day_base",
   "ap_st_des_day_base",
-  "ap_ms_day_base",
   "ap_ap_des_day_base",
+  "ap_ms_day_base",
   NULL
 )
 
