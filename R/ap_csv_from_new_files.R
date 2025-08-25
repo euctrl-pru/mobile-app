@@ -652,7 +652,7 @@ ap_ao <- function(mydate =  current_day) {
 # 
 #   }
   
-  print(mydate)
+  print(paste0(mydataframe, mydate))
 }
 
 # ap st des ----
@@ -941,7 +941,7 @@ ap_st_des <- function(mydate =  current_day) {
   #   print(paste(list_airport$APT_ICAO_CODE[i], all.equal(df1, ap_ms_app_day1)))
   # }
   
-  print(mydate)
+  print(paste0(mydataframe, mydate))
 }
   
 # ap ap des ----
@@ -1233,7 +1233,7 @@ ap_ap_des <- function(mydate =  current_day) {
   # }
 
   
-  print(mydate)
+  print(paste0(mydataframe, mydate))
   
 }
 
@@ -1488,7 +1488,7 @@ ap_ms <- function(mydate =  current_day) {
   #   print(paste(list_airport$APT_ICAO_CODE[i], all.equal(df1, ap_ms_app_day1)))
   # }
   
-  print(mydate)
+  print(paste0(mydataframe, mydate))
 }
 
 # execute functions ----
