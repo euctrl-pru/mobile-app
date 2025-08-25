@@ -1491,11 +1491,11 @@ ap_ms <- function(mydate =  current_day) {
   print(mydate)
 }
 
+# execute functions ----
+# purrr::walk(seq(ymd(til), ymd(wef), by = "-1 day"), ap_ms)
 
-# define days
-wef <- "2025-08-24"  
-til <- "2025-08-24"
-
-purrr::walk(seq(ymd(til), ymd(wef), by = "-1 day"), ap_ms)
-
+purrr::walk(current_day, ap_ao)
+purrr::walk(current_day, ap_st_des)
+purrr::walk(current_day, ap_ap_des)
+purrr::walk(current_day, ap_ms)
 
