@@ -11,9 +11,6 @@ library(purrr)
 ## params
 source(here("..", "mobile-app", "R", "params.R"))
 
-## update basic tables
-source(here("..", "mobile-app", "R", "update_base_tables.R"))
-
 destination_dir <- '//ihx-vdm05/LIVE_var_www_performance$/briefing'
 network_data_folder_prod <- here(destination_dir, "data", "v4")
 network_data_folder_dev <- here(destination_dir, "data", "v5")
@@ -25,15 +22,19 @@ network_data_folder_dev <- here(destination_dir, "data", "v5")
 archive_mode <- FALSE
 
 if (archive_mode) {
-  wef <- "2025-08-02"  #included in output
-  til <- "2025-08-02"  #included in output
+  wef <- "2025-08-23"  #included in output
+  til <- "2025-08-25"  #included in output
   data_day_date <- seq(ymd(wef), ymd(til), by = "day")
 } else {
   data_day_date <- lubridate::today(tzone = "") +  days(-1)
 }
 
+if (!archive_mode) {
+## update basic tables
+source(here("..", "mobile-app", "R", "update_base_tables.R"))
 ## create csvs from basic tables
 source(here("..", "mobile-app", "R", "ap_csv_from_new_files.R"))
+}
 
 # set the stakeholders you want to generate when using archive mode
 stakeholders <- if(!archive_mode) {
