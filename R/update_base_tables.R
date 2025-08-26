@@ -46,18 +46,18 @@ source(here::here("..", "mobile-app", "R", "z_base_queries_ap.R"))
 
 # update base table ----
 mydataframes <- c(
-  "ap_ao_day_base",
-  "ap_st_des_day_base",
-  "ap_ap_des_day_base",
-  "ap_ms_day_base",
+  "ap_ao",
+  "ap_st_des",
+  "ap_ap_des",
+  "ap_ms_day",
   NULL
 )
 
 update_base_tables <- function(mydataframe) {
 # mydataframe <-   "ap_st_des_day_base"
-  myarchivefile <- paste0(mydataframe, ".parquet")
-  mybackupfile <- paste0(mydataframe, "_backup.parquet")
-  query_7d <- get(paste0(mydataframe, "_query"))
+  myarchivefile <- paste0(mydataframe, "_day_base.parquet")
+  mybackupfile <- paste0(mydataframe, "_day_base_backup.parquet")
+  query_7d <- get(paste0(mydataframe, "_day_base_query"))
   
   # import data
   df_tmp <- read_parquet_duckdb(here(archive_dir_raw, myarchivefile))

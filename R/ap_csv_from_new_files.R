@@ -652,7 +652,7 @@ ap_ao <- function(mydate =  current_day) {
 # 
 #   }
   
-  print(paste0(mydataframe, mydate))
+  print(paste(mydataframe, mydate))
 }
 
 # ap st des ----
@@ -941,7 +941,7 @@ ap_st_des <- function(mydate =  current_day) {
   #   print(paste(list_airport$APT_ICAO_CODE[i], all.equal(df1, ap_ms_app_day1)))
   # }
   
-  print(paste0(mydataframe, mydate))
+  print(paste(mydataframe, mydate))
 }
   
 # ap ap des ----
@@ -1233,7 +1233,7 @@ ap_ap_des <- function(mydate =  current_day) {
   # }
 
   
-  print(paste0(mydataframe, mydate))
+  print(paste(mydataframe, mydate))
   
 }
 
@@ -1488,11 +1488,13 @@ ap_ms <- function(mydate =  current_day) {
   #   print(paste(list_airport$APT_ICAO_CODE[i], all.equal(df1, ap_ms_app_day1)))
   # }
   
-  print(paste0(mydataframe, mydate))
+  print(paste(mydataframe, mydate))
 }
 
 # execute functions ----
-# purrr::walk(seq(ymd(til), ymd(wef), by = "-1 day"), ap_ms)
+# wef <- "2024-01-01"  #included in output
+# til <- "2024-05-17"  #included in output
+# current_day <- seq(ymd(til), ymd(wef), by = "-1 day")
 
 purrr::walk(current_day, ap_ao)
 purrr::walk(current_day, ap_st_des)
