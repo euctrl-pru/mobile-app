@@ -50,6 +50,21 @@ export_query <- function(query, schema = "PRU_DEV") {
 }
 
 
+export_query_keep_time <- function(query, schema = "PRU_DEV") {
+  withr::local_envvar(c(
+    "TZ" = "UTC",
+    "ORA_SDTZ" = "UTC",
+    "NLS_LANG" = ".AL32UTF8"
+  ))
+  
+  con <- withr::local_db_connection(
+    eurocontrol::db_connection(schema = schema)
+  )
+  
+  dplyr::tbl(con, dplyr::sql(query)) |>
+    collect() 
+}
+
 # save json file
 save_json <- function(df, filename, mydate = data_day_date, archive_file = TRUE) {
   data_day_text_dash <- mydate %>% format("%Y-%m-%d")
@@ -713,7 +728,7 @@ where (substr(ADEP, 1,2) in ('GC', 'GE', 'LE') or substr(ADES, 1,2) in ('GC', 'G
 "
   )
 
-  punct_data_raw_raw <- export_query(query1)
+  punct_data_raw_raw <- export_query_keep_time(query1)
 
   punct_data_raw_calc <- punct_data_raw_raw |>
     # mutate(across(.cols = where(is.instant), ~ as.POSIXct(.x, format="%Y-%m-%d %H:%M:%S")))  |>
