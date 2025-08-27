@@ -435,7 +435,6 @@ WHERE
      count(flt_uid) as flight
   FROM DATA_DAY a  
   where ao_id != 99999
-  AND ao_code = 'AEA'
 GROUP BY  
        a.entry_date,
       a.ao_id,

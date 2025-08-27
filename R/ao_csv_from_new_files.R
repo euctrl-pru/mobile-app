@@ -326,7 +326,7 @@ dim_marktet_segment <- export_query(query)
 # prep data functions ----
 import_dataframe <- function(dfname) {
   # import data 
-  # mydataframe <- "ao_ap_des"
+  # mydataframe <- "ao_ap_pair"
   mydataframe <- dfname
   myparquetfile <- paste0(mydataframe, "_day_base.parquet")
   
@@ -357,8 +357,17 @@ import_dataframe <- function(dfname) {
           FLIGHT = sum(FLIGHT, na.rm = TRUE),
           .by = c(ENTRY_DATE, AO_GRP_CODE, AO_GRP_NAME, DEP_ARP_PRU_ID)
         )
+    } else if (dfname == "ao_ap_pair"){
+      
+      df_app <- df_alldays %>% 
+        compute(prudence = "lavish") %>%
+        left_join(list_ao, by = c("AO_ID", "AO_CODE")) %>%
+        summarise(
+          FLIGHT = sum(FLIGHT, na.rm = TRUE),
+          .by = c(ENTRY_DATE, AO_GRP_CODE, AO_GRP_NAME, ARP_PRU_ID_1, ARP_PRU_ID_2)
+        )
     } else {
-    df_app <- df_alldays
+      df_app <- df_alldays
   }
 
   return(df_app) 
@@ -975,6 +984,324 @@ ao_ap_dep <- function(mydate =  current_day) {
 }
 
 
+# ao ap pair ----
+ao_ap_pair <- function(mydate =  current_day) {
+  mydataframe <-  "ao_ap_pair"
+  
+  df_app <- import_dataframe(mydataframe)
+  
+  # mydate <- today()- days(1)
+  data_day_text <- mydate %>% format("%Y%m%d")
+  day_prev_week <- mydate + days(-7)
+  day_prev_year <- mydate + days(-364)
+  day_2019 <- mydate - days(364 * (year(mydate) - 2019) + floor((year(mydate) - 2019) / 4) * 7)
+  current_year = year(mydate)
+  
+  stakeholder <- str_sub(mydataframe, 1, 2)
+  
+  ## day ----
+  mycsvfile <- paste0(data_day_text, "_", mydataframe, "_data_day_raw.csv")
+  
+  df_day <- df_app %>%
+    filter(ENTRY_DATE %in% c(mydate, day_prev_week, day_2019, day_prev_year)) %>% 
+    left_join(dim_airport, by = c("ARP_PRU_ID_1" = "APT_ID")) %>% 
+    left_join(dim_airport, by = c("ARP_PRU_ID_2" = "APT_ID"), 
+              suffix = c("_1", "_2")) %>% 
+    mutate(AIRPORT_PAIR = case_when(
+      APT_NAME_1 <= APT_NAME_2 ~ paste0(APT_NAME_1, "<->", APT_NAME_2),
+      .default = paste0(APT_NAME_2, "<->", APT_NAME_1)
+                                    )
+      ) %>% 
+    group_by(AO_GRP_CODE, ENTRY_DATE) %>%
+    arrange(AO_GRP_CODE, ENTRY_DATE, desc(FLIGHT), AIRPORT_PAIR) %>% 
+    mutate(
+      R_RANK = case_when( 
+        ENTRY_DATE == mydate ~ row_number(),
+        .default = NA
+      ),
+      RANK = case_when( 
+        ENTRY_DATE == mydate ~ min_rank(desc(FLIGHT)),
+        .default = NA
+      ),
+      RANK_PREV = case_when( 
+        ENTRY_DATE == day_prev_week ~ min_rank(desc(FLIGHT)),
+        .default = NA
+      ),
+      FLAG_PERIOD = case_when( 
+        ENTRY_DATE == mydate ~ "CURRENT_DAY",
+        ENTRY_DATE == day_prev_week ~ "DAY_PREV_WEEK",
+        ENTRY_DATE == day_2019 ~ "DAY_2019",
+        ENTRY_DATE == day_prev_year ~ "DAY_PREV_YEAR",
+      )
+    ) %>% 
+    ungroup() %>% 
+    group_by(AO_GRP_CODE, AIRPORT_PAIR) %>% 
+    arrange(AO_GRP_CODE, AIRPORT_PAIR, desc(ENTRY_DATE)) %>% 
+    fill(RANK, .direction = "down") %>% 
+    fill(R_RANK, .direction = "down") %>% 
+    fill(RANK_PREV, .direction = "down") %>% 
+    fill(RANK_PREV, .direction = "up") %>% 
+    ungroup() %>% 
+    filter(R_RANK < 11) %>% 
+    mutate(TO_DATE = max(ENTRY_DATE)) %>% 
+    select(
+      AO_GRP_NAME,
+      AO_GRP_CODE,
+      FLAG_DAY = FLAG_PERIOD,
+      AIRPORT_PAIR,
+      FLIGHT,
+      R_RANK,
+      RANK,
+      RANK_PREV_WEEK = RANK_PREV,
+      TO_DATE
+    ) %>% 
+    arrange(AO_GRP_CODE, FLAG_DAY, R_RANK, AIRPORT_PAIR)
+  
+  df_day %>% write_csv(here(archive_dir_raw, stakeholder, mycsvfile))
+  
+  # dcheck
+  df <- read_xlsx(
+    path  = fs::path_abs(
+      str_glue(ao_base_file),
+      start = ao_base_dir),
+    sheet = "ao_apt_pair_day",
+    range = cell_limits(c(1, 1), c(NA, NA))) |>
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+
+  df <- df %>% arrange(AO_GRP_CODE, FLAG_DAY, R_RANK, AIRPORT_PAIR)
+
+  list_ao_group <- unique(df$AO_GRP_CODE)
+  length(list_ao_group)
+  for (i in 2:2) {
+    df1 <- df %>% filter(AO_GRP_CODE == list_ao_group[[i]]) 
+
+    df_day1 <- df_day %>% filter(AO_GRP_CODE == list_ao_group[[i]])
+
+    print(paste(list_ao_group[[i]], all.equal(df1, df_day1)))
+
+    # for (j in 1:nrow(df1)) {
+    # 
+    #   print(paste(j, df1[[j,4]] == df_day1[[j,4]]))
+    # 
+    # }
+  }
+  
+  ## week ----
+  mycsvfile <- paste0(data_day_text, "_", mydataframe, "_data_week_raw.csv")
+  
+  df_week <- df_app %>%
+    filter(
+      ENTRY_DATE %in% c(seq.Date(mydate-6, mydate)) |
+        ENTRY_DATE %in% c(seq.Date(day_prev_week-6, day_prev_week))|
+        ENTRY_DATE %in% c(seq.Date(day_2019-6, day_2019)) |
+        ENTRY_DATE %in% c(seq.Date(day_prev_year-6, day_prev_year))
+    ) %>% 
+    compute(prudence = "lavish") %>%
+    mutate(
+      FLAG_PERIOD = case_when( 
+        (ENTRY_DATE >= mydate - days(6) & ENTRY_DATE <= mydate) ~ "CURRENT_ROLLING_WEEK",
+        (ENTRY_DATE >= day_prev_week - days(6) & ENTRY_DATE <= day_prev_week) ~ "PREV_ROLLING_WEEK",
+        (ENTRY_DATE >= day_2019 - days(6) & ENTRY_DATE <= day_2019) ~ "ROLLING_WEEK_2019",
+        (ENTRY_DATE >= day_prev_year - days(6) & ENTRY_DATE <= day_prev_year) ~ "ROLLING_WEEK_PREV_YEAR"
+      )
+    ) %>% 
+    summarise(
+      FLIGHT = sum(FLIGHT, na.rm = TRUE),
+      TO_DATE = max(ENTRY_DATE, na.rm = TRUE),
+      FROM_DATE = min(ENTRY_DATE, na.rm = TRUE),
+      .by = c(FLAG_PERIOD, AO_GRP_CODE, AO_GRP_NAME, ARP_PRU_ID_1, ARP_PRU_ID_2)
+    ) %>% 
+    ungroup() %>% 
+    left_join(dim_airport, by = c("ARP_PRU_ID_1" = "APT_ID")) %>% 
+    left_join(dim_airport, by = c("ARP_PRU_ID_2" = "APT_ID"), 
+              suffix = c("_1", "_2")) %>% 
+    mutate(AIRPORT_PAIR = case_when(
+      APT_NAME_1 <= APT_NAME_2 ~ paste0(APT_NAME_1, "<->", APT_NAME_2),
+      .default = paste0(APT_NAME_2, "<->", APT_NAME_1)
+    )
+    ) %>% 
+    group_by(AO_GRP_CODE, FLAG_PERIOD) %>%
+    arrange(AO_GRP_CODE, FLAG_PERIOD, desc(FLIGHT), AIRPORT_PAIR) %>% 
+    mutate(
+      R_RANK = case_when( 
+        FLAG_PERIOD == "CURRENT_ROLLING_WEEK" ~ row_number(),
+        .default = NA
+      ),
+      RANK = case_when( 
+        FLAG_PERIOD == "CURRENT_ROLLING_WEEK" ~ min_rank(desc(FLIGHT)),
+        .default = NA
+      ),
+      RANK_PREV = case_when( 
+        FLAG_PERIOD == "PREV_ROLLING_WEEK" ~ min_rank(desc(FLIGHT)),
+        .default = NA
+      )
+    ) %>% 
+    ungroup() %>% 
+    group_by(AO_GRP_NAME, AIRPORT_PAIR) %>% 
+    arrange(AO_GRP_NAME, AIRPORT_PAIR, FLAG_PERIOD) %>% 
+    fill(RANK, .direction = "down") %>% 
+    fill(R_RANK, .direction = "down") %>% 
+    fill(RANK_PREV, .direction = "down") %>% 
+    fill(RANK_PREV, .direction = "up") %>% 
+    ungroup() %>% 
+    filter(R_RANK < 11) %>% 
+    mutate(
+      TO_DATE = max(TO_DATE, na.rm = TRUE),
+      FROM_DATE = TO_DATE - days(6),
+    ) %>% 
+    select(
+      AO_GRP_NAME,
+      AO_GRP_CODE,
+      FLAG_ROLLING_WEEK = FLAG_PERIOD,
+      AIRPORT_PAIR,
+      FLIGHT,
+      R_RANK,
+      RANK,
+      RANK_PREV_WEEK = RANK_PREV,
+      FROM_DATE,
+      TO_DATE
+    ) %>% 
+    arrange(AO_GRP_CODE, FLAG_ROLLING_WEEK, R_RANK, AIRPORT_PAIR)
+  
+  df_week %>% write_csv(here(archive_dir_raw, stakeholder, mycsvfile))
+  
+  # # dcheck
+  # df <- read_xlsx(
+  #   path  = fs::path_abs(
+  #     str_glue(ao_base_file),
+  #     start = ao_base_dir),
+  #   sheet = "ao_apt_pair_week",
+  #   range = cell_limits(c(1, 1), c(NA, NA))) |>
+  #   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+  # 
+  # df <- df %>% arrange(AO_GRP_CODE, FLAG_ROLLING_WEEK, R_RANK, AIRPORT_PAIR)
+  # 
+  # list_ao_group <- unique(df$AO_GRP_CODE)
+  # 
+  # for (i in 2:length(list_ao_group)) {
+  #   df1 <- df %>% filter(AO_GRP_CODE == list_ao_group[[i]])
+  # 
+  #   df_day1 <- df_week %>% filter(AO_GRP_CODE == list_ao_group[[i]])
+  # 
+  #   print(paste(list_ao_group[[i]], all.equal(df1, df_day1)))
+  # 
+  #   # for (j in 1:nrow(df1)) {
+  #   # 
+  #   #   print(paste(j, df1[[j,5]] == df_day1[[j,5]]))
+  #   # 
+  #   # }
+  # }
+  
+  
+  ## year ----
+  mycsvfile <- paste0(data_day_text, "_", mydataframe, "_data_y2d_raw.csv")
+  
+  y2d_dates <- seq.Date(ymd(paste0(2019,"01","01")),
+                        mydate) %>% as_tibble() %>%
+    filter(year(value) %in% c(2019, current_year-1, current_year)) %>%
+    filter(format(value, "%m-%d") <= format(mydate, "%m-%d")) %>%
+    pull()
+  
+  df_y2d <- df_app %>%
+    compute(prudence = "lavish") %>%
+    mutate(
+      YEAR = year(ENTRY_DATE)
+    ) %>%
+    filter(YEAR %in% c(current_year, current_year-1, 2019)) %>%
+    filter(ENTRY_DATE %in% y2d_dates) %>%
+    # filter(DEP_ARP_PRU_ID == 4467) %>%
+    summarise(
+      FLIGHT = sum(FLIGHT, na.rm = TRUE),
+      TO_DATE = max(ENTRY_DATE, na.rm = TRUE),
+      FROM_DATE = min(ENTRY_DATE, na.rm = TRUE),
+      .by = c(YEAR, AO_GRP_CODE, AO_GRP_NAME, DEP_ARP_PRU_ID)
+    ) %>%
+    ungroup() %>%
+    reframe(
+      AO_GRP_CODE, AO_GRP_NAME, DEP_ARP_PRU_ID, FLIGHT,
+      TO_DATE = max(TO_DATE, na.rm = TRUE),
+      FROM_DATE = min(FROM_DATE, na.rm = TRUE),
+      .by = c(YEAR)
+    ) %>% 
+    left_join(dim_airport, by = c("DEP_ARP_PRU_ID" = "APT_ID")) %>% 
+    group_by(AO_GRP_CODE, YEAR) %>%
+    arrange(AO_GRP_CODE, YEAR, desc(FLIGHT), APT_NAME) %>%
+    mutate(
+      R_RANK = case_when(
+        YEAR == current_year ~ row_number(),
+        .default = NA
+      ),
+      RANK = case_when(
+        YEAR == current_year ~ min_rank(desc(FLIGHT)),
+        .default = NA
+      ),
+      RANK_PREV = case_when(
+        YEAR == current_year-1 ~ min_rank(desc(FLIGHT)),
+        .default = NA
+      ),
+      NO_DAYS = as.numeric(TO_DATE - FROM_DATE) + 1,
+      AVG_FLIGHT = FLIGHT / NO_DAYS
+    ) %>%
+    ungroup() %>%
+    group_by(AO_GRP_NAME, APT_NAME) %>%
+    arrange(AO_GRP_NAME, APT_NAME, YEAR) %>%
+    fill(R_RANK, .direction = "down") %>%
+    fill(R_RANK, .direction = "up") %>%
+    
+    fill(RANK, .direction = "down") %>%
+    fill(RANK, .direction = "up") %>%
+    fill(RANK_PREV, .direction = "down") %>%
+    fill(RANK_PREV, .direction = "up") %>%
+    ungroup() %>%
+    filter(R_RANK < 11) %>%
+    select(
+      AO_GRP_NAME,
+      AO_GRP_CODE,
+      YEAR,
+      ADEP_CODE = APT_ICAO_CODE,
+      ADEP_NAME = APT_NAME,
+      FLIGHT,
+      AVG_FLIGHT,
+      R_RANK,
+      RANK,
+      RANK_PREV_YEAR = RANK_PREV,
+      FROM_DATE,
+      TO_DATE,
+      NO_DAYS
+    ) %>% 
+    arrange(AO_GRP_CODE, desc(YEAR), R_RANK, ADEP_NAME)
+  
+  
+  df_y2d %>% write_csv(here(archive_dir_raw, stakeholder, mycsvfile))
+  
+  # # dcheck
+  # df <- read_xlsx(
+  #   path  = fs::path_abs(
+  #     str_glue(ao_base_file),
+  #     start = ao_base_dir),
+  #   sheet = "ao_apt_dep_y2d",
+  #   range = cell_limits(c(1, 1), c(NA, NA))) |>
+  #   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+  # 
+  # df <- df %>% arrange(AO_GRP_CODE, desc(YEAR), R_RANK, ADEP_NAME)
+  # 
+  # list_ao_group <- unique(df$AO_GRP_CODE)
+  # for (i in 1:length(list_ao_group)) {
+  #   df1 <- df %>% filter(AO_GRP_CODE == list_ao_group[[i]])
+  # 
+  #   df_day1 <- df_y2d %>% filter(AO_GRP_CODE == list_ao_group[[i]])
+  # 
+  #   print(paste(list_ao_group[[i]], all.equal(df1, df_day1)))
+  # 
+  #   # for (j in 1:nrow(df1)) {
+  #   #
+  #   #   print(paste(j, df1[[j,4]] == df_day1[[j,4]]))
+  #   #
+  #   # }
+  # }
+  
+  print(paste(mydataframe, mydate))
+}
 
 
 # execute functions ----
