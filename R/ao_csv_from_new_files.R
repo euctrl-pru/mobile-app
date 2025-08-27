@@ -472,75 +472,77 @@ ao_st_des <- function(mydate =  current_day) {
       )
     ) %>% 
     summarise(
-      DEP = sum(DEP, na.rm = TRUE),
+      FLIGHT = sum(FLIGHT, na.rm = TRUE),
       TO_DATE = max(ENTRY_DATE, na.rm = TRUE),
       FROM_DATE = min(ENTRY_DATE, na.rm = TRUE),
-      .by = c(FLAG_PERIOD, DEP_ARP_PRU_ID, ARR_ISO_CTY_CODE)
+      .by = c(FLAG_PERIOD, AO_GRP_CODE, AO_GRP_NAME, ARR_ISO_CTY_CODE)
     ) %>% 
     ungroup() %>% 
-    left_join(dim_airport, by = c("DEP_ARP_PRU_ID" = "APT_ID")) %>% 
     left_join(dim_iso_country, by = c("ARR_ISO_CTY_CODE" = "ISO_COUNTRY_CODE")) %>% 
-    group_by(DEP_ARP_PRU_ID, FLAG_PERIOD) %>%
-    arrange(APT_ICAO_CODE, FLAG_PERIOD, desc(DEP), COUNTRY_NAME) %>% 
+    group_by(AO_GRP_CODE, FLAG_PERIOD) %>%
+    arrange(AO_GRP_CODE, FLAG_PERIOD, desc(FLIGHT), COUNTRY_NAME) %>% 
     mutate(
       R_RANK = case_when( 
         FLAG_PERIOD == "CURRENT_ROLLING_WEEK" ~ row_number(),
         .default = NA
       ),
       RANK = case_when( 
-        FLAG_PERIOD == "CURRENT_ROLLING_WEEK" ~ min_rank(desc(DEP)),
+        FLAG_PERIOD == "CURRENT_ROLLING_WEEK" ~ min_rank(desc(FLIGHT)),
         .default = NA
       ),
       RANK_PREV = case_when( 
-        FLAG_PERIOD == "PREV_ROLLING_WEEK" ~ min_rank(desc(DEP)),
+        FLAG_PERIOD == "PREV_ROLLING_WEEK" ~ min_rank(desc(FLIGHT)),
         .default = NA
       )
     ) %>% 
     ungroup() %>% 
-    group_by(APT_NAME, COUNTRY_NAME) %>% 
-    arrange(APT_NAME, COUNTRY_NAME, FLAG_PERIOD) %>% 
+    group_by(AO_GRP_NAME, COUNTRY_NAME) %>% 
+    arrange(AO_GRP_NAME, COUNTRY_NAME, FLAG_PERIOD) %>% 
     fill(RANK, .direction = "down") %>% 
     fill(R_RANK, .direction = "down") %>% 
     fill(RANK_PREV, .direction = "down") %>% 
     fill(RANK_PREV, .direction = "up") %>% 
     ungroup() %>% 
     filter(R_RANK < 11) %>% 
-    mutate(LAST_DATA_DAY = max(TO_DATE)) %>% 
+    mutate(
+      TO_DATE = max(TO_DATE, na.rm = TRUE),
+      FROM_DATE = TO_DATE - days(6),
+      ) %>% 
     select(
-      FLAG_PERIOD,
-      ARP_CODE = APT_ICAO_CODE,
-      ARP_NAME = APT_NAME,
+      AO_GRP_NAME,
+      AO_GRP_CODE,
+      FLAG_ROLLING_WEEK = FLAG_PERIOD,
       ISO_CT_NAME_ARR = COUNTRY_NAME,
       ISO_CT_CODE_ARR = ARR_ISO_CTY_CODE,
-      DEP,
-      FROM_DATE,
-      TO_DATE,
-      LAST_DATA_DAY,
+      FLIGHT,
       R_RANK,
       RANK,
-      RANK_PREV
+      RANK_PREV_WEEK = RANK_PREV,
+      FROM_DATE,
+      TO_DATE
     ) %>% 
-    arrange(ARP_CODE, FLAG_PERIOD, R_RANK, ISO_CT_NAME_ARR)
+    arrange(AO_GRP_CODE, FLAG_ROLLING_WEEK, R_RANK, ISO_CT_NAME_ARR)
   
   df_week %>% write_csv(here(archive_dir_raw, stakeholder, mycsvfile))
   
   # # dcheck
   # df <- read_xlsx(
   #   path  = fs::path_abs(
-  #     str_glue(ap_base_file),
-  #     start = ap_base_dir),
-  #   sheet = "apt_state_des_week",
+  #     str_glue(ao_base_file),
+  #     start = ao_base_dir),
+  #   sheet = "ao_state_des_week",
   #   range = cell_limits(c(1, 1), c(NA, NA))) |>
   #   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
   # 
-  # df <- df %>% arrange(ARP_CODE, FLAG_PERIOD, R_RANK, ISO_CT_NAME_ARR)
+  # df <- df %>% arrange(AO_GRP_CODE, FLAG_ROLLING_WEEK, R_RANK, ISO_CT_NAME_ARR)
   # 
-  # for (i in 1:nrow(list_airport)) {
-  #   df1 <- df %>% filter(ARP_CODE == list_airport$APT_ICAO_CODE[i])
+  # list_ao_group <- unique(df$AO_GRP_CODE)
+  # for (i in 1:length(list_ao_group)) {
+  #   df1 <- df %>% filter(AO_GRP_CODE == list_ao_group[[i]])
   # 
-  #   df_day1 <- df_week %>% filter(ARP_CODE == list_airport$APT_ICAO_CODE[i])
+  #   df_day1 <- df_week %>% filter(AO_GRP_CODE == list_ao_group[[i]])
   # 
-  #   print(paste(list_airport$APT_ICAO_CODE[i], all.equal(df1, df_day1)))
+  #   print(paste(list_ao_group[[i]], all.equal(df1, df_day1)))
   # 
   #   # for (j in 1:nrow(df1)) {
   #   #
@@ -568,33 +570,40 @@ ao_st_des <- function(mydate =  current_day) {
     filter(ENTRY_DATE %in% y2d_dates) %>%
     # filter(DEP_ARP_PRU_ID == 4467) %>%
     summarise(
-      DEP = sum(DEP, na.rm = TRUE),
+      FLIGHT = sum(FLIGHT, na.rm = TRUE),
       TO_DATE = max(ENTRY_DATE, na.rm = TRUE),
       FROM_DATE = min(ENTRY_DATE, na.rm = TRUE),
-      .by = c(YEAR, DEP_ARP_PRU_ID, ARR_ISO_CTY_CODE)
+      .by = c(YEAR, AO_GRP_CODE, AO_GRP_NAME, ARR_ISO_CTY_CODE)
     ) %>%
     ungroup() %>%
-    left_join(dim_airport, by = c("DEP_ARP_PRU_ID" = "APT_ID")) %>%
+    reframe(
+      AO_GRP_CODE, AO_GRP_NAME, ARR_ISO_CTY_CODE, FLIGHT,
+      TO_DATE = max(TO_DATE, na.rm = TRUE),
+      FROM_DATE = min(FROM_DATE, na.rm = TRUE),
+      .by = c(YEAR)
+    ) %>% 
     left_join(dim_iso_country, by = c("ARR_ISO_CTY_CODE" = "ISO_COUNTRY_CODE")) %>%
-    group_by(DEP_ARP_PRU_ID, YEAR) %>%
-    arrange(DEP_ARP_PRU_ID, YEAR, desc(DEP), COUNTRY_NAME) %>%
+    group_by(AO_GRP_CODE, YEAR) %>%
+    arrange(AO_GRP_CODE, YEAR, desc(FLIGHT), COUNTRY_NAME) %>%
     mutate(
       R_RANK = case_when(
         YEAR == current_year ~ row_number(),
         .default = NA
       ),
       RANK = case_when(
-        YEAR == current_year ~ min_rank(desc(DEP)),
+        YEAR == current_year ~ min_rank(desc(FLIGHT)),
         .default = NA
       ),
       RANK_PREV = case_when(
-        YEAR == current_year-1 ~ min_rank(desc(DEP)),
+        YEAR == current_year-1 ~ min_rank(desc(FLIGHT)),
         .default = NA
-      )
+      ),
+      NO_DAYS = as.numeric(TO_DATE - FROM_DATE) + 1,
+      AVG_FLIGHT = FLIGHT / NO_DAYS
     ) %>%
     ungroup() %>%
-    group_by(APT_NAME, COUNTRY_NAME) %>%
-    arrange(APT_NAME, COUNTRY_NAME, YEAR) %>%
+    group_by(AO_GRP_NAME, COUNTRY_NAME) %>%
+    arrange(AO_GRP_NAME, COUNTRY_NAME, YEAR) %>%
     fill(R_RANK, .direction = "down") %>%
     fill(R_RANK, .direction = "up") %>%
 
@@ -604,42 +613,50 @@ ao_st_des <- function(mydate =  current_day) {
     fill(RANK_PREV, .direction = "up") %>%
     ungroup() %>%
     filter(R_RANK < 11) %>%
-    mutate(LAST_DATA_DAY = max(TO_DATE)) %>%
     select(
+      AO_GRP_NAME,
+      AO_GRP_CODE,
       YEAR,
-      ARP_CODE = APT_ICAO_CODE,
-      ARP_NAME = APT_NAME,
       ISO_CT_NAME_ARR = COUNTRY_NAME,
       ISO_CT_CODE_ARR = ARR_ISO_CTY_CODE,
-      DEP,
-      FROM_DATE,
-      TO_DATE,
-      LAST_DATA_DAY,
+      FLIGHT,
+      AVG_FLIGHT,
       R_RANK,
       RANK,
-      RANK_PREV
-    ) %>%
-    arrange(ARP_CODE, desc(YEAR), R_RANK, ISO_CT_NAME_ARR)
+      RANK_PREV_YEAR = RANK_PREV,
+      FROM_DATE,
+      TO_DATE,
+      NO_DAYS
+    ) %>% 
+    arrange(AO_GRP_CODE, desc(YEAR), R_RANK, ISO_CT_NAME_ARR)
 
 
   df_y2d %>% write_csv(here(archive_dir_raw, stakeholder, mycsvfile))
   
-  # # dcheck 
+  # # dcheck
   # df <- read_xlsx(
   #   path  = fs::path_abs(
-  #     str_glue(ap_base_file),
-  #     start = ap_base_dir),
-  #   sheet = "apt_state_des_y2d",
+  #     str_glue(ao_base_file),
+  #     start = ao_base_dir),
+  #   sheet = "ao_state_des_y2d",
   #   range = cell_limits(c(1, 1), c(NA, NA))) |>
   #   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
   # 
-  # df <- df %>% arrange(ARP_CODE, desc(YEAR), R_RANK, ISO_CT_NAME_ARR)
+  # df <- df %>% arrange(AO_GRP_CODE, desc(YEAR), R_RANK, ISO_CT_NAME_ARR)
   # 
-  # for (i in 1:nrow(list_airport)) {
-  #   df1 <- df %>% filter(ARP_CODE == list_airport$APT_ICAO_CODE[i])
-  #   ap_ms_app_day1 <- df_y2d %>% filter(ARP_CODE == list_airport$APT_ICAO_CODE[i])
+  # list_ao_group <- unique(df$AO_GRP_CODE)
+  # for (i in 1:length(list_ao_group)) {
+  #   df1 <- df %>% filter(AO_GRP_CODE == list_ao_group[[i]])
   # 
-  #   print(paste(list_airport$APT_ICAO_CODE[i], all.equal(df1, ap_ms_app_day1)))
+  #   df_day1 <- df_y2d %>% filter(AO_GRP_CODE == list_ao_group[[i]])
+  # 
+  #   print(paste(list_ao_group[[i]], all.equal(df1, df_day1)))
+  # 
+  #   # for (j in 1:nrow(df1)) {
+  #   #
+  #   #   print(paste(j, df1[[j,4]] == df_day1[[j,4]]))
+  #   #
+  #   # }
   # }
   
   print(paste(mydataframe, mydate))
@@ -651,8 +668,8 @@ ao_st_des <- function(mydate =  current_day) {
 # til <- "2024-05-17"  #included in output
 # current_day <- seq(ymd(til), ymd(wef), by = "-1 day")
 
-purrr::walk(current_day, ap_ao)
-purrr::walk(current_day, ap_st_des)
-purrr::walk(current_day, ap_ap_des)
-purrr::walk(current_day, ap_ms)
+# purrr::walk(current_day, ap_ao)
+purrr::walk(current_day, ao_st_des)
+# purrr::walk(current_day, ap_ap_des)
+# purrr::walk(current_day, ap_ms)
 

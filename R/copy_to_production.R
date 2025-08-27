@@ -41,10 +41,10 @@ stakeholders <- if(!archive_mode) {
   c("nw","st","ao","ap", "sp", NULL) # don't touch this line
   } else {c(
     # "nw",
-    # "st",
+    "st",
     # "ao",
     # "ap",
-    "sp",
+    # "sp",
     NULL)
 }
 

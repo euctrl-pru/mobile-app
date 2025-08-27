@@ -1493,7 +1493,7 @@ ap_ms <- function(mydate =  current_day) {
 
 # execute functions ----
 # wef <- "2024-01-01"  #included in output
-# til <- "2024-05-17"  #included in output
+# til <- "2024-02-21"  #included in output
 # current_day <- seq(ymd(til), ymd(wef), by = "-1 day")
 
 purrr::walk(current_day, ap_ao)
