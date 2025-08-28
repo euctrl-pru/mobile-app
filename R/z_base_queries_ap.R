@@ -235,6 +235,99 @@ ORDER BY entry_date, arp_pru_id, ms_id
 )
 
 # AIRLINE ----
+## ao_day_base_query ----
+ao_day_base_query <- paste0("
+with 
+DIM_AO
+ as ( SELECT distinct
+ 		ao_id,
+ 		ao_code, 
+ 		wef,
+ 		til
+ from  ldw_acc.AO_GROUPS_ASSOCIATION
+ ) ,
+ 
+ 
+AO_GRP_DAY AS (
+SELECT a.ao_id,
+        t.day_date,
+        t.month,
+        t.week,
+        t.week_nb_year,
+        t.day_type,
+        t.day_of_week_nb AS day_of_week,
+        t.year
+FROM DIM_AO a, prudev.pru_time_references t
+WHERE  
+   t.day_date >= ", query_from, " 
+    AND t.day_date < trunc(sysdate) 
+       ),
+
+DATA_FLIGHT as (
+SELECT  
+        CASE WHEN (TRUNC(A.flt_a_asp_prof_time_entry) >= b.wef AND TRUNC(A.flt_a_asp_prof_time_entry) <= b.til)
+        		THEN nvl(b.ao_id, 1777 ) 
+        		ELSE 99999
+        END ao_id, 
+        nvl(b.ao_code,'ZZZ') ao_code,
+        nvl(atfm_delay,0) as TDM, 
+        case when nvl(ATFM_delay,0) > 15 then ATFM_DELAY else 0 end as TDM_15,
+        case when nvl(ATFM_delay,0) > 0 then 1 else 0 end as TDF,
+        case when nvl(ATFM_delay,0) > 15 then 1 else 0 end as TDF_15,
+        trunc(A.flt_a_asp_prof_time_entry ) as entry_date,
+        extract(month from A.flt_a_asp_prof_time_entry ) as month,
+        extract(year from A.flt_a_asp_prof_time_entry ) as year,
+        A.flt_uid 
+FROM prudev.v_aiu_flt A 
+     inner join  DIM_AO b ON   (a.ao_icao_id = b.ao_code)
+     
+WHERE  A.flt_lobt>= ", query_from, "  -2 
+   AND A.flt_lobt < TRUNC (SYSDATE) +2
+   AND a.flt_a_asp_prof_time_entry >= ", query_from, " 
+   AND A.flt_a_asp_prof_time_entry <  TRUNC(SYSDATE)
+   AND A.flt_state IN ('TE', 'TA', 'AA')
+   and extract (year from flt_a_asp_prof_time_entry) <= extract(year from (TRUNC (SYSDATE)-1))
+),
+
+DATA_DAY
+    AS
+ (SELECT     
+        ao_id, 
+        ao_code,
+        entry_date,
+        COUNT(flt_uid) DAY_TFC,
+        SUM(TDM)as DAY_DLY,
+        SUM(TDM_15) as DAY_DLY_15,
+        SUM(TDF) as DAY_DELAYED_TFC,
+        SUM(TDF_15) as DAY_DELAYED_TFC_15
+        
+FROM DATA_FLIGHT
+GROUP BY ao_id, 
+         ao_code,
+         entry_date
+  ) 
+                       
+SELECT a.YEAR,
+       a.MONTH,
+       a.day_date  AS flight_date,
+       a.WEEK,
+       a.WEEK_NB_YEAR,
+       a.DAY_TYPE,
+       a.day_of_week,      
+       a.ao_id,
+       ao_code,
+       coalesce(b.DAY_TFC,0) AS DAY_TFC,
+       coalesce(b.DAY_DLY,0) AS DAY_DLY,      
+       coalesce(b.DAY_DLY_15,0) AS DAY_DLY_15,
+       coalesce(b.DAY_DELAYED_TFC,0) AS DAY_DELAYED_TFC,
+       coalesce(b.DAY_DELAYED_TFC_15,0) AS DAY_DELAYED_TFC_15       
+       FROM ao_grp_day  A
+       LEFT JOIN DATA_DAY B
+           ON a.ao_id = b.ao_id AND b.entry_date = a.day_date
+
+"
+)
+
 ## ao_st_des_base_query ----
 ao_st_des_day_base_query <- paste0("
 with 

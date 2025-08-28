@@ -51,7 +51,7 @@ mydataframes <- c(
   "ap_ap_des",
   "ap_ms",
   
-  # "ao",
+  "ao",
   "ao_st_des",
   "ao_ap_dep",
   "ao_ap_pair",
@@ -59,7 +59,7 @@ mydataframes <- c(
 )
 
 update_base_tables <- function(mydataframe) {
-# mydataframe <-   "ap_st_des_day_base"
+# mydataframe <-   "ao"
   myarchivefile <- paste0(mydataframe, "_day_base.parquet")
   mybackupfile <- paste0(mydataframe, "_day_base_backup.parquet")
   query_7d <- get(paste0(mydataframe, "_day_base_query"))
@@ -78,8 +78,14 @@ update_base_tables <- function(mydataframe) {
   
   
   # filter out last 7 days
-  df_filtered <- df %>% 
-    filter(!(ENTRY_DATE %in% c(seq.Date(today_date + days(-7), today_date))))
+  if ("ENTRY_DATE" %in% names(df)) {
+    df_filtered <- df %>% 
+      filter(!(ENTRY_DATE %in% c(seq.Date(today_date + days(-7), today_date))))
+  } else if ("FLIGHT_DATE" %in% names(df)) {
+    df_filtered <- df %>% 
+      filter(!(FLIGHT_DATE %in% c(seq.Date(today_date + days(-7), today_date))))
+  }
+  
   
   # DB params
   usr <- Sys.getenv("PRU_DEV_USR")
