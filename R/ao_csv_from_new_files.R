@@ -7,6 +7,7 @@ library(RODBC)
 
 source(here::here("..", "mobile-app", "R", "helpers.R"))
 source(here::here("..", "mobile-app", "R", "params.R"))
+source(here::here("..", "mobile-app", "R", "dimension_queries.R"))
 
 # parameters ----
 if (!exists("data_day_date")) {current_day <- today() - days(1)} else {current_day <- data_day_date}
@@ -15,247 +16,9 @@ if (!exists("data_day_date")) {current_day <- today() - days(1)} else {current_d
 ## ao group ----  
 # same as v_covid_dim_ao but adding ao_id and removing old aos
 
-query <- "
-WITH
-        data_ao_grp1_and_oth
-        AS
-            (SELECT AO_ID
-                   ,TRIM (AO_CODE)
-                        AS ao_code
-                   ,TRIM (AO_NAME)
-                        AS ao_name
-                   ,AO_GRP_ID
-                   ,CASE
-                        WHEN AO_GRP_level = 'GROUP1'
-                        THEN
-                            ao_grp_code
-                        ELSE
-                            ao_code
-                    END
-                        AS ao_grp_code
-                   ,CASE
-                        WHEN AO_GRP_level = 'GROUP1'
-                        THEN
-                            ao_grp_name
-                        ELSE
-                            ao_name
-                    END
-                        AS ao_grp_name
-                   ,CASE WHEN ao_grp_level = 'GROUP1' THEN 'Y' ELSE 'N' END
-                        AS AO_NM_GROUP_FLAG
-                   ,CASE
-                        WHEN ao_grp_level = 'GROUP1'
-                        THEN
-                            ao_grp_level
-                        ELSE
-                            'GROUP1_OTHER'
-                    END
-                        AS AO_GRP_LEVEL
-                   ,WEF
-                   ,TIL
-                   ,AO_ISO_CTRY
-               FROM ldw_acc.AO_GROUPS_ASSOCIATION
-              WHERE     CRCO_DUPLICATE_FLAG IS NULL
-                    AND ao_code IS NOT NULL
-                    AND ao_grp_level IN ('GROUP1', 'OTHER')),
-        data_assoc
-        AS
-            (SELECT AO_ID
-                   ,TRIM (AO_CODE) AS ao_code
-                   ,TRIM (AO_NAME) AS ao_name
-                   ,AO_GRP_ID
-                   ,ao_code        AS ao_grp_code
-                   ,ao_name        AS ao_grp_name
-                   ,'N'            AS AO_NM_GROUP_FLAG
-                   ,'GROUP1_OTHER' AS AO_GRP_LEVEL
-                   ,WEF
-                   ,TIL
-                   ,AO_ISO_CTRY
-               FROM ldw_acc.AO_GROUPS_ASSOCIATION a
-              WHERE     CRCO_DUPLICATE_FLAG IS NULL
-                    AND ao_code IS NOT NULL
-                    AND ao_grp_level IN ('ASSOCIATION')
-                    AND NOT EXISTS
-                            (SELECT NULL
-                               FROM data_ao_grp1_and_oth b
-                              WHERE a.ao_id = b.ao_id)),
---        data_old_ao
---        AS
---            (SELECT 0                AS ao_id
---                   ,ao_code
---                   ,ao_name
---                   ,0                AS ao_grp_id
---                   ,ao_code          AS ao_grp_code
---                   ,ao_name          AS ao_grp_name
---                   ,'N'              AS AO_NM_GROUP_FLAG
---                   ,'GROUP1_OTHER'   AS AO_GRP_LEVEL
---                   ,wef
---                   ,til
---                   ,ao_iso_ctry_code AS ao_iso_ctry
---               FROM PRUDEV.COVID_DIM_AO_BEF_2019),
-        data_union_ao
-        AS
-            (SELECT AO_ID
-                   ,ao_code
-                   ,ao_name
-                   ,AO_GRP_ID
-                   ,ao_grp_code
-                   ,ao_grp_name
-                   ,AO_NM_GROUP_FLAG
-                   ,AO_GRP_LEVEL
-                   ,WEF
-                   ,TIL
-                   ,AO_ISO_CTRY
-               FROM data_ao_grp1_and_oth
-             UNION ALL
-             SELECT AO_ID
-                   ,ao_code
-                   ,ao_name
-                   ,AO_GRP_ID
-                   ,ao_grp_code
-                   ,ao_grp_name
-                   ,AO_NM_GROUP_FLAG
-                   ,AO_GRP_LEVEL
-                   ,WEF
-                   ,TIL
-                   ,AO_ISO_CTRY
-               FROM data_assoc
---             UNION ALL
---             SELECT AO_ID
---                   ,ao_code
---                   ,ao_name
---                   ,AO_GRP_ID
---                   ,ao_grp_code
---                   ,ao_grp_name
---                   ,AO_NM_GROUP_FLAG
---                   ,AO_GRP_LEVEL
---                   ,WEF
---                   ,TIL
---                   ,AO_ISO_CTRY
---               FROM data_old_ao
-               ),
-        data_all_ao
-        AS
-            (SELECT ao_id
-                   ,ao_code
-                   ,ao_name
-                   ,wef
-                   ,til
-                   ,ao_iso_ctry
-                   ,ao_grp_code
-                   ,ao_grp_name
-                   ,ao_grp_level
-                   ,ROW_NUMBER ()
-                    OVER (PARTITION BY ao_code ORDER BY til DESC, ao_id DESC)
-                        rn
-               FROM data_union_ao),
-        data_all_ao_uniq
-        AS
-            (SELECT ao_id
-                   ,ao_code
-                   ,ao_name
-                   ,wef
-                   ,til
-                   ,ao_iso_ctry
-                   ,ao_grp_code
-                   ,ao_grp_name
-                   ,ao_grp_level
-                   ,CASE WHEN ao_grp_level = 'GROUP1' THEN 'Y' ELSE 'N' END
-                        AS AO_NM_GROUP_FLAG
-               FROM data_all_ao
-              WHERE rn = 1),
-        data_ao_group2
-        AS
-            (SELECT ao_id
-                   ,ao_code
-                   ,ao_name
-                   ,wef
-                   ,til
-                   ,ao_iso_ctry
-                   ,ao_grp_code
-                   ,ao_grp_name
-                   ,ao_grp_level
-                   ,'Y'
-                        AS AO_GROUP2_COVID_LIST
-                   ,ROW_NUMBER ()
-                    OVER (PARTITION BY ao_code ORDER BY til DESC, ao_id DESC)
-                        rn
-               FROM ldw_acc.AO_GROUPS_ASSOCIATION
-              WHERE     CRCO_DUPLICATE_FLAG IS NULL
-                    AND ao_code IS NOT NULL
-                    AND ao_grp_level IN ('GROUP2')),
-        data_ao_group2_uniq
-        AS
-            (SELECT ao_id
-                   ,ao_code
-                   ,ao_name
-                   ,wef
-                   ,til
-                   ,ao_iso_ctry
-                   ,ao_grp_code
-                   ,ao_grp_name
-                   ,ao_grp_level
-                   ,AO_GROUP2_COVID_LIST
-               FROM data_ao_group2
-              WHERE rn = 1),
-   data_all_ao_incl_dupl as (
-    SELECT a.til,
-          a.ao_id
-    	  ,a.ao_code
-          ,a.ao_name
-          ,a.ao_name                               AS nm_ao_name
-          ,a.ao_grp_code                           AS ao_nm_group_code
-          ,a.ao_grp_name                           AS ao_nm_group_name
-          ,a.ao_grp_code
-          ,a.ao_grp_name
-          ,a.AO_NM_GROUP_FLAG
-          ,COALESCE (c.LIST_DSH, 'N')              AS AO_NM_LIST
-          ,COALESCE (c.LIST_DSH, 'N')              AS LIST_DSH
-          ,COALESCE (c.LIST_DENIS, 'N')            AS LIST_DENIS
-          ,COALESCE (b.AO_GRP_CODE, a.AO_GRP_CODE) AS AO_GROUP2_CODE
-          ,COALESCE (b.AO_GRP_NAME, a.AO_GRP_NAME) AS AO_GROUP2_NAME
-          ,COALESCE (b.AO_GROUP2_COVID_LIST, 'N')  AS AO_GROUP2_COVID_LIST
-          ,a.ao_grp_level
-          ,a.ao_iso_ctry                           AS ao_iso_ctry_code
-      FROM data_all_ao_uniq  a
-           LEFT JOIN data_ao_group2_uniq b
-               ON (a.ao_id = b.ao_id AND a.til = b.til)
-           LEFT JOIN PRUDEV.V_COVID_DSH_LIST_AO C ON (a.ao_code = c.ao_code)
-   )
+dim_ao_group <- export_query(dim_ao_grp_query) 
 
-   select 
-             a.ao_id
-    	  ,a.ao_code
-          ,a.ao_name
-          ,a.ao_grp_code
-          ,a.ao_grp_name
-          ,AO_GROUP2_CODE
-          ,AO_GROUP2_NAME
-          ,a.ao_grp_level
-          ,ao_iso_ctry_code
-
-   from data_all_ao_incl_dupl a
---   WHERE (a.ao_id, a.til) IN (
---		  SELECT ao_id, MAX(til)
---  			FROM data_all_ao_incl_dupl
---  				GROUP BY ao_id)
-"
-
-dim_ao_group <- export_query(query) 
-
-query <-"
-SELECT a.ao_code,
-		a.ao_name
-		, b.ao_id
-FROM pruprod.v_aiu_app_dim_ao_grp a
-LEFT JOIN 
-	(SELECT * FROM ldw_acc.AO_GROUPS_ASSOCIATION) b ON a.ao_code = b.ao_code
-GROUP BY a.ao_code, a.ao_name,
-		b.ao_id
-ORDER BY ao_id
-"
-
-list_ao <- export_query(query) %>% 
+list_ao <- export_query(list_ao_query) %>% 
   left_join(dim_ao_group, by = c("AO_ID", "AO_CODE", "AO_NAME")) %>% 
   select (AO_ID, AO_CODE, AO_NAME, AO_GRP_CODE, AO_GRP_NAME)
 
@@ -264,67 +27,10 @@ list_ao_group <- list_ao %>% group_by(AO_GRP_CODE, AO_GRP_NAME) %>%
   arrange(AO_GRP_CODE) %>% ungroup()
 
 ## airport ----
-query <- "
-  select
-    id as apt_id,
-    code as apt_icao_code,
-    lat as latitude,
-    lon as longitude,
-    country_id,
-    
-    pru_name as apt_name
-    
-  from prudev.pru_airport
-"
-
-dim_airport <- export_query(query) 
-
-
-# airport app list table 
-query <- "SELECT
-arp_id as apt_id,
-arp_code AS APT_ICAO_CODE,
-arp_name AS apt_name,
-flag_top_apt,
-latitude,
-longitude
-
-FROM pruprod.v_aiu_app_dim_airport a
-INNER JOIN (
-  SELECT ec_ap_code, latitude, longitude
-  FROM (
-    SELECT ec_ap_code, latitude, longitude,
-           ROW_NUMBER() OVER (PARTITION BY ec_ap_code ORDER BY sk_ap_id DESC) AS rn
-    FROM swh_fct.dim_airport
-  ) t
-  WHERE rn = 1
-) b ON a.arp_code = b.ec_ap_code
-"
-
-list_airport <- export_query(query) 
+dim_airport <- export_query(dim_ap_query) 
 
 ## iso country ----
-query <- "
-  select 
-    AIU_ISO_COUNTRY_CODE as iso_country_code,
-    AIU_ISO_COUNTRY_NAME as country_name
-  from prudev.pru_country_iso
-  group by AIU_ISO_COUNTRY_CODE, AIU_ISO_COUNTRY_NAME
-"
-
-dim_iso_country <- export_query(query) 
-
-
-## market segment ---- 
-query <- "
-select 
-  SK_FLT_TYPE_RULE_ID as ms_id,
-  rule_description as MARKET_SEGMENT
-from  SWH_FCT.DIM_FLIGHT_TYPE_RULE
-"
-
-dim_marktet_segment <- export_query(query) 
-
+dim_iso_country <- export_query(dim_iso_st_query) 
 
 
 # prep data functions ----
@@ -404,401 +110,400 @@ import_dataframe <- function(dfname) {
 }
 
 # ao day ----
-mydataframe <-  "ao_traffic_delay"
-mydatafile <- paste0(mydataframe, "_day_raw.parquet")
-stakeholder <- str_sub(mydataframe, 1, 2)
+ao_traffic_delay <- function() {
+  mydataframe <-  "ao_traffic_delay"
+  mydatafile <- paste0(mydataframe, "_day_raw.parquet")
+  stakeholder <- str_sub(mydataframe, 1, 2)
 
-df_app <- import_dataframe(mydataframe)
+  df_app <- import_dataframe(mydataframe)
 
-mydate <- max(df_app$FLIGHT_DATE, na.rm = TRUE)
-current_year = year(mydate)
+  mydate <- max(df_app$FLIGHT_DATE, na.rm = TRUE)
+  current_year = year(mydate)
 
-#### create date sequence
-year_from <- paste0(2018, "-12-24")
-year_til <- paste0(current_year, "-12-31")
-days_sequence <- seq(ymd(year_from), ymd(year_til), by = "1 day") %>%
-  as_tibble() %>%
-  select(FLIGHT_DATE = value) 
+  #### create date sequence
+  year_from <- paste0(2018, "-12-24")
+  year_til <- paste0(current_year, "-12-31")
+  days_sequence <- seq(ymd(year_from), ymd(year_til), by = "1 day") %>%
+    as_tibble() %>%
+    select(FLIGHT_DATE = value) 
+  
+  #### combine with ansp list to get full sequence
+  days_ao_grp <- crossing(days_sequence, list_ao_group) %>% 
+    arrange(AO_GRP_CODE, FLIGHT_DATE)%>% 
+    mutate(YEAR = year(FLIGHT_DATE))
 
-#### combine with ansp list to get full sequence
-days_ao_grp <- crossing(days_sequence, list_ao_group) %>% 
-  arrange(AO_GRP_CODE, FLIGHT_DATE)%>% 
-  mutate(YEAR = year(FLIGHT_DATE))
-
-
-
-df_day_year <- days_ao_grp %>%
-  left_join(df_app, by = c("YEAR", "FLIGHT_DATE", "AO_GRP_CODE", "AO_GRP_NAME")) %>% 
-  arrange(AO_GRP_CODE, FLIGHT_DATE) %>%
-  # filter(AO_GRP_CODE == "NAX_GRP")
-  group_by(AO_GRP_CODE) %>% 
-  mutate(
-    DAY_DLY_FLT = if_else(DAY_TFC == 0, NA, DAY_DLY/ DAY_TFC),
-    DAY_DELAYED_TFC_PERC = if_else(DAY_TFC == 0, NA, DAY_DELAYED_TFC/ DAY_TFC),
-    DAY_DELAYED_TFC_15_PERC = if_else(DAY_TFC == 0, NA, DAY_DELAYED_TFC_15/ DAY_TFC),
-    
-    #rolling week
-    RWK_AVG_TFC = rollsum(DAY_TFC, 7, fill = NA, align = "right") / 7,
-    RWK_AVG_DLY = rollsum(DAY_DLY, 7, fill = NA, align = "right") / 7,
-    RWK_DLY_FLT = if_else(RWK_AVG_TFC == 0, NA, RWK_AVG_DLY/ RWK_AVG_TFC),
-    RWK_AVG_DELAYED_TFC = rollsum(DAY_DELAYED_TFC, 7, fill = NA, align = "right") / 7,
-    RWK_AVG_DELAYED_15_TFC = rollsum(DAY_DELAYED_TFC_15, 7, fill = NA, align = "right") / 7,
-    
-    RWK_DELAYED_TFC_PERC = if_else(RWK_AVG_TFC == 0, NA, RWK_AVG_DELAYED_TFC/ RWK_AVG_TFC),
-    RWK_DELAYED_TFC_15_PERC = if_else(RWK_AVG_TFC == 0, NA, RWK_AVG_DELAYED_15_TFC/ RWK_AVG_TFC),
-    
-  )  %>% 
-  group_by(AO_GRP_CODE, YEAR) %>% 
-  # arrange(AO_GRP_CODE, FLIGHT_DATE) %>% 
-  mutate(
-    # year to date
-    Y2D_TFC_YEAR = cumsum(coalesce(DAY_TFC, 0)),
-    Y2D_AVG_TFC_YEAR = cumsum(coalesce(DAY_TFC, 0)) / row_number(),
-    Y2D_DLY_YEAR = cumsum(coalesce(DAY_DLY, 0)),
-    Y2D_AVG_DLY_YEAR = cumsum(coalesce(DAY_DLY, 0)) / row_number(),
-    Y2D_DELAYED_TFC = cumsum(coalesce(DAY_DELAYED_TFC, 0)),
-    Y2D_DELAYED_TFC_15 = cumsum(coalesce(DAY_DELAYED_TFC_15, 0)),
-    
-    Y2D_DLY_FLT_YEAR = if_else(Y2D_TFC_YEAR == 0, NA, Y2D_DLY_YEAR/ Y2D_TFC_YEAR),
-    Y2D_DELAYED_TFC_PERC = if_else(Y2D_TFC_YEAR == 0, NA, Y2D_DELAYED_TFC/ Y2D_TFC_YEAR),
-    Y2D_DELAYED_TFC_15_PERC = if_else(Y2D_TFC_YEAR == 0, NA, Y2D_DELAYED_TFC_15/ Y2D_TFC_YEAR)
-  ) %>% 
-  ungroup ()
-
-## split table ----
-df_day <- df_day_year %>% 
-  mutate(
-    FLIGHT_DATE_2019 = FLIGHT_DATE - days((YEAR-2019)*364+ floor((YEAR - 2019) / 4) * 7),
-    FLIGHT_DATE_2020 = FLIGHT_DATE - days((YEAR-2020)*364+ floor((YEAR - 2020) / 4) * 7),
-    FLIGHT_DATE_2019_SD = FLIGHT_DATE %m-% years(YEAR-2019),
-    FLIGHT_DATE_PREV_YEAR_SD = FLIGHT_DATE %m-% years(1) 
+  df_day_year <- days_ao_grp %>%
+    left_join(df_app, by = c("YEAR", "FLIGHT_DATE", "AO_GRP_CODE", "AO_GRP_NAME")) %>% 
+    arrange(AO_GRP_CODE, FLIGHT_DATE) %>%
+    # filter(AO_GRP_CODE == "NAX_GRP")
+    group_by(AO_GRP_CODE) %>% 
+    mutate(
+      DAY_DLY_FLT = if_else(DAY_TFC == 0, NA, DAY_DLY/ DAY_TFC),
+      DAY_DELAYED_TFC_PERC = if_else(DAY_TFC == 0, NA, DAY_DELAYED_TFC/ DAY_TFC),
+      DAY_DELAYED_TFC_15_PERC = if_else(DAY_TFC == 0, NA, DAY_DELAYED_TFC_15/ DAY_TFC),
+      
+      #rolling week
+      RWK_AVG_TFC = rollsum(DAY_TFC, 7, fill = NA, align = "right") / 7,
+      RWK_AVG_DLY = rollsum(DAY_DLY, 7, fill = NA, align = "right") / 7,
+      RWK_DLY_FLT = if_else(RWK_AVG_TFC == 0, NA, RWK_AVG_DLY/ RWK_AVG_TFC),
+      RWK_AVG_DELAYED_TFC = rollsum(DAY_DELAYED_TFC, 7, fill = NA, align = "right") / 7,
+      RWK_AVG_DELAYED_15_TFC = rollsum(DAY_DELAYED_TFC_15, 7, fill = NA, align = "right") / 7,
+      
+      RWK_DELAYED_TFC_PERC = if_else(RWK_AVG_TFC == 0, NA, RWK_AVG_DELAYED_TFC/ RWK_AVG_TFC),
+      RWK_DELAYED_TFC_15_PERC = if_else(RWK_AVG_TFC == 0, NA, RWK_AVG_DELAYED_15_TFC/ RWK_AVG_TFC),
+      
+    )  %>% 
+    group_by(AO_GRP_CODE, YEAR) %>% 
+    # arrange(AO_GRP_CODE, FLIGHT_DATE) %>% 
+    mutate(
+      # year to date
+      Y2D_TFC_YEAR = cumsum(coalesce(DAY_TFC, 0)),
+      Y2D_AVG_TFC_YEAR = cumsum(coalesce(DAY_TFC, 0)) / row_number(),
+      Y2D_DLY_YEAR = cumsum(coalesce(DAY_DLY, 0)),
+      Y2D_AVG_DLY_YEAR = cumsum(coalesce(DAY_DLY, 0)) / row_number(),
+      Y2D_DELAYED_TFC = cumsum(coalesce(DAY_DELAYED_TFC, 0)),
+      Y2D_DELAYED_TFC_15 = cumsum(coalesce(DAY_DELAYED_TFC_15, 0)),
+      
+      Y2D_DLY_FLT_YEAR = if_else(Y2D_TFC_YEAR == 0, NA, Y2D_DLY_YEAR/ Y2D_TFC_YEAR),
+      Y2D_DELAYED_TFC_PERC = if_else(Y2D_TFC_YEAR == 0, NA, Y2D_DELAYED_TFC/ Y2D_TFC_YEAR),
+      Y2D_DELAYED_TFC_15_PERC = if_else(Y2D_TFC_YEAR == 0, NA, Y2D_DELAYED_TFC_15/ Y2D_TFC_YEAR)
     ) %>% 
-  left_join(select(df_day_year, AO_GRP_CODE, YEAR, FLIGHT_DATE, starts_with(c("Y2D"))), by = c("AO_GRP_CODE", "FLIGHT_DATE_PREV_YEAR_SD" = "FLIGHT_DATE"), suffix = c("","_PREV_YEAR")) %>% 
-  left_join(select(df_day_year, AO_GRP_CODE, YEAR, FLIGHT_DATE, starts_with(c("Y2D"))), by = c("AO_GRP_CODE", "FLIGHT_DATE_2019_SD" = "FLIGHT_DATE"), suffix = c("","_2019")) %>% 
-  left_join(select(df_day_year, AO_GRP_CODE, YEAR, FLIGHT_DATE, starts_with(c("DAY", "RWK"))), by = c("AO_GRP_CODE", "FLIGHT_DATE_2019" = "FLIGHT_DATE"), suffix = c("","_2019")) %>% 
-  left_join(select(df_day_year, AO_GRP_CODE, YEAR, FLIGHT_DATE, RWK_AVG_TFC), by = c("AO_GRP_CODE", "FLIGHT_DATE_2020" = "FLIGHT_DATE"), suffix = c("","_2020")) %>% 
-  arrange(AO_GRP_CODE, FLIGHT_DATE) %>%
-  # filter(FLIGHT_DATE == ymd(20250228))  %>%
-  # filter(AO_GRP_CODE == 'AEA') %>%
-  # select(AO_GRP_CODE, FLIGHT_DATE,FLIGHT_DATE_PREV_YEAR_SD, FLIGHT_DATE_2019_SD, Y2D_TFC_YEAR,	Y2D_TFC_YEAR_PREV_YEAR,	Y2D_TFC_YEAR_2019)
-  group_by(AO_GRP_CODE) %>% 
-  mutate(
-    # prev week
-    FLIGHT_DATE_PREV_WEEK = lag(FLIGHT_DATE, 7),
-    DAY_TFC_PREV_WEEK = lag(DAY_TFC , 7),
-    RWK_AVG_TFC_PREV_WEEK = lag(RWK_AVG_TFC, 7),
-    
-    DAY_DLY_PREV_WEEK = lag(DAY_DLY , 7),
-    RWK_AVG_DLY_PREV_WEEK = lag(RWK_AVG_DLY, 7),
-    
-    DAY_DLY_FLT_PREV_WEEK = lag(DAY_DLY_FLT, 7),
-    RWK_DLY_FLT_PREV_WEEK = lag(RWK_DLY_FLT, 7),
-    
-    DAY_DELAYED_TFC_PERC_PREV_WEEK = lag(DAY_DELAYED_TFC_PERC, 7),
-    RWK_DELAYED_TFC_PERC_PREV_WEEK = lag(RWK_DELAYED_TFC_PERC, 7),
-    
-    DAY_DELAYED_TFC_15_PERC_PREV_WEEK = lag(DAY_DELAYED_TFC_15_PERC, 7),
-    RWK_DELAYED_TFC_15_PERC_PREV_WEEK = lag(RWK_DELAYED_TFC_15_PERC, 7),
-    
-    # dif prev week
-    DAY_TFC_DIF_PREV_WEEK = coalesce(DAY_TFC,0) - coalesce(DAY_TFC_PREV_WEEK, 0),
-    DAY_TFC_DIF_PREV_WEEK_PERC = if_else(DAY_TFC_PREV_WEEK == 0, NA, DAY_TFC/ DAY_TFC_PREV_WEEK) -1,
-    
-    RWK_TFC_DIF_PREV_WEEK_PERC = if_else(RWK_AVG_TFC_PREV_WEEK == 0, NA, RWK_AVG_TFC/ RWK_AVG_TFC_PREV_WEEK)-1,
-    
-    DAY_DLY_DIF_PREV_WEEK_PERC = if_else(DAY_DLY_PREV_WEEK == 0, NA, DAY_DLY/ DAY_DLY_PREV_WEEK)-1,
-    RWK_DLY_DIF_PREV_WEEK_PERC = if_else(RWK_AVG_DLY_PREV_WEEK == 0, NA, RWK_AVG_DLY/ RWK_AVG_DLY_PREV_WEEK)-1,
-    
-    DAY_DLY_FLT_DIF_PREV_WEEK_PERC = if_else(DAY_DLY_FLT_PREV_WEEK == 0, NA, DAY_DLY_FLT/ DAY_DLY_FLT_PREV_WEEK)-1,
-    
-    DAY_DELAYED_TFC_PERC_DIF_PREV_WEEK = DAY_DELAYED_TFC_PERC - DAY_DELAYED_TFC_PERC_PREV_WEEK,
-    RWK_DELAYED_TFC_PERC_DIF_PREV_WEEK = RWK_DELAYED_TFC_PERC - RWK_DELAYED_TFC_PERC_PREV_WEEK, 
-    
-    DAY_DELAYED_TFC_15_PERC_DIF_PREV_WEEK = DAY_DELAYED_TFC_15_PERC - DAY_DELAYED_TFC_15_PERC_PREV_WEEK,
-    RWK_DELAYED_TFC_15_PERC_DIF_PREV_WEEK = RWK_DELAYED_TFC_15_PERC - RWK_DELAYED_TFC_15_PERC_PREV_WEEK, 
-
-    # prev year
-    FLIGHT_DATE_PREV_YEAR = lag(FLIGHT_DATE, 364),
-    DAY_TFC_PREV_YEAR = lag(DAY_TFC , 364),
-    RWK_AVG_TFC_PREV_YEAR = lag(RWK_AVG_TFC, 364),
-    Y2D_TFC_PREV_YEAR = Y2D_TFC_YEAR_PREV_YEAR,
-    Y2D_AVG_TFC_PREV_YEAR = Y2D_AVG_TFC_YEAR_PREV_YEAR,
-    
-    DAY_DLY_PREV_YEAR = lag(DAY_DLY , 364),
-    RWK_AVG_DLY_PREV_YEAR = lag(RWK_AVG_DLY, 364),
-    Y2D_AVG_DLY_PREV_YEAR = Y2D_AVG_DLY_YEAR_PREV_YEAR,
-    
-    DAY_DLY_FLT_PREV_YEAR = lag(DAY_DLY_FLT, 364),
-    RWK_DLY_FLT_PREV_YEAR = lag(RWK_DLY_FLT, 364),
-    Y2D_DLY_FLT_PREV_YEAR = Y2D_DLY_FLT_YEAR_PREV_YEAR,
-    
-    DAY_DELAYED_TFC_PERC_PREV_YEAR = lag(DAY_DELAYED_TFC_PERC, 364),
-    RWK_DELAYED_TFC_PERC_PREV_YEAR = lag(RWK_DELAYED_TFC_PERC, 364),
-    Y2D_DELAYED_TFC_PERC_PREV_YEAR = Y2D_DELAYED_TFC_PERC_PREV_YEAR,
-    
-    DAY_DELAYED_TFC_15_PERC_PREV_YEAR = lag(DAY_DELAYED_TFC_15_PERC, 364),
-    RWK_DELAYED_TFC_15_PERC_PREV_YEAR = lag(RWK_DELAYED_TFC_15_PERC, 364),
-    Y2D_DELAYED_TFC_15_PERC_PREV_YEAR = Y2D_DELAYED_TFC_15_PERC_PREV_YEAR,
-    
-    # dif prev year
-    DAY_TFC_DIF_PREV_YEAR = coalesce(DAY_TFC, 0) - coalesce(DAY_TFC_PREV_YEAR, 0),
-    DAY_TFC_DIF_PREV_YEAR_PERC = if_else(DAY_TFC_PREV_YEAR == 0, NA, DAY_TFC/ DAY_TFC_PREV_YEAR)-1,
-    RWK_TFC_DIF_PREV_YEAR_PERC = if_else(RWK_AVG_TFC_PREV_YEAR == 0, NA, RWK_AVG_TFC/ RWK_AVG_TFC_PREV_YEAR)-1,
-    Y2D_TFC_DIF_PREV_YEAR_PERC = if_else(Y2D_AVG_TFC_PREV_YEAR == 0, NA, Y2D_AVG_TFC_YEAR/ Y2D_AVG_TFC_PREV_YEAR)-1,
-    
-    DAY_DLY_DIF_PREV_YEAR_PERC = if_else(DAY_DLY_PREV_YEAR == 0, NA, DAY_DLY/ DAY_DLY_PREV_YEAR)-1,
-    RWK_DLY_DIF_PREV_YEAR_PERC = if_else(RWK_AVG_DLY_PREV_YEAR == 0, NA, RWK_AVG_DLY/ RWK_AVG_DLY_PREV_YEAR)-1,
-    Y2D_DLY_DIF_PREV_YEAR_PERC = if_else(Y2D_AVG_DLY_PREV_YEAR == 0, NA, Y2D_AVG_DLY_YEAR/ Y2D_AVG_DLY_PREV_YEAR)-1,
-    
-    DAY_DLY_FLT_DIF_PREV_YEAR_PERC = if_else(DAY_DLY_FLT_PREV_YEAR == 0, NA, DAY_DLY_FLT/ DAY_DLY_FLT_PREV_YEAR)-1,
-    RWK_DLY_FLT_DIF_PREV_YEAR_PERC = if_else(RWK_DLY_FLT_PREV_YEAR == 0, NA, RWK_DLY_FLT/ RWK_DLY_FLT_PREV_YEAR)-1,
-    Y2D_DLY_FLT_DIF_PREV_YEAR_PERC = if_else(Y2D_DLY_FLT_PREV_YEAR == 0, NA, Y2D_DLY_FLT_YEAR/ Y2D_DLY_FLT_PREV_YEAR)-1,
-    
-    DAY_DELAYED_TFC_PERC_DIF_PREV_YEAR = DAY_DELAYED_TFC_PERC - DAY_DELAYED_TFC_PERC_PREV_YEAR,
-    RWK_DELAYED_TFC_PERC_DIF_PREV_YEAR = RWK_DELAYED_TFC_PERC - RWK_DELAYED_TFC_PERC_PREV_YEAR,
-    Y2D_DELAYED_TFC_PERC_DIF_PREV_YEAR = Y2D_DELAYED_TFC_PERC - Y2D_DELAYED_TFC_PERC_PREV_YEAR, 
-    
-    DAY_DELAYED_TFC_15_PERC_DIF_PREV_YEAR = DAY_DELAYED_TFC_15_PERC - DAY_DELAYED_TFC_15_PERC_PREV_YEAR,
-    RWK_DELAYED_TFC_15_PERC_DIF_PREV_YEAR = RWK_DELAYED_TFC_15_PERC - RWK_DELAYED_TFC_15_PERC_PREV_YEAR, 
-    Y2D_DELAYED_TFC_15_PERC_DIF_PREV_YEAR = Y2D_DELAYED_TFC_15_PERC - Y2D_DELAYED_TFC_15_PERC_PREV_YEAR, 
-    
-    # 2020
-    FLIGHT_DATE_2020 = FLIGHT_DATE_2020,
-    RWK_AVG_TFC_2020 = RWK_AVG_TFC_2020,
-    
-    # 2019
-    FLIGHT_DATE_2019 = FLIGHT_DATE_2019,
-
-    DAY_TFC_2019 = DAY_TFC_2019,
-    RWK_AVG_TFC_2019 = RWK_AVG_TFC_2019,
-    Y2D_TFC_2019 = Y2D_TFC_YEAR_2019,
-    Y2D_AVG_TFC_2019 = Y2D_AVG_TFC_YEAR_2019,
-    
-    DAY_DLY_2019 = DAY_DLY_2019,
-    RWK_AVG_DLY_2019 = RWK_AVG_DLY_2019,
-    Y2D_AVG_DLY_2019 = Y2D_AVG_DLY_YEAR_2019,
-    
-    DAY_DLY_FLT_2019 = DAY_DLY_FLT_2019,
-    RWK_DLY_FLT_2019 = RWK_DLY_FLT_2019,
-    Y2D_DLY_FLT_2019 = Y2D_DLY_FLT_YEAR_2019,
-    
-    DAY_DELAYED_TFC_PERC_2019 = DAY_DELAYED_TFC_PERC_2019,
-    RWK_DELAYED_TFC_PERC_2019 = RWK_DELAYED_TFC_PERC_2019,
-    Y2D_DELAYED_TFC_PERC_2019 = Y2D_DELAYED_TFC_PERC_2019,
-    
-    DAY_DELAYED_TFC_15_PERC_2019 = DAY_DELAYED_TFC_15_PERC_2019,
-    RWK_DELAYED_TFC_15_PERC_2019 = RWK_DELAYED_TFC_15_PERC_2019,
-    Y2D_DELAYED_TFC_15_PERC_2019 = Y2D_DELAYED_TFC_15_PERC_2019,
-
-    # dif 2019
-    DAY_TFC_DIF_2019 = coalesce(DAY_TFC, 0) - coalesce(DAY_TFC_2019, 0),
-    DAY_TFC_DIF_2019_PERC = if_else(DAY_TFC_2019 == 0, NA, DAY_TFC/ DAY_TFC_2019)-1,
-    RWK_TFC_DIF_2019_PERC = if_else(RWK_AVG_TFC_2019 == 0, NA, RWK_AVG_TFC/ RWK_AVG_TFC_2019)-1,
-    Y2D_TFC_DIF_2019_PERC = if_else(Y2D_AVG_TFC_2019 == 0, NA, Y2D_AVG_TFC_YEAR/ Y2D_AVG_TFC_2019)-1,
-    
-    DAY_DLY_DIF_2019_PERC = if_else(DAY_DLY_2019 == 0, NA, DAY_DLY/ DAY_DLY_2019)-1,
-    RWK_DLY_DIF_2019_PERC = if_else(RWK_AVG_DLY_2019 == 0, NA, RWK_AVG_DLY/ RWK_AVG_DLY_2019)-1,
-    Y2D_DLY_DIF_2019_PERC = if_else(Y2D_AVG_DLY_2019 == 0, NA, Y2D_AVG_DLY_YEAR/ Y2D_AVG_DLY_2019)-1,
-    
-    DAY_DLY_FLT_DIF_2019_PERC = if_else(DAY_DLY_FLT_2019 == 0, NA, DAY_DLY_FLT/ DAY_DLY_FLT_2019)-1,
-    RWK_DLY_FLT_DIF_2019_PERC = if_else(RWK_DLY_FLT_2019 == 0, NA, RWK_DLY_FLT/ RWK_DLY_FLT_2019)-1,
-    Y2D_DLY_FLT_DIF_2019_PERC = if_else(Y2D_DLY_FLT_2019 == 0, NA, Y2D_DLY_FLT_YEAR/ Y2D_DLY_FLT_2019)-1,
-    
-    DAY_DELAYED_TFC_PERC_DIF_2019 = coalesce(DAY_DELAYED_TFC_PERC, 0) - coalesce(DAY_DELAYED_TFC_PERC_2019, 0),
-    RWK_DELAYED_TFC_PERC_DIF_2019 = coalesce(RWK_DELAYED_TFC_PERC, 0) - coalesce(RWK_DELAYED_TFC_PERC_2019, 0),
-    Y2D_DELAYED_TFC_PERC_DIF_2019 = coalesce(Y2D_DELAYED_TFC_PERC, 0) - coalesce(Y2D_DELAYED_TFC_PERC_2019, 0), 
-    
-    DAY_DELAYED_TFC_15_PERC_DIF_2019 = coalesce(DAY_DELAYED_TFC_15_PERC, 0) - coalesce(DAY_DELAYED_TFC_15_PERC_2019, 0),
-    RWK_DELAYED_TFC_15_PERC_DIF_2019 = coalesce(RWK_DELAYED_TFC_15_PERC, 0) - coalesce(RWK_DELAYED_TFC_15_PERC_2019, 0), 
-    Y2D_DELAYED_TFC_15_PERC_DIF_2019 = coalesce(Y2D_DELAYED_TFC_15_PERC, 0) - coalesce(Y2D_DELAYED_TFC_15_PERC_2019, 0),
-    
-    LAST_DATA_DAY = mydate
+    ungroup ()
+  
+  ## split table ----
+  df_day <- df_day_year %>% 
+    mutate(
+      FLIGHT_DATE_2019 = FLIGHT_DATE - days((YEAR-2019)*364+ floor((YEAR - 2019) / 4) * 7),
+      FLIGHT_DATE_2020 = FLIGHT_DATE - days((YEAR-2020)*364+ floor((YEAR - 2020) / 4) * 7),
+      FLIGHT_DATE_2019_SD = FLIGHT_DATE %m-% years(YEAR-2019),
+      FLIGHT_DATE_PREV_YEAR_SD = FLIGHT_DATE %m-% years(1) 
+      ) %>% 
+    left_join(select(df_day_year, AO_GRP_CODE, YEAR, FLIGHT_DATE, starts_with(c("Y2D"))), by = c("AO_GRP_CODE", "FLIGHT_DATE_PREV_YEAR_SD" = "FLIGHT_DATE"), suffix = c("","_PREV_YEAR")) %>% 
+    left_join(select(df_day_year, AO_GRP_CODE, YEAR, FLIGHT_DATE, starts_with(c("Y2D"))), by = c("AO_GRP_CODE", "FLIGHT_DATE_2019_SD" = "FLIGHT_DATE"), suffix = c("","_2019")) %>% 
+    left_join(select(df_day_year, AO_GRP_CODE, YEAR, FLIGHT_DATE, starts_with(c("DAY", "RWK"))), by = c("AO_GRP_CODE", "FLIGHT_DATE_2019" = "FLIGHT_DATE"), suffix = c("","_2019")) %>% 
+    left_join(select(df_day_year, AO_GRP_CODE, YEAR, FLIGHT_DATE, RWK_AVG_TFC), by = c("AO_GRP_CODE", "FLIGHT_DATE_2020" = "FLIGHT_DATE"), suffix = c("","_2020")) %>% 
+    arrange(AO_GRP_CODE, FLIGHT_DATE) %>%
+    # filter(FLIGHT_DATE == ymd(20250228))  %>%
+    # filter(AO_GRP_CODE == 'AEA') %>%
+    # select(AO_GRP_CODE, FLIGHT_DATE,FLIGHT_DATE_PREV_YEAR_SD, FLIGHT_DATE_2019_SD, Y2D_TFC_YEAR,	Y2D_TFC_YEAR_PREV_YEAR,	Y2D_TFC_YEAR_2019)
+    group_by(AO_GRP_CODE) %>% 
+    mutate(
+      # prev week
+      FLIGHT_DATE_PREV_WEEK = lag(FLIGHT_DATE, 7),
+      DAY_TFC_PREV_WEEK = lag(DAY_TFC , 7),
+      RWK_AVG_TFC_PREV_WEEK = lag(RWK_AVG_TFC, 7),
+      
+      DAY_DLY_PREV_WEEK = lag(DAY_DLY , 7),
+      RWK_AVG_DLY_PREV_WEEK = lag(RWK_AVG_DLY, 7),
+      
+      DAY_DLY_FLT_PREV_WEEK = lag(DAY_DLY_FLT, 7),
+      RWK_DLY_FLT_PREV_WEEK = lag(RWK_DLY_FLT, 7),
+      
+      DAY_DELAYED_TFC_PERC_PREV_WEEK = lag(DAY_DELAYED_TFC_PERC, 7),
+      RWK_DELAYED_TFC_PERC_PREV_WEEK = lag(RWK_DELAYED_TFC_PERC, 7),
+      
+      DAY_DELAYED_TFC_15_PERC_PREV_WEEK = lag(DAY_DELAYED_TFC_15_PERC, 7),
+      RWK_DELAYED_TFC_15_PERC_PREV_WEEK = lag(RWK_DELAYED_TFC_15_PERC, 7),
+      
+      # dif prev week
+      DAY_TFC_DIF_PREV_WEEK = coalesce(DAY_TFC,0) - coalesce(DAY_TFC_PREV_WEEK, 0),
+      DAY_TFC_DIF_PREV_WEEK_PERC = if_else(DAY_TFC_PREV_WEEK == 0, NA, DAY_TFC/ DAY_TFC_PREV_WEEK) -1,
+      
+      RWK_TFC_DIF_PREV_WEEK_PERC = if_else(RWK_AVG_TFC_PREV_WEEK == 0, NA, RWK_AVG_TFC/ RWK_AVG_TFC_PREV_WEEK)-1,
+      
+      DAY_DLY_DIF_PREV_WEEK_PERC = if_else(DAY_DLY_PREV_WEEK == 0, NA, DAY_DLY/ DAY_DLY_PREV_WEEK)-1,
+      RWK_DLY_DIF_PREV_WEEK_PERC = if_else(RWK_AVG_DLY_PREV_WEEK == 0, NA, RWK_AVG_DLY/ RWK_AVG_DLY_PREV_WEEK)-1,
+      
+      DAY_DLY_FLT_DIF_PREV_WEEK_PERC = if_else(DAY_DLY_FLT_PREV_WEEK == 0, NA, DAY_DLY_FLT/ DAY_DLY_FLT_PREV_WEEK)-1,
+      
+      DAY_DELAYED_TFC_PERC_DIF_PREV_WEEK = DAY_DELAYED_TFC_PERC - DAY_DELAYED_TFC_PERC_PREV_WEEK,
+      RWK_DELAYED_TFC_PERC_DIF_PREV_WEEK = RWK_DELAYED_TFC_PERC - RWK_DELAYED_TFC_PERC_PREV_WEEK, 
+      
+      DAY_DELAYED_TFC_15_PERC_DIF_PREV_WEEK = DAY_DELAYED_TFC_15_PERC - DAY_DELAYED_TFC_15_PERC_PREV_WEEK,
+      RWK_DELAYED_TFC_15_PERC_DIF_PREV_WEEK = RWK_DELAYED_TFC_15_PERC - RWK_DELAYED_TFC_15_PERC_PREV_WEEK, 
+  
+      # prev year
+      FLIGHT_DATE_PREV_YEAR = lag(FLIGHT_DATE, 364),
+      DAY_TFC_PREV_YEAR = lag(DAY_TFC , 364),
+      RWK_AVG_TFC_PREV_YEAR = lag(RWK_AVG_TFC, 364),
+      Y2D_TFC_PREV_YEAR = Y2D_TFC_YEAR_PREV_YEAR,
+      Y2D_AVG_TFC_PREV_YEAR = Y2D_AVG_TFC_YEAR_PREV_YEAR,
+      
+      DAY_DLY_PREV_YEAR = lag(DAY_DLY , 364),
+      RWK_AVG_DLY_PREV_YEAR = lag(RWK_AVG_DLY, 364),
+      Y2D_AVG_DLY_PREV_YEAR = Y2D_AVG_DLY_YEAR_PREV_YEAR,
+      
+      DAY_DLY_FLT_PREV_YEAR = lag(DAY_DLY_FLT, 364),
+      RWK_DLY_FLT_PREV_YEAR = lag(RWK_DLY_FLT, 364),
+      Y2D_DLY_FLT_PREV_YEAR = Y2D_DLY_FLT_YEAR_PREV_YEAR,
+      
+      DAY_DELAYED_TFC_PERC_PREV_YEAR = lag(DAY_DELAYED_TFC_PERC, 364),
+      RWK_DELAYED_TFC_PERC_PREV_YEAR = lag(RWK_DELAYED_TFC_PERC, 364),
+      Y2D_DELAYED_TFC_PERC_PREV_YEAR = Y2D_DELAYED_TFC_PERC_PREV_YEAR,
+      
+      DAY_DELAYED_TFC_15_PERC_PREV_YEAR = lag(DAY_DELAYED_TFC_15_PERC, 364),
+      RWK_DELAYED_TFC_15_PERC_PREV_YEAR = lag(RWK_DELAYED_TFC_15_PERC, 364),
+      Y2D_DELAYED_TFC_15_PERC_PREV_YEAR = Y2D_DELAYED_TFC_15_PERC_PREV_YEAR,
+      
+      # dif prev year
+      DAY_TFC_DIF_PREV_YEAR = coalesce(DAY_TFC, 0) - coalesce(DAY_TFC_PREV_YEAR, 0),
+      DAY_TFC_DIF_PREV_YEAR_PERC = if_else(DAY_TFC_PREV_YEAR == 0, NA, DAY_TFC/ DAY_TFC_PREV_YEAR)-1,
+      RWK_TFC_DIF_PREV_YEAR_PERC = if_else(RWK_AVG_TFC_PREV_YEAR == 0, NA, RWK_AVG_TFC/ RWK_AVG_TFC_PREV_YEAR)-1,
+      Y2D_TFC_DIF_PREV_YEAR_PERC = if_else(Y2D_AVG_TFC_PREV_YEAR == 0, NA, Y2D_AVG_TFC_YEAR/ Y2D_AVG_TFC_PREV_YEAR)-1,
+      
+      DAY_DLY_DIF_PREV_YEAR_PERC = if_else(DAY_DLY_PREV_YEAR == 0, NA, DAY_DLY/ DAY_DLY_PREV_YEAR)-1,
+      RWK_DLY_DIF_PREV_YEAR_PERC = if_else(RWK_AVG_DLY_PREV_YEAR == 0, NA, RWK_AVG_DLY/ RWK_AVG_DLY_PREV_YEAR)-1,
+      Y2D_DLY_DIF_PREV_YEAR_PERC = if_else(Y2D_AVG_DLY_PREV_YEAR == 0, NA, Y2D_AVG_DLY_YEAR/ Y2D_AVG_DLY_PREV_YEAR)-1,
+      
+      DAY_DLY_FLT_DIF_PREV_YEAR_PERC = if_else(DAY_DLY_FLT_PREV_YEAR == 0, NA, DAY_DLY_FLT/ DAY_DLY_FLT_PREV_YEAR)-1,
+      RWK_DLY_FLT_DIF_PREV_YEAR_PERC = if_else(RWK_DLY_FLT_PREV_YEAR == 0, NA, RWK_DLY_FLT/ RWK_DLY_FLT_PREV_YEAR)-1,
+      Y2D_DLY_FLT_DIF_PREV_YEAR_PERC = if_else(Y2D_DLY_FLT_PREV_YEAR == 0, NA, Y2D_DLY_FLT_YEAR/ Y2D_DLY_FLT_PREV_YEAR)-1,
+      
+      DAY_DELAYED_TFC_PERC_DIF_PREV_YEAR = DAY_DELAYED_TFC_PERC - DAY_DELAYED_TFC_PERC_PREV_YEAR,
+      RWK_DELAYED_TFC_PERC_DIF_PREV_YEAR = RWK_DELAYED_TFC_PERC - RWK_DELAYED_TFC_PERC_PREV_YEAR,
+      Y2D_DELAYED_TFC_PERC_DIF_PREV_YEAR = Y2D_DELAYED_TFC_PERC - Y2D_DELAYED_TFC_PERC_PREV_YEAR, 
+      
+      DAY_DELAYED_TFC_15_PERC_DIF_PREV_YEAR = DAY_DELAYED_TFC_15_PERC - DAY_DELAYED_TFC_15_PERC_PREV_YEAR,
+      RWK_DELAYED_TFC_15_PERC_DIF_PREV_YEAR = RWK_DELAYED_TFC_15_PERC - RWK_DELAYED_TFC_15_PERC_PREV_YEAR, 
+      Y2D_DELAYED_TFC_15_PERC_DIF_PREV_YEAR = Y2D_DELAYED_TFC_15_PERC - Y2D_DELAYED_TFC_15_PERC_PREV_YEAR, 
+      
+      # 2020
+      FLIGHT_DATE_2020 = FLIGHT_DATE_2020,
+      RWK_AVG_TFC_2020 = RWK_AVG_TFC_2020,
+      
+      # 2019
+      FLIGHT_DATE_2019 = FLIGHT_DATE_2019,
+  
+      DAY_TFC_2019 = DAY_TFC_2019,
+      RWK_AVG_TFC_2019 = RWK_AVG_TFC_2019,
+      Y2D_TFC_2019 = Y2D_TFC_YEAR_2019,
+      Y2D_AVG_TFC_2019 = Y2D_AVG_TFC_YEAR_2019,
+      
+      DAY_DLY_2019 = DAY_DLY_2019,
+      RWK_AVG_DLY_2019 = RWK_AVG_DLY_2019,
+      Y2D_AVG_DLY_2019 = Y2D_AVG_DLY_YEAR_2019,
+      
+      DAY_DLY_FLT_2019 = DAY_DLY_FLT_2019,
+      RWK_DLY_FLT_2019 = RWK_DLY_FLT_2019,
+      Y2D_DLY_FLT_2019 = Y2D_DLY_FLT_YEAR_2019,
+      
+      DAY_DELAYED_TFC_PERC_2019 = DAY_DELAYED_TFC_PERC_2019,
+      RWK_DELAYED_TFC_PERC_2019 = RWK_DELAYED_TFC_PERC_2019,
+      Y2D_DELAYED_TFC_PERC_2019 = Y2D_DELAYED_TFC_PERC_2019,
+      
+      DAY_DELAYED_TFC_15_PERC_2019 = DAY_DELAYED_TFC_15_PERC_2019,
+      RWK_DELAYED_TFC_15_PERC_2019 = RWK_DELAYED_TFC_15_PERC_2019,
+      Y2D_DELAYED_TFC_15_PERC_2019 = Y2D_DELAYED_TFC_15_PERC_2019,
+  
+      # dif 2019
+      DAY_TFC_DIF_2019 = coalesce(DAY_TFC, 0) - coalesce(DAY_TFC_2019, 0),
+      DAY_TFC_DIF_2019_PERC = if_else(DAY_TFC_2019 == 0, NA, DAY_TFC/ DAY_TFC_2019)-1,
+      RWK_TFC_DIF_2019_PERC = if_else(RWK_AVG_TFC_2019 == 0, NA, RWK_AVG_TFC/ RWK_AVG_TFC_2019)-1,
+      Y2D_TFC_DIF_2019_PERC = if_else(Y2D_AVG_TFC_2019 == 0, NA, Y2D_AVG_TFC_YEAR/ Y2D_AVG_TFC_2019)-1,
+      
+      DAY_DLY_DIF_2019_PERC = if_else(DAY_DLY_2019 == 0, NA, DAY_DLY/ DAY_DLY_2019)-1,
+      RWK_DLY_DIF_2019_PERC = if_else(RWK_AVG_DLY_2019 == 0, NA, RWK_AVG_DLY/ RWK_AVG_DLY_2019)-1,
+      Y2D_DLY_DIF_2019_PERC = if_else(Y2D_AVG_DLY_2019 == 0, NA, Y2D_AVG_DLY_YEAR/ Y2D_AVG_DLY_2019)-1,
+      
+      DAY_DLY_FLT_DIF_2019_PERC = if_else(DAY_DLY_FLT_2019 == 0, NA, DAY_DLY_FLT/ DAY_DLY_FLT_2019)-1,
+      RWK_DLY_FLT_DIF_2019_PERC = if_else(RWK_DLY_FLT_2019 == 0, NA, RWK_DLY_FLT/ RWK_DLY_FLT_2019)-1,
+      Y2D_DLY_FLT_DIF_2019_PERC = if_else(Y2D_DLY_FLT_2019 == 0, NA, Y2D_DLY_FLT_YEAR/ Y2D_DLY_FLT_2019)-1,
+      
+      DAY_DELAYED_TFC_PERC_DIF_2019 = coalesce(DAY_DELAYED_TFC_PERC, 0) - coalesce(DAY_DELAYED_TFC_PERC_2019, 0),
+      RWK_DELAYED_TFC_PERC_DIF_2019 = coalesce(RWK_DELAYED_TFC_PERC, 0) - coalesce(RWK_DELAYED_TFC_PERC_2019, 0),
+      Y2D_DELAYED_TFC_PERC_DIF_2019 = coalesce(Y2D_DELAYED_TFC_PERC, 0) - coalesce(Y2D_DELAYED_TFC_PERC_2019, 0), 
+      
+      DAY_DELAYED_TFC_15_PERC_DIF_2019 = coalesce(DAY_DELAYED_TFC_15_PERC, 0) - coalesce(DAY_DELAYED_TFC_15_PERC_2019, 0),
+      RWK_DELAYED_TFC_15_PERC_DIF_2019 = coalesce(RWK_DELAYED_TFC_15_PERC, 0) - coalesce(RWK_DELAYED_TFC_15_PERC_2019, 0), 
+      Y2D_DELAYED_TFC_15_PERC_DIF_2019 = coalesce(Y2D_DELAYED_TFC_15_PERC, 0) - coalesce(Y2D_DELAYED_TFC_15_PERC_2019, 0),
+      
+      LAST_DATA_DAY = mydate
+      ) %>% 
+    select(
+      AO_GRP_CODE,
+      AO_GRP_NAME,
+      YEAR,
+      MONTH,
+      WEEK,
+      WEEK_NB_YEAR,
+      DAY_TYPE,
+      DAY_OF_WEEK,
+      
+      FLIGHT_DATE,
+      FLIGHT_DATE_PREV_WEEK,
+      FLIGHT_DATE_PREV_YEAR,
+      FLIGHT_DATE_2020,
+      FLIGHT_DATE_2019,
+      
+      DAY_TFC,
+      DAY_TFC_PREV_WEEK,
+      DAY_TFC_PREV_YEAR,
+      DAY_TFC_2019,
+      DAY_TFC_DIF_PREV_WEEK,
+      DAY_TFC_DIF_PREV_YEAR,
+      DAY_TFC_DIF_2019,
+      DAY_TFC_DIF_PREV_WEEK_PERC,
+      DAY_TFC_DIF_PREV_YEAR_PERC,
+      DAY_TFC_DIF_2019_PERC,
+      
+      RWK_AVG_TFC,
+      RWK_AVG_TFC_PREV_WEEK,
+      RWK_AVG_TFC_PREV_YEAR,
+      RWK_AVG_TFC_2020,
+      RWK_AVG_TFC_2019,
+      RWK_TFC_DIF_PREV_YEAR_PERC,
+      RWK_TFC_DIF_2019_PERC,
+      
+      Y2D_TFC_YEAR,
+      Y2D_TFC_PREV_YEAR,
+      Y2D_TFC_2019,
+      Y2D_AVG_TFC_YEAR,
+      Y2D_AVG_TFC_PREV_YEAR,
+      Y2D_AVG_TFC_2019,
+      Y2D_TFC_DIF_PREV_YEAR_PERC,
+      Y2D_TFC_DIF_2019_PERC,
+      
+      DAY_DLY,
+      DAY_DLY_PREV_WEEK,
+      DAY_DLY_PREV_YEAR,
+      DAY_DLY_2019,
+      DAY_DLY_DIF_PREV_WEEK_PERC,
+      DAY_DLY_DIF_PREV_YEAR_PERC,
+      DAY_DLY_DIF_2019_PERC,
+      
+      RWK_AVG_DLY,
+      RWK_AVG_DLY_PREV_WEEK,
+      RWK_AVG_DLY_PREV_YEAR,
+      RWK_AVG_DLY_2019,
+      RWK_DLY_DIF_PREV_YEAR_PERC,
+      RWK_DLY_DIF_2019_PERC,
+      
+      Y2D_AVG_DLY_YEAR,
+      Y2D_AVG_DLY_PREV_YEAR,
+      Y2D_AVG_DLY_2019,
+      Y2D_DLY_DIF_PREV_YEAR_PERC,
+      Y2D_DLY_DIF_2019_PERC,
+      
+      DAY_DLY_FLT,
+      DAY_DLY_FLT_PREV_WEEK,
+      DAY_DLY_FLT_PREV_YEAR,
+      DAY_DLY_FLT_2019,
+      DAY_DLY_FLT_DIF_PREV_WEEK_PERC,
+      DAY_DLY_FLT_DIF_PREV_YEAR_PERC,
+      DAY_DLY_FLT_DIF_2019_PERC,
+      
+      RWK_DLY_FLT,
+      RWK_DLY_FLT_PREV_WEEK,
+      RWK_DLY_FLT_PREV_YEAR,
+      RWK_DLY_FLT_2019,
+      RWK_DLY_FLT_DIF_PREV_YEAR_PERC,
+      RWK_DLY_FLT_DIF_2019_PERC,
+      
+      Y2D_DLY_FLT_YEAR,
+      Y2D_DLY_FLT_PREV_YEAR,
+      Y2D_DLY_FLT_2019,
+      Y2D_DLY_FLT_DIF_PREV_YEAR_PERC,
+      Y2D_DLY_FLT_DIF_2019_PERC,
+      
+      DAY_DELAYED_TFC_PERC,
+      DAY_DELAYED_TFC_PERC_PREV_WEEK,
+      DAY_DELAYED_TFC_PERC_PREV_YEAR,
+      DAY_DELAYED_TFC_PERC_2019,
+      DAY_DELAYED_TFC_PERC_DIF_PREV_WEEK,
+      DAY_DELAYED_TFC_PERC_DIF_PREV_YEAR,
+      DAY_DELAYED_TFC_PERC_DIF_2019,
+      
+      RWK_DELAYED_TFC_PERC,
+      RWK_DELAYED_TFC_PERC_PREV_WEEK,
+      RWK_DELAYED_TFC_PERC_PREV_YEAR,
+      RWK_DELAYED_TFC_PERC_2019,
+      RWK_DELAYED_TFC_PERC_DIF_PREV_WEEK,
+      RWK_DELAYED_TFC_PERC_DIF_PREV_YEAR,
+      RWK_DELAYED_TFC_PERC_DIF_2019,
+      
+      Y2D_DELAYED_TFC_PERC,
+      Y2D_DELAYED_TFC_PERC_PREV_YEAR,
+      Y2D_DELAYED_TFC_PERC_2019,
+      Y2D_DELAYED_TFC_PERC_DIF_PREV_YEAR,
+      Y2D_DELAYED_TFC_PERC_DIF_2019,
+      
+      DAY_DELAYED_TFC_15_PERC,
+      DAY_DELAYED_TFC_15_PERC_PREV_WEEK,
+      DAY_DELAYED_TFC_15_PERC_PREV_YEAR,
+      DAY_DELAYED_TFC_15_PERC_2019,
+      DAY_DELAYED_TFC_15_PERC_DIF_PREV_WEEK,
+      DAY_DELAYED_TFC_15_PERC_DIF_PREV_YEAR,
+      DAY_DELAYED_TFC_15_PERC_DIF_2019,
+      
+      RWK_DELAYED_TFC_15_PERC,
+      RWK_DELAYED_TFC_15_PERC_PREV_WEEK,
+      RWK_DELAYED_TFC_15_PERC_PREV_YEAR,
+      RWK_DELAYED_TFC_15_PERC_2019,
+      RWK_DELAYED_TFC_15_PERC_DIF_PREV_WEEK,
+      RWK_DELAYED_TFC_15_PERC_DIF_PREV_YEAR,
+      RWK_DELAYED_TFC_15_PERC_DIF_2019,
+      
+      Y2D_DELAYED_TFC_15_PERC,
+      Y2D_DELAYED_TFC_15_PERC_PREV_YEAR,
+      Y2D_DELAYED_TFC_15_PERC_2019,
+      Y2D_DELAYED_TFC_15_PERC_DIF_PREV_YEAR,
+      Y2D_DELAYED_TFC_15_PERC_DIF_2019,
+      
+      LAST_DATA_DAY
+      
     ) %>% 
-  select(
-    AO_GRP_CODE,
-    AO_GRP_NAME,
-    YEAR,
-    MONTH,
-    WEEK,
-    WEEK_NB_YEAR,
-    DAY_TYPE,
-    DAY_OF_WEEK,
-    
-    FLIGHT_DATE,
-    FLIGHT_DATE_PREV_WEEK,
-    FLIGHT_DATE_PREV_YEAR,
-    FLIGHT_DATE_2020,
-    FLIGHT_DATE_2019,
-    
-    DAY_TFC,
-    DAY_TFC_PREV_WEEK,
-    DAY_TFC_PREV_YEAR,
-    DAY_TFC_2019,
-    DAY_TFC_DIF_PREV_WEEK,
-    DAY_TFC_DIF_PREV_YEAR,
-    DAY_TFC_DIF_2019,
-    DAY_TFC_DIF_PREV_WEEK_PERC,
-    DAY_TFC_DIF_PREV_YEAR_PERC,
-    DAY_TFC_DIF_2019_PERC,
-    
-    RWK_AVG_TFC,
-    RWK_AVG_TFC_PREV_WEEK,
-    RWK_AVG_TFC_PREV_YEAR,
-    RWK_AVG_TFC_2020,
-    RWK_AVG_TFC_2019,
-    RWK_TFC_DIF_PREV_YEAR_PERC,
-    RWK_TFC_DIF_2019_PERC,
-    
-    Y2D_TFC_YEAR,
-    Y2D_TFC_PREV_YEAR,
-    Y2D_TFC_2019,
-    Y2D_AVG_TFC_YEAR,
-    Y2D_AVG_TFC_PREV_YEAR,
-    Y2D_AVG_TFC_2019,
-    Y2D_TFC_DIF_PREV_YEAR_PERC,
-    Y2D_TFC_DIF_2019_PERC,
-    
-    DAY_DLY,
-    DAY_DLY_PREV_WEEK,
-    DAY_DLY_PREV_YEAR,
-    DAY_DLY_2019,
-    DAY_DLY_DIF_PREV_WEEK_PERC,
-    DAY_DLY_DIF_PREV_YEAR_PERC,
-    DAY_DLY_DIF_2019_PERC,
-    
-    RWK_AVG_DLY,
-    RWK_AVG_DLY_PREV_WEEK,
-    RWK_AVG_DLY_PREV_YEAR,
-    RWK_AVG_DLY_2019,
-    RWK_DLY_DIF_PREV_YEAR_PERC,
-    RWK_DLY_DIF_2019_PERC,
-    
-    Y2D_AVG_DLY_YEAR,
-    Y2D_AVG_DLY_PREV_YEAR,
-    Y2D_AVG_DLY_2019,
-    Y2D_DLY_DIF_PREV_YEAR_PERC,
-    Y2D_DLY_DIF_2019_PERC,
-    
-    DAY_DLY_FLT,
-    DAY_DLY_FLT_PREV_WEEK,
-    DAY_DLY_FLT_PREV_YEAR,
-    DAY_DLY_FLT_2019,
-    DAY_DLY_FLT_DIF_PREV_WEEK_PERC,
-    DAY_DLY_FLT_DIF_PREV_YEAR_PERC,
-    DAY_DLY_FLT_DIF_2019_PERC,
-    
-    RWK_DLY_FLT,
-    RWK_DLY_FLT_PREV_WEEK,
-    RWK_DLY_FLT_PREV_YEAR,
-    RWK_DLY_FLT_2019,
-    RWK_DLY_FLT_DIF_PREV_YEAR_PERC,
-    RWK_DLY_FLT_DIF_2019_PERC,
-    
-    Y2D_DLY_FLT_YEAR,
-    Y2D_DLY_FLT_PREV_YEAR,
-    Y2D_DLY_FLT_2019,
-    Y2D_DLY_FLT_DIF_PREV_YEAR_PERC,
-    Y2D_DLY_FLT_DIF_2019_PERC,
-    
-    DAY_DELAYED_TFC_PERC,
-    DAY_DELAYED_TFC_PERC_PREV_WEEK,
-    DAY_DELAYED_TFC_PERC_PREV_YEAR,
-    DAY_DELAYED_TFC_PERC_2019,
-    DAY_DELAYED_TFC_PERC_DIF_PREV_WEEK,
-    DAY_DELAYED_TFC_PERC_DIF_PREV_YEAR,
-    DAY_DELAYED_TFC_PERC_DIF_2019,
-    
-    RWK_DELAYED_TFC_PERC,
-    RWK_DELAYED_TFC_PERC_PREV_WEEK,
-    RWK_DELAYED_TFC_PERC_PREV_YEAR,
-    RWK_DELAYED_TFC_PERC_2019,
-    RWK_DELAYED_TFC_PERC_DIF_PREV_WEEK,
-    RWK_DELAYED_TFC_PERC_DIF_PREV_YEAR,
-    RWK_DELAYED_TFC_PERC_DIF_2019,
-    
-    Y2D_DELAYED_TFC_PERC,
-    Y2D_DELAYED_TFC_PERC_PREV_YEAR,
-    Y2D_DELAYED_TFC_PERC_2019,
-    Y2D_DELAYED_TFC_PERC_DIF_PREV_YEAR,
-    Y2D_DELAYED_TFC_PERC_DIF_2019,
-    
-    DAY_DELAYED_TFC_15_PERC,
-    DAY_DELAYED_TFC_15_PERC_PREV_WEEK,
-    DAY_DELAYED_TFC_15_PERC_PREV_YEAR,
-    DAY_DELAYED_TFC_15_PERC_2019,
-    DAY_DELAYED_TFC_15_PERC_DIF_PREV_WEEK,
-    DAY_DELAYED_TFC_15_PERC_DIF_PREV_YEAR,
-    DAY_DELAYED_TFC_15_PERC_DIF_2019,
-    
-    RWK_DELAYED_TFC_15_PERC,
-    RWK_DELAYED_TFC_15_PERC_PREV_WEEK,
-    RWK_DELAYED_TFC_15_PERC_PREV_YEAR,
-    RWK_DELAYED_TFC_15_PERC_2019,
-    RWK_DELAYED_TFC_15_PERC_DIF_PREV_WEEK,
-    RWK_DELAYED_TFC_15_PERC_DIF_PREV_YEAR,
-    RWK_DELAYED_TFC_15_PERC_DIF_2019,
-    
-    Y2D_DELAYED_TFC_15_PERC,
-    Y2D_DELAYED_TFC_15_PERC_PREV_YEAR,
-    Y2D_DELAYED_TFC_15_PERC_2019,
-    Y2D_DELAYED_TFC_15_PERC_DIF_PREV_YEAR,
-    Y2D_DELAYED_TFC_15_PERC_DIF_2019,
-    
-    LAST_DATA_DAY
-    
-  ) %>% 
-  ungroup() %>% 
-  arrange(AO_GRP_CODE, FLIGHT_DATE)
-
-df_day %>% write_parquet(here(archive_dir_raw, stakeholder, mydatafile))
-
-print(paste(mydataframe, mydate))
-
-# test <- df_day %>% filter(YEAR == 2024) %>% 
-#   filter(FLIGHT_DATE >= ymd(20240106)) # %>%
-#   # filter(AO_GRP_CODE == 'AEA') %>%
-#   # select(AO_GRP_CODE, FLIGHT_DATE,FLIGHT_DATE_PREV_YEAR, FLIGHT_DATE_2019, Y2D_TFC_YEAR,	Y2D_TFC_PREV_YEAR,	Y2D_TFC_2019)
-# 
-# 
-# test %>% write_csv(here(archive_dir_raw,"test.csv"))
-
-# # dcheck
-# dfc <- read_xlsx(
-#   path  = fs::path_abs(
-#     str_glue(ao_base_file),
-#     start = ao_base_dir),
-#   sheet = "ao_traffic_delay",
-#   range = cell_limits(c(1, 1), c(NA, NA))) |>
-#   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-# 
-# dfc <- read_csv(here(archive_dir_raw, stakeholder, "20241231_ao_traffic_delay_raw.csv"), show_col_types = FALSE)
-# 
-# df <- dfc %>% arrange(AO_GRP_CODE, FLIGHT_DATE) %>%
-#   filter(YEAR == 2024) %>% 
-#   filter(FLIGHT_DATE >= ymd(20240106))
-#   # filter(AO_GRP_CODE == 'AEA') %>%
-#   # select(AO_GRP_CODE, FLIGHT_DATE,FLIGHT_DATE_PREV_YEAR, FLIGHT_DATE_2019, Y2D_TFC_YEAR,	Y2D_TFC_PREV_YEAR,	Y2D_TFC_2019)
-
-
-# for (i in 1:nrow(list_ao_group)) {
-#   df1 <- df %>% filter(AO_GRP_CODE == list_ao_group$AO_GRP_CODE[i])
-# 
-#   df_day1 <- test %>% filter(AO_GRP_CODE == list_ao_group$AO_GRP_CODE[i])
-# 
-#   # print(paste(list_ao_group$AO_GRP_CODE[i], all.equal(df1, df_day1)))
-#   # nrow(df1)
-#   for (j in 1:nrow(df1)) {
-#     for (t in 14:112){
-#       if (((coalesce(df1[[j,t]],0) - coalesce(df_day1[[j,t]],0))<10^-8) == FALSE) {
-#         print(paste(t,df1[[j,1]], df1[[j,9]], (df1[[j,t]] - df_day1[[j,t]])<10^-8))
-#         break}
-#       # print(paste(t,df1[[j,1]], df1[[j,9]], (df1[[j,t]] - df_day1[[j,t]])<10^-8))
-#     }
-#   }
-#   print(paste(t,df1[[j,1]], df1[[j,9]], (df1[[j,t]] - df_day1[[j,t]])<10^-8))
-#   
-# }
-
+    ungroup() %>% 
+    arrange(AO_GRP_CODE, FLIGHT_DATE)
+  
+  df_day %>% write_parquet(here(archive_dir_raw, stakeholder, mydatafile))
+  
+  print(paste(mydataframe, mydate))
+  
+  # test <- df_day %>% filter(YEAR == 2024) %>% 
+  #   filter(FLIGHT_DATE >= ymd(20240106)) # %>%
+  #   # filter(AO_GRP_CODE == 'AEA') %>%
+  #   # select(AO_GRP_CODE, FLIGHT_DATE,FLIGHT_DATE_PREV_YEAR, FLIGHT_DATE_2019, Y2D_TFC_YEAR,	Y2D_TFC_PREV_YEAR,	Y2D_TFC_2019)
+  # 
+  # 
+  # test %>% write_csv(here(archive_dir_raw,"test.csv"))
+  
+  # # dcheck
+  # dfc <- read_xlsx(
+  #   path  = fs::path_abs(
+  #     str_glue(ao_base_file),
+  #     start = ao_base_dir),
+  #   sheet = "ao_traffic_delay",
+  #   range = cell_limits(c(1, 1), c(NA, NA))) |>
+  #   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+  # 
+  # dfc <- read_csv(here(archive_dir_raw, stakeholder, "20241231_ao_traffic_delay_raw.csv"), show_col_types = FALSE)
+  # 
+  # df <- dfc %>% arrange(AO_GRP_CODE, FLIGHT_DATE) %>%
+  #   filter(YEAR == 2024) %>% 
+  #   filter(FLIGHT_DATE >= ymd(20240106))
+  #   # filter(AO_GRP_CODE == 'AEA') %>%
+  #   # select(AO_GRP_CODE, FLIGHT_DATE,FLIGHT_DATE_PREV_YEAR, FLIGHT_DATE_2019, Y2D_TFC_YEAR,	Y2D_TFC_PREV_YEAR,	Y2D_TFC_2019)
+  
+  
+  # for (i in 1:nrow(list_ao_group)) {
+  #   df1 <- df %>% filter(AO_GRP_CODE == list_ao_group$AO_GRP_CODE[i])
+  # 
+  #   df_day1 <- test %>% filter(AO_GRP_CODE == list_ao_group$AO_GRP_CODE[i])
+  # 
+  #   # print(paste(list_ao_group$AO_GRP_CODE[i], all.equal(df1, df_day1)))
+  #   # nrow(df1)
+  #   for (j in 1:nrow(df1)) {
+  #     for (t in 14:112){
+  #       if (((coalesce(df1[[j,t]],0) - coalesce(df_day1[[j,t]],0))<10^-8) == FALSE) {
+  #         print(paste(t,df1[[j,1]], df1[[j,9]], (df1[[j,t]] - df_day1[[j,t]])<10^-8))
+  #         break}
+  #       # print(paste(t,df1[[j,1]], df1[[j,9]], (df1[[j,t]] - df_day1[[j,t]])<10^-8))
+  #     }
+  #   }
+  #   print(paste(t,df1[[j,1]], df1[[j,9]], (df1[[j,t]] - df_day1[[j,t]])<10^-8))
+  #   
+  # }
+}
 
 # ao st des ----
 ao_st_des <- function(mydate =  current_day) {
@@ -2049,12 +1754,13 @@ ao_ap_arr_delay <- function(mydate =  current_day) {
 }
 
 
-
 # execute functions ----
 # wef <- "2024-01-01"  #included in output
-# til <- "2024-05-17"  #included in output
+# til <- "2025-09-01"  #included in output
 # current_day <- seq(ymd(til), ymd(wef), by = "-1 day")
 
+
+ao_traffic_delay()
 purrr::walk(current_day, ao_st_des)
 purrr::walk(current_day, ao_ap_dep)
 purrr::walk(current_day, ao_ap_pair)
