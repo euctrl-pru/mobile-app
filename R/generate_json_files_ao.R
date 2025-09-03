@@ -110,31 +110,34 @@ ao_billed_for_json <- ao_billing %>%
   )
 
 #### Traffic data ----
-mydataframe <- "ao_traffic_delay_raw"
+mydataframe <- "ao_traffic_delay_day_raw"
 stakeholder <- "ao"
 
-if (archive_mode & year(data_day_date) < year(today(tzone = "") +  days(-1))) {
-  myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
+df <-  read_parquet(here(archive_dir_raw, stakeholder, paste0(mydataframe, ".parquet"))) %>% 
+  filter(YEAR == data_day_year)
 
-} else {
-
-  df <-  read_xlsx(
-    path  = fs::path_abs(
-      str_glue(ao_base_file),
-      start = ao_base_dir),
-    sheet = "ao_traffic_delay",
-    range = cell_limits(c(1, 1), c(NA, NA))) %>%
-    as_tibble() %>%
-    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-
-  # save pre-processed file in archive for generation of past json files
-  # only last day of the year
-  if(format(data_day_date, "%m%d") == "1231") {
-    myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
-    write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
-  }
-}
+# if (archive_mode & year(data_day_date) < year(today(tzone = "") +  days(-1))) {
+#   myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
+#   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
+# 
+# } else {
+# 
+#   df <-  read_xlsx(
+#     path  = fs::path_abs(
+#       str_glue(ao_base_file),
+#       start = ao_base_dir),
+#     sheet = "ao_traffic_delay",
+#     range = cell_limits(c(1, 1), c(NA, NA))) %>%
+#     as_tibble() %>%
+#     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+# 
+#   # save pre-processed file in archive for generation of past json files
+#   # only last day of the year
+#   if(format(data_day_date, "%m%d") == "1231") {
+#     myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
+#     write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+#   }
+# }
 
 ao_traffic_delay_data <- assign(mydataframe, df)
 
@@ -734,21 +737,21 @@ mydataframe <- "ao_st_des_data_day_raw"
 myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
-if (archive_mode) {
+# if (archive_mode) {
   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
-} else {
-  df <- read_xlsx(
-    path  = fs::path_abs(
-      str_glue(ao_base_file),
-      start = ao_base_dir),
-    sheet = "ao_state_des_day",
-    range = cell_limits(c(1, 1), c(NA, NA))) %>%
-    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-
-  # save pre-processed file in archive for generation of past json files
-  write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
-}
+# } else {
+#   df <- read_xlsx(
+#     path  = fs::path_abs(
+#       str_glue(ao_base_file),
+#       start = ao_base_dir),
+#     sheet = "ao_state_des_day",
+#     range = cell_limits(c(1, 1), c(NA, NA))) %>%
+#     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+# 
+#   # save pre-processed file in archive for generation of past json files
+#   write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+# }
 
 # process data
 ao_st_des_data_day_int <- assign(mydataframe, df) %>%
@@ -993,25 +996,25 @@ save_json(ao_st_des_data_j, "ao_st_ranking_traffic")
 
 ### Departure airport ----
 #### day ----
-mydataframe <- "ao_apt_dep_data_day_raw"
+mydataframe <- "ao_ap_dep_data_day_raw"
 myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
-if (archive_mode) {
+# if (archive_mode) {
   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
-} else {
-  df <- read_xlsx(
-    path  = fs::path_abs(
-      str_glue(ao_base_file),
-      start = ao_base_dir),
-    sheet = "ao_apt_dep_day",
-    range = cell_limits(c(1, 1), c(NA, NA))) %>%
-    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-
-  # save pre-processed file in archive for generation of past json files
-  write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
-}
+# } else {
+#   df <- read_xlsx(
+#     path  = fs::path_abs(
+#       str_glue(ao_base_file),
+#       start = ao_base_dir),
+#     sheet = "ao_apt_dep_day",
+#     range = cell_limits(c(1, 1), c(NA, NA))) %>%
+#     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+# 
+#   # save pre-processed file in archive for generation of past json files
+#   write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+# }
 
 # process data
 ao_apt_dep_data_day_int <- assign(mydataframe, df) %>%
@@ -1254,25 +1257,25 @@ save_json(ao_apt_dep_data_j, "ao_apt_ranking_traffic")
 
 ### Airport pair ----
 #### day ----
-mydataframe <- "ao_apt_pair_data_day_raw"
+mydataframe <- "ao_ap_pair_data_day_raw"
 myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
-if (archive_mode) {
+# if (archive_mode) {
   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
-} else {
-  df <- read_xlsx(
-    path  = fs::path_abs(
-      str_glue(ao_base_file),
-      start = ao_base_dir),
-    sheet = "ao_apt_pair_day",
-    range = cell_limits(c(1, 1), c(NA, NA))) %>%
-    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-
-  # save pre-processed file in archive for generation of past json files
-  write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
-}
+# } else {
+#   df <- read_xlsx(
+#     path  = fs::path_abs(
+#       str_glue(ao_base_file),
+#       start = ao_base_dir),
+#     sheet = "ao_apt_pair_day",
+#     range = cell_limits(c(1, 1), c(NA, NA))) %>%
+#     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+# 
+#   # save pre-processed file in archive for generation of past json files
+#   write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+# }
 
 # process data
 ao_apt_pair_data_day_int <- assign(mydataframe, df) %>%
@@ -1518,24 +1521,25 @@ save_json(ao_apt_pair_data_j, "ao_apt_pair_ranking_traffic")
 
 ## DELAY ----
 ### Arrival airport ----
-myarchivefile <- "_ao_apt_arr_delay_raw.csv"
-stakeholder <- str_sub(myarchivefile, 2,3)
+mydataframe <- "ao_ap_arr_delay_day_raw"
+myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+stakeholder <- str_sub(mydataframe, 1,2)
 
-if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile)), show_col_types = FALSE)
+# if (archive_mode) {
+df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
-} else {
-  df <- read_xlsx(
-    path  = fs::path_abs(
-      str_glue(ao_base_file),
-      start = ao_base_dir),
-    sheet = "ao_apt_arr_delay",
-    range = cell_limits(c(1, 1), c(NA, NA))) %>%
-    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-
-  # save pre-processed file in archive for generation of past json files
-  write_csv(df, here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile)))
-}
+# } else {
+#   df <- read_xlsx(
+#     path  = fs::path_abs(
+#       str_glue(ao_base_file),
+#       start = ao_base_dir),
+#     sheet = "ao_apt_arr_delay",
+#     range = cell_limits(c(1, 1), c(NA, NA))) %>%
+#     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+# 
+#   # save pre-processed file in archive for generation of past json files
+#   write_csv(df, here(archive_dir_raw, stakeholder, paste0(data_day_text, myarchivefile)))
+# }
 
 ao_apt_arr_delay_raw <- assign(mydataframe, df)
 
@@ -1543,7 +1547,7 @@ ao_apt_arr_delay_raw <- assign(mydataframe, df)
 ao_apt_arr_delay_day <- ao_apt_arr_delay_raw %>%
   filter(PERIOD == "1D") %>%
   group_by(AO_GROUP_CODE) %>%
-  arrange(AO_GROUP_CODE, desc(ARR_ATFM_DELAY)) %>%
+  arrange(AO_GROUP_CODE, desc(ARR_ATFM_DELAY), APT_NAME) %>%
   mutate(R_RANK = row_number(),
          AO_GRP_RANK = paste0(AO_GROUP_CODE, R_RANK),
          DY_APT_ARR_DLY_FLT = if_else(ARR_FLIGHT == 0, 0, ARR_ATFM_DELAY/ARR_FLIGHT)
@@ -1561,7 +1565,7 @@ ao_apt_arr_delay_day <- ao_apt_arr_delay_raw %>%
 ao_apt_arr_delay_week <- ao_apt_arr_delay_raw %>%
   filter(PERIOD == "WK") %>%
   group_by(AO_GROUP_CODE) %>%
-  arrange(AO_GROUP_CODE, desc(ARR_ATFM_DELAY)) %>%
+  arrange(AO_GROUP_CODE, desc(ARR_ATFM_DELAY), APT_NAME) %>%
   mutate(R_RANK = row_number(),
          AO_GRP_RANK = paste0(AO_GROUP_CODE, R_RANK),
          WK_APT_ARR_DLY = ARR_ATFM_DELAY /7,
@@ -1580,7 +1584,7 @@ ao_apt_arr_delay_week <- ao_apt_arr_delay_raw %>%
 ao_apt_arr_delay_y2d <- ao_apt_arr_delay_raw %>%
   filter(PERIOD == "YTD") %>%
   group_by(AO_GROUP_CODE) %>%
-  arrange(AO_GROUP_CODE, desc(ARR_ATFM_DELAY)) %>%
+  arrange(AO_GROUP_CODE, desc(ARR_ATFM_DELAY), APT_NAME) %>%
   mutate(R_RANK = row_number(),
          AO_GRP_RANK = paste0(AO_GROUP_CODE, R_RANK),
          Y2D_APT_ARR_DLY = ARR_ATFM_DELAY /(as.numeric(END_DATE -START_DATE) +1),
@@ -1667,7 +1671,9 @@ ao_traffic_evo <- ao_traffic_delay_data  %>%
     RWK_AVG_TFC_PREV_YEAR,
     RWK_AVG_TFC_2020,
     RWK_AVG_TFC_2019
-  )
+  )%>% 
+  arrange(AO_GRP_CODE, FLIGHT_DATE)
+
 
 column_names <- c('AO_GRP_CODE', 'AO_GRP_NAME', 'FLIGHT_DATE', data_day_year, data_day_year-1, 2020, 2019)
 colnames(ao_traffic_evo) <- column_names
@@ -1697,7 +1703,9 @@ ao_delay_flt_evo <- ao_traffic_delay_data  %>%
     FLIGHT_DATE,
     RWK_DLY_FLT,
     RWK_DLY_FLT_PREV_YEAR
-  )
+  ) %>% 
+  arrange(AO_GRP_CODE, FLIGHT_DATE)
+
 
 column_names <- c('AO_GRP_CODE',
                   'AO_GRP_NAME',
@@ -1742,7 +1750,9 @@ ao_delayed_flights_evo <- ao_traffic_delay_data  %>%
     RWK_DELAYED_TFC_PERC_PREV_YEAR,
     RWK_DELAYED_TFC_15_PERC,
     RWK_DELAYED_TFC_15_PERC_PREV_YEAR
-  )
+  ) %>% 
+  arrange(AO_GRP_CODE, FLIGHT_DATE)
+
 
 column_names <- c('AO_GRP_CODE',
                   'AO_GRP_NAME',

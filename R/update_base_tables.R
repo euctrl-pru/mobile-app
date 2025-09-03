@@ -50,16 +50,17 @@ mydataframes <- c(
   "ap_st_des",
   "ap_ap_des",
   "ap_ms",
-  
+
   "ao_traffic_delay",
   "ao_st_des",
   "ao_ap_dep",
   "ao_ap_pair",
+  "ao_ap_arr_delay",
   NULL
 )
 
 update_base_tables <- function(mydataframe) {
-# mydataframe <-   "ao"
+# mydataframe <-   "ao_ap_arr_delay"
   myarchivefile <- paste0(mydataframe, "_day_base.parquet")
   mybackupfile <- paste0(mydataframe, "_day_base_backup.parquet")
   query_7d <- get(paste0(mydataframe, "_day_base_query"))
@@ -84,6 +85,9 @@ update_base_tables <- function(mydataframe) {
   } else if ("FLIGHT_DATE" %in% names(df)) {
     df_filtered <- df %>% 
       filter(!(FLIGHT_DATE %in% c(seq.Date(today_date + days(-7), today_date))))
+  } else if ("ARR_DATE" %in% names(df)) {
+    df_filtered <- df %>% 
+      filter(!(ARR_DATE %in% c(seq.Date(today_date + days(-7), today_date))))
   }
   
   

@@ -34,6 +34,7 @@ if (!archive_mode) {
 source(here("..", "mobile-app", "R", "update_base_tables.R"))
 ## create csvs from basic tables
 source(here("..", "mobile-app", "R", "ap_csv_from_new_files.R"))
+source(here("..", "mobile-app", "R", "ao_csv_from_new_files.R"))
 }
 
 # set the stakeholders you want to generate when using archive mode
@@ -180,12 +181,12 @@ if (data_status) {
 
 from    <- "oscar.alfaro@eurocontrol.int"
 to      <- c("oscar.alfaro@eurocontrol.int"
-             # ,
-             # "quinten.goens@eurocontrol.int",
-             # "enrico.spinielli@eurocontrol.int",
-             # "delia.budulan@eurocontrol.int",
-             # "nora.cashman@eurocontrol.int"
-             # ,  "denis.huet@eurocontrol.int"
+             ,
+             "quinten.goens@eurocontrol.int",
+             "enrico.spinielli@eurocontrol.int",
+             "delia.budulan@eurocontrol.int",
+             "nora.cashman@eurocontrol.int"
+             ,  "denis.huet@eurocontrol.int"
 )
 # cc      <- c("enrico.spinielli@eurocontrol.int")
 control <- list(smtpServer="mailservices.eurocontrol.int")

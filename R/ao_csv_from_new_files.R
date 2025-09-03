@@ -330,7 +330,7 @@ dim_marktet_segment <- export_query(query)
 # prep data functions ----
 import_dataframe <- function(dfname) {
   # import data 
-  # mydataframe <- "ao"
+  # mydataframe <- "ao_ap_arr_delay"
   mydataframe <- dfname
   myparquetfile <- paste0(mydataframe, "_day_base.parquet")
   
@@ -370,7 +370,20 @@ import_dataframe <- function(dfname) {
           FLIGHT = sum(FLIGHT, na.rm = TRUE),
           .by = c(ENTRY_DATE, AO_GRP_CODE, AO_GRP_NAME, ARP_PRU_ID_1, ARP_PRU_ID_2)
         )
-    } else if (dfname == "ao_traffic_delay"){
+    } else if (dfname == "ao_ap_arr_delay"){
+      
+      df_app <- df_alldays %>% 
+        compute(prudence = "lavish") %>%
+        left_join(list_ao, by = c("AO_ID", "AO_CODE")) %>%
+        summarise(
+          FLIGHT = sum(FLTS, na.rm = TRUE),
+          ARR_DELAYED_FLIGHT = sum(DELAYED_FLTS, na.rm = TRUE),
+          ARR_ATFM_DELAY = sum(DELAY_AMNT, na.rm = TRUE),
+          .by = c(ARR_DATE, AO_GRP_CODE, AO_GRP_NAME, ARR_ARP_PRU_ID)
+        ) %>% 
+        rename (ENTRY_DATE = ARR_DATE)
+      
+      } else if (dfname == "ao_traffic_delay"){
       
       df_app <- df_alldays %>% 
         compute(prudence = "lavish") %>%
@@ -599,7 +612,7 @@ df_day <- df_day_year %>%
     RWK_DELAYED_TFC_15_PERC_DIF_2019 = coalesce(RWK_DELAYED_TFC_15_PERC, 0) - coalesce(RWK_DELAYED_TFC_15_PERC_2019, 0), 
     Y2D_DELAYED_TFC_15_PERC_DIF_2019 = coalesce(Y2D_DELAYED_TFC_15_PERC, 0) - coalesce(Y2D_DELAYED_TFC_15_PERC_2019, 0),
     
-    LAST_DATA_DAY = max(FLIGHT_DATE, na.rm = TRUE)
+    LAST_DATA_DAY = mydate
     ) %>% 
   select(
     AO_GRP_CODE,
@@ -734,9 +747,12 @@ df_day <- df_day_year %>%
     LAST_DATA_DAY
     
   ) %>% 
+  ungroup() %>% 
   arrange(AO_GRP_CODE, FLIGHT_DATE)
 
 df_day %>% write_parquet(here(archive_dir_raw, stakeholder, mydatafile))
+
+print(paste(mydataframe, mydate))
 
 # test <- df_day %>% filter(YEAR == 2024) %>% 
 #   filter(FLIGHT_DATE >= ymd(20240106)) # %>%
@@ -1720,14 +1736,327 @@ ao_ap_pair <- function(mydate =  current_day) {
   print(paste(mydataframe, mydate))
 }
 
+# ao ap arr delay ----
+ao_ap_arr_delay <- function(mydate =  current_day) {
+  mydataframe <-  "ao_ap_arr_delay"
+  
+  df_app <- import_dataframe(mydataframe)
+  
+  # mydate <- today()- days(1)
+  data_day_text <- mydate %>% format("%Y%m%d")
+  day_prev_week <- mydate + days(-7)
+  day_prev_year <- mydate + days(-364)
+  day_2019 <- mydate - days(364 * (year(mydate) - 2019) + floor((year(mydate) - 2019) / 4) * 7)
+  current_year = year(mydate)
+  
+  stakeholder <- str_sub(mydataframe, 1, 2)
+  
+  mycsvfile <- paste0(data_day_text, "_", mydataframe, "_day_raw.csv")
+
+  ## day ----
+  df_day <- df_app %>%
+    filter(ENTRY_DATE %in% c(mydate, day_prev_year)) %>% 
+    left_join(dim_airport, by = c("ARR_ARP_PRU_ID" = "APT_ID")) %>% 
+    mutate(
+      FLAG_PERIOD = if_else(ENTRY_DATE == mydate, "", "PREV_")
+    ) %>% 
+    select(
+      FLAG_PERIOD,
+      ENTRY_DATE,
+      AO_GRP_CODE,
+      APT_ICAO_CODE,
+      APT_NAME,
+      FLIGHT,
+      ARR_DELAYED_FLIGHT,
+      ARR_ATFM_DELAY
+    ) %>% 
+    pivot_wider(
+      names_from  = FLAG_PERIOD,
+      values_from = c(ENTRY_DATE, FLIGHT, ARR_DELAYED_FLIGHT, ARR_ATFM_DELAY),
+      names_glue  = "{FLAG_PERIOD}{.value}"
+    ) %>% 
+    group_by(AO_GRP_CODE, ENTRY_DATE) %>%
+    arrange(AO_GRP_CODE, ENTRY_DATE, desc(FLIGHT), APT_ICAO_CODE) %>% 
+    mutate(
+      RANK_BY_FLIGHT = row_number()
+    ) %>% 
+    ungroup() %>% 
+    filter(RANK_BY_FLIGHT < 11 & !is.na(ENTRY_DATE)) %>% 
+    mutate(
+      PERIOD = "1D",
+      START_DATE = ENTRY_DATE + days(0),
+      END_DATE = ENTRY_DATE,
+      PREV_START_DATE = PREV_ENTRY_DATE + days(0),
+      PREV_END_DATE = PREV_ENTRY_DATE
+    ) %>% 
+    select(
+      PERIOD,
+      START_DATE,
+      END_DATE,
+      AO_GROUP_CODE = AO_GRP_CODE,
+      APT_CODE = APT_ICAO_CODE,
+      APT_NAME,
+      ARR_FLIGHT = FLIGHT,
+      ARR_DELAYED_FLIGHT,
+      ARR_ATFM_DELAY,
+      RANK_BY_FLIGHT,
+      PREV_START_DATE,
+      PREV_END_DATE,
+      PREV_ARR_FLIGHT = PREV_FLIGHT,
+      PREV_DELAYED_FLIGHT = PREV_ARR_DELAYED_FLIGHT,
+      PREV_ARR_ATFM_DELAY
+    ) %>% 
+    arrange(AO_GROUP_CODE, PERIOD, START_DATE, RANK_BY_FLIGHT, APT_NAME)
+  
+  # df_day %>% write_csv(here(archive_dir_raw, stakeholder, mycsvfile))
+  
+  # dcheck
+  # df <- read_xlsx(
+  #   path  = fs::path_abs(
+  #     str_glue(ao_base_file),
+  #     start = ao_base_dir),
+  #   sheet = "ao_apt_arr_delay",
+  #   range = cell_limits(c(1, 1), c(NA, NA))) |>
+  #   mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>% 
+  #   filter(PERIOD == "1D")
+  # 
+  # df <- df %>%
+  #   arrange(AO_GROUP_CODE, PERIOD, START_DATE, RANK_BY_FLIGHT, APT_NAME)
+  # 
+  # # nrow(list_ao_group)
+  # for (i in 1:nrow(list_ao_group)) {
+  #   df1 <- df %>% filter(AO_GROUP_CODE == list_ao_group$AO_GRP_CODE[i])
+  # 
+  #   df_day1 <- df_day %>% filter(AO_GROUP_CODE == list_ao_group$AO_GRP_CODE[i])
+  # 
+  #   print(paste(list_ao_group$AO_GRP_CODE[i], all.equal(df1, df_day1)))
+  # 
+  #   # for (j in 1:nrow(df1)) {
+  #   #
+  #   #   print(paste(j, df1[[j,4]] == df_day1[[j,4]]))
+  #   #
+  #   # }
+  # }
+  
+  ## week ----
+  df_week <- df_app %>%
+    filter(
+      ENTRY_DATE %in% c(seq.Date(mydate-6, mydate)) |
+      ENTRY_DATE %in% c(seq.Date(day_prev_year-6, day_prev_year))
+    ) %>% 
+    compute(prudence = "lavish") %>%
+    mutate(
+      FLAG_PERIOD = case_when( 
+        (ENTRY_DATE >= mydate - days(6) & ENTRY_DATE <= mydate) ~ "",
+        (ENTRY_DATE >= day_prev_year - days(6) & ENTRY_DATE <= day_prev_year) ~ "PREV_"
+      )
+    ) %>% 
+    summarise(
+      FLIGHT = sum(FLIGHT, na.rm = TRUE),
+      ARR_DELAYED_FLIGHT = sum(ARR_DELAYED_FLIGHT, na.rm = TRUE),
+      ARR_ATFM_DELAY = sum(ARR_ATFM_DELAY, na.rm = TRUE),
+      .by = c(FLAG_PERIOD, AO_GRP_CODE, AO_GRP_NAME, ARR_ARP_PRU_ID)
+    ) %>% 
+    ungroup() %>% 
+    left_join(dim_airport, by = c("ARR_ARP_PRU_ID" = "APT_ID")) %>% 
+    select(
+      FLAG_PERIOD,
+      AO_GRP_CODE,
+      APT_ICAO_CODE,
+      APT_NAME,
+      FLIGHT,
+      ARR_DELAYED_FLIGHT,
+      ARR_ATFM_DELAY
+    ) %>% 
+    pivot_wider(
+      names_from  = FLAG_PERIOD,
+      values_from = c(FLIGHT, ARR_DELAYED_FLIGHT, ARR_ATFM_DELAY),
+      names_glue  = "{FLAG_PERIOD}{.value}"
+    ) %>% 
+    group_by(AO_GRP_CODE) %>%
+    arrange(AO_GRP_CODE, desc(FLIGHT), APT_ICAO_CODE) %>% 
+    mutate(
+      RANK_BY_FLIGHT = row_number(),
+      START_DATE = mydate - days(6),
+      END_DATE = mydate,
+      PREV_START_DATE = day_prev_year - days(6),
+      PREV_END_DATE = day_prev_year
+    ) %>% 
+    ungroup() %>% 
+    filter(RANK_BY_FLIGHT < 11 & !is.na(END_DATE)) %>% 
+    mutate(
+      PERIOD = "WK") %>% 
+    select(
+      PERIOD,
+      START_DATE,
+      END_DATE,
+      AO_GROUP_CODE = AO_GRP_CODE,
+      APT_CODE = APT_ICAO_CODE,
+      APT_NAME,
+      ARR_FLIGHT = FLIGHT,
+      ARR_DELAYED_FLIGHT,
+      ARR_ATFM_DELAY,
+      RANK_BY_FLIGHT,
+      PREV_START_DATE,
+      PREV_END_DATE,
+      PREV_ARR_FLIGHT = PREV_FLIGHT,
+      PREV_DELAYED_FLIGHT = PREV_ARR_DELAYED_FLIGHT,
+      PREV_ARR_ATFM_DELAY
+    ) %>% 
+    arrange(AO_GROUP_CODE, PERIOD, START_DATE, RANK_BY_FLIGHT, APT_NAME)
+  
+  unique(df_week$START_DATE)
+  # df_day %>% write_csv(here(archive_dir_raw, stakeholder, mycsvfile))
+  
+  # dcheck
+  # df <- read_xlsx(
+  #   path  = fs::path_abs(
+  #     str_glue(ao_base_file),
+  #     start = ao_base_dir),
+  #   sheet = "ao_apt_arr_delay",
+  #   range = cell_limits(c(1, 1), c(NA, NA))) |>
+  #   mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
+  #   filter(PERIOD == "WK")
+  # 
+  # df <- df %>%
+  #   arrange(AO_GROUP_CODE, PERIOD, START_DATE, RANK_BY_FLIGHT, APT_NAME)
+  # 
+  # # nrow(list_ao_group)
+  # for (i in 1:nrow(list_ao_group)) {
+  #   df1 <- df %>% filter(AO_GROUP_CODE == list_ao_group$AO_GRP_CODE[i])
+  # 
+  #   df_day1 <- df_week %>% filter(AO_GROUP_CODE == list_ao_group$AO_GRP_CODE[i])
+  # 
+  #   print(paste(list_ao_group$AO_GRP_CODE[i], all.equal(df1, df_day1)))
+  # 
+  #   # for (j in 1:nrow(df1)) {
+  #   #
+  #   #   print(paste(j, df1[[j,4]] == df_day1[[j,4]]))
+  #   #
+  #   # }
+  # }
+  
+  ## year ----
+  y2d_dates <- seq.Date(ymd(paste0(current_year-1,"01","01")),
+                        mydate) %>% as_tibble() %>%
+    filter(format(value, "%m-%d") <= format(mydate, "%m-%d")) %>%
+    pull()
+  
+  day_prev_year_sd <- max(y2d_dates[year(y2d_dates) == current_year - 1], na.rm = TRUE)
+  
+  
+  df_y2d <- df_app %>%
+    compute(prudence = "lavish") %>%
+    mutate(
+      YEAR = year(ENTRY_DATE)
+    ) %>%
+    filter(YEAR %in% c(current_year, current_year-1)) %>%
+    filter(ENTRY_DATE %in% y2d_dates) %>% 
+    compute(prudence = "lavish") %>%
+    summarise(
+      FLIGHT = sum(FLIGHT, na.rm = TRUE),
+      ARR_DELAYED_FLIGHT = sum(ARR_DELAYED_FLIGHT, na.rm = TRUE),
+      ARR_ATFM_DELAY = sum(ARR_ATFM_DELAY, na.rm = TRUE),
+      .by = c(YEAR, AO_GRP_CODE, AO_GRP_NAME, ARR_ARP_PRU_ID)
+    ) %>% 
+    ungroup() %>% 
+    left_join(dim_airport, by = c("ARR_ARP_PRU_ID" = "APT_ID")) %>% 
+    mutate(
+      FLAG_PERIOD = if_else(YEAR == current_year, "", "PREV_")
+    ) %>%
+    select(
+      FLAG_PERIOD,
+      AO_GRP_CODE,
+      APT_ICAO_CODE,
+      APT_NAME,
+      FLIGHT,
+      ARR_DELAYED_FLIGHT,
+      ARR_ATFM_DELAY
+    ) %>% 
+    pivot_wider(
+      names_from  = FLAG_PERIOD,
+      values_from = c(FLIGHT, ARR_DELAYED_FLIGHT, ARR_ATFM_DELAY),
+      names_glue  = "{FLAG_PERIOD}{.value}"
+    ) %>% 
+    group_by(AO_GRP_CODE) %>%
+    arrange(AO_GRP_CODE, desc(FLIGHT), APT_ICAO_CODE) %>% 
+    mutate(
+      RANK_BY_FLIGHT = row_number(),
+      START_DATE = ymd(paste0(current_year,"0101")),
+      END_DATE = mydate,
+      PREV_START_DATE = ymd(paste0(current_year-1,"0101")),
+      PREV_END_DATE = day_prev_year_sd
+    ) %>% 
+    ungroup() %>% 
+    filter(RANK_BY_FLIGHT < 11) %>% 
+    mutate(
+      PERIOD = "YTD") %>% 
+    select(
+      PERIOD,
+      START_DATE,
+      END_DATE,
+      AO_GROUP_CODE = AO_GRP_CODE,
+      APT_CODE = APT_ICAO_CODE,
+      APT_NAME,
+      ARR_FLIGHT = FLIGHT,
+      ARR_DELAYED_FLIGHT,
+      ARR_ATFM_DELAY,
+      RANK_BY_FLIGHT,
+      PREV_START_DATE,
+      PREV_END_DATE,
+      PREV_ARR_FLIGHT = PREV_FLIGHT,
+      PREV_DELAYED_FLIGHT = PREV_ARR_DELAYED_FLIGHT,
+      PREV_ARR_ATFM_DELAY
+    ) %>% 
+    arrange(AO_GROUP_CODE, PERIOD, START_DATE, RANK_BY_FLIGHT, APT_NAME)
+
+  # dcheck
+  # df <- read_xlsx(
+  #   path  = fs::path_abs(
+  #     str_glue(ao_base_file),
+  #     start = ao_base_dir),
+  #   sheet = "ao_apt_arr_delay",
+  #   range = cell_limits(c(1, 1), c(NA, NA))) |>
+  #   mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
+  #   filter(PERIOD == "YTD")
+  # 
+  # df <- df %>%
+  #   arrange(AO_GROUP_CODE, PERIOD, START_DATE, RANK_BY_FLIGHT, APT_NAME)
+  # 
+  # # nrow(list_ao_group)
+  # for (i in 1:nrow(list_ao_group)) {
+  #   df1 <- df %>% filter(AO_GROUP_CODE == list_ao_group$AO_GRP_CODE[i])
+  # 
+  #   df_day1 <- df_y2d %>% filter(AO_GROUP_CODE == list_ao_group$AO_GRP_CODE[i])
+  # 
+  #   print(paste(list_ao_group$AO_GRP_CODE[i], all.equal(df1, df_day1)))
+  # 
+  #   # for (j in 1:nrow(df1)) {
+  #   #
+  #   #   print(paste(j, df1[[j,4]] == df_day1[[j,4]]))
+  #   #
+  #   # }
+  # }
+  
+  df_all_periods <- df_day %>% 
+    rbind(df_week) %>% 
+    rbind(df_y2d)
+  
+  df_all_periods %>% write_csv(here(archive_dir_raw, stakeholder, mycsvfile))
+  
+  
+  print(paste(mydataframe, mydate))
+}
+
+
 
 # execute functions ----
 # wef <- "2024-01-01"  #included in output
 # til <- "2024-05-17"  #included in output
 # current_day <- seq(ymd(til), ymd(wef), by = "-1 day")
 
-# purrr::walk(current_day, ap_ao)
 purrr::walk(current_day, ao_st_des)
 purrr::walk(current_day, ao_ap_dep)
 purrr::walk(current_day, ao_ap_pair)
+purrr::walk(current_day, ao_ap_arr_delay)
 

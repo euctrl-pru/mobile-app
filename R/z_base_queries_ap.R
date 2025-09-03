@@ -1,5 +1,5 @@
 # AIRPORT ----
-## ap_ao_day_base_query ----
+## ap_ao ----
 ap_ao_day_base_query <- paste0("
 WITH
 
@@ -86,7 +86,7 @@ oRDER BY dep_arr desc
 "
 )
 
-## ap_st_des_day_base_query ----
+## ap_st_des ----
 ap_st_des_day_base_query <- paste0("
 with 
 
@@ -128,7 +128,7 @@ ORDER BY A.ENTRY_DATE DESC , A.DEP_ARP_PRU_ID,  dep DESC
 "
 )
 
-## ap_ap_des_day_base_query ----
+## ap_ap_des ----
 ap_ap_des_day_base_query <- paste0("
 with 
 
@@ -162,7 +162,7 @@ ORDER BY A.ENTRY_DATE DESC , A.DEP_ARP_PRU_ID,  dep DESC
 "
 )
 
-## ap_ms_day_base_query ----
+## ap_ms ----
 ap_ms_day_base_query <- paste0("
 WITH
 
@@ -235,7 +235,7 @@ ORDER BY entry_date, arp_pru_id, ms_id
 )
 
 # AIRLINE ----
-## ao_day_base_query ----
+## ao_day ----
 ao_traffic_delay_day_base_query <- paste0("
 with 
 DIM_AO
@@ -333,7 +333,7 @@ SELECT a.YEAR,
 "
 )
 
-## ao_st_des_base_query ----
+## ao_st_des ----
 ao_st_des_day_base_query <- paste0("
 with 
 
@@ -399,7 +399,7 @@ ORDER BY a.entry_date, a.ao_id, flight desc
 )
 
 
-## ao_ap_dep_base_query ----
+## ao_ap_dep ----
 ao_ap_dep_day_base_query <- paste0("
 with 
 
@@ -465,7 +465,7 @@ ORDER BY a.entry_date, a.ao_id, flight desc
 )
 
 
-## ao_ap_pair_base_query ----
+## ao_ap_pair ----
 ao_ap_pair_day_base_query <- paste0("
 with 
 DIM_AO
@@ -540,5 +540,115 @@ GROUP BY
       a.arp_pru_id_1,
       a.arp_pru_id_2
 ORDER BY a.entry_date, a.ao_id, flight desc     
+"
+)
+
+
+## ao_ap_arr_delay ----
+ao_ap_arr_delay_day_base_query <- paste0("
+WITH
+
+DIM_AO
+ as ( SELECT distinct
+ 		ao_id,
+ 		ao_code, 
+ 		wef,
+ 		til
+ from  ldw_acc.AO_GROUPS_ASSOCIATION
+ ) , 
+                              
+
+ DIM_APT as
+(select * from prudev.PRU_AIRPORT
+),
+   
+ 
+ Apt_arr_reg AS
+        (SELECT DISTINCT
+                Agg_flt_lobt     Flts_lobt
+              , Agg_flt_mp_regu_id
+              , Ref_loc_id       Reg_arpt
+           FROM Prudev.V_aiu_agg_flt_flow
+          WHERE Mp_regu_loc_cat = 'Arrival'
+            AND Agg_flt_mp_regu_loc_ty = 'Airport'
+            and agg_flt_lobt >= ", query_from, "
+ )
+ 
+   
+, DATA_DAY AS (
+SELECT  
+        Flt_ftfm_ades,
+        Flt_ctfm_ades,
+        Flt_most_penal_regu_id,
+        Atfm_delay,
+        CASE WHEN (TRUNC(A.Arvt_3) >= d.wef AND TRUNC(A.Arvt_3) <= d.til)
+        		THEN nvl(d.ao_id, 1777 ) 
+        		ELSE 99999
+        END ao_id, 
+        nvl(d.ao_code,'ZZZ') ao_code,
+        TRUNC(A.Arvt_3) arr_date,
+        TRUNC(A.Flt_lobt) flt_lobt,
+        A.flt_uid
+FROM prudev.v_aiu_flt A 
+     left outer join DIM_AO d  on ( (a.ao_icao_id = d.ao_code ) )
+WHERE  
+            TRUNC(A.Arvt_3) >= ", query_from, "
+            AND TRUNC(A.Arvt_3) < trunc(sysdate)
+            AND Flt_lobt >= ", query_from, " -2
+            AND Flt_lobt < trunc(sysdate) +2
+
+     AND A.flt_state IN ('TE', 'TA', 'AA')
+),
+
+            
+            
+    Apt_arr_delay_ao AS
+        (
+        SELECT DISTINCT
+              arr_date
+              , ao_id
+              , ao_code
+              , Flt_ctfm_ades
+              , COUNT(*)
+                    OVER(
+                        PARTITION BY arr_date
+                                   , ao_code
+                                   , Flt_ctfm_ades
+                    )                 Flts
+              , SUM(NVL2(Agg_flt_mp_regu_id, decode(atfm_delay,NULL,0,0,0, 1),0))
+                    OVER(
+                        PARTITION BY arr_date
+                                   , ao_code
+                                   , Flt_ctfm_ades
+                    )                 AS Delayed_flts
+              , SUM(NVL2(Agg_flt_mp_regu_id, Atfm_delay, 0))
+                    OVER(
+                        PARTITION BY arr_date
+                                   , ao_code
+                                   , Flt_ctfm_ades
+                    )                 AS Delay_amnt
+           FROM DATA_DAY  A
+                LEFT JOIN Apt_arr_reg B
+                    ON (Flt_lobt = B.Flts_lobt
+                    AND A.Flt_most_penal_regu_id =
+                        B.Agg_flt_mp_regu_id
+                    AND A.Flt_ftfm_ades = B.Reg_arpt)
+            where ao_id != 99999
+
+ )
+
+        SELECT DISTINCT 
+        				arr_date
+                       , Ao_code
+                       , ao_id
+					             , c.id as arr_arp_pru_id
+                       , SUM(Flts) Flts
+                       , SUM(Delayed_flts) Delayed_flts
+                       , SUM(Delay_amnt) Delay_amnt
+           FROM Apt_arr_delay_ao a
+     left outer join DIM_APT C  ON  (A.flt_ctfm_ades = C.icao_code)
+     GROUP BY arr_date, ao_code, ao_id, c.id    
+order BY arr_date DESC, flts DESC, ao_code 
+
 "
 )
