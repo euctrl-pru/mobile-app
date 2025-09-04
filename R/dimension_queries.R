@@ -276,7 +276,7 @@ INNER JOIN (
 ) b ON a.arp_code = b.ec_ap_code
 "
 
-## iso country ----
+##dim iso country ----
 dim_iso_st_query <- "
   select 
     AIU_ISO_COUNTRY_CODE as iso_country_code,
@@ -285,6 +285,30 @@ dim_iso_st_query <- "
   group by AIU_ISO_COUNTRY_CODE, AIU_ISO_COUNTRY_NAME
 "
 
+##list iso country ----
+list_iso_st_query <-"
+    SELECT 
+    AIU_ISO_COUNTRY_CODE as iso_country_code,
+    AIU_ISO_COUNTRY_NAME as country_name
+  from prudev.pru_country_iso
+  WHERE AIU_ISO_COUNTRY_CODE IN (
+  'AL', 'AM', 'AT', 'BE', 'BA', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'GE', 'DE', 'GR', 'HU', 'IS', 'IE', 'IL'
+, 'IT', 'LV', 'LT', 'LU', 'MT', 'MD', 'ME', 'MA', 'NL', 'MK', 'NO', 'PL', 'PT', 'RO', 'RS', 'SK', 'SI',       'SE', 'CH'
+, 'TR', 'UA', 'GB'
+)
+  group by AIU_ISO_COUNTRY_CODE, AIU_ISO_COUNTRY_NAME
+  UNION ALL 
+  SELECT 
+  	'IC' AS iso_country_code,
+  	'Spain Canaries' AS country_name
+  FROM dual
+    UNION ALL 
+  SELECT 
+  	'ES' AS iso_country_code,
+  	'Spain Continental' AS country_name
+  FROM dual
+  ORDER BY ISO_COUNTRY_CODE 
+"
 
 ## market segment ---- 
 dim_ms_query <- "

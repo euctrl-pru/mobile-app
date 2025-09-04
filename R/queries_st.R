@@ -9,11 +9,8 @@ WITH
  (SELECT     agg_asp_entry_date as flight_date,
              agg_asp_id COUNTRY_CODE,
              agg_asp_ty as TYPE,
-             CASE WHEN agg_asp_id = 'LW' THEN 'North Macedonia'
-                WHEN agg_asp_id = 'LT' THEN 'Türkiye'
-                  WHEN agg_asp_id = 'LQ' then 'Bosnia and Herzegovina'
+             CASE WHEN agg_asp_id = 'LQ' then 'Bosnia and Herzegovina'
                   WHEN agg_asp_id = 'LY' then 'Serbia/Montenegro'
-                  WHEN agg_asp_id = 'LE' then 'Spain Continental'
                 ELSE agg_asp_name
              END COUNTRY_NAME,
              SUM (coalesce(a.agg_asp_a_traffic_asp,0)) as DAY_TFC,
