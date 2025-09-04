@@ -246,9 +246,6 @@ ap_ao <- function(mydate =  current_day) {
     arrange(ARP_CODE, PERIOD_TYPE, R_RANK, AO_GRP_NAME)
   
   df_week %>% write_csv(here(archive_dir_raw, stakeholder, mycsvfile))
-  
-  test <- df_week %>%
-    filter(ARP_CODE == "LLBG")
 
   # dcheck
   # df <- read_xlsx(
