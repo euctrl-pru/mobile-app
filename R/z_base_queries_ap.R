@@ -1,3 +1,277 @@
+# STATE ----
+## st_ao ----
+st_ao_day_base_query <- paste0("
+with 
+
+DIM_AO
+ as ( SELECT distinct
+ 		ao_id,
+ 		ao_code, 
+ 		wef,
+ 		til
+ from  ldw_acc.AO_GROUPS_ASSOCIATION
+ ) ,
+ 
+REL_AP_CTRY as (
+select cfmu_ap_code ,
+       CASE WHEN SUBSTR(cfmu_ap_code, 1, 2) = 'GC' then 'IC'
+            ELSE country_code 
+       END iso_ct_code,
+       region,
+       pru_dashboard_ap_name  as ad_name
+ from  prudev.v_covid_rel_airport_area 
+
+),  
+
+
+AIRP_FLIGHT as (
+SELECT flt_uid,
+       TRUNC (flt_a_asp_prof_time_entry) AS ENTRY_DATE,
+       c1.iso_ct_code dep_ctry ,
+       c2.iso_ct_code arr_ctry,
+        CASE WHEN (TRUNC(A.flt_a_asp_prof_time_entry) >= d.wef AND TRUNC(A.flt_a_asp_prof_time_entry) <= d.til)
+        		THEN nvl(d.ao_id, 1777) 
+        		ELSE 99999
+        END ao_id, 
+        nvl(d.ao_code,'ZZZ') ao_code
+       
+  FROM prudev.v_aiu_flt a
+     left outer join REL_AP_CTRY c1 ON  (a.flt_dep_ad = c1.cfmu_ap_code)
+     left outer join REL_AP_CTRY c2 ON  (a.flt_ctfm_ades  = c2.cfmu_ap_code)
+     left outer join DIM_AO d  on ( (a.ao_icao_id = d.ao_code ) )
+  WHERE A.flt_lobt >= ", query_from, " - 2 
+                        AND A.flt_lobt < TRUNC (SYSDATE) + 2
+                        AND A.flt_a_asp_prof_time_entry >=  ", query_from, " 
+                        AND A.flt_a_asp_prof_time_entry < TRUNC (SYSDATE)-0 
+ 
+       AND A.flt_state IN ('TE', 'TA', 'AA')
+     )
+     
+   
+, CTRY_PAIR_FLIGHT as (
+SELECT entry_date,
+      CASE WHEN   dep_ctry <= arr_ctry
+           THEN dep_ctry 
+           ELSE   arr_ctry 
+       END          
+        ctry1, 
+      CASE WHEN  dep_ctry <= arr_ctry
+           THEN arr_ctry  
+           ELSE   dep_ctry 
+       END          
+        ctry2 , 
+        ao_id,
+        ao_code,
+        flt_uid
+  FROM AIRP_FLIGHT 
+ 
+  )
+  
+ , CTRY_PAIR_ARP_1 as (
+ SELECT
+        entry_date, 
+        ctry1,
+        ctry2, 
+        ao_id,
+        ao_code,
+        flt_uid 
+ FROM 
+ CTRY_PAIR_FLIGHT 
+ 
+ 
+ )  
+ 
+ , CTRY_PAIR_ARP_2 as (
+SELECT entry_date,
+       ctry2 as ctry1,
+       ctry1 as ctry2,
+        ao_id,
+        ao_code,
+        flt_uid 
+FROM CTRY_PAIR_ARP_1  
+  WHERE ctry1 <> ctry2
+ )
+ 
+, CTRY_PAIR_ARP as (
+ SELECT  ctry1 as iso_ct_code, entry_date,
+ 		ao_id,
+        ao_code,
+        flt_uid 
+ FROM CTRY_PAIR_ARP_1
+ UNION ALL
+ SELECT  ctry1 as iso_ct_code, entry_date,
+ 		ao_id,
+        ao_code,
+        flt_uid 
+ FROM  CTRY_PAIR_ARP_2
+ ) 
+
+
+select entry_date,
+		iso_ct_code,  
+ 		ao_id,
+        ao_code,
+		count(flt_uid) as flight
+ from CTRY_PAIR_ARP a
+where ao_id != 99999
+ group by entry_date,
+ 		iso_ct_code,  
+ 		ao_id,
+        ao_code
+ORDER BY iso_ct_code, flight desc
+"
+)
+
+## st_ap ----
+st_ap_day_base_query <- paste0("
+with 
+
+ DIM_APT as
+(select * from prudev.pru_airport
+), 
+ 
+REL_AP_CTRY as (
+select cfmu_ap_code ,
+       CASE WHEN SUBSTR(cfmu_ap_code, 1, 2) = 'GC' then 'IC'
+            ELSE country_code 
+       END iso_ct_code
+ from  prudev.v_covid_rel_airport_area 
+
+),  
+
+DATA_FLIGHT_DEP as (
+SELECT nvl(A.adep_day_all_trf,0) AS mvt,
+     		    COALESCE(b.icao_code, 'ZZZZ') arp_icao_code,
+				    COALESCE(b.id, 1618) as arp_pru_id, -- 1618 code for unknown
+                'DEP' as airport_flow,
+                 A.adep_DAY_FLT_DATE  AS FLIGHT_DATE
+ FROM  prudev.v_aiu_agg_dep_day A 
+     left outer  join DIM_APT b ON  ( A.adep_day_adep =  b.icao_code)
+
+ where A.adep_DAY_FLT_DATE >=  ", query_from, "
+        AND A.adep_DAY_FLT_DATE < TRUNC (SYSDATE)-0 
+    
+)
+
+,DATA_FLIGHT_ARR as (
+SELECT nvl(A.ades_day_all_trf,0) AS mvt,
+     		    COALESCE(b.icao_code, 'ZZZZ') arp_icao_code,
+				COALESCE(b.id, 1618) as arp_pru_id, -- 1618 code for unknown
+                'ARR' as airport_flow,
+                 A.ades_DAY_FLT_DATE  AS FLIGHT_DATE
+ FROM  prudev.v_aiu_agg_arr_day A 
+     left outer  join DIM_APT b ON  ( A.ades_day_ades_ctfm =  b.icao_code)
+ 
+ where  A.ades_DAY_FLT_DATE >=  ", query_from, "
+         AND A.ades_DAY_FLT_DATE < TRUNC (SYSDATE)-0 
+     
+)
+
+SELECT FLIGHT_DATE,
+        mvt, 
+        a.arp_icao_code, 
+        a.arp_pru_id,
+      a.airport_flow,
+        c.iso_ct_code
+  FROM DATA_FLIGHT_DEP a   JOIN REL_AP_CTRY C on (a.arp_icao_code = c.cfmu_ap_code)                
+UNION ALL -- union is all as we count all dep and arrival
+ SELECT FLIGHT_DATE,
+       mvt, 
+        a.arp_icao_code, 
+        a.arp_pru_id,
+        a.airport_flow,
+        c.iso_ct_code
+  FROM DATA_FLIGHT_ARR a   JOIN REL_AP_CTRY C on (a.arp_icao_code = c.cfmu_ap_code) 
+  ORDER BY iso_ct_code, mvt desc
+
+"
+)
+
+## st_st ----
+st_st_day_base_query <- paste0("
+with 
+
+ DIM_APT as
+(select * from prudev.pru_airport
+), 
+ 
+REL_AP_CTRY as (
+select cfmu_ap_code ,
+       CASE WHEN SUBSTR(cfmu_ap_code, 1, 2) = 'GC' then 'IC'
+            WHEN country_code = 'SPAIN' then 'ES'
+            ELSE country_code 
+       END iso_ct_code
+ from  prudev.v_covid_rel_airport_area 
+
+), 
+
+AIRP_FLIGHT as (
+SELECT count(flt_uid) as mvt,
+       TRUNC (flt_a_asp_prof_time_entry) AS entry_date,
+       c1.iso_ct_code dep_ctry,
+       c2.iso_ct_code arr_ctry
+       
+  FROM v_aiu_flt a, REL_AP_CTRY c1, REL_AP_CTRY c2
+ WHERE A.flt_lobt >= ", query_from, " -2
+                        AND A.flt_lobt < TRUNC (SYSDATE)+2
+                        AND A.flt_a_asp_prof_time_entry >=  ", query_from, "
+                        AND A.flt_a_asp_prof_time_entry < TRUNC (SYSDATE)
+ 
+       AND A.flt_state IN ('TE', 'TA', 'AA')
+       AND flt_dep_ad = c1.cfmu_ap_code and  flt_ctfm_ades = c2.cfmu_ap_code
+       GROUP BY c1.iso_ct_code, c2.iso_ct_code, TRUNC (flt_a_asp_prof_time_entry)
+     ),
+     
+    
+CTRY_PAIR_FLIGHT as
+(
+SELECT entry_date,
+      CASE WHEN   dep_ctry <= arr_ctry
+           THEN dep_ctry 
+           ELSE   arr_ctry 
+       END          
+        iso_ct_code1, 
+      CASE WHEN  dep_ctry <= arr_ctry
+           THEN arr_ctry  
+           ELSE   dep_ctry 
+       END          
+        iso_ct_code2 , 
+        mvt
+  FROM AIRP_FLIGHT 
+ 
+  ),
+  
+ CTRY_PAIR_ARP_1 as 
+ (SELECT entry_date,
+        iso_ct_code1,
+        iso_ct_code2, 
+        sum(mvt) as TOT_MVT 
+ FROM 
+ CTRY_PAIR_FLIGHT 
+ group by entry_date, iso_ct_code1, iso_ct_code2
+ 
+ ),  
+ 
+ CTRY_PAIR_ARP_2 as 
+(
+SELECT entry_date,
+      iso_ct_code2 as iso_ct_code1,
+       iso_ct_code1 as iso_ct_code2,
+       TOT_MVT
+FROM CTRY_PAIR_ARP_1  
+  WHERE iso_ct_code1 <> iso_ct_code2
+ )
+
+ SELECT entry_date, iso_ct_code1, iso_ct_code2, TOT_MVT 
+ FROM CTRY_PAIR_ARP_1
+ UNION ALL
+ SELECT entry_date, iso_ct_code1, iso_ct_code2, TOT_MVT
+ FROM  CTRY_PAIR_ARP_2
+ORDER BY entry_date, iso_ct_code1, tot_mvt desc
+ 
+ "
+)
+
 # AIRPORT ----
 ## ap_ao ----
 ap_ao_day_base_query <- paste0("
