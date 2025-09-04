@@ -36,7 +36,7 @@ dim_iso_country <- export_query(dim_iso_st_query)
 # prep data functions ----
 import_dataframe <- function(dfname) {
   # import data 
-  # mydataframe <- "ao_ap_arr_delay"
+  # dfname <- "ao_st_des"
   mydataframe <- dfname
   myparquetfile <- paste0(mydataframe, "_day_base.parquet")
   
@@ -46,8 +46,8 @@ import_dataframe <- function(dfname) {
   
   # filter to keep days and airports needed
   df_alldays <- df_base %>% 
-      filter(AO_ID %in% list_ao$AO_ID)  
-
+    filter(AO_ID %in% list_ao$AO_ID)  
+  
   # pre-process data
   if (dfname == "ao_st_des") {
     df_app <- df_alldays %>% 
@@ -58,54 +58,54 @@ import_dataframe <- function(dfname) {
         .by = c(ENTRY_DATE, AO_GRP_CODE, AO_GRP_NAME, ARR_ISO_CTY_CODE)
       )  
     
-    } else if (dfname == "ao_ap_dep"){
-      
-      df_app <- df_alldays %>% 
-        compute(prudence = "lavish") %>%
-        left_join(list_ao, by = c("AO_ID", "AO_CODE")) %>%
-        summarise(
-          FLIGHT = sum(FLIGHT, na.rm = TRUE),
-          .by = c(ENTRY_DATE, AO_GRP_CODE, AO_GRP_NAME, DEP_ARP_PRU_ID)
-        )
-    } else if (dfname == "ao_ap_pair"){
-      
-      df_app <- df_alldays %>% 
-        compute(prudence = "lavish") %>%
-        left_join(list_ao, by = c("AO_ID", "AO_CODE")) %>%
-        summarise(
-          FLIGHT = sum(FLIGHT, na.rm = TRUE),
-          .by = c(ENTRY_DATE, AO_GRP_CODE, AO_GRP_NAME, ARP_PRU_ID_1, ARP_PRU_ID_2)
-        )
-    } else if (dfname == "ao_ap_arr_delay"){
-      
-      df_app <- df_alldays %>% 
-        compute(prudence = "lavish") %>%
-        left_join(list_ao, by = c("AO_ID", "AO_CODE")) %>%
-        summarise(
-          FLIGHT = sum(FLTS, na.rm = TRUE),
-          ARR_DELAYED_FLIGHT = sum(DELAYED_FLTS, na.rm = TRUE),
-          ARR_ATFM_DELAY = sum(DELAY_AMNT, na.rm = TRUE),
-          .by = c(ARR_DATE, AO_GRP_CODE, AO_GRP_NAME, ARR_ARP_PRU_ID)
-        ) %>% 
-        rename (ENTRY_DATE = ARR_DATE)
-      
-      } else if (dfname == "ao_traffic_delay"){
-      
-      df_app <- df_alldays %>% 
-        compute(prudence = "lavish") %>%
-        left_join(list_ao, by = c("AO_ID", "AO_CODE")) %>%
-        summarise(
-          DAY_TFC = sum(DAY_TFC, na.rm = TRUE),
-          DAY_DLY = sum(DAY_DLY, na.rm = TRUE),
-          DAY_DLY_15 = sum(DAY_DLY_15, na.rm = TRUE),
-          DAY_DELAYED_TFC = sum(DAY_DELAYED_TFC, na.rm = TRUE),
-          DAY_DELAYED_TFC_15 = sum(DAY_DELAYED_TFC_15, na.rm = TRUE),
-          .by = c(YEAR, MONTH, WEEK,	WEEK_NB_YEAR,	DAY_TYPE,	DAY_OF_WEEK, FLIGHT_DATE, AO_GRP_CODE, AO_GRP_NAME)
-        )
-    } else {
-      df_app <- df_alldays
+  } else if (dfname == "ao_ap_dep"){
+    
+    df_app <- df_alldays %>% 
+      compute(prudence = "lavish") %>%
+      left_join(list_ao, by = c("AO_ID", "AO_CODE")) %>%
+      summarise(
+        FLIGHT = sum(FLIGHT, na.rm = TRUE),
+        .by = c(ENTRY_DATE, AO_GRP_CODE, AO_GRP_NAME, DEP_ARP_PRU_ID)
+      )
+  } else if (dfname == "ao_ap_pair"){
+    
+    df_app <- df_alldays %>% 
+      compute(prudence = "lavish") %>%
+      left_join(list_ao, by = c("AO_ID", "AO_CODE")) %>%
+      summarise(
+        FLIGHT = sum(FLIGHT, na.rm = TRUE),
+        .by = c(ENTRY_DATE, AO_GRP_CODE, AO_GRP_NAME, ARP_PRU_ID_1, ARP_PRU_ID_2)
+      )
+  } else if (dfname == "ao_ap_arr_delay"){
+    
+    df_app <- df_alldays %>% 
+      compute(prudence = "lavish") %>%
+      left_join(list_ao, by = c("AO_ID", "AO_CODE")) %>%
+      summarise(
+        FLIGHT = sum(FLTS, na.rm = TRUE),
+        ARR_DELAYED_FLIGHT = sum(DELAYED_FLTS, na.rm = TRUE),
+        ARR_ATFM_DELAY = sum(DELAY_AMNT, na.rm = TRUE),
+        .by = c(ARR_DATE, AO_GRP_CODE, AO_GRP_NAME, ARR_ARP_PRU_ID)
+      ) %>% 
+      rename (ENTRY_DATE = ARR_DATE)
+    
+  } else if (dfname == "ao_traffic_delay"){
+    
+    df_app <- df_alldays %>% 
+      compute(prudence = "lavish") %>%
+      left_join(list_ao, by = c("AO_ID", "AO_CODE")) %>%
+      summarise(
+        DAY_TFC = sum(DAY_TFC, na.rm = TRUE),
+        DAY_DLY = sum(DAY_DLY, na.rm = TRUE),
+        DAY_DLY_15 = sum(DAY_DLY_15, na.rm = TRUE),
+        DAY_DELAYED_TFC = sum(DAY_DELAYED_TFC, na.rm = TRUE),
+        DAY_DELAYED_TFC_15 = sum(DAY_DELAYED_TFC_15, na.rm = TRUE),
+        .by = c(YEAR, MONTH, WEEK,	WEEK_NB_YEAR,	DAY_TYPE,	DAY_OF_WEEK, FLIGHT_DATE, AO_GRP_CODE, AO_GRP_NAME)
+      )
+  } else {
+    df_app <- df_alldays
   }
-
+  
   return(df_app) 
 }
 
@@ -114,12 +114,12 @@ ao_traffic_delay <- function() {
   mydataframe <-  "ao_traffic_delay"
   mydatafile <- paste0(mydataframe, "_day_raw.parquet")
   stakeholder <- str_sub(mydataframe, 1, 2)
-
+  
   df_app <- import_dataframe(mydataframe)
-
+  
   mydate <- max(df_app$FLIGHT_DATE, na.rm = TRUE)
   current_year = year(mydate)
-
+  
   #### create date sequence
   year_from <- paste0(2018, "-12-24")
   year_til <- paste0(current_year, "-12-31")
@@ -131,7 +131,7 @@ ao_traffic_delay <- function() {
   days_ao_grp <- crossing(days_sequence, list_ao_group) %>% 
     arrange(AO_GRP_CODE, FLIGHT_DATE)%>% 
     mutate(YEAR = year(FLIGHT_DATE))
-
+  
   df_day_year <- days_ao_grp %>%
     left_join(df_app, by = c("YEAR", "FLIGHT_DATE", "AO_GRP_CODE", "AO_GRP_NAME")) %>% 
     arrange(AO_GRP_CODE, FLIGHT_DATE) %>%
@@ -177,7 +177,7 @@ ao_traffic_delay <- function() {
       FLIGHT_DATE_2020 = FLIGHT_DATE - days((YEAR-2020)*364+ floor((YEAR - 2020) / 4) * 7),
       FLIGHT_DATE_2019_SD = FLIGHT_DATE %m-% years(YEAR-2019),
       FLIGHT_DATE_PREV_YEAR_SD = FLIGHT_DATE %m-% years(1) 
-      ) %>% 
+    ) %>% 
     left_join(select(df_day_year, AO_GRP_CODE, YEAR, FLIGHT_DATE, starts_with(c("Y2D"))), by = c("AO_GRP_CODE", "FLIGHT_DATE_PREV_YEAR_SD" = "FLIGHT_DATE"), suffix = c("","_PREV_YEAR")) %>% 
     left_join(select(df_day_year, AO_GRP_CODE, YEAR, FLIGHT_DATE, starts_with(c("Y2D"))), by = c("AO_GRP_CODE", "FLIGHT_DATE_2019_SD" = "FLIGHT_DATE"), suffix = c("","_2019")) %>% 
     left_join(select(df_day_year, AO_GRP_CODE, YEAR, FLIGHT_DATE, starts_with(c("DAY", "RWK"))), by = c("AO_GRP_CODE", "FLIGHT_DATE_2019" = "FLIGHT_DATE"), suffix = c("","_2019")) %>% 
@@ -221,7 +221,7 @@ ao_traffic_delay <- function() {
       
       DAY_DELAYED_TFC_15_PERC_DIF_PREV_WEEK = DAY_DELAYED_TFC_15_PERC - DAY_DELAYED_TFC_15_PERC_PREV_WEEK,
       RWK_DELAYED_TFC_15_PERC_DIF_PREV_WEEK = RWK_DELAYED_TFC_15_PERC - RWK_DELAYED_TFC_15_PERC_PREV_WEEK, 
-  
+      
       # prev year
       FLIGHT_DATE_PREV_YEAR = lag(FLIGHT_DATE, 364),
       DAY_TFC_PREV_YEAR = lag(DAY_TFC , 364),
@@ -273,7 +273,7 @@ ao_traffic_delay <- function() {
       
       # 2019
       FLIGHT_DATE_2019 = FLIGHT_DATE_2019,
-  
+      
       DAY_TFC_2019 = DAY_TFC_2019,
       RWK_AVG_TFC_2019 = RWK_AVG_TFC_2019,
       Y2D_TFC_2019 = Y2D_TFC_YEAR_2019,
@@ -294,7 +294,7 @@ ao_traffic_delay <- function() {
       DAY_DELAYED_TFC_15_PERC_2019 = DAY_DELAYED_TFC_15_PERC_2019,
       RWK_DELAYED_TFC_15_PERC_2019 = RWK_DELAYED_TFC_15_PERC_2019,
       Y2D_DELAYED_TFC_15_PERC_2019 = Y2D_DELAYED_TFC_15_PERC_2019,
-  
+      
       # dif 2019
       DAY_TFC_DIF_2019 = coalesce(DAY_TFC, 0) - coalesce(DAY_TFC_2019, 0),
       DAY_TFC_DIF_2019_PERC = if_else(DAY_TFC_2019 == 0, NA, DAY_TFC/ DAY_TFC_2019)-1,
@@ -318,7 +318,7 @@ ao_traffic_delay <- function() {
       Y2D_DELAYED_TFC_15_PERC_DIF_2019 = coalesce(Y2D_DELAYED_TFC_15_PERC, 0) - coalesce(Y2D_DELAYED_TFC_15_PERC_2019, 0),
       
       LAST_DATA_DAY = mydate
-      ) %>% 
+    ) %>% 
     select(
       AO_GRP_CODE,
       AO_GRP_NAME,
@@ -522,7 +522,7 @@ ao_st_des <- function(mydate =  current_day) {
   
   ## day ----
   mycsvfile <- paste0(data_day_text, "_", mydataframe, "_data_day_raw.csv")
-
+  
   df_day <- df_app %>%
     filter(ENTRY_DATE %in% c(mydate, day_prev_week, day_2019, day_prev_year)) %>% 
     left_join(dim_iso_country, by = c("ARR_ISO_CTY_CODE" = "ISO_COUNTRY_CODE")) %>% 
@@ -600,10 +600,10 @@ ao_st_des <- function(mydate =  current_day) {
   #   # 
   #   # }
   # }
-
-## week ----
+  
+  ## week ----
   mycsvfile <- paste0(data_day_text, "_", mydataframe, "_data_week_raw.csv")
-
+  
   df_week <- df_app %>%
     filter(
       ENTRY_DATE %in% c(seq.Date(mydate-6, mydate)) |
@@ -656,7 +656,7 @@ ao_st_des <- function(mydate =  current_day) {
     mutate(
       TO_DATE = max(TO_DATE, na.rm = TRUE),
       FROM_DATE = TO_DATE - days(6),
-      ) %>% 
+    ) %>% 
     select(
       AO_GRP_NAME,
       AO_GRP_CODE,
@@ -698,17 +698,17 @@ ao_st_des <- function(mydate =  current_day) {
   #   #
   #   # }
   # }
-
+  
   
   ## year ----
   mycsvfile <- paste0(data_day_text, "_", mydataframe, "_data_y2d_raw.csv")
-
+  
   y2d_dates <- seq.Date(ymd(paste0(2019,"01","01")),
                         mydate) %>% as_tibble() %>%
     filter(year(value) %in% c(2019, current_year-1, current_year)) %>%
     filter(format(value, "%m-%d") <= format(mydate, "%m-%d")) %>%
     pull()
-
+  
   df_y2d <- df_app %>%
     compute(prudence = "lavish") %>%
     mutate(
@@ -754,7 +754,7 @@ ao_st_des <- function(mydate =  current_day) {
     arrange(AO_GRP_NAME, COUNTRY_NAME, YEAR) %>%
     fill(R_RANK, .direction = "down") %>%
     fill(R_RANK, .direction = "up") %>%
-
+    
     fill(RANK, .direction = "down") %>%
     fill(RANK, .direction = "up") %>%
     fill(RANK_PREV, .direction = "down") %>%
@@ -777,8 +777,8 @@ ao_st_des <- function(mydate =  current_day) {
       NO_DAYS
     ) %>% 
     arrange(AO_GRP_CODE, desc(YEAR), R_RANK, ISO_CT_NAME_ARR)
-
-
+  
+  
   df_y2d %>% write_csv(here(archive_dir_raw, stakeholder, mycsvfile))
   
   # # dcheck
@@ -809,7 +809,7 @@ ao_st_des <- function(mydate =  current_day) {
   
   print(paste(mydataframe, mydate))
 }
-  
+
 # ao ap dep ----
 ao_ap_dep <- function(mydate =  current_day) {
   mydataframe <-  "ao_ap_dep"
@@ -1119,8 +1119,10 @@ ao_ap_dep <- function(mydate =  current_day) {
 # ao ap pair ----
 ao_ap_pair <- function(mydate =  current_day) {
   mydataframe <-  "ao_ap_pair"
+  stakeholder <- str_sub(mydataframe, 1, 2)
   
   df_app <- import_dataframe(mydataframe)
+  
   
   # mydate <- today()- days(1)
   data_day_text <- mydate %>% format("%Y%m%d")
@@ -1129,7 +1131,7 @@ ao_ap_pair <- function(mydate =  current_day) {
   day_2019 <- mydate - days(364 * (year(mydate) - 2019) + floor((year(mydate) - 2019) / 4) * 7)
   current_year = year(mydate)
   
-  stakeholder <- str_sub(mydataframe, 1, 2)
+  
   
   ## day ----
   mycsvfile <- paste0(data_day_text, "_", mydataframe, "_data_day_raw.csv")
@@ -1142,8 +1144,8 @@ ao_ap_pair <- function(mydate =  current_day) {
     mutate(AIRPORT_PAIR = case_when(
       APT_NAME_1 <= APT_NAME_2 ~ paste0(APT_NAME_1, "<->", APT_NAME_2),
       .default = paste0(APT_NAME_2, "<->", APT_NAME_1)
-                                    )
-      ) %>% 
+    )
+    ) %>% 
     group_by(AO_GRP_CODE, ENTRY_DATE) %>%
     arrange(AO_GRP_CODE, ENTRY_DATE, desc(FLIGHT), AIRPORT_PAIR) %>% 
     mutate(
@@ -1457,7 +1459,7 @@ ao_ap_arr_delay <- function(mydate =  current_day) {
   stakeholder <- str_sub(mydataframe, 1, 2)
   
   mycsvfile <- paste0(data_day_text, "_", mydataframe, "_day_raw.csv")
-
+  
   ## day ----
   df_day <- df_app %>%
     filter(ENTRY_DATE %in% c(mydate, day_prev_year)) %>% 
@@ -1547,7 +1549,7 @@ ao_ap_arr_delay <- function(mydate =  current_day) {
   df_week <- df_app %>%
     filter(
       ENTRY_DATE %in% c(seq.Date(mydate-6, mydate)) |
-      ENTRY_DATE %in% c(seq.Date(day_prev_year-6, day_prev_year))
+        ENTRY_DATE %in% c(seq.Date(day_prev_year-6, day_prev_year))
     ) %>% 
     compute(prudence = "lavish") %>%
     mutate(
@@ -1714,7 +1716,7 @@ ao_ap_arr_delay <- function(mydate =  current_day) {
       PREV_ARR_ATFM_DELAY
     ) %>% 
     arrange(AO_GROUP_CODE, PERIOD, START_DATE, RANK_BY_FLIGHT, APT_NAME)
-
+  
   # dcheck
   # df <- read_xlsx(
   #   path  = fs::path_abs(
@@ -1756,7 +1758,7 @@ ao_ap_arr_delay <- function(mydate =  current_day) {
 
 # execute functions ----
 # wef <- "2024-01-01"  #included in output
-# til <- "2025-09-01"  #included in output
+# til <- "2025-09-02"  #included in output
 # current_day <- seq(ymd(til), ymd(wef), by = "-1 day")
 
 
