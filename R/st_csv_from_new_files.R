@@ -8,6 +8,7 @@ library(RODBC)
 source(here::here("..", "mobile-app", "R", "helpers.R"))
 source(here::here("..", "mobile-app", "R", "params.R"))
 source(here::here("..", "mobile-app", "R", "dimension_queries.R"))
+source(here::here("..", "mobile-app", "R", "duckdb_functions.R"))
 
 # parameters ----
 if (!exists("data_day_date")) {current_day <- today() - days(1)} else {current_day <- data_day_date}

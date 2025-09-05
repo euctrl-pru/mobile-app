@@ -4,10 +4,12 @@ library(duckplyr)
 library(lubridate)
 library(here)
 library(RODBC)
+library(DBI)
 
 source(here::here("..", "mobile-app", "R", "helpers.R"))
 source(here::here("..", "mobile-app", "R", "params.R"))
 source(here::here("..", "mobile-app", "R", "dimension_queries.R"))
+source(here::here("..", "mobile-app", "R", "duckdb_functions.R"))
 
 # parameters ----
 if (!exists("data_day_date")) {current_day <- today() - days(1)} else {current_day <- data_day_date}
@@ -36,17 +38,18 @@ dim_iso_country <- export_query(dim_iso_st_query)
 # prep data functions ----
 import_dataframe <- function(dfname) {
   # import data 
-  # dfname <- "ao_st_des"
+  # dfname <- "ao_ap_pair"
   mydataframe <- dfname
   myparquetfile <- paste0(mydataframe, "_day_base.parquet")
   
-  df_base <- read_parquet_duckdb(here(archive_dir_raw, 
-                                      myparquetfile)
-  ) 
+  con <- duck_open()
+  df_base <- duck_ingest_parquet(con, here::here(archive_dir_raw, myparquetfile))  # now eager by default
   
   # filter to keep days and airports needed
   df_alldays <- df_base %>% 
     filter(AO_ID %in% list_ao$AO_ID)  
+  
+  rm(df_base)
   
   # pre-process data
   if (dfname == "ao_st_des") {
@@ -105,6 +108,8 @@ import_dataframe <- function(dfname) {
   } else {
     df_app <- df_alldays
   }
+  
+  rm(df_alldays)
   
   return(df_app) 
 }
@@ -1193,6 +1198,8 @@ ao_ap_pair <- function(mydate =  current_day) {
   
   df_day %>% write_csv(here(archive_dir_raw, stakeholder, mycsvfile))
   
+  rm(df_day)
+  
   # dcheck
   # df <- read_xlsx(
   #   path  = fs::path_abs(
@@ -1298,6 +1305,8 @@ ao_ap_pair <- function(mydate =  current_day) {
     arrange(AO_GRP_CODE, FLAG_ROLLING_WEEK, R_RANK, AIRPORT_PAIR)
   
   df_week %>% write_csv(here(archive_dir_raw, stakeholder, mycsvfile))
+  
+  rm(df_week)
   
   # # dcheck
   # df <- read_xlsx(
@@ -1414,6 +1423,8 @@ ao_ap_pair <- function(mydate =  current_day) {
   
   df_y2d %>% write_csv(here(archive_dir_raw, stakeholder, mycsvfile))
   
+  rm(df_y2d)
+  
   # # dcheck
   # df <- read_xlsx(
   #   path  = fs::path_abs(
@@ -1441,6 +1452,8 @@ ao_ap_pair <- function(mydate =  current_day) {
   # }
   
   print(paste(mydataframe, mydate))
+  
+  duck_close(con, clean = TRUE)
 }
 
 # ao ap arr delay ----
@@ -1757,14 +1770,27 @@ ao_ap_arr_delay <- function(mydate =  current_day) {
 
 
 # execute functions ----
-# wef <- "2024-01-01"  #included in output
-# til <- "2025-09-02"  #included in output
-# current_day <- seq(ymd(til), ymd(wef), by = "-1 day")
+wef <- "2024-01-01"  #included in output
+til <- "2024-08-01"  #included in output
+current_day <- seq(ymd(til), ymd(wef), by = "-1 day")
 
 
-ao_traffic_delay()
-purrr::walk(current_day, ao_st_des)
-purrr::walk(current_day, ao_ap_dep)
-purrr::walk(current_day, ao_ap_pair)
-purrr::walk(current_day, ao_ap_arr_delay)
+# ao_traffic_delay()
+# purrr::walk(current_day, ao_st_des)
+# purrr::walk(current_day, ao_ap_dep)
+# for (i in 1:length(current_day)) { 
+#   ao_ap_pair(current_day[[i]])
+#  # gc() # If such a helper exists
+#  #  # or, more explicitly:
+#  #  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
+#  #  DBI::dbDisconnect(con, shutdown = TRUE)
+#  #  unlink(
+#  #    list.files(here(tempdir(), "duckplyr"), pattern = "\\.tmp$", full.names = TRUE),
+#  #    recursive = TRUE,
+#  #    force = TRUE
+#   # )
+#   }
+  purrr::walk(current_day, ao_ap_pair)
+# purrr::walk(current_day, ao_ap_arr_delay)
 
+# rm(df_app)
