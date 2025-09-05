@@ -1,4 +1,4 @@
-# DIMENSIONS queries----
+# AIRLINE----
 ## dim ao grp ----  
 # same as v_covid_dim_ao but adding ao_id and removing old aos
 dim_ao_grp_query <- "
@@ -240,6 +240,14 @@ GROUP BY a.ao_code, a.ao_name,
 ORDER BY ao_id
 "
 
+## market segment ---- 
+dim_ms_query <- "
+select 
+  SK_FLT_TYPE_RULE_ID as ms_id,
+  rule_description as MARKET_SEGMENT
+from  SWH_FCT.DIM_FLIGHT_TYPE_RULE
+"
+# AIRPORT ----
 ## dim airport ----
 dim_ap_query <- "
   select
@@ -276,6 +284,7 @@ INNER JOIN (
 ) b ON a.arp_code = b.ec_ap_code
 "
 
+# COUNTRY----
 ##dim iso country ----
 dim_iso_st_query <- "
   select 
@@ -310,13 +319,25 @@ list_iso_st_query <-"
   ORDER BY ISO_COUNTRY_CODE 
 "
 
-## market segment ---- 
-dim_ms_query <- "
-select 
-  SK_FLT_TYPE_RULE_ID as ms_id,
-  rule_description as MARKET_SEGMENT
-from  SWH_FCT.DIM_FLIGHT_TYPE_RULE
+##list icao country ----
+list_icao_st_query <-"
+ select distinct
+        CASE
+             WHEN ec_icao_country_code = 'GE' then 'LE'
+             WHEN ec_icao_country_code = 'ET' then 'ED'
+             ELSE ec_icao_country_code
+        END  COUNTRY_code,
+         CASE WHEN ec_icao_country_code = 'GC' then 'Spain Canaries'
+             WHEN ec_icao_country_code = 'GE' then 'Spain Continental'
+             WHEN ec_icao_country_code = 'LE' then 'Spain Continental'
+             WHEN ec_icao_country_code = 'LY' then 'Serbia/Montenegro'
+             WHEN ec_icao_country_code = 'LU' then 'Moldova'
+             ELSE  ec_icao_country_name
+        END  COUNTRY_NAME
+  from SWH_FCT.dim_icao_country a
+  WHERE Valid_to > trunc(sysdate) - 1
+  AND  (  (SUBSTR(ec_icao_country_code,1,1) IN ('E','L')
+       OR SUBSTR(ec_icao_country_code,1,2) IN ('GC','GM','GE','UD','UG','UK','BI'))  )
+  AND  ec_icao_country_code not in ('LV', 'LX', 'EU','LN')
+  ORDER BY COUNTRY_code
 "
-
-
-
