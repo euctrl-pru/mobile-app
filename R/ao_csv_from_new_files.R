@@ -516,6 +516,7 @@ ao_traffic_delay <- function() {
 ao_st_des <- function(mydate =  current_day) {
   mydataframe <-  "ao_st_des"
   
+  con <- duck_open()
   df_app <- import_dataframe(mydataframe, con = con)
   
   # mydate <- today()- days(1)
@@ -1783,7 +1784,7 @@ ao_ap_arr_delay <- function(mydate =  current_day) {
 
 # execute functions ----
 # wef <- "2024-01-01"  #included in output
-# til <- "2024-07-31"  #included in output
+# til <- "2024-01-03"  #included in output
 # current_day <- seq(ymd(til), ymd(wef), by = "-1 day")
 
 
