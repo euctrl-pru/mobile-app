@@ -35,6 +35,7 @@ source(here("..", "mobile-app", "R", "update_base_tables.R"))
 ## create csvs from basic tables
 source(here("..", "mobile-app", "R", "ap_csv_from_new_files.R"))
 source(here("..", "mobile-app", "R", "ao_csv_from_new_files.R"))
+source(here("..", "mobile-app", "R", "st_csv_from_new_files.R"))
 }
 
 # set the stakeholders you want to generate when using archive mode
