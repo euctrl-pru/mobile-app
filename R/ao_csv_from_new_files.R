@@ -463,6 +463,8 @@ ao_traffic_delay <- function() {
   df_day %>% write_parquet(here(archive_dir_raw, stakeholder, mydatafile))
   
   print(paste(mydataframe, mydate))
+  duck_close(con, clean = TRUE)
+  
   
   # test <- df_day %>% filter(YEAR == 2024) %>% 
   #   filter(FLIGHT_DATE >= ymd(20240106)) # %>%
@@ -813,6 +815,8 @@ ao_st_des <- function(mydate =  current_day) {
   # }
   
   print(paste(mydataframe, mydate))
+  duck_close(con, clean = TRUE)
+  
 }
 
 # ao ap dep ----
@@ -1118,6 +1122,8 @@ ao_ap_dep <- function(mydate =  current_day) {
   # }
   
   print(paste(mydataframe, mydate))
+  duck_close(con, clean = TRUE)
+  
 }
 
 
@@ -1766,6 +1772,9 @@ ao_ap_arr_delay <- function(mydate =  current_day) {
   
   
   print(paste(mydataframe, mydate))
+  
+  duck_close(con, clean = TRUE)
+  
 }
 
 
@@ -1778,19 +1787,7 @@ current_day <- seq(ymd(til), ymd(wef), by = "-1 day")
 # ao_traffic_delay()
 # purrr::walk(current_day, ao_st_des)
 # purrr::walk(current_day, ao_ap_dep)
-# for (i in 1:length(current_day)) { 
-#   ao_ap_pair(current_day[[i]])
-#  # gc() # If such a helper exists
-#  #  # or, more explicitly:
-#  #  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
-#  #  DBI::dbDisconnect(con, shutdown = TRUE)
-#  #  unlink(
-#  #    list.files(here(tempdir(), "duckplyr"), pattern = "\\.tmp$", full.names = TRUE),
-#  #    recursive = TRUE,
-#  #    force = TRUE
-#   # )
-#   }
   purrr::walk(current_day, ao_ap_pair)
 # purrr::walk(current_day, ao_ap_arr_delay)
 
-# rm(df_app)
+rm(df_app)
