@@ -91,7 +91,8 @@ st_dai <- function() {
   mydatafile <- paste0(mydataframe, "_day_raw.parquet")
   stakeholder <- str_sub(mydataframe, 1, 2)
   
-  df_app <- import_dataframe(mydataframe)
+  con <- duck_open()
+  df_app <- import_dataframe(mydataframe, con = con)
   
   mydate <- max(df_app$FLIGHT_DATE, na.rm = TRUE)
   current_year = year(mydate)
@@ -241,7 +242,8 @@ st_dai <- function() {
 st_ao <- function(mydate =  current_day) {
   mydataframe <-  "st_ao"
   
-  df_app <- import_dataframe(mydataframe)
+  con <- duck_open()
+  df_app <- import_dataframe(mydataframe, con = con)
 
     # mydate <- current_day
   data_day_text <- mydate %>% format("%Y%m%d")
@@ -593,6 +595,7 @@ st_ao <- function(mydate =  current_day) {
 st_st <- function(mydate =  current_day) {
   mydataframe <-  "st_st"
   
+  con <- duck_open()
   df_app <- import_dataframe(mydataframe)
   
   # mydate <- current_day
@@ -962,7 +965,8 @@ st_st <- function(mydate =  current_day) {
 st_ap <- function(mydate =  current_day) {
     
   mydataframe <-  "st_ap"
-  df_app <- import_dataframe(mydataframe)
+  con <- duck_open()
+  df_app <- import_dataframe(mydataframe, con = con)
   
   # mydate <- current_day
   data_day_text <- mydate %>% format("%Y%m%d")
