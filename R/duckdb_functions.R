@@ -116,3 +116,4 @@ duck_filter_in <- function(tbl, con, key = "AO_ID", x, name = "vec_tmp") {
   vt <- duck_copy_vec(con, x, name = name, col = key)
   dplyr::semi_join(tbl, vt, by = key)
 }
+

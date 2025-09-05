@@ -346,7 +346,6 @@ WITH
 COUNTRY_ICAO2LETTER  as (
  SELECT COUNTRY_ID  ICAO2LETTER,
         CASE
-             --WHEN COUNTRY_ID = 'GC' then 'LE'
              WHEN COUNTRY_ID = 'GE' then 'LE'
              WHEN COUNTRY_ID = 'ET' then 'ED'
              ELSE COUNTRY_ID

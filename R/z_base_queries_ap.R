@@ -1,5 +1,122 @@
 # STATE ----
 ## st_ao ----
+st_dai_day_base_query <- paste0("
+WITH
+
+COUNTRY_ICAO2LETTER  as (
+ select distinct
+       ec_icao_country_code  ICAO2LETTER,
+       CASE
+             WHEN ec_icao_country_code = 'GE' then 'LE'
+             WHEN ec_icao_country_code = 'ET' then 'ED'
+             ELSE ec_icao_country_code
+        END  COUNTRY_code    
+  from SWH_FCT.dim_icao_country a
+  WHERE Valid_to > trunc(sysdate) - 1
+  AND  (  (SUBSTR(ec_icao_country_code,1,1) IN ('E','L')
+       OR SUBSTR(ec_icao_country_code,1,2) IN ('GC','GM','GE','UD','UG','UK','BI'))  )
+  AND  ec_icao_country_code not in ('LV', 'LX', 'EU','LN')
+  ORDER BY COUNTRY_code
+ ) ,
+
+LIST_COUNTRY as (
+select  COUNTRY_code
+FROM COUNTRY_ICAO2LETTER
+group by  COUNTRY_code),
+
+ CTRY_DAY AS (
+SELECT a.COUNTRY_code,
+        t.day_date,
+        t.month,
+        t.week,
+        t.week_nb_year,
+        t.day_type,
+        t.day_of_week_nb AS day_of_week,
+        t.year
+FROM LIST_COUNTRY a, prudev.pru_time_references t
+WHERE
+   t.day_date >= ", query_from, "
+  	AND t.DAY_date < trunc(sysdate)
+       ),
+
+
+DATA_DEP AS (
+(SELECT
+        B.COUNTRY_code ,
+        TRUNC(A.flt_a_asp_prof_time_entry) flight_DATE,
+        COUNT(a.flt_uid) DAY_TFC
+FROM prudev.v_aiu_flt a,
+     COUNTRY_ICAO2LETTER b
+WHERE  SUBSTR(A.flt_dep_ad,1,2) =  b.ICAO2LETTER
+    AND A.flt_lobt >= ", query_from, " -2
+    AND A.flt_lobt <  trunc(sysdate) + 2
+    AND A.flt_a_asp_prof_time_entry >= ", query_from, "
+    AND A.flt_a_asp_prof_time_entry <  trunc(sysdate)
+    AND A.flt_state IN ('TE','TA','AA')
+GROUP BY  B.COUNTRY_code  ,
+        TRUNC(A.flt_a_asp_prof_time_entry)
+)
+),
+
+DATA_ARR AS (
+SELECT
+        C.COUNTRY_code ,
+        TRUNC(A.flt_a_asp_prof_time_entry) flight_DATE,
+        COUNT(a.flt_uid) DAY_TFC
+FROM prudev.v_aiu_flt a,
+     COUNTRY_ICAO2LETTER c
+WHERE
+     SUBSTR(A.flt_ctfm_ades,1,2) = C.ICAO2LETTER
+    AND A.flt_lobt >= ", query_from, " -2
+    AND A.flt_lobt <  trunc(sysdate) + 2
+    AND A.flt_a_asp_prof_time_entry >= ", query_from, "
+    AND A.flt_a_asp_prof_time_entry <  trunc(sysdate)
+    AND A.flt_state IN ('TE','TA','AA')
+GROUP BY  C.COUNTRY_code  ,
+        TRUNC(A.flt_a_asp_prof_time_entry)
+),
+
+DATA_DOMESTIC as
+(SELECT
+        B.COUNTRY_code ,
+        TRUNC(A.flt_a_asp_prof_time_entry) FLIGHT_DATE,
+        COUNT(a.flt_uid) DAY_TFC
+FROM prudev.v_aiu_flt a,
+     COUNTRY_ICAO2LETTER b,
+     COUNTRY_ICAO2LETTER c
+WHERE  SUBSTR(A.flt_dep_ad,1,2) =  b.ICAO2LETTER   AND
+       SUBSTR(A.flt_ctfm_ades,1,2) = C.ICAO2LETTER
+    AND  B.COUNTRY_code =C.COUNTRY_code
+    AND A.flt_lobt >= ", query_from, " -2
+    AND A.flt_lobt <  trunc(sysdate) + 2
+    AND A.flt_a_asp_prof_time_entry >= ", query_from, "
+    AND A.flt_a_asp_prof_time_entry <  trunc(sysdate)
+    AND A.flt_state IN ('TE','TA','AA')
+GROUP BY  B.COUNTRY_code  ,
+        TRUNC(A.flt_a_asp_prof_time_entry)
+)
+
+SELECT
+         a.YEAR,
+         a.MONTH,
+          a.WEEK,
+          a.WEEK_NB_YEAR,
+          a.day_type,
+          a.day_of_week,
+          a.day_date as flight_date,
+          a.COUNTRY_code,
+          coalesce(b.DAY_TFC,0) as DEP,
+          coalesce( c.DAY_TFC,0) as ARR ,
+          coalesce( d.DAY_TFC,0) as DOM ,
+         coalesce(b.DAY_TFC,0)  + coalesce( c.DAY_TFC,0) - coalesce( d.DAY_TFC,0) as DAY_TFC
+FROM CTRY_DAY A
+LEFT JOIN DATA_DEP b on a.COUNTRY_code = B.COUNTRY_code and a.day_date = b.FLIGHT_date
+LEFT JOIN DATA_ARR c on a.COUNTRY_code = c.COUNTRY_code and a.day_date = c.FLIGHT_date
+LEFT JOIN DATA_DOMESTIC d on a.COUNTRY_code = d.COUNTRY_code and a.day_date = d.FLIGHT_date
+"
+)
+
+## st_ao ----
 st_ao_day_base_query <- paste0("
 with 
 

@@ -31,6 +31,9 @@ dim_iso_country <- export_query(dim_iso_st_query) %>%
 
 list_iso_country <- export_query(list_iso_st_query)
 
+## icao country ----
+list_icao_country <- export_query(list_icao_st_query)
+
 # prep data functions ----
 import_dataframe <- function(dfname) {
   # import data 
@@ -38,9 +41,12 @@ import_dataframe <- function(dfname) {
   mydataframe <- dfname
   myparquetfile <- paste0(mydataframe, "_day_base.parquet")
   
-  df_base <- read_parquet_duckdb(here(archive_dir_raw, 
-                                      myparquetfile)
-  ) 
+  con <- duck_open()
+  df_base <- duck_ingest_parquet(con, here::here(archive_dir_raw, myparquetfile))  # now eager by default
+ 
+  # df_base <- read_parquet_duckdb(here(archive_dir_raw, 
+  #                                     myparquetfile)
+  # ) 
   
   # filter to keep days and airports needed
   if ("ISO_CT_CODE" %in% names(df_base)) {
@@ -79,6 +85,157 @@ import_dataframe <- function(dfname) {
   return(df_app) 
 }
 
+# st dai ----
+st_dai <- function() {
+  mydataframe <-  "st_dai"
+  mydatafile <- paste0(mydataframe, "_day_raw.parquet")
+  stakeholder <- str_sub(mydataframe, 1, 2)
+  
+  df_app <- import_dataframe(mydataframe)
+  
+  mydate <- max(df_app$FLIGHT_DATE, na.rm = TRUE)
+  current_year = year(mydate)
+  
+  #### create date sequence
+  year_from <- paste0(2018, "-12-24")
+  year_til <- paste0(current_year, "-12-31")
+  days_sequence <- seq(ymd(year_from), ymd(year_til), by = "1 day") %>%
+    as_tibble() %>%
+    select(FLIGHT_DATE = value) 
+  
+  #### combine with ansp list to get full sequence
+  days_icao_st <- crossing(days_sequence, list_icao_country) %>% 
+    arrange(COUNTRY_CODE, FLIGHT_DATE)%>% 
+    mutate(YEAR = year(FLIGHT_DATE))
+  
+  df_day_year <- days_icao_st %>%
+    left_join(df_app, by = c("YEAR", "FLIGHT_DATE", "COUNTRY_CODE", "COUNTRY_NAME")) %>% 
+    arrange(COUNTRY_CODE, FLIGHT_DATE) %>%
+    group_by(COUNTRY_CODE) %>% 
+    mutate(
+      #rolling week
+      RWK_AVG_TFC = rollsum(DAY_TFC, 7, fill = NA, align = "right") / 7
+    )  %>% 
+    group_by(COUNTRY_CODE, YEAR) %>% 
+    # arrange(AO_GRP_CODE, FLIGHT_DATE) %>% 
+    mutate(
+      # year to date
+      Y2D_TFC_YEAR = cumsum(coalesce(DAY_TFC, 0)),
+      Y2D_AVG_TFC_YEAR = cumsum(coalesce(DAY_TFC, 0)) / row_number()
+    ) %>% 
+    ungroup ()
+  
+  ## split table ----
+  df_day <- df_day_year %>% 
+    mutate(
+      FLIGHT_DATE_2019 = FLIGHT_DATE - days((YEAR-2019)*364+ floor((YEAR - 2019) / 4) * 7),
+      FLIGHT_DATE_2020 = FLIGHT_DATE - days((YEAR-2020)*364+ floor((YEAR - 2020) / 4) * 7),
+      FLIGHT_DATE_2019_SD = FLIGHT_DATE %m-% years(YEAR-2019),
+      FLIGHT_DATE_PREV_YEAR_SD = FLIGHT_DATE %m-% years(1) 
+    ) %>% 
+    left_join(select(df_day_year, COUNTRY_CODE, YEAR, FLIGHT_DATE, starts_with(c("Y2D"))), by = c("COUNTRY_CODE", "FLIGHT_DATE_PREV_YEAR_SD" = "FLIGHT_DATE"), suffix = c("","_PREV_YEAR")) %>% 
+    left_join(select(df_day_year, COUNTRY_CODE, YEAR, FLIGHT_DATE, starts_with(c("Y2D"))), by = c("COUNTRY_CODE", "FLIGHT_DATE_2019_SD" = "FLIGHT_DATE"), suffix = c("","_2019")) %>% 
+    left_join(select(df_day_year, COUNTRY_CODE, YEAR, FLIGHT_DATE, starts_with(c("DAY", "RWK"))), by = c("COUNTRY_CODE", "FLIGHT_DATE_2019" = "FLIGHT_DATE"), suffix = c("","_2019")) %>% 
+    left_join(select(df_day_year, COUNTRY_CODE, YEAR, FLIGHT_DATE, RWK_AVG_TFC), by = c("COUNTRY_CODE", "FLIGHT_DATE_2020" = "FLIGHT_DATE"), suffix = c("","_2020")) %>% 
+    arrange(COUNTRY_NAME, FLIGHT_DATE) %>% 
+    group_by(AO_GRP_CODE) %>% 
+    mutate(
+      # prev week
+      FLIGHT_DATE_PREV_WEEK = lag(FLIGHT_DATE, 7),
+      DAY_TFC_PREV_WEEK = lag(DAY_TFC , 7),
+      RWK_AVG_TFC_PREV_WEEK = lag(RWK_AVG_TFC, 7),
+      
+      # dif prev week
+      DAY_TFC_DIF_PREV_WEEK = coalesce(DAY_TFC,0) - coalesce(DAY_TFC_PREV_WEEK, 0),
+      DAY_TFC_DIF_PREV_WEEK_PERC = if_else(DAY_TFC_PREV_WEEK == 0, NA, DAY_TFC/ DAY_TFC_PREV_WEEK) -1,
+      
+      RWK_TFC_DIF_PREV_WEEK_PERC = if_else(RWK_AVG_TFC_PREV_WEEK == 0, NA, RWK_AVG_TFC/ RWK_AVG_TFC_PREV_WEEK)-1,
+      
+      # prev year
+      FLIGHT_DATE_PREV_YEAR = lag(FLIGHT_DATE, 364),
+      DAY_TFC_PREV_YEAR = lag(DAY_TFC , 364),
+      RWK_AVG_TFC_PREV_YEAR = lag(RWK_AVG_TFC, 364),
+      Y2D_TFC_PREV_YEAR = Y2D_TFC_YEAR_PREV_YEAR,
+      Y2D_AVG_TFC_PREV_YEAR = Y2D_AVG_TFC_YEAR_PREV_YEAR,
+
+      # dif prev year
+      DAY_TFC_DIF_PREV_YEAR = coalesce(DAY_TFC, 0) - coalesce(DAY_TFC_PREV_YEAR, 0),
+      DAY_TFC_DIF_PREV_YEAR_PERC = if_else(DAY_TFC_PREV_YEAR == 0, NA, DAY_TFC/ DAY_TFC_PREV_YEAR)-1,
+      RWK_TFC_DIF_PREV_YEAR_PERC = if_else(RWK_AVG_TFC_PREV_YEAR == 0, NA, RWK_AVG_TFC/ RWK_AVG_TFC_PREV_YEAR)-1,
+      Y2D_TFC_DIF_PREV_YEAR_PERC = if_else(Y2D_AVG_TFC_PREV_YEAR == 0, NA, Y2D_AVG_TFC_YEAR/ Y2D_AVG_TFC_PREV_YEAR)-1,
+      
+      # 2020
+      FLIGHT_DATE_2020 = FLIGHT_DATE_2020,
+      RWK_AVG_TFC_2020 = RWK_AVG_TFC_2020,
+      
+      # 2019
+      FLIGHT_DATE_2019 = FLIGHT_DATE_2019,
+      
+      DAY_TFC_2019 = DAY_TFC_2019,
+      RWK_AVG_TFC_2019 = RWK_AVG_TFC_2019,
+      Y2D_TFC_2019 = Y2D_TFC_YEAR_2019,
+      Y2D_AVG_TFC_2019 = Y2D_AVG_TFC_YEAR_2019,
+      
+      # dif 2019
+      DAY_TFC_DIF_2019 = coalesce(DAY_TFC, 0) - coalesce(DAY_TFC_2019, 0),
+      DAY_TFC_DIF_2019_PERC = if_else(DAY_TFC_2019 == 0, NA, DAY_TFC/ DAY_TFC_2019)-1,
+      RWK_TFC_DIF_2019_PERC = if_else(RWK_AVG_TFC_2019 == 0, NA, RWK_AVG_TFC/ RWK_AVG_TFC_2019)-1,
+      Y2D_TFC_DIF_2019_PERC = if_else(Y2D_AVG_TFC_2019 == 0, NA, Y2D_AVG_TFC_YEAR/ Y2D_AVG_TFC_2019)-1,
+      
+      LAST_DATA_DAY = mydate
+    ) %>% 
+    select(
+      COUNTRY_NAME,
+      YEAR,
+      MONTH,
+      WEEK,
+      WEEK_NB_YEAR,
+      DAY_TYPE,
+      DAY_OF_WEEK,
+      
+      FLIGHT_DATE,
+      FLIGHT_DATE_PREV_WEEK,
+      FLIGHT_DATE_PREV_YEAR,
+      FLIGHT_DATE_2020,
+      FLIGHT_DATE_2019,
+      
+      DAY_TFC,
+      DAY_TFC_PREV_WEEK,
+      DAY_TFC_PREV_YEAR,
+      DAY_TFC_2019,
+      DAY_TFC_DIF_PREV_WEEK,
+      DAY_TFC_DIF_PREV_YEAR,
+      DAY_TFC_DIF_2019,
+      DAY_TFC_DIF_PREV_WEEK_PERC,
+      DAY_TFC_DIF_PREV_YEAR_PERC,
+      DAY_TFC_DIF_2019_PERC,
+      
+      RWK_AVG_TFC,
+      RWK_AVG_TFC_PREV_WEEK,
+      RWK_AVG_TFC_PREV_YEAR,
+      RWK_AVG_TFC_2020,
+      RWK_AVG_TFC_2019,
+      RWK_TFC_DIF_PREV_YEAR_PERC,
+      RWK_TFC_DIF_2019_PERC,
+      
+      Y2D_TFC_YEAR,
+      Y2D_TFC_PREV_YEAR,
+      Y2D_TFC_2019,
+      Y2D_AVG_TFC_YEAR,
+      Y2D_AVG_TFC_PREV_YEAR,
+      Y2D_AVG_TFC_2019,
+      Y2D_TFC_DIF_PREV_YEAR_PERC,
+      Y2D_TFC_DIF_2019_PERC,
+
+      LAST_DATA_DAY
+      
+    ) %>% 
+    ungroup() %>% 
+    arrange(AO_GRP_CODE, FLIGHT_DATE)
+  
+  df_day %>% write_parquet(here(archive_dir_raw, stakeholder, mydatafile))
+  
+}
 
 # st ao grp ----
 st_ao <- function(mydate =  current_day) {
@@ -427,8 +584,9 @@ st_ao <- function(mydate =  current_day) {
   #   # }
   # }
 
+  print(paste(now(), mydataframe, mydate))
   
-  print(paste(mydataframe, mydate))
+  duck_close(con, clean = TRUE)
 }
 
 # st st ----
@@ -795,8 +953,9 @@ st_st <- function(mydate =  current_day) {
   #   #
   #   # }
   # }
+  print(paste(now(), mydataframe, mydate))
   
-  print(paste(mydataframe, mydate))
+  duck_close(con, clean = TRUE)
 }
   
 # st ap ----
@@ -1155,7 +1314,9 @@ st_ap <- function(mydate =  current_day) {
   #   # }
   # }
   
-  print(paste(mydataframe, mydate))
+  print(paste(now(), mydataframe, mydate))
+  
+  duck_close(con, clean = TRUE)
   
 }
 
