@@ -35,7 +35,7 @@ list_iso_country <- export_query(list_iso_st_query)
 list_icao_country <- export_query(list_icao_st_query)
 
 # prep data functions ----
-import_dataframe <- function(dfname) {
+import_dataframe <- function(dfname, con = con) {
   # import data 
   # dfname <- "st_st"
   mydataframe <- dfname
@@ -1325,8 +1325,8 @@ st_ap <- function(mydate =  current_day) {
 }
 
 # execute functions ----
-# wef <- "2024-01-01"  #included in output
-# til <- "2024-02-21"  #included in output
+# wef <- "2025-04-09"  #included in output
+# til <- "2025-04-09"  #included in output
 # current_day <- seq(ymd(til), ymd(wef), by = "-1 day")
 
 purrr::walk(current_day, st_ao)
