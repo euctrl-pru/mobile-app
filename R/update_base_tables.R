@@ -56,6 +56,10 @@ mydataframes <- c(
   "ao_ap_dep",
   "ao_ap_pair",
   "ao_ap_arr_delay",
+  
+  "st_ao",
+  "st_st",
+  "st_ap",
   NULL
 )
 
