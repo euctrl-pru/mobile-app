@@ -36,13 +36,12 @@ dim_iso_country <- export_query(dim_iso_st_query)
 
 
 # prep data functions ----
-import_dataframe <- function(dfname) {
+import_dataframe <- function(dfname, con) {
   # import data 
   # dfname <- "ao_ap_pair"
   mydataframe <- dfname
   myparquetfile <- paste0(mydataframe, "_day_base.parquet")
   
-  con <- duck_open()
   df_base <- duck_ingest_parquet(con, here::here(archive_dir_raw, myparquetfile))  # now eager by default
   
   # filter to keep days and airports needed
@@ -120,7 +119,8 @@ ao_traffic_delay <- function() {
   mydatafile <- paste0(mydataframe, "_day_raw.parquet")
   stakeholder <- str_sub(mydataframe, 1, 2)
   
-  df_app <- import_dataframe(mydataframe)
+  con <- duck_open()
+  df_app <- import_dataframe(mydataframe, con = con)
   
   mydate <- max(df_app$FLIGHT_DATE, na.rm = TRUE)
   current_year = year(mydate)
@@ -516,7 +516,7 @@ ao_traffic_delay <- function() {
 ao_st_des <- function(mydate =  current_day) {
   mydataframe <-  "ao_st_des"
   
-  df_app <- import_dataframe(mydataframe)
+  df_app <- import_dataframe(mydataframe, con = con)
   
   # mydate <- today()- days(1)
   data_day_text <- mydate %>% format("%Y%m%d")
@@ -823,7 +823,8 @@ ao_st_des <- function(mydate =  current_day) {
 ao_ap_dep <- function(mydate =  current_day) {
   mydataframe <-  "ao_ap_dep"
   
-  df_app <- import_dataframe(mydataframe)
+  con <- duck_open()
+  df_app <- import_dataframe(mydataframe, con = con)
   
   # mydate <- today()- days(1)
   data_day_text <- mydate %>% format("%Y%m%d")
@@ -1132,7 +1133,8 @@ ao_ap_pair <- function(mydate =  current_day) {
   mydataframe <-  "ao_ap_pair"
   stakeholder <- str_sub(mydataframe, 1, 2)
   
-  df_app <- import_dataframe(mydataframe)
+  con <- duck_open()
+  df_app <- import_dataframe(mydataframe, con = con)
   
   
   # mydate <- today()- days(1)
@@ -1457,7 +1459,7 @@ ao_ap_pair <- function(mydate =  current_day) {
   #   # }
   # }
   
-  print(paste(mydataframe, mydate))
+  print(paste(now(), mydataframe, mydate))
   
   duck_close(con, clean = TRUE)
 }
@@ -1466,7 +1468,8 @@ ao_ap_pair <- function(mydate =  current_day) {
 ao_ap_arr_delay <- function(mydate =  current_day) {
   mydataframe <-  "ao_ap_arr_delay"
   
-  df_app <- import_dataframe(mydataframe)
+  con <- duck_open()
+  df_app <- import_dataframe(mydataframe, con = con)
   
   # mydate <- today()- days(1)
   data_day_text <- mydate %>% format("%Y%m%d")
@@ -1771,7 +1774,7 @@ ao_ap_arr_delay <- function(mydate =  current_day) {
   df_all_periods %>% write_csv(here(archive_dir_raw, stakeholder, mycsvfile))
   
   
-  print(paste(mydataframe, mydate))
+  print(paste(now(), mydataframe, mydate))
   
   duck_close(con, clean = TRUE)
   
@@ -1779,15 +1782,15 @@ ao_ap_arr_delay <- function(mydate =  current_day) {
 
 
 # execute functions ----
-wef <- "2024-01-01"  #included in output
-til <- "2024-08-01"  #included in output
-current_day <- seq(ymd(til), ymd(wef), by = "-1 day")
+# wef <- "2024-01-01"  #included in output
+# til <- "2024-03-17"  #included in output
+# current_day <- seq(ymd(til), ymd(wef), by = "-1 day")
 
 
-# ao_traffic_delay()
-# purrr::walk(current_day, ao_st_des)
-# purrr::walk(current_day, ao_ap_dep)
+ao_traffic_delay()
+purrr::walk(current_day, ao_st_des)
+purrr::walk(current_day, ao_ap_dep)
   purrr::walk(current_day, ao_ap_pair)
-# purrr::walk(current_day, ao_ap_arr_delay)
+purrr::walk(current_day, ao_ap_arr_delay)
 
 rm(df_app)
