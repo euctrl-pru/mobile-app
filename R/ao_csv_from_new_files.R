@@ -1783,14 +1783,13 @@ ao_ap_arr_delay <- function(mydate =  current_day) {
 
 # execute functions ----
 # wef <- "2024-01-01"  #included in output
-# til <- "2024-03-17"  #included in output
+# til <- "2024-07-31"  #included in output
 # current_day <- seq(ymd(til), ymd(wef), by = "-1 day")
 
 
 ao_traffic_delay()
 purrr::walk(current_day, ao_st_des)
 purrr::walk(current_day, ao_ap_dep)
-  purrr::walk(current_day, ao_ap_pair)
+purrr::walk(current_day, ao_ap_pair)
 purrr::walk(current_day, ao_ap_arr_delay)
 
-rm(df_app)
