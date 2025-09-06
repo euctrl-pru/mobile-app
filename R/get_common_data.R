@@ -4,6 +4,10 @@ source(here("..", "mobile-app", "R", "helpers.R"))
 # parameters ----
 source(here("..", "mobile-app", "R", "params.R"))
 
+# dimension queries ----
+source(here("..", "mobile-app", "R", "dimension_queries.R"))
+
+
 # billing data ----
 if (exists("nw_billed_per_cz") == FALSE) {
   nw_billed_per_cz <- get_billing_data()
@@ -126,13 +130,7 @@ airport <- export_query(query) %>%
   #                                   "IC", ISO_COUNTRY_CODE)) %>%
   rename(iso_2letter = ISO_COUNTRY_CODE)
 
-ao_grp_icao_full <-  read_xlsx(
-  path  = fs::path_abs(
-    str_glue(ao_base_file),
-    start = ao_base_dir),
-  sheet = "lists",
-  range = cell_limits(c(1, 1), c(NA, NA))) %>%
-  as_tibble()
+ao_grp_icao_full <-  export_query(list_ao_grp_query)
 
 ao_grp_icao <- ao_grp_icao_full %>%
   select('AO_GRP_CODE', 'AO_GRP_NAME')

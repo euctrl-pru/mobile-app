@@ -240,6 +240,17 @@ GROUP BY a.ao_code, a.ao_name,
 ORDER BY ao_id
 "
 
+## list ao group ----
+list_ao_grp_query <-"select ao_grp_code, 
+ao_grp_name
+ , flag_top_ao
+from pruprod.v_aiu_app_dim_ao_grp
+group by ao_grp_code, ao_grp_name
+, flag_top_ao
+order by ao_grp_code
+"
+
+
 ## market segment ---- 
 dim_ms_query <- "
 select 
