@@ -32,10 +32,8 @@ source(here("..", "mobile-app", "R", "params.R")) # so it can be launched from t
 
 # dimensions ----
 statfor_states <- read_xlsx(
-  path  = fs::path_abs(
-    str_glue(st_base_file),
-    start = st_base_dir),
-  sheet = "lists",
+  here("stakeholder_lists.xlsx"),
+  sheet = "state_lists",
   range = cell_limits(c(2, 20), c(NA, 21))) %>%
   as_tibble()
 
@@ -139,14 +137,14 @@ df <-  read_parquet(here(archive_dir_raw, stakeholder, paste0(mydataframe, ".par
 #   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 # 
 # } else {
-#   df <-  read_xlsx(
-#     path  = fs::path_abs(
-#       str_glue(st_base_file),
-#       start = st_base_dir),
-#     sheet = "state_daio",
-#     range = cell_limits(c(1, 1), c(NA, NA))) %>%
-#     as_tibble() %>%
-#     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+  # dfc <-  read_xlsx(
+  #   path  = fs::path_abs(
+  #     str_glue(st_base_file),
+  #     start = st_base_dir),
+  #   sheet = "state_daio",
+  #   range = cell_limits(c(1, 1), c(NA, NA))) %>%
+  #   as_tibble() %>%
+  #   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 # 
 #   # save pre-processed file in archive for generation of past json files
 #   # only last day of the year
@@ -225,14 +223,14 @@ df <-  read_parquet(here(archive_dir_raw, stakeholder, paste0(mydataframe, ".par
 #   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 # 
 # } else {
-#   df <-  read_xlsx(
-#     path  = fs::path_abs(
-#       str_glue(st_base_file),
-#       start = st_base_dir),
-#     sheet = "state_dai",
-#     range = cell_limits(c(1, 1), c(NA, NA))) %>%
-#     as_tibble() %>%
-#     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+  # dfc <-  read_xlsx(
+  #   path  = fs::path_abs(
+  #     str_glue(st_base_file),
+  #     start = st_base_dir),
+  #   sheet = "state_dai",
+  #   range = cell_limits(c(1, 1), c(NA, NA))) %>%
+  #   as_tibble() %>%
+  #   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 # 
 #   # save pre-processed file in archive for generation of past json files
 #   # only last day of the year
@@ -467,14 +465,14 @@ df <-  read_parquet(here(archive_dir_raw, stakeholder, paste0(mydataframe, ".par
 #   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 # 
 # } else {
-#   df <- read_xlsx(
-#     path  = fs::path_abs(
-#       str_glue(st_base_file),
-#       start = st_base_dir),
-#     sheet = "state_delay",
-#     range = cell_limits(c(1, 1), c(NA, NA))) %>%
-#     as_tibble() %>%
-#     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+  # dfc <- read_xlsx(
+  #   path  = fs::path_abs(
+  #     str_glue(st_base_file),
+  #     start = st_base_dir),
+  #   sheet = "state_delay",
+  #   range = cell_limits(c(1, 1), c(NA, NA))) %>%
+  #   as_tibble() %>%
+  #   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 # 
 #   # save pre-processed file in archive for generation of past json files
 #   # only last day of the year
@@ -2815,50 +2813,38 @@ save_json(st_punct_evo_app_j, "st_punct_evo_chart")
 
 ## DELAY ----
 ### Delay category ----
-mydataframe <- "state_delay_raw"
+mydataframe <- "st_delay_cause_day_raw"
 stakeholder <- "st"
 
-if (archive_mode & year(data_day_date) < year(today(tzone = "") +  days(-1))) {
-  myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
+df <-  read_parquet(here(archive_dir_raw, stakeholder, paste0(mydataframe, ".parquet"))) %>% 
+  filter(YEAR >= data_day_year-1) %>% 
+  arrange(COUNTRY_NAME, FLIGHT_DATE)
 
-} else {
-  df <- read_xlsx(
-    path  = fs::path_abs(
-      str_glue(st_base_file),
-      start = st_base_dir),
-    sheet = "state_delay",
-    range = cell_limits(c(1, 1), c(NA, NA))) %>%
-    as_tibble() %>%
-    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-}
 
-st_delay_data <- assign(mydataframe, df)
-
-mydataframe <- "state_delay_cause_raw"
-stakeholder <- "st"
-
-if (archive_mode & year(data_day_date) < year(today(tzone = "") +  days(-1))) {
-  myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
-
-} else {
-  df <- read_xlsx(
-    path  = fs::path_abs(
-      str_glue(st_base_file),
-      start = st_base_dir),
-    sheet = "state_delay_cause",
-    range = cell_limits(c(1, 1), c(NA, NA))) %>%
-    as_tibble()  %>%
-    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-
-  # save pre-processed file in archive for generation of past json files
-  # only last day of the year
-  if(format(data_day_date, "%m%d") == "1231") {
-    myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
-    write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
-  }
-}
+# mydataframe <- "state_delay_cause_raw"
+# stakeholder <- "st"
+# 
+# if (archive_mode & year(data_day_date) < year(today(tzone = "") +  days(-1))) {
+#   myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
+#   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
+# 
+# } else {
+  # dfc <- read_xlsx(
+  #   path  = fs::path_abs(
+  #     str_glue(st_base_file),
+  #     start = st_base_dir),
+  #   sheet = "state_delay_cause",
+  #   range = cell_limits(c(1, 1), c(NA, NA))) %>%
+  #   as_tibble()  %>%
+  #   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+# 
+#   # save pre-processed file in archive for generation of past json files
+#   # only last day of the year
+#   if(format(data_day_date, "%m%d") == "1231") {
+#     myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
+#     write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+#   }
+# }
 
 st_delay_cause_data <- assign(mydataframe, df) %>%
   mutate(
@@ -3056,7 +3042,7 @@ save_json(st_delay_cause_evo_wk_j, "st_delay_category_evo_chart_wk")
 
 #### y2d ----
 st_delay_cause_y2d <- st_delay_cause_data %>%
-  filter(FLIGHT_DATE <= data_day_date) %>%
+  filter(FLIGHT_DATE <= data_day_date & YEAR == data_day_year) %>%
   group_by(iso_2letter) %>%
   reframe(
     iso_2letter,

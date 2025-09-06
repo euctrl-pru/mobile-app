@@ -993,6 +993,358 @@ select
       order by country_name, flight_date
 "
 
+## st_delay_cause ----
+st_delay_cause_day_query <- "
+WITH
+
+COUNTRY_ICAO2LETTER  as (
+select distinct
+       ec_icao_country_code  ICAO2LETTER,
+       CASE
+             WHEN ec_icao_country_code = 'GE' then 'LE'
+             WHEN ec_icao_country_code = 'ET' then 'ED'
+             ELSE ec_icao_country_code
+        END  COUNTRY_code,    
+        CASE WHEN ec_icao_country_code = 'GC' then 'Spain Canaries'
+             WHEN ec_icao_country_code = 'GE' then 'Spain Continental'
+             WHEN ec_icao_country_code = 'LE' then 'Spain Continental'
+             WHEN ec_icao_country_code = 'LY' then 'Serbia/Montenegro'
+             WHEN ec_icao_country_code = 'LU' then 'Moldova'
+             ELSE  ec_icao_country_name
+        END  COUNTRY_NAME
+  from SWH_FCT.dim_icao_country a
+  WHERE Valid_to > trunc(sysdate) - 1
+  AND  (  (SUBSTR(ec_icao_country_code,1,1) IN ('E','L')
+       OR SUBSTR(ec_icao_country_code,1,2) IN ('GC','GM','GE','UD','UG','UK','BI'))  )
+  AND  ec_icao_country_code not in ('LV', 'LX', 'EU','LN')
+  ORDER BY COUNTRY_code
+),
+ 
+LIST_COUNTRY as (
+select  COUNTRY_NAME FROM COUNTRY_ICAO2LETTER
+group by  COUNTRY_NAME),
+
+REL_CFMU_TVS_CTRY_CODE
+ as (
+ select a.pru_tvs_code, a.wef, a.till, b.country_code, b.country_name
+  from prudev.v_pru_rel_cfmu_tvs_Country_fir a ,  COUNTRY_ICAO2LETTER  b
+ where a.unit_code = b.ICAO2LETTER )
+,
+
+
+CTRY_DAY AS (
+SELECT a.COUNTRY_NAME,
+        t.year,
+        t.month,
+        t.week,
+        t.week_nb_year,
+        t.day_type,
+        t.day_of_week_nb AS day_of_week,
+        t.day_date
+FROM LIST_COUNTRY a, prudev.pru_time_references t
+WHERE
+    day_date >= TO_DATE ('01-01-2019', 'dd-mm-yyyy')
+    AND day_date < trunc(sysdate)
+)   ,
+
+
+
+DELAY_TVS_day
+  AS
+     (SELECT a.*,
+            a.agg_flt_tv_set_id AS pru_tvs_code
+      FROM prudev.v_aiu_agg_flt_flow a
+      WHERE a.agg_flt_a_first_entry_date >= '01-jan-2019'),
+
+DELAY_TVS
+        AS
+(  SELECT
+         a.pru_tvs_code,
+      a.agg_flt_tv_set_id,
+      a.agg_flt_a_first_entry_date AS flight_date,
+     SUM (NVL(a.agg_flt_total_delay, 0))
+        tdm,
+     SUM (NVL((CASE WHEN a.agg_flt_mp_regu_loc_ty = 'En route' THEN  a.agg_flt_total_delay END),0))
+          tdm_ert,
+     SUM (NVL((CASE WHEN a.agg_flt_mp_regu_loc_ty = 'Airport'  THEN a.agg_flt_total_delay END),0))
+        tdm_arp,
+     SUM (NVL((CASE WHEN a.agg_flt_mp_regu_loc_ty = 'na' THEN a.agg_flt_total_delay END),0))
+          tdm_na,
+     SUM (NVL(agg_flt_delayed_traffic, 0))
+        tdf,
+     SUM (NVL((CASE WHEN a.agg_flt_mp_regu_loc_ty = 'En route' THEN  a.agg_flt_delayed_traffic END),0))
+          tdf_ert,
+     SUM (NVL((CASE WHEN a.agg_flt_mp_regu_loc_ty = 'Airport'  THEN a.agg_flt_delayed_traffic END),0))
+         tdf_arp,
+     SUM (NVL((CASE WHEN a.agg_flt_mp_regu_loc_ty = 'na' THEN a.agg_flt_delayed_traffic END),0))
+          tdf_na,
+     SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('C', 'S') AND a.agg_flt_mp_regu_loc_ty = 'En route' THEN a.agg_flt_total_delay END),0))
+          tdm_ert_cs,
+     SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('G') AND a.agg_flt_mp_regu_loc_ty = 'En route' THEN a.agg_flt_total_delay END),0))
+          tdm_ert_g,
+     SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('C', 'S', 'G') AND a.agg_flt_mp_regu_loc_ty = 'En route' THEN a.agg_flt_total_delay END),0))
+          tdm_ert_csg,
+      SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('I', 'T') AND a.agg_flt_mp_regu_loc_ty = 'En route' THEN a.agg_flt_total_delay END),0))
+          tdm_ert_it,
+     SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('W', 'D') AND a.agg_flt_mp_regu_loc_ty = 'En route' THEN a.agg_flt_total_delay END),0))
+          tdm_ert_wd,
+     SUM (NVL((CASE WHEN agg_flt_regu_reas NOT IN ('C','S','G','I','T','W','D') AND a.agg_flt_mp_regu_loc_ty = 'En route' THEN a.agg_flt_total_delay END),0))
+          tdm_ert_no_csgitwd,
+--     SUM (NVL(a.agg_flt_regulated_traffic, 0))
+--          trf,
+--     SUM (NVL((CASE WHEN a.agg_flt_mp_regu_loc_ty = 'Airport'  THEN NVL (a.agg_flt_regulated_traffic, 0) END),0))
+--          trf_arp,
+--     SUM (NVL((CASE WHEN a.agg_flt_mp_regu_loc_ty = 'En route'THEN  NVL (a.agg_flt_regulated_traffic, 0) END),0))
+--          trf_ert,
+     SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('C', 'S') AND a.agg_flt_mp_regu_loc_ty = 'Airport' THEN   a.agg_flt_total_delay END),0))
+          tdm_arp_cs,
+     SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('G') AND a.agg_flt_mp_regu_loc_ty = 'Airport' THEN   a.agg_flt_total_delay END),0))
+          tdm_arp_g,
+     SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('C', 'S', 'G') AND a.agg_flt_mp_regu_loc_ty = 'Airport' THEN   a.agg_flt_total_delay END),0))
+          tdm_arp_csg,
+     SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('I', 'T')  AND a.agg_flt_mp_regu_loc_ty = 'Airport' THEN   a.agg_flt_total_delay END),0))
+          tdm_arp_it,
+     SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('W', 'D') AND a.agg_flt_mp_regu_loc_ty = 'Airport' THEN   a.agg_flt_total_delay END),0))
+          tdm_arp_wd,SUM (NVL((CASE WHEN agg_flt_regu_reas NOT IN ('C','S','G','I','T','W','D') AND a.agg_flt_mp_regu_loc_ty = 'Airport' THEN   a.agg_flt_total_delay END),0))
+          tdm_arp_no_csgitwd
+    FROM DELAY_TVS_day a
+    WHERE a.agg_flt_a_first_entry_date >= '01-jan-2019'
+    GROUP BY  a.agg_flt_a_first_entry_date,
+              a.agg_flt_tv_set_id,
+              a.pru_tvs_code)
+,
+
+   DATA_DELAY_COUNTRY as
+   (
+      SELECT
+             r.country_code,
+             r.country_name,
+             flight_date,
+            sum(TDF) as TDF,
+            sum(TDF_ARP) as TDF_ARP,
+            sum(TDF_ERT) as TDF_ERT,
+            sum(TDF_NA) as TDF_NA,
+            sum(TDM) as TDM,
+            sum(TDM_ARP) as TDM_ARP,
+            sum(TDM_ARP_CSG) as TDM_ARP_CSG,
+            sum(TDM_ARP_CS) as TDM_ARP_CS,
+            sum(TDM_ARP_G) as TDM_ARP_G,
+            sum(TDM_ARP_IT) as TDM_ARP_IT,
+            sum(TDM_ARP_WD) as TDM_ARP_WD,
+            sum(TDM_ARP_NO_CSGITWD) as TDM_ARP_NO_CSGITWD,
+            sum(TDM_ERT) as TDM_ERT,
+            sum(TDM_ERT_CSG) as TDM_ERT_CSG,
+            sum(TDM_ERT_CS) as TDM_ERT_CS,
+            sum(TDM_ERT_G) as TDM_ERT_G,
+            sum(TDM_ERT_IT) as TDM_ERT_IT,
+            sum(TDM_ERT_WD) as TDM_ERT_WD,
+            sum(TDM_ERT_NO_CSGITWD) as TDM_ERT_NO_CSGITWD
+        FROM delay_tvs a, REL_CFMU_TVS_CTRY_CODE  r
+       WHERE     a.flight_date BETWEEN r.wef AND r.till
+             AND a.pru_tvs_code = r.pru_tvs_code
+
+    GROUP BY a.flight_date,
+             r.country_code,
+             r.country_name
+ )  ,
+
+ALL_DAY_DATA as (
+select
+    a.country_name,
+    a.YEAR,
+    a.MONTH,
+    a.WEEK,
+    a.WEEK_NB_YEAR,
+    a.day_type,
+    a.day_of_week,
+    a.day_date as flight_date,
+  -- a.country_code,
+    coalesce(TDF,0) as TDF,
+    coalesce(TDF_ARP,0) as TDF_ARP,
+    coalesce(TDF_ERT,0) as TDF_ERT,
+    coalesce(TDF_NA,0) as TDF_NA,
+    coalesce(TDM,0) as TDM,
+    coalesce(TDM_ARP,0) as TDM_ARP,
+    coalesce(TDM_ARP_CSG,0) as TDM_ARP_CSG,
+    coalesce(TDM_ARP_CS,0) as TDM_ARP_CS,
+    coalesce(TDM_ARP_G,0) as TDM_ARP_G,
+    coalesce(TDM_ARP_IT,0) as TDM_ARP_IT,
+    coalesce(TDM_ARP_WD,0) as TDM_ARP_WD,
+    coalesce(TDM_ARP_NO_CSGITWD,0) as TDM_ARP_NO_CSGITWD,
+    coalesce(TDM_ERT,0) as TDM_ERT,
+    coalesce(TDM_ERT_CSG,0) as TDM_ERT_CSG,
+    coalesce(TDM_ERT_CS,0) as TDM_ERT_CS,
+    coalesce(TDM_ERT_G,0) as TDM_ERT_G,
+    coalesce(TDM_ERT_IT,0) as TDM_ERT_IT,
+    coalesce(TDM_ERT_WD,0) as TDM_ERT_WD,
+    coalesce(TDM_ERT_NO_CSGITWD,0) as TDM_ERT_NO_CSGITWD
+
+    FROM CTRY_DAY A
+    LEFT JOIN DATA_DELAY_COUNTRY b on a.COUNTRY_NAME = B.COUNTRY_NAME and a.day_date = b.flight_date
+    ),
+
+DAY_DATA_CALC AS (
+select
+       a.country_name,
+       YEAR,
+       MONTH,
+       WEEK,
+       WEEK_NB_YEAR,
+       DAY_TYPE,
+       day_of_week,
+       flight_date,
+
+       TDF,
+       TDF_ARP,
+       TDF_ERT,
+       TDF_NA,
+       TDM,
+       TDM_ARP,
+       TDM_ARP_CSG,
+       TDM_ARP_CS,
+       TDM_ARP_G,
+       TDM_ARP_IT,
+       TDM_ARP_WD,
+       TDM_ARP_NO_CSGITWD,
+       TDM_ERT,
+       TDM_ERT_CSG,
+       TDM_ERT_CS,
+       TDM_ERT_G,
+       TDM_ERT_IT,
+       TDM_ERT_WD,
+       TDM_ERT_NO_CSGITWD,
+
+       LAG (a.flight_date, 364) OVER (PARTITION BY a.country_name ORDER BY a.flight_date) flight_date_PREV_YEAR,
+       LAG (TDM, 364) OVER (PARTITION BY a.country_name ORDER BY a.flight_date)  TDM_PREV_YEAR,
+       LAG (TDM_ARP, 364) OVER (PARTITION BY a.country_name ORDER BY a.flight_date)  TDM_ARP_PREV_YEAR,
+       LAG (TDM_ARP_CSG, 364) OVER (PARTITION BY a.country_name ORDER BY a.flight_date)  TDM_ARP_CSG_PREV_YEAR,
+       LAG (TDM_ARP_CS, 364) OVER (PARTITION BY a.country_name ORDER BY a.flight_date)  TDM_ARP_CS_PREV_YEAR,
+       LAG (TDM_ARP_G, 364) OVER (PARTITION BY a.country_name ORDER BY a.flight_date)  TDM_ARP_G_PREV_YEAR,
+       LAG (TDM_ARP_IT, 364) OVER (PARTITION BY a.country_name ORDER BY a.flight_date)  TDM_ARP_IT_PREV_YEAR,
+       LAG (TDM_ARP_WD, 364) OVER (PARTITION BY a.country_name ORDER BY a.flight_date)  TDM_ARP_WD_PREV_YEAR,
+       LAG (TDM_ARP_NO_CSGITWD, 364) OVER (PARTITION BY a.country_name ORDER BY a.flight_date)  TDM_ARP_NO_CSGITWD_PREV_YEAR,
+       LAG (TDM_ERT, 364) OVER (PARTITION BY a.country_name ORDER BY a.flight_date)  TDM_ERT_PREV_YEAR,
+       LAG (TDM_ERT_CSG, 364) OVER (PARTITION BY a.country_name ORDER BY a.flight_date)  TDM_ERT_CSG_PREV_YEAR,
+       LAG (TDM_ERT_CS, 364) OVER (PARTITION BY a.country_name ORDER BY a.flight_date)  TDM_ERT_CS_PREV_YEAR,
+       LAG (TDM_ERT_G, 364) OVER (PARTITION BY a.country_name ORDER BY a.flight_date)  TDM_ERT_G_PREV_YEAR,
+       LAG (TDM_ERT_IT, 364) OVER (PARTITION BY a.country_name ORDER BY a.flight_date)  TDM_ERT_IT_PREV_YEAR,
+       LAG (TDM_ERT_WD, 364) OVER (PARTITION BY a.country_name ORDER BY a.flight_date)  TDM_ERT_WD_PREV_YEAR,
+       LAG (TDM_ERT_NO_CSGITWD, 364) OVER (PARTITION BY a.country_name ORDER BY a.flight_date)  TDM_ERT_NO_CSGITWD_PREV_YEAR
+
+      FROM ALL_DAY_DATA a
+ )
+
+ select
+       country_name,
+       YEAR,
+       MONTH,
+       WEEK,
+       WEEK_NB_YEAR,
+       DAY_TYPE,
+       day_of_week,
+       flight_date,
+
+       TDF,
+       TDF_ARP,
+       TDF_ERT,
+       TDF_NA,
+       TDM,
+       TDM_ARP,
+       TDM_ARP_CSG,
+       TDM_ARP_CS,
+       TDM_ARP_G,
+       TDM_ARP_IT,
+       TDM_ARP_WD,
+       TDM_ARP_NO_CSGITWD,
+       TDM_ERT,
+       TDM_ERT_CSG,
+       TDM_ERT_CS,
+       TDM_ERT_G,
+       TDM_ERT_IT,
+       TDM_ERT_WD,
+       TDM_ERT_NO_CSGITWD,
+
+       flight_date_PREV_YEAR,
+       TDM_PREV_YEAR,
+
+       TDM_ARP_PREV_YEAR,
+       TDM_ARP_CSG_PREV_YEAR,
+       TDM_ARP_CS_PREV_YEAR,
+       TDM_ARP_G_PREV_YEAR,
+       TDM_ARP_IT_PREV_YEAR,
+       TDM_ARP_WD_PREV_YEAR,
+       TDM_ARP_NO_CSGITWD_PREV_YEAR,
+       TDM_ERT_PREV_YEAR,
+       TDM_ERT_CSG_PREV_YEAR,
+       TDM_ERT_CS_PREV_YEAR,
+       TDM_ERT_G_PREV_YEAR,
+       TDM_ERT_IT_PREV_YEAR,
+       TDM_ERT_WD_PREV_YEAR,
+       TDM_ERT_NO_CSGITWD_PREV_YEAR
+
+ from DAY_DATA_CALC
+ where country_name not in ('ICELAND', 'Iceland')
+
+ union all
+
+ select
+       country_name,
+       YEAR,
+       MONTH,
+       WEEK,
+       WEEK_NB_YEAR,
+       DAY_TYPE,
+       day_of_week,
+       flight_date,
+
+       case when FLIGHT_DATE >='01-jan-2024' then TDF else NULL end TDF,
+       case when FLIGHT_DATE >='01-jan-2024' then TDF_ARP else NULL end TDF_ARP,
+       case when FLIGHT_DATE >='01-jan-2024' then TDF_ERT else NULL end TDF_ERT,
+       case when FLIGHT_DATE >='01-jan-2024' then TDF_NA else NULL end TDF_NA,
+
+       case when FLIGHT_DATE >='01-jan-2024' then TDM else NULL end TDM,
+
+       case when FLIGHT_DATE >='01-jan-2024' then TDM_ARP else NULL end TDM_ARP,
+       case when FLIGHT_DATE >='01-jan-2024' then TDM_ARP_CSG else NULL end TDM_ARP_CSG,
+       case when FLIGHT_DATE >='01-jan-2024' then TDM_ARP_CS else NULL end TDM_ARP_CS,
+       case when FLIGHT_DATE >='01-jan-2024' then TDM_ARP_G else NULL end TDM_ARP_G,
+       case when FLIGHT_DATE >='01-jan-2024' then TDM_ARP_IT else NULL end TDM_ARP_IT,
+       case when FLIGHT_DATE >='01-jan-2024' then TDM_ARP_WD else NULL end TDM_ARP_WD,
+       case when FLIGHT_DATE >='01-jan-2024' then TDM_ARP_NO_CSGITWD else NULL end TDM_ARP_NO_CSGITWD,
+
+       case when FLIGHT_DATE >='01-jan-2024' then TDM_ERT else NULL end TDM_ERT,
+       case when FLIGHT_DATE >='01-jan-2024' then TDM_ERT_CSG else NULL end TDM_ERT_CSG,
+       case when FLIGHT_DATE >='01-jan-2024' then TDM_ERT_CS else NULL end TDM_ERT_CS,
+       case when FLIGHT_DATE >='01-jan-2024' then TDM_ERT_G else NULL end TDM_ERT_G,
+       case when FLIGHT_DATE >='01-jan-2024' then TDM_ERT_IT else NULL end TDM_ERT_IT,
+       case when FLIGHT_DATE >='01-jan-2024' then TDM_ERT_WD else NULL end TDM_ERT_WD,
+       case when FLIGHT_DATE >='01-jan-2024' then TDM_ERT_NO_CSGITWD else NULL end TDM_ERT_NO_CSGITWD,
+
+
+       flight_date_PREV_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then TDM_PREV_YEAR else NULL end TDM_PREV_YEAR,
+
+       case when FLIGHT_DATE >='01-jan-2025' then TDM_ARP_PREV_YEAR else NULL end TDM_ARP_PREV_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then TDM_ARP_CSG_PREV_YEAR else NULL end TDM_ARP_CSG_PREV_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then TDM_ARP_CS_PREV_YEAR else NULL end TDM_ARP_CS_PREV_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then TDM_ARP_G_PREV_YEAR else NULL end TDM_ARP_G_PREV_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then TDM_ARP_IT_PREV_YEAR else NULL end TDM_ARP_IT_PREV_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then TDM_ARP_WD_PREV_YEAR else NULL end TDM_ARP_WD_PREV_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then TDM_ARP_NO_CSGITWD_PREV_YEAR else NULL end TDM_ARP_NO_CSGITWD_PREV_YEAR,
+
+       case when FLIGHT_DATE >='01-jan-2025' then TDM_ERT_PREV_YEAR else NULL end TDM_ERT_PREV_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then TDM_ERT_CSG_PREV_YEAR else NULL end TDM_ERT_CSG_PREV_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then TDM_ERT_CS_PREV_YEAR else NULL end TDM_ERT_CS_PREV_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then TDM_ERT_G_PREV_YEAR else NULL end TDM_ERT_G_PREV_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then TDM_ERT_IT_PREV_YEAR else NULL end TDM_ERT_IT_PREV_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then TDM_ERT_WD_PREV_YEAR else NULL end TDM_ERT_WD_PREV_YEAR,
+       case when FLIGHT_DATE >='01-jan-2025' then TDM_ERT_NO_CSGITWD_PREV_YEAR else NULL end TDM_ERT_NO_CSGITWD_PREV_YEAR
+
+ from DAY_DATA_CALC
+ where country_name in ('ICELAND', 'Iceland')
+ order by country_name, flight_date
+
+"
 ## st_ao ----
 st_ao_day_base_query <- paste0("
 with 

@@ -72,50 +72,38 @@ nw_punct_data_raw <- export_query(query) %>%
 
 # dimensions ----
 state_iso <-  read_xlsx(
-  path  = fs::path_abs(
-    str_glue(st_base_file),
-    start = st_base_dir),
-  sheet = "lists",
+  here("stakeholder_lists.xlsx"),
+  sheet = "state_lists",
   range = cell_limits(c(2, 2), c(NA, 3))) %>%
   as_tibble()
 
 state_iso_icao <-  read_xlsx(
-  path  = fs::path_abs(
-    str_glue(st_base_file),
-    start = st_base_dir),
-  sheet = "lists",
+  here("stakeholder_lists.xlsx"),
+  sheet = "state_lists",
   range = cell_limits(c(2, 24), c(NA, 26))) %>%
   as_tibble()
 
 state_crco <-  read_xlsx(
-  path  = fs::path_abs(
-    str_glue(st_base_file),
-    start = st_base_dir),
-  sheet = "lists",
+  here("stakeholder_lists.xlsx"),
+  sheet = "state_lists",
   range = cell_limits(c(2, 6), c(NA, 8))) %>%
   as_tibble()
 
 state_daio <-  read_xlsx(
-  path  = fs::path_abs(
-    str_glue(st_base_file),
-    start = st_base_dir),
-  sheet = "lists",
+  here("stakeholder_lists.xlsx"),
+  sheet = "state_lists",
   range = cell_limits(c(2, 11), c(NA, 13))) %>%
   as_tibble()
 
 state_co2 <-  read_xlsx(
-  path  = fs::path_abs(
-    str_glue(st_base_file),
-    start = st_base_dir),
-  sheet = "lists",
+  here("stakeholder_lists.xlsx"),
+  sheet = "state_lists",
   range = cell_limits(c(2, 16), c(NA, 17))) %>%
   as_tibble()
 
 state_statfor <-  read_xlsx(
-  path  = fs::path_abs(
-    str_glue(st_base_file),
-    start = st_base_dir),
-  sheet = "lists",
+  here("stakeholder_lists.xlsx"),
+  sheet = "state_lists",
   range = cell_limits(c(2, 20), c(NA, 21))) %>%
   as_tibble()
 

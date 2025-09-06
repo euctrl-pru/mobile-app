@@ -119,6 +119,21 @@ st_delay <- function() {
   
 }
 
+# st delay cause ----
+st_delay_cause <- function() {
+  mydataframe <-  "st_delay_cause"
+  mydataquery <- paste0(mydataframe, "_day_query")
+  mydatafile <- paste0(mydataframe, "_day_raw.parquet")
+  stakeholder <- str_sub(mydataframe, 1, 2)
+  
+  
+  df_day <- export_query(get(mydataquery))
+  df_day %>% write_parquet(here(archive_dir_raw, stakeholder, mydatafile))
+  
+  print(paste(format(now(), "%H:%M:%S"), mydataframe))
+  
+}
+
 
 # st dai ----
 st_dai <- function() {
@@ -1451,6 +1466,7 @@ st_ap <- function(mydate =  current_day) {
 st_daio()
 st_dai()
 st_delay()
+st_delay_cause()
 purrr::walk(current_day, st_ao)
 purrr::walk(current_day, st_st)
 purrr::walk(current_day, st_ap)
