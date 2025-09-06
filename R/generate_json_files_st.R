@@ -1,5 +1,5 @@
 ## libraries
-library(data.table)
+library(arrow)
 library(fs)
 library(tibble)
 library(dplyr)
@@ -128,33 +128,36 @@ st_billed_for_json <- st_billing %>%
   arrange(iso_2letter)
 
 #### Traffic DAIO data ----
-mydataframe <- "state_daio_raw"
+mydataframe <- "st_daio_day_raw"
 stakeholder <- "st"
 
-if (archive_mode & year(data_day_date) < year(today(tzone = "") +  days(-1))) {
-  myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
+df <-  read_parquet(here(archive_dir_raw, stakeholder, paste0(mydataframe, ".parquet"))) %>% 
+  filter(YEAR == data_day_year)
 
-} else {
-  df <-  read_xlsx(
-    path  = fs::path_abs(
-      str_glue(st_base_file),
-      start = st_base_dir),
-    sheet = "state_daio",
-    range = cell_limits(c(1, 1), c(NA, NA))) %>%
-    as_tibble() %>%
-    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-
-  # save pre-processed file in archive for generation of past json files
-  # only last day of the year
-  if(format(data_day_date, "%m%d") == "1231") {
-    myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
-    write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
-  }
-}
+# if (archive_mode & year(data_day_date) < year(today(tzone = "") +  days(-1))) {
+#   myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
+#   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
+# 
+# } else {
+#   df <-  read_xlsx(
+#     path  = fs::path_abs(
+#       str_glue(st_base_file),
+#       start = st_base_dir),
+#     sheet = "state_daio",
+#     range = cell_limits(c(1, 1), c(NA, NA))) %>%
+#     as_tibble() %>%
+#     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+# 
+#   # save pre-processed file in archive for generation of past json files
+#   # only last day of the year
+#   if(format(data_day_date, "%m%d") == "1231") {
+#     myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
+#     write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+#   }
+# }
 
 # process data
-st_daio_data <- assign(mydataframe, df)
+st_dai_data <- assign(mydataframe, df)
 
 st_daio_data_zone <- st_daio_data %>%
   mutate(daio_zone_lc = tolower(COUNTRY_NAME)) %>%
@@ -208,30 +211,36 @@ st_daio_for_json <- st_daio_last_day %>%
   arrange(iso_2letter)
 
 #### Traffic DAI data ----
-mydataframe <- "state_dai_raw"
+mydataframe <- "st_dai_day_raw"
 stakeholder <- "st"
 
-if (archive_mode & year(data_day_date) < year(today(tzone = "") +  days(-1))) {
-  myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
+df <-  read_parquet(here(archive_dir_raw, stakeholder, paste0(mydataframe, ".parquet"))) %>% 
+  filter(YEAR == data_day_year)
 
-} else {
-  df <-  read_xlsx(
-    path  = fs::path_abs(
-      str_glue(st_base_file),
-      start = st_base_dir),
-    sheet = "state_dai",
-    range = cell_limits(c(1, 1), c(NA, NA))) %>%
-    as_tibble() %>%
-    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-
-  # save pre-processed file in archive for generation of past json files
-  # only last day of the year
-  if(format(data_day_date, "%m%d") == "1231") {
-    myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
-    write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
-  }
-}
+# mydataframe <- "state_dai_raw"
+# stakeholder <- "st"
+# 
+# if (archive_mode & year(data_day_date) < year(today(tzone = "") +  days(-1))) {
+#   myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
+#   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
+# 
+# } else {
+#   df <-  read_xlsx(
+#     path  = fs::path_abs(
+#       str_glue(st_base_file),
+#       start = st_base_dir),
+#     sheet = "state_dai",
+#     range = cell_limits(c(1, 1), c(NA, NA))) %>%
+#     as_tibble() %>%
+#     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+# 
+#   # save pre-processed file in archive for generation of past json files
+#   # only last day of the year
+#   if(format(data_day_date, "%m%d") == "1231") {
+#     myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
+#     write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+#   }
+# }
 
 # process data
 st_dai_data <- assign(mydataframe, df)
