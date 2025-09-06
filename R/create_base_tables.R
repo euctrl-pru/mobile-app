@@ -9,7 +9,7 @@ source(here::here("..", "mobile-app", "R", "helpers.R"))
 source(here::here("..", "mobile-app", "R", "params.R"))
 
 query_from <- "TO_DATE('2018-12-24', 'yyyy-mm-dd')"
-source(here::here("..", "mobile-app", "R", "z_base_queries_ap.R"))
+source(here::here("..", "mobile-app", "R", "base_queries.R"))
 
 # update base table ----
 mydataframe <- "st_dai"

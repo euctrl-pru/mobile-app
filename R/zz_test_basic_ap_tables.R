@@ -16,7 +16,7 @@ source(here::here("..", "mobile-app", "R", "params.R"))
 source(here::here("..", "mobile-app", "R", "helpers.R"))
 
 query_from <- "TO_DATE ('01-01-2019', 'dd-mm-yyyy')"
-source(here::here("..", "mobile-app", "R", "z_base_queries_ap.R"))
+source(here::here("..", "mobile-app", "R", "base_queries.R"))
 
 mydataframe <- "ap_ao_day_base"
 myquery <- get(paste0(mydataframe, "_query"))

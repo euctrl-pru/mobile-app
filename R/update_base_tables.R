@@ -42,7 +42,7 @@ if (check_synthesis == 0) {
 
 
 query_from <- "TRUNC (SYSDATE) - 7"
-source(here::here("..", "mobile-app", "R", "z_base_queries_ap.R"))
+source(here::here("..", "mobile-app", "R", "base_queries.R"))
 
 # update base table ----
 mydataframes <- c(

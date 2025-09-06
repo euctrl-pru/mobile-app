@@ -9,6 +9,8 @@ source(here::here("..", "mobile-app", "R", "helpers.R"))
 source(here::here("..", "mobile-app", "R", "params.R"))
 source(here::here("..", "mobile-app", "R", "dimension_queries.R"))
 source(here::here("..", "mobile-app", "R", "duckdb_functions.R"))
+query_from <- "" # not needed for the queries used here
+source(here::here("..", "mobile-app", "R", "base_queries.R"))
 
 # parameters ----
 if (!exists("data_day_date")) {current_day <- today() - days(1)} else {current_day <- data_day_date}
@@ -37,11 +39,11 @@ list_icao_country <- export_query(list_icao_st_query)
 # prep data functions ----
 import_dataframe <- function(dfname, con = con) {
   # import data 
-  # dfname <- "st_dai"
+  # dfname <- "st_st"
   mydataframe <- dfname
   myparquetfile <- paste0(mydataframe, "_day_base.parquet")
   
-  # con <- duck_open()
+  con <- duck_open()
   df_base <- duck_ingest_parquet(con, here::here(archive_dir_raw, myparquetfile))  # now eager by default
  
   # df_base <- read_parquet_duckdb(here(archive_dir_raw, 
@@ -720,7 +722,7 @@ st_ao <- function(mydate =  current_day) {
   #   # }
   # }
 
-  print(paste(now(), mydataframe, mydate))
+  print(paste(format(now(), "%H:%M:%S"), mydataframe, mydate))
   
   duck_close(con, clean = TRUE)
 }
@@ -1090,7 +1092,7 @@ st_st <- function(mydate =  current_day) {
   #   #
   #   # }
   # }
-  print(paste(now(), mydataframe, mydate))
+  print(paste(format(now(), "%H:%M:%S"), mydataframe, mydate))
   
   duck_close(con, clean = TRUE)
 }
@@ -1452,7 +1454,7 @@ st_ap <- function(mydate =  current_day) {
   #   # }
   # }
   
-  print(paste(now(), mydataframe, mydate))
+  print(paste(format(now(), "%H:%M:%S"), mydataframe, mydate))
   
   duck_close(con, clean = TRUE)
   
