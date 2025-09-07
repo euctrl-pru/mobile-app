@@ -73,16 +73,16 @@ apt_json_app <-""
 #
 # ____________________________________________________________________________________________
 
-
-
 #### Traffic data ----
 #reading the traffic sheet
-apt_traffic_delay_data <- export_query(query_ap_traffic(format(data_day_date, "%Y-%m-%d"))) %>%
-  as_tibble() %>%
-  mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-
+if(!exists("apt_traffic_data")) {
+  apt_traffic_data <- export_query(query_ap_traffic(format(data_day_date, "%Y-%m-%d"))) %>%
+    as_tibble() %>%
+    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+}
+  
 #getting the latest date's traffic data
-apt_traffic_delay_last_day <- apt_traffic_delay_data %>%
+apt_traffic_last_day <- apt_traffic_data %>%
   filter(FLIGHT_DATE == min(data_day_date,
                             max(LAST_DATA_DAY, na.rm = TRUE),
                             na.rm = TRUE)
@@ -90,7 +90,7 @@ apt_traffic_delay_last_day <- apt_traffic_delay_data %>%
   arrange(ARP_NAME, FLIGHT_DATE)
 
 #selecting columns and renaming
-apt_traffic_for_json <- apt_traffic_delay_last_day %>%
+apt_traffic_for_json <- apt_traffic_last_day %>%
   right_join(apt_icao_full, by = c("ARP_CODE" = "apt_icao_code", "ARP_NAME" = "apt_name")) %>%
   group_by(flag_top_apt) %>%
   mutate(
@@ -1615,7 +1615,7 @@ save_json(apt_ms_ranking_traffic_j, "apt_ms_ranking_traffic", archive_file = FAL
 
 ## TRAFFIC ----
 ### 7-day traffic avg ----
-apt_traffic_evo <- apt_traffic_delay_data  %>%
+apt_traffic_evo <- apt_traffic_data  %>%
   mutate(RWK_AVG_TFC = if_else(FLIGHT_DATE > min(data_day_date,max(LAST_DATA_DAY, na.rm = TRUE),na.rm = TRUE),
                                NA,
                                RWK_AVG_DEP_ARR)) %>%

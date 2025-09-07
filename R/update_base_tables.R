@@ -46,6 +46,7 @@ source(here::here("..", "mobile-app", "R", "base_queries.R"))
 
 # update base table ----
 mydataframes <- c(
+  "ap_traffic_delay",
   "ap_ao",
   "ap_st_des",
   "ap_ap_des",
@@ -56,7 +57,7 @@ mydataframes <- c(
   "ao_ap_dep",
   "ao_ap_pair",
   "ao_ap_arr_delay",
-  
+
   "st_dai",
   "st_ao",
   "st_st",
@@ -65,22 +66,29 @@ mydataframes <- c(
 )
 
 update_base_tables <- function(mydataframe) {
-# mydataframe <-   "ao_ap_arr_delay"
+# mydataframe <-   "ap_traffic_delay"
   myarchivefile <- paste0(mydataframe, "_day_base.parquet")
   mybackupfile <- paste0(mydataframe, "_day_base_backup.parquet")
   query_7d <- get(paste0(mydataframe, "_day_base_query"))
   
+  # create backup
+  file.copy(from = here(archive_dir_raw, myarchivefile), 
+            to = here(archive_dir_raw, "backup", mybackupfile),
+            overwrite = TRUE,
+            copy.mode = TRUE,
+            recursive = FALSE)
+  
   # import data
-  df_tmp <- read_parquet_duckdb(here(archive_dir_raw, myarchivefile))
+  df <- read_parquet_duckdb(here(archive_dir_raw, myarchivefile))
   
   # define today
   today_date <- today(tzone = "")
 
   # materialise table
-  df <- df_tmp %>% collect() 
+  # df <- df_tmp %>% collect() 
   
   # create backup
-  df %>% write_parquet(here::here(archive_dir_raw, "backup", mybackupfile))
+  # df %>% write_parquet(here::here(archive_dir_raw, "backup", mybackupfile))
   
   
   # filter out last 7 days
@@ -105,7 +113,7 @@ update_base_tables <- function(mydataframe) {
   df_lastweek <- export_query(query_7d) 
   
   # join filtered table with last 7 days calculated
-  df_updated <- rbind(df_filtered, df_lastweek)
+  df_updated <- rbind(collect(df_filtered), df_lastweek)
   
   # write new updated table
   df_updated %>% write_parquet(here(archive_dir_raw, myarchivefile))

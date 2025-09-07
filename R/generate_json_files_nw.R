@@ -1411,6 +1411,7 @@ save_json(nw_forecast_graph_daio_nest_j, "nw_traffic_forecast_chart")
 
 
 # RANKING TABLES ----
+## Airline traffic ----
 ### day ----
 mydataframe <- "nw_ao_data_day_raw"
 myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
@@ -1586,7 +1587,7 @@ nw_ao_data_y2d <- assign(mydataframe, df) %>%
   ) %>%
   select(-FLIGHT, -YEAR) %>%
   spread(., key = PERIOD, value = AVG_FLIGHT) %>%
-  arrange(AO_GRP_NAME, R_RANK) %>%
+  arrange(R_RANK) %>%
   mutate(
     Y2D_RANK_DIF_PREV_YEAR = case_when(
       is.na(RANK_PREV) ~ RANK,
@@ -1743,162 +1744,291 @@ save_json(nw_ao_data_j, "nw_ao_ranking_traffic")
 
 ## Airport traffic ----
 ### day ----
-mydataframe <- "nw_apt_day_raw"
+mydataframe <- "nw_ap_data_day_raw"
 myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
-if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
-  
-} else {
-  df <- read_xlsx(
-    path = fs::path_abs(
-      str_glue(nw_base_file),
-      start = nw_base_dir
-    ),
-    sheet = "APT_DAY_DATA",
-    range = cell_limits(c(5, 2), c(NA, NA))
-  ) %>%
-    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-  
-  # save pre-processed file in archive for generation of past json files
-  write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
-}
+df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
-nw_apt_data_dy <- assign(mydataframe, df) %>%
-  filter(R_RANK_BY_DAY <= 10 &
-           R_RANK_BY_DAY != 0 &
-           is.na(R_RANK_BY_DAY) == FALSE) %>%
-  mutate(DY_RANK_DIF_PREV_WEEK = RANK_BY_DAY_7DAY - RANK_BY_DAY) %>%
+# process data
+nw_ap_data_day_int <- assign(mydataframe, df) |>
+  mutate(TO_DATE = max(TO_DATE, na.rm = TRUE)) |>
+  spread(key = FLAG_PERIOD, value = DEP_ARR) |>
+  arrange(R_RANK) |>
+  mutate(
+    DY_RANK_DIF_PREV_WEEK = case_when(
+      is.na(RANK_PREV) ~ RANK,
+      .default = RANK_PREV - RANK
+    ),
+    DY_FLT_DIF_PREV_WEEK_PERC =   case_when(
+      DAY_PREV_WEEK == 0 | is.na(DAY_PREV_WEEK) ~ NA,
+      .default = CURRENT_DAY / DAY_PREV_WEEK - 1
+    ),
+    DY_FLT_DIF_PREV_YEAR_PERC = case_when(
+      DAY_PREV_YEAR == 0 | is.na(DAY_PREV_YEAR) ~ NA,
+      .default = CURRENT_DAY / DAY_PREV_YEAR - 1
+    ),
+    TFC_DIF = CURRENT_DAY - DAY_PREV_WEEK
+  ) 
+
+nw_ap_data_day <- nw_ap_data_day_int %>% 
+  filter(R_RANK < 11) %>% 
   select(
-    DY_R_RANK_BY_DAY = R_RANK_BY_DAY,
-    DY_AIRPORT_NAME = AIRPORT_NAME,
-    DY_TO_DATE = ENTRY_DATE,
-    DY_DEP_ARR = DEP_ARR,
-    DY_DIF_PREV_WEEK_PERC =  DEP_ARR_7DAY_DIFF_PERC,
-    DY_DIF_PREV_YEAR_PERC =  DEP_ARR_PREV_YEAR_DIFF_PERC,
-    DY_RANK_DIF_PREV_WEEK
+    DY_R_RANK_BY_DAY = R_RANK,
+    DY_AIRPORT_NAME = APT_NAME,
+    DY_TO_DATE = TO_DATE,
+    DY_DEP_ARR = CURRENT_DAY,
+    DY_DIF_PREV_WEEK_PERC = DY_FLT_DIF_PREV_WEEK_PERC,
+    DY_DIF_PREV_YEAR_PERC = DY_FLT_DIF_PREV_YEAR_PERC,
+    DY_RANK_DIF_PREV_WEEK,
   )
 
+### day old
+# mydataframe <- "nw_apt_day_raw"
+# myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+# stakeholder <- str_sub(mydataframe, 1, 2)
+# 
+# if (archive_mode) {
+#   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
+#   
+# } else {
+#   df <- read_xlsx(
+#     path = fs::path_abs(
+#       str_glue(nw_base_file),
+#       start = nw_base_dir
+#     ),
+#     sheet = "APT_DAY_DATA",
+#     range = cell_limits(c(5, 2), c(NA, NA))
+#   ) %>%
+#     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+#   
+#   # save pre-processed file in archive for generation of past json files
+#   write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+# }
+# 
+# nw_apt_data_dy <- assign(mydataframe, df) %>%
+#   filter(R_RANK_BY_DAY <= 10 &
+#            R_RANK_BY_DAY != 0 &
+#            is.na(R_RANK_BY_DAY) == FALSE) %>%
+#   mutate(DY_RANK_DIF_PREV_WEEK = RANK_BY_DAY_7DAY - RANK_BY_DAY) %>%
+#   select(
+#     DY_R_RANK_BY_DAY = R_RANK_BY_DAY,
+#     DY_AIRPORT_NAME = AIRPORT_NAME,
+#     DY_TO_DATE = ENTRY_DATE,
+#     DY_DEP_ARR = DEP_ARR,
+#     DY_DIF_PREV_WEEK_PERC =  DEP_ARR_7DAY_DIFF_PERC,
+#     DY_DIF_PREV_YEAR_PERC =  DEP_ARR_PREV_YEAR_DIFF_PERC,
+#     DY_RANK_DIF_PREV_WEEK
+#   )
+
 ### week ----
-mydataframe <- "nw_apt_week_raw"
+mydataframe <- "nw_ap_data_week_raw"
 myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
-if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
-  
-} else {
-  df <- read_xlsx(
-    path = fs::path_abs(
-      str_glue(nw_base_file),
-      start = nw_base_dir
-    ),
-    sheet = "APT_WEEK_DATA",
-    range = cell_limits(c(6, 1), c(NA, NA))
-  ) %>%
-    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-  
-  # save pre-processed file in archive for generation of past json files
-  write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
-}
+df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
-nw_apt_data_wk <- assign(mydataframe, df) %>%
-  filter(R_RANK_BY_DAY <= 10 &
-           R_RANK_BY_DAY != 0 &
-           is.na(R_RANK_BY_DAY) == FALSE) %>%
-  mutate(WK_RANK_DIF_PREV_WEEK = RANK_BY_DAY_7DAY - RANK_BY_DAY) %>%
+# process data
+nw_ap_data_week_int <- assign(mydataframe, df) |>
+  select(-AVG_DEP_ARR) %>% 
+  spread(key = FLAG_PERIOD, value = DEP_ARR) |>
+  arrange(R_RANK) |>
+  mutate(
+    WK_DAILY_DEP_ARR  = CURRENT_ROLLING_WEEK/7,
+    WK_RANK_DIF_PREV_WEEK = case_when(
+      is.na(RANK_PREV) ~ RANK,
+      .default = RANK_PREV - RANK
+    ),
+    WK_FLT_DIF_PREV_WEEK_PERC =   case_when(
+      PREV_ROLLING_WEEK == 0 | is.na(PREV_ROLLING_WEEK) ~ NA,
+      .default = CURRENT_ROLLING_WEEK / PREV_ROLLING_WEEK - 1
+    ),
+    WK_FLT_DIF_PREV_YEAR_PERC = case_when(
+      ROLLING_WEEK_PREV_YEAR == 0 | is.na(ROLLING_WEEK_PREV_YEAR) ~ NA,
+      .default = CURRENT_ROLLING_WEEK / ROLLING_WEEK_PREV_YEAR - 1
+    ),
+    TFC_DIF = CURRENT_ROLLING_WEEK - PREV_ROLLING_WEEK
+  ) %>% 
+  filter(R_RANK < 11)
+
+nw_ap_data_week <- nw_ap_data_week_int |>
   select(
-    DY_R_RANK_BY_DAY = R_RANK_BY_DAY,
+    DY_R_RANK_BY_DAY = R_RANK,
     WK_AIRPORT_NAME = APT_NAME,
-    WK_FROM_DATE = MIN_ENTRY_DATE,
-    WK_DAILY_DEP_ARR =  DAILY_TTF_DEP_ARR,
-    WK_DIF_PREV_WEEK_PERC =  TTF_DEP_ARR_DIFF_7DAY_PERC,
-    WK_DIF_PREV_YEAR_PERC =  TTF_DEP_ARR_DIFF_PREV_YY_PERC,
+    WK_FROM_DATE = FROM_DATE,
+    WK_DAILY_DEP_ARR,
+    WK_DIF_PREV_WEEK_PERC = WK_FLT_DIF_PREV_WEEK_PERC,
+    WK_DIF_PREV_YEAR_PERC = WK_FLT_DIF_PREV_YEAR_PERC,
     WK_RANK_DIF_PREV_WEEK
   )
 
+
+### week old 
+# mydataframe <- "nw_apt_week_raw"
+# myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+# stakeholder <- str_sub(mydataframe, 1, 2)
+# 
+# if (archive_mode) {
+#   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
+#   
+# } else {
+#   df <- read_xlsx(
+#     path = fs::path_abs(
+#       str_glue(nw_base_file),
+#       start = nw_base_dir
+#     ),
+#     sheet = "APT_WEEK_DATA",
+#     range = cell_limits(c(6, 1), c(NA, NA))
+#   ) %>%
+#     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+#   
+#   # save pre-processed file in archive for generation of past json files
+#   write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+# }
+# 
+# nw_apt_data_wk <- assign(mydataframe, df) %>%
+#   filter(R_RANK_BY_DAY <= 10 &
+#            R_RANK_BY_DAY != 0 &
+#            is.na(R_RANK_BY_DAY) == FALSE) %>%
+#   mutate(WK_RANK_DIF_PREV_WEEK = RANK_BY_DAY_7DAY - RANK_BY_DAY) %>%
+#   select(
+#     DY_R_RANK_BY_DAY = R_RANK_BY_DAY,
+#     WK_AIRPORT_NAME = APT_NAME,
+#     WK_FROM_DATE = MIN_ENTRY_DATE,
+#     WK_DAILY_DEP_ARR =  DAILY_TTF_DEP_ARR,
+#     WK_DIF_PREV_WEEK_PERC =  TTF_DEP_ARR_DIFF_7DAY_PERC,
+#     WK_DIF_PREV_YEAR_PERC =  TTF_DEP_ARR_DIFF_PREV_YY_PERC,
+#     WK_RANK_DIF_PREV_WEEK
+#   )
+
 ### y2d ----
-mydataframe <- "nw_apt_y2d_raw"
+mydataframe <- "nw_ap_data_y2d_raw"
 myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
-if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
-  
-} else {
-  df <- read_xlsx(
-    path = fs::path_abs(
-      str_glue(nw_base_file),
-      start = nw_base_dir
-    ),
-    sheet = "TOP40_APT_Y2D",
-    range = cell_limits(c(5, 2), c(NA, 10))
-  ) %>%
-    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-  
-  # save pre-processed file in archive for generation of past json files
-  write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
-}
+df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
-nw_apt_data_y2d <- assign(mydataframe, df) %>%
-  filter(R_RANK <= 10 & R_RANK != 0 & is.na(R_RANK) == FALSE) %>%
-  mutate(FLAG_LAST_YEAR = case_when(
-    YEAR == data_day_year ~ "Y2D_DEP_ARR_CURRENT_YEAR",
-    YEAR == data_day_year - 1 ~ "Y2D_DEP_ARR_PREV_YEAR",
-    .default = paste0("Y2D_DEP_ARR_", as.character(YEAR))
-  )) %>%
-  pivot_wider(id_cols = -c(YEAR, FROM_DATE,  TO_DATE), names_from = "FLAG_LAST_YEAR", values_from = DAILY_DEP_ARR) %>%
-  mutate(Y2D_TO_DATE = data_day_date) %>%
-  mutate(R_RANK = row_number(),
-         Y2D_RANK_DIF_PREV_YEAR = RANK_PY - RANK,
-         Y2D_DIF_PREV_YEAR_PERC = if_else(Y2D_DEP_ARR_PREV_YEAR == 0,
-                                          0,
-                                          Y2D_DEP_ARR_CURRENT_YEAR/Y2D_DEP_ARR_PREV_YEAR-1),
-         Y2D_DIF_2019_PERC = if_else(Y2D_DEP_ARR_2019 == 0,
-                                     0,
-                                     Y2D_DEP_ARR_CURRENT_YEAR/Y2D_DEP_ARR_2019-1)
+# process data
+nw_ap_data_y2d <- assign(mydataframe, df) %>%
+  mutate(
+    FROM_DATE = max(FROM_DATE),
+    TO_DATE = max(TO_DATE),
+    PERIOD =   case_when(
+      YEAR == max(YEAR) ~ 'CURRENT_YEAR',
+      YEAR == max(YEAR) - 1 ~ 'PREV_YEAR',
+      .default = paste0('PERIOD_', YEAR)
+    )
   ) %>%
+  select(-DEP_ARR, -YEAR) %>%
+  spread(., key = PERIOD, value = AVG_DEP_ARR) %>%
+  mutate(
+    Y2D_RANK_DIF_PREV_YEAR = case_when(
+      is.na(RANK_PREV) ~ RANK,
+      .default = RANK_PREV - RANK
+    ),
+    Y2D_FLT_DIF_PREV_YEAR_PERC =   case_when(
+      PREV_YEAR == 0 | is.na(PREV_YEAR) ~ NA,
+      .default = CURRENT_YEAR / PREV_YEAR - 1
+    ),
+    Y2D_FLT_DIF_2019_PERC  = case_when(
+      PERIOD_2019 == 0 | is.na(PERIOD_2019) ~ NA,
+      .default = CURRENT_YEAR / PERIOD_2019 - 1
+    )
+  ) %>%
+  arrange(R_RANK) %>% 
+  filter(R_RANK < 11) %>% 
   select(
     DY_R_RANK_BY_DAY = R_RANK,
-    Y2D_AIRPORT_NAME = ARP_NAME,
-    Y2D_DEP_ARR = Y2D_DEP_ARR_CURRENT_YEAR,
-    Y2D_DIF_PREV_YEAR_PERC,
-    Y2D_DIF_2019_PERC,
-    Y2D_TO_DATE,
+    Y2D_AIRPORT_NAME = APT_NAME,
+    Y2D_DEP_ARR = CURRENT_YEAR,
+    Y2D_DIF_PREV_YEAR_PERC = Y2D_FLT_DIF_PREV_YEAR_PERC,
+    Y2D_DIF_2019_PERC = Y2D_FLT_DIF_2019_PERC,
+    Y2D_TO_DATE = TO_DATE,
     Y2D_RANK_DIF_PREV_YEAR
   )
 
+### y2d old 
+# mydataframe <- "nw_apt_y2d_raw"
+# myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+# stakeholder <- str_sub(mydataframe, 1, 2)
+# 
+# if (archive_mode) {
+#   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
+#   
+# } else {
+#   df <- read_xlsx(
+#     path = fs::path_abs(
+#       str_glue(nw_base_file),
+#       start = nw_base_dir
+#     ),
+#     sheet = "TOP40_APT_Y2D",
+#     range = cell_limits(c(5, 2), c(NA, 10))
+#   ) %>%
+#     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+#   
+#   # save pre-processed file in archive for generation of past json files
+#   write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+# }
+# 
+# nw_apt_data_y2d <- assign(mydataframe, df) %>%
+#   filter(R_RANK <= 10 & R_RANK != 0 & is.na(R_RANK) == FALSE) %>%
+#   mutate(FLAG_LAST_YEAR = case_when(
+#     YEAR == data_day_year ~ "Y2D_DEP_ARR_CURRENT_YEAR",
+#     YEAR == data_day_year - 1 ~ "Y2D_DEP_ARR_PREV_YEAR",
+#     .default = paste0("Y2D_DEP_ARR_", as.character(YEAR))
+#   )) %>%
+#   pivot_wider(id_cols = -c(YEAR, FROM_DATE,  TO_DATE), names_from = "FLAG_LAST_YEAR", values_from = DAILY_DEP_ARR) %>%
+#   mutate(Y2D_TO_DATE = data_day_date) %>%
+#   mutate(R_RANK = row_number(),
+#          Y2D_RANK_DIF_PREV_YEAR = RANK_PY - RANK,
+#          Y2D_DIF_PREV_YEAR_PERC = if_else(Y2D_DEP_ARR_PREV_YEAR == 0,
+#                                           0,
+#                                           Y2D_DEP_ARR_CURRENT_YEAR/Y2D_DEP_ARR_PREV_YEAR-1),
+#          Y2D_DIF_2019_PERC = if_else(Y2D_DEP_ARR_2019 == 0,
+#                                      0,
+#                                      Y2D_DEP_ARR_CURRENT_YEAR/Y2D_DEP_ARR_2019-1)
+#   ) %>%
+#   select(
+#     DY_R_RANK_BY_DAY = R_RANK,
+#     Y2D_AIRPORT_NAME = ARP_NAME,
+#     Y2D_DEP_ARR = Y2D_DEP_ARR_CURRENT_YEAR,
+#     Y2D_DIF_PREV_YEAR_PERC,
+#     Y2D_DIF_2019_PERC,
+#     Y2D_TO_DATE,
+#     Y2D_RANK_DIF_PREV_YEAR
+#   )
+
+
 ### main card ----
-nw_apt_main_traffic <- nw_apt_data_dy %>%
+nw_ap_main_traffic <- nw_ap_data_day %>%
   mutate(across(-DY_R_RANK_BY_DAY, ~ ifelse(DY_R_RANK_BY_DAY > 4, NA, .))) %>%
   select(DY_R_RANK_BY_DAY,
          MAIN_TFC_AIRPORT_NAME = DY_AIRPORT_NAME,
          MAIN_TFC_AIRPORT_DEP_ARR = DY_DEP_ARR)
 
-nw_apt_main_traffic_dif <- nw_apt_day_raw %>%
-  filter(R_RANK_BY_DAY <= 40) %>%
-  select(AIRPORT_NAME,
-         DEP_ARR_7DAY_DIFF) %>%
-  arrange(desc(abs(DEP_ARR_7DAY_DIFF))) %>%
+nw_ap_main_traffic_dif <- nw_ap_data_day_int %>%
+  filter(R_RANK <= 40) %>%
+  select(APT_NAME,
+         TFC_DIF) %>%
+  arrange(desc(abs(TFC_DIF))) %>%
   mutate(DY_R_RANK_BY_DAY = row_number()) %>%
   filter(DY_R_RANK_BY_DAY <= 10) %>%
   mutate(across(-DY_R_RANK_BY_DAY, ~ ifelse(DY_R_RANK_BY_DAY > 4, NA, .))) %>%
-  arrange(abs(DEP_ARR_7DAY_DIFF)) %>%
+  arrange(abs(TFC_DIF)) %>%
   mutate(DY_R_RANK_BY_DAY = row_number()) %>%
   select(
     DY_R_RANK_BY_DAY,
-    MAIN_TFC_DIF_AIRPORT_NAME = AIRPORT_NAME,
-    MAIN_TFC_AIRPORT_DIF = DEP_ARR_7DAY_DIFF
+    MAIN_TFC_DIF_AIRPORT_NAME = APT_NAME,
+    MAIN_TFC_AIRPORT_DIF = TFC_DIF
   )
 
 ### merge and reorder tables ----
-nw_apt_data <- merge(x = nw_apt_data_dy, y = nw_apt_data_wk, by = "DY_R_RANK_BY_DAY")
-nw_apt_data <- merge(x = nw_apt_data, y = nw_apt_data_y2d, by = "DY_R_RANK_BY_DAY")
-nw_apt_data <- merge(x = nw_apt_data, y = nw_apt_main_traffic, by = "DY_R_RANK_BY_DAY")
-nw_apt_data <- merge(x = nw_apt_data, y = nw_apt_main_traffic_dif, by = "DY_R_RANK_BY_DAY")
+nw_ap_data <- merge(x = nw_ap_data_day, y = nw_ap_data_week, by = "DY_R_RANK_BY_DAY")
+nw_ap_data <- merge(x = nw_ap_data, y = nw_ap_data_y2d, by = "DY_R_RANK_BY_DAY")
+nw_ap_data <- merge(x = nw_ap_data, y = nw_ap_main_traffic, by = "DY_R_RANK_BY_DAY")
+nw_ap_data <- merge(x = nw_ap_data, y = nw_ap_main_traffic_dif, by = "DY_R_RANK_BY_DAY")
 
-nw_apt_data <- nw_apt_data %>%
+nw_ap_data <- nw_ap_data %>%
   mutate(WK_TO_DATE = WK_FROM_DATE + 6) %>%
   select(
     RANK = DY_R_RANK_BY_DAY,
@@ -1928,8 +2058,8 @@ nw_apt_data <- nw_apt_data %>%
   )
 
 ### covert to json and save in app data folder and archive ----
-nw_apt_data_j <- nw_apt_data %>% toJSON(., pretty = TRUE)
-save_json(nw_apt_data_j, "nw_apt_ranking_traffic")
+nw_ap_data_j <- nw_ap_data %>% toJSON(., pretty = TRUE)
+save_json(nw_ap_data_j, "nw_apt_ranking_traffic")
 
 ## Country traffic DAI ----
 ### day----

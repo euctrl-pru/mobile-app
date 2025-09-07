@@ -54,6 +54,7 @@ import_dataframe <- function(dfname, con) {
   # pre-process data
   if (dfname == "ao_st_des") {
     df_app <- df_alldays %>% 
+      filter(ARR_ISO_CTY_CODE != "##") %>%  # filter unknown
       compute(prudence = "lavish") %>%
       left_join(list_ao, by = c("AO_ID", "AO_CODE")) %>%
       summarise(
@@ -64,6 +65,7 @@ import_dataframe <- function(dfname, con) {
   } else if (dfname == "ao_ap_dep"){
     
     df_app <- df_alldays %>% 
+      filter(DEP_ARP_PRU_ID != 1618) %>%  # filter unknown
       compute(prudence = "lavish") %>%
       left_join(list_ao, by = c("AO_ID", "AO_CODE")) %>%
       summarise(
@@ -73,6 +75,8 @@ import_dataframe <- function(dfname, con) {
   } else if (dfname == "ao_ap_pair"){
     
     df_app <- df_alldays %>% 
+      filter(ARP_PRU_ID_1 != 1618) %>%  # filter unknown
+      filter(ARP_PRU_ID_2 != 1618) %>%  # filter unknown
       compute(prudence = "lavish") %>%
       left_join(list_ao, by = c("AO_ID", "AO_CODE")) %>%
       summarise(
@@ -82,6 +86,7 @@ import_dataframe <- function(dfname, con) {
   } else if (dfname == "ao_ap_arr_delay"){
     
     df_app <- df_alldays %>% 
+      filter(ARR_ARP_PRU_ID != 1618) %>%  # filter unknown
       compute(prudence = "lavish") %>%
       left_join(list_ao, by = c("AO_ID", "AO_CODE")) %>%
       summarise(

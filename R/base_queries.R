@@ -1619,6 +1619,359 @@ ORDER BY entry_date, iso_ct_code1, tot_mvt desc
 )
 
 # AIRPORT ----
+## ap_day -----
+ap_traffic_delay_day_base_query <- paste0 (
+" WITH 
+
+ DIM_AIRPORT AS (
+ 	SELECT 
+ 	 code as arp_code,
+ 	 id AS arp_id
+ FROM prudev.PRU_AIRPORT 
+),
+
+  arp_SYN_ARR
+  AS
+  (SELECT 
+    SUM (nvl(f.ades_day_all_trf,0)) AS arr,
+    f.ades_day_ades_ctfm AS arp_code,
+    trunc(f.ades_DAY_FLT_DATE) AS flight_date
+    FROM prudev.v_aiu_agg_arr_day f
+    WHERE trunc(f.ades_DAY_FLT_DATE) >= ", query_from, "
+    GROUP BY
+    f.ades_day_ades_ctfm,
+    trunc(f.ades_DAY_FLT_DATE)
+  ),
+
+  
+  arp_SYN_DEP
+  AS
+  (SELECT 
+    SUM (nvl(f.adep_day_all_trf,0)) AS dep,
+    f.adep_day_adep AS arp_code,
+    trunc(f.adep_DAY_FLT_DATE) AS flight_date
+    FROM prudev.v_aiu_agg_dep_day f
+    WHERE trunc(f.adep_DAY_FLT_DATE) >= ", query_from, "
+    GROUP BY
+    f.adep_day_adep,
+    trunc(f.adep_DAY_FLT_DATE)
+  ),
+  
+  
+  arp_DELAY
+  AS
+  (  SELECT
+    a.ref_loc_id as arp_code,
+    a.agg_flt_a_first_entry_date AS entry_date,
+    
+    SUM (NVL(a.agg_flt_total_delay, 0))
+    tdm_arp,
+    SUM (NVL(agg_flt_delayed_traffic, 0))
+    tdf_arp,
+    SUM (NVL(a.agg_flt_regulated_traffic, 0))
+    trf_arp,
+    
+    SUM (NVL((CASE WHEN a.agg_flt_delay_interval IN  (']15,30]', ']30,60]', '> 60') THEN a.agg_flt_total_delay END),0))
+    tdm_15_arp,
+    SUM (NVL((CASE WHEN a.agg_flt_delay_interval IN  (']15,30]', ']30,60]', '> 60') THEN a.agg_flt_delayed_traffic END),0))
+    tdf_15_arp,
+    SUM (NVL((CASE WHEN a.agg_flt_delay_interval IN  (']15,30]', ']30,60]', '> 60') THEN NVL (a.agg_flt_regulated_traffic, 0) END),0))
+    trf_15_arp,    
+   
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('A')   THEN a.agg_flt_total_delay END),0))
+    tdm_arp_a,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('C')   THEN a.agg_flt_total_delay END),0))
+    tdm_arp_c,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('D')   THEN a.agg_flt_total_delay END),0))
+    tdm_arp_d,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('E')   THEN a.agg_flt_total_delay END),0))
+    tdm_arp_e,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('G')   THEN a.agg_flt_total_delay END),0))
+    tdm_arp_g,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('I')   THEN a.agg_flt_total_delay END),0))
+    tdm_arp_i,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('M')   THEN a.agg_flt_total_delay END),0))
+    tdm_arp_m,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('N')   THEN a.agg_flt_total_delay END),0))
+    tdm_arp_n,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('O')   THEN a.agg_flt_total_delay END),0))
+    tdm_arp_o,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('P')   THEN a.agg_flt_total_delay END),0))
+    tdm_arp_p,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('R')   THEN a.agg_flt_total_delay END),0))
+    tdm_arp_r,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('S')   THEN a.agg_flt_total_delay END),0))
+    tdm_arp_s,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('T')   THEN a.agg_flt_total_delay END),0))
+    tdm_arp_t,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('V')   THEN a.agg_flt_total_delay END),0))
+    tdm_arp_v,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('W')   THEN a.agg_flt_total_delay END),0))
+    tdm_arp_w,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('NA')   THEN a.agg_flt_total_delay END),0))
+    tdm_arp_na,  
+    
+    SUM (NVL((CASE WHEN a.MP_REGU_LOC_CAT = 'Arrival' THEN  a.agg_flt_total_delay END),0))
+    tdm_arp_arr,
+    SUM (NVL((CASE WHEN a.MP_REGU_LOC_CAT = 'Arrival' THEN  a.agg_flt_delayed_traffic END),0))
+    tdf_arp_arr,
+    SUM (NVL((CASE WHEN a.MP_REGU_LOC_CAT = 'Arrival' THEN  NVL (a.agg_flt_regulated_traffic, 0) END),0))
+    trf_arp_arr,
+    
+    SUM (NVL((CASE WHEN a.MP_REGU_LOC_CAT = 'Arrival'  AND a.agg_flt_delay_interval IN (']15,30]', ']30,60]', '> 60') THEN  a.agg_flt_total_delay END),0))
+    tdm_15_arp_arr,
+    SUM (NVL((CASE WHEN a.MP_REGU_LOC_CAT = 'Arrival'  AND a.agg_flt_delay_interval IN (']15,30]', ']30,60]', '> 60')  THEN  a.agg_flt_delayed_traffic END),0))
+    tdf_15_arp_arr,
+    SUM (NVL((CASE WHEN a.MP_REGU_LOC_CAT = 'Arrival'  AND a.agg_flt_delay_interval IN (']15,30]', ']30,60]', '> 60')THEN  NVL (a.agg_flt_regulated_traffic, 0) END),0))
+    trf_15_arp_arr,    
+   
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('A') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
+    tdm_arp_arr_a,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('C') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
+    tdm_arp_arr_c,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('D') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
+    tdm_arp_arr_d,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('E') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
+    tdm_arp_arr_e,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('G') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
+    tdm_arp_arr_g,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('I') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
+    tdm_arp_arr_i,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('M') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
+    tdm_arp_arr_m,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('N') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
+    tdm_arp_arr_n,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('O') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
+    tdm_arp_arr_o,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('P') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
+    tdm_arp_arr_p,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('R') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
+    tdm_arp_arr_r,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('S') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
+    tdm_arp_arr_s,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('T') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
+    tdm_arp_arr_t,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('V') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
+    tdm_arp_arr_v,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('W') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
+    tdm_arp_arr_w,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('NA') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
+    tdm_arp_arr_na,    
+  
+    SUM (NVL((CASE WHEN a.MP_REGU_LOC_CAT = 'Departure'  THEN a.agg_flt_total_delay END),0))
+    tdm_arp_dep,
+    SUM (NVL((CASE WHEN a.MP_REGU_LOC_CAT = 'Departure'  THEN a.agg_flt_delayed_traffic END),0))
+    tdf_arp_dep,
+    SUM (NVL((CASE WHEN a.MP_REGU_LOC_CAT = 'Departure'  THEN NVL (a.agg_flt_regulated_traffic, 0) END),0))
+    trf_arp_dep,
+    
+    SUM (NVL((CASE WHEN a.MP_REGU_LOC_CAT = 'Departure' AND a.agg_flt_delay_interval IN (']15,30]', ']30,60]', '> 60') THEN a.agg_flt_total_delay END),0))
+    tdm_15_arp_dep,
+    SUM (NVL((CASE WHEN a.MP_REGU_LOC_CAT = 'Departure' AND a.agg_flt_delay_interval IN (']15,30]', ']30,60]', '> 60') THEN a.agg_flt_delayed_traffic END),0))
+    tdf_15_arp_dep,
+    SUM (NVL((CASE WHEN a.MP_REGU_LOC_CAT = 'Departure' AND a.agg_flt_delay_interval IN (']15,30]', ']30,60]', '> 60') THEN  NVL (a.agg_flt_regulated_traffic, 0) END),0))
+    trf_15_arp_dep,    
+   
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('A') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
+    tdm_arp_dep_a,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('C') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
+    tdm_arp_dep_c,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('D') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
+    tdm_arp_dep_d,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('E') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
+    tdm_arp_dep_e,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('G') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
+    tdm_arp_dep_g,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('I') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
+    tdm_arp_dep_i,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('M') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
+    tdm_arp_dep_m,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('N') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
+    tdm_arp_dep_n,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('O') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
+    tdm_arp_dep_o,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('P') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
+    tdm_arp_dep_p,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('R') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
+    tdm_arp_dep_r,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('S') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
+    tdm_arp_dep_s,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('T') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
+    tdm_arp_dep_t,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('V') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
+    tdm_arp_dep_v,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('W') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
+    tdm_arp_dep_w,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('NA') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
+    tdm_arp_dep_na
+    
+    FROM prudev.v_aiu_agg_flt_flow a
+    WHERE
+    a.agg_flt_a_first_entry_date >= ", query_from, "
+    and a.AGG_FLT_MP_REGU_LOC_TY = 'Airport'
+    GROUP BY
+    a.agg_flt_a_first_entry_date,
+    a.ref_loc_id
+  ),
+  
+  ALL_DAY_DATA as (
+    SELECT
+    coalesce(coalesce(a.arp_code,c.arp_code), b.arp_code) arp_code,
+    coalesce(coalesce(a.flight_date,c.flight_date), b.entry_date) flight_date,
+    coalesce(a.arr, 0) arr,
+    coalesce(c.dep, 0) dep, 
+    coalesce(TDM_ARP,0) as TDM_ARP,
+    coalesce(TDF_ARP,0) as TDF_ARP,
+    coalesce(TRF_ARP,0) as TRF_ARP,
+    coalesce(TDM_15_ARP,0) as TDM_15_ARP,
+    coalesce(TDF_15_ARP,0) as TDF_15_ARP,
+    coalesce(TRF_15_ARP,0) as TRF_15_ARP,
+    coalesce(TDM_ARP_A,0) as TDM_ARP_A,
+    coalesce(TDM_ARP_C,0) as TDM_ARP_C,
+    coalesce(TDM_ARP_D,0) as TDM_ARP_D,
+    coalesce(TDM_ARP_E,0) as TDM_ARP_E,
+    coalesce(TDM_ARP_G,0) as TDM_ARP_G,
+    coalesce(TDM_ARP_I,0) as TDM_ARP_I,
+    coalesce(TDM_ARP_M,0) as TDM_ARP_M,
+    coalesce(TDM_ARP_N,0) as TDM_ARP_N,
+    coalesce(TDM_ARP_O,0) as TDM_ARP_O,
+    coalesce(TDM_ARP_P,0) as TDM_ARP_P,
+    coalesce(TDM_ARP_R,0) as TDM_ARP_R,
+    coalesce(TDM_ARP_S,0) as TDM_ARP_S,
+    coalesce(TDM_ARP_T,0) as TDM_ARP_T,
+    coalesce(TDM_ARP_V,0) as TDM_ARP_V,
+    coalesce(TDM_ARP_W,0) as TDM_ARP_W,
+    coalesce(TDM_ARP_NA,0) as TDM_ARP_NA,
+    coalesce(TDM_ARP_ARR,0) as TDM_ARP_ARR,
+    coalesce(TDF_ARP_ARR,0) as TDF_ARP_ARR,
+    coalesce(TRF_ARP_ARR,0) as TRF_ARP_ARR,
+    coalesce(TDM_15_ARP_ARR,0) as TDM_15_ARP_ARR,
+    coalesce(TDF_15_ARP_ARR,0) as TDF_15_ARP_ARR,
+    coalesce(TRF_15_ARP_ARR,0) as TRF_15_ARP_ARR,
+    coalesce(TDM_ARP_ARR_A,0) as TDM_ARP_ARR_A,
+    coalesce(TDM_ARP_ARR_C,0) as TDM_ARP_ARR_C,
+    coalesce(TDM_ARP_ARR_D,0) as TDM_ARP_ARR_D,
+    coalesce(TDM_ARP_ARR_E,0) as TDM_ARP_ARR_E,
+    coalesce(TDM_ARP_ARR_G,0) as TDM_ARP_ARR_G,
+    coalesce(TDM_ARP_ARR_I,0) as TDM_ARP_ARR_I,
+    coalesce(TDM_ARP_ARR_M,0) as TDM_ARP_ARR_M,
+    coalesce(TDM_ARP_ARR_N,0) as TDM_ARP_ARR_N,
+    coalesce(TDM_ARP_ARR_O,0) as TDM_ARP_ARR_O,
+    coalesce(TDM_ARP_ARR_P,0) as TDM_ARP_ARR_P,
+    coalesce(TDM_ARP_ARR_R,0) as TDM_ARP_ARR_R,
+    coalesce(TDM_ARP_ARR_S,0) as TDM_ARP_ARR_S,
+    coalesce(TDM_ARP_ARR_T,0) as TDM_ARP_ARR_T,
+    coalesce(TDM_ARP_ARR_V,0) as TDM_ARP_ARR_V,
+    coalesce(TDM_ARP_ARR_W,0) as TDM_ARP_ARR_W,
+    coalesce(TDM_ARP_ARR_NA,0) as TDM_ARP_ARR_NA,
+    coalesce(TDM_ARP_DEP,0) as TDM_ARP_DEP,
+    coalesce(TDF_ARP_DEP,0) as TDF_ARP_DEP,
+    coalesce(TRF_ARP_DEP,0) as TRF_ARP_DEP,
+    coalesce(TDM_15_ARP_DEP,0) as TDM_15_ARP_DEP,
+    coalesce(TDF_15_ARP_DEP,0) as TDF_15_ARP_DEP,
+    coalesce(TRF_15_ARP_DEP,0) as TRF_15_ARP_DEP,
+    coalesce(TDM_ARP_DEP_A,0) as TDM_ARP_DEP_A,
+    coalesce(TDM_ARP_DEP_C,0) as TDM_ARP_DEP_C,
+    coalesce(TDM_ARP_DEP_D,0) as TDM_ARP_DEP_D,
+    coalesce(TDM_ARP_DEP_E,0) as TDM_ARP_DEP_E,
+    coalesce(TDM_ARP_DEP_G,0) as TDM_ARP_DEP_G,
+    coalesce(TDM_ARP_DEP_I,0) as TDM_ARP_DEP_I,
+    coalesce(TDM_ARP_DEP_M,0) as TDM_ARP_DEP_M,
+    coalesce(TDM_ARP_DEP_N,0) as TDM_ARP_DEP_N,
+    coalesce(TDM_ARP_DEP_O,0) as TDM_ARP_DEP_O,
+    coalesce(TDM_ARP_DEP_P,0) as TDM_ARP_DEP_P,
+    coalesce(TDM_ARP_DEP_R,0) as TDM_ARP_DEP_R,
+    coalesce(TDM_ARP_DEP_S,0) as TDM_ARP_DEP_S,
+    coalesce(TDM_ARP_DEP_T,0) as TDM_ARP_DEP_T,
+    coalesce(TDM_ARP_DEP_V,0) as TDM_ARP_DEP_V,
+    coalesce(TDM_ARP_DEP_W,0) as TDM_ARP_DEP_W,
+    coalesce(TDM_ARP_DEP_NA,0) as TDM_ARP_DEP_NA    
+    FROM arp_SYN_ARR A
+    FULL OUTER JOIN arp_SYN_dep c on a.arp_code  = c.arp_code  and a.flight_date = c.flight_date
+    FULL OUTER JOIN ARP_DELAY b on a.arp_code  = B.arp_code  and a.flight_date = b.entry_date
+    
+  )
+  
+  SELECT
+  a.arp_code,
+  b.arp_id,
+  flight_date,
+  sum(arr) as arr,
+  sum(dep) as dep,
+  sum(dep) + sum(arr) dep_arr,
+  sum(TDM_ARP) as TDM_ARP,
+  sum(TDF_ARP) as TDF_ARP,
+  sum(TRF_ARP) as TRF_ARP,
+  sum(TDM_15_ARP) as TDM_15_ARP,
+  sum(TDF_15_ARP) as TDF_15_ARP,
+  sum(TRF_15_ARP) as TRF_15_ARP,
+  sum(TDM_ARP_A) as TDM_ARP_A,
+  sum(TDM_ARP_C) as TDM_ARP_C,
+  sum(TDM_ARP_D) as TDM_ARP_D,
+  sum(TDM_ARP_E) as TDM_ARP_E,
+  sum(TDM_ARP_G) as TDM_ARP_G,
+  sum(TDM_ARP_I) as TDM_ARP_I,
+  sum(TDM_ARP_M) as TDM_ARP_M,
+  sum(TDM_ARP_N) as TDM_ARP_N,
+  sum(TDM_ARP_O) as TDM_ARP_O,
+  sum(TDM_ARP_P) as TDM_ARP_P,
+  sum(TDM_ARP_R) as TDM_ARP_R,
+  sum(TDM_ARP_S) as TDM_ARP_S,
+  sum(TDM_ARP_T) as TDM_ARP_T,
+  sum(TDM_ARP_V) as TDM_ARP_V,
+  sum(TDM_ARP_W) as TDM_ARP_W,
+  sum(TDM_ARP_NA) as TDM_ARP_NA,
+  sum(TDM_ARP_ARR) as TDM_ARP_ARR,
+  sum(TDF_ARP_ARR) as TDF_ARP_ARR,
+  sum(TRF_ARP_ARR) as TRF_ARP_ARR,
+  sum(TDM_15_ARP_ARR) as TDM_15_ARP_ARR,
+  sum(TDF_15_ARP_ARR) as TDF_15_ARP_ARR,
+  sum(TRF_15_ARP_ARR) as TRF_15_ARP_ARR,
+  sum(TDM_ARP_ARR_A) as TDM_ARP_ARR_A,
+  sum(TDM_ARP_ARR_C) as TDM_ARP_ARR_C,
+  sum(TDM_ARP_ARR_D) as TDM_ARP_ARR_D,
+  sum(TDM_ARP_ARR_E) as TDM_ARP_ARR_E,
+  sum(TDM_ARP_ARR_G) as TDM_ARP_ARR_G,
+  sum(TDM_ARP_ARR_I) as TDM_ARP_ARR_I,
+  sum(TDM_ARP_ARR_M) as TDM_ARP_ARR_M,
+  sum(TDM_ARP_ARR_N) as TDM_ARP_ARR_N,
+  sum(TDM_ARP_ARR_O) as TDM_ARP_ARR_O,
+  sum(TDM_ARP_ARR_P) as TDM_ARP_ARR_P,
+  sum(TDM_ARP_ARR_R) as TDM_ARP_ARR_R,
+  sum(TDM_ARP_ARR_S) as TDM_ARP_ARR_S,
+  sum(TDM_ARP_ARR_T) as TDM_ARP_ARR_T,
+  sum(TDM_ARP_ARR_V) as TDM_ARP_ARR_V,
+  sum(TDM_ARP_ARR_W) as TDM_ARP_ARR_W,
+  sum(TDM_ARP_ARR_NA) as TDM_ARP_ARR_NA,
+  sum(TDM_ARP_DEP) as TDM_ARP_DEP,
+  sum(TDF_ARP_DEP) as TDF_ARP_DEP,
+  sum(TRF_ARP_DEP) as TRF_ARP_DEP,
+  sum(TDM_15_ARP_DEP) as TDM_15_ARP_DEP,
+  sum(TDF_15_ARP_DEP) as TDF_15_ARP_DEP,
+  sum(TRF_15_ARP_DEP) as TRF_15_ARP_DEP,
+  sum(TDM_ARP_DEP_A) as TDM_ARP_DEP_A,
+  sum(TDM_ARP_DEP_C) as TDM_ARP_DEP_C,
+  sum(TDM_ARP_DEP_D) as TDM_ARP_DEP_D,
+  sum(TDM_ARP_DEP_E) as TDM_ARP_DEP_E,
+  sum(TDM_ARP_DEP_G) as TDM_ARP_DEP_G,
+  sum(TDM_ARP_DEP_I) as TDM_ARP_DEP_I,
+  sum(TDM_ARP_DEP_M) as TDM_ARP_DEP_M,
+  sum(TDM_ARP_DEP_N) as TDM_ARP_DEP_N,
+  sum(TDM_ARP_DEP_O) as TDM_ARP_DEP_O,
+  sum(TDM_ARP_DEP_P) as TDM_ARP_DEP_P,
+  sum(TDM_ARP_DEP_R) as TDM_ARP_DEP_R,
+  sum(TDM_ARP_DEP_S) as TDM_ARP_DEP_S,
+  sum(TDM_ARP_DEP_T) as TDM_ARP_DEP_T,
+  sum(TDM_ARP_DEP_V) as TDM_ARP_DEP_V,
+  sum(TDM_ARP_DEP_W) as TDM_ARP_DEP_W,
+  sum(TDM_ARP_DEP_NA) as TDM_ARP_DEP_NA
+  FROM ALL_DAY_DATA a
+  LEFT JOIN dim_airport b ON a.arp_code = b.arp_code
+  GROUP BY flight_date, a.arp_code, b.arp_id
+  order by arp_code,  flight_date
+  "
+)
+
 ## ap_ao ----
 ap_ao_day_base_query <- paste0("
 WITH

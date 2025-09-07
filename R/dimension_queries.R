@@ -295,6 +295,54 @@ INNER JOIN (
 ) b ON a.arp_code = b.ec_ap_code
 "
 
+## list airport extended ----
+list_ap_ext_query <- "
+SELECT
+arp_id as apt_id,
+arp_code AS APT_ICAO_CODE,
+arp_name AS apt_name,
+flag_top_apt,
+latitude,
+longitude
+
+FROM pruprod.v_aiu_app_dim_airport a
+INNER JOIN (
+  SELECT ec_ap_code, latitude, longitude
+  FROM (
+    SELECT ec_ap_code, latitude, longitude,
+           ROW_NUMBER() OVER (PARTITION BY ec_ap_code ORDER BY sk_ap_id DESC) AS rn
+    FROM swh_fct.dim_airport
+  ) t
+  WHERE rn = 1
+) b ON a.arp_code = b.ec_ap_code
+
+UNION ALL
+SELECT
+a.id as apt_id,
+a.code AS APT_ICAO_CODE,
+a.DASHBOARD_NAME AS apt_name,
+'N' flag_top_apt,
+latitude,
+longitude
+ from prudev.pru_airport a 
+INNER JOIN (
+  SELECT ec_ap_code, latitude, longitude
+  FROM (
+    SELECT ec_ap_code, latitude, longitude,
+           ROW_NUMBER() OVER (PARTITION BY ec_ap_code ORDER BY sk_ap_id DESC) AS rn
+    FROM swh_fct.dim_airport
+  ) t
+  WHERE rn = 1
+) b ON a.code = b.ec_ap_code
+ where a.code in (
+  'BIKF','BIRK','EBCI','EBLG','EDDN','EDDP','EDDS','EDDV','EGAA','EGBB','EGGD','EGLC','EGNX','EGPD','EGPF','ENBR','ENVA','ENZV',
+  'EPKK','ESGG','ESSB','GCRR','GCTS','GCXO','LBSF','LEAL','LEBB','LEIB','LEVC','LEZL','LFBD','LFBO','LFLL','LFML','LFPB','LFRS',
+  'LFSB','LGIR','LGTS','LICC','LICJ','LIME','LIML','LIPE','LIPZ','LIRA','LIRN','LPFR','LPPR','LTAC','LTBA','LTBJ','UKBB'
+	)
+	AND a.code NOT IN (SELECT arp_code FROM pruprod.v_aiu_app_dim_airport)
+
+"
+
 # COUNTRY----
 ##dim iso country ----
 dim_iso_st_query <- "
