@@ -22,8 +22,8 @@ network_data_folder_dev <- here(destination_dir, "data", "v5")
 archive_mode <- FALSE
 
 if (archive_mode) {
-  wef <- "2025-08-23"  #included in output
-  til <- "2025-08-25"  #included in output
+  wef <- "2024-01-01"  #included in output
+  til <- "2025-09-03"  #included in output
   data_day_date <- seq(ymd(wef), ymd(til), by = "day")
 } else {
   data_day_date <- lubridate::today(tzone = "") +  days(-1)
@@ -36,6 +36,7 @@ source(here("..", "mobile-app", "R", "update_base_tables.R"))
 source(here("..", "mobile-app", "R", "csv_from_new_files_ap.R"))
 source(here("..", "mobile-app", "R", "csv_from_new_files_ao.R"))
 source(here("..", "mobile-app", "R", "csv_from_new_files_st.R"))
+source(here("..", "mobile-app", "R", "csv_from_new_files_nw.R"))
 }
 
 # set the stakeholders you want to generate when using archive mode

@@ -896,17 +896,12 @@ ao_st_des_data_y2d <- assign(mydataframe, df) %>%
     ),
     AO_GRP_RANK = paste0(tolower(AO_GRP_NAME), R_RANK)
   ) %>%
-  rename(
-    Y2D_ST_DES_NAME = ISO_CT_NAME_ARR,
-    Y2D_TO_DATE = TO_DATE,
-    Y2D_FLT_AVG = CURRENT_YEAR
-  ) %>%
   select(
     AO_GRP_RANK,
     Y2D_RANK_DIF_PREV_YEAR,
-    Y2D_ST_DES_NAME,
-    Y2D_TO_DATE,
-    Y2D_FLT_AVG,
+    Y2D_ST_DES_NAME = ISO_CT_NAME_ARR,
+    Y2D_TO_DATE = TO_DATE,
+    Y2D_FLT_AVG = CURRENT_YEAR,
     Y2D_FLT_DIF_PREV_YEAR_PERC,
     Y2D_FLT_DIF_2019_PERC
   )
