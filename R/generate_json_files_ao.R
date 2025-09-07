@@ -1,4 +1,5 @@
 ## libraries
+library(arrow)
 library(data.table)
 library(fs)
 library(tibble)
