@@ -42,6 +42,7 @@ import_dataframe <- function(dfname, con) {
   mydataframe <- dfname
   myparquetfile <- paste0(mydataframe, "_day_base.parquet")
   
+  con <- duck_open()
   df_base <- duck_ingest_parquet(con, here::here(archive_dir_raw, myparquetfile))  # now eager by default
   
   # filter to keep days and airports needed
@@ -815,7 +816,7 @@ ao_st_des <- function(mydate =  current_day) {
   #   # }
   # }
   
-  print(paste(mydataframe, mydate))
+  print(paste(format(now(), "%H:%M:%S"), mydataframe, mydate))
   duck_close(con, clean = TRUE)
   
 }
@@ -1123,7 +1124,7 @@ ao_ap_dep <- function(mydate =  current_day) {
   #   # }
   # }
   
-  print(paste(mydataframe, mydate))
+  print(paste(format(now(), "%H:%M:%S"), mydataframe, mydate))
   duck_close(con, clean = TRUE)
   
 }
@@ -1460,7 +1461,7 @@ ao_ap_pair <- function(mydate =  current_day) {
   #   # }
   # }
   
-  print(paste(now(), mydataframe, mydate))
+  print(paste(format(now(), "%H:%M:%S"), mydataframe, mydate))
   
   duck_close(con, clean = TRUE)
 }
@@ -1775,7 +1776,7 @@ ao_ap_arr_delay <- function(mydate =  current_day) {
   df_all_periods %>% write_csv(here(archive_dir_raw, stakeholder, mycsvfile))
   
   
-  print(paste(now(), mydataframe, mydate))
+  print(paste(format(now(), "%H:%M:%S"), mydataframe, mydate))
   
   duck_close(con, clean = TRUE)
   

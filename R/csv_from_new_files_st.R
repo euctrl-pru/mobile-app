@@ -1461,8 +1461,8 @@ st_ap <- function(mydate =  current_day) {
 }
 
 # execute functions ----
-# wef <- "2025-04-09"  #included in output
-# til <- "2025-02-04"  #included in output
+# wef <- "2024-01-01"  #included in output
+# til <- "2025-04-05"  #included in output
 # current_day <- seq(ymd(til), ymd(wef), by = "-1 day")
 
 st_daio()

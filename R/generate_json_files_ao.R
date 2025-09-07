@@ -1053,7 +1053,7 @@ ao_apt_dep_data_day <- ao_apt_dep_data_day_int %>%
   )
 
 #### week ----
-mydataframe <- "ao_apt_dep_data_week_raw"
+mydataframe <- "ao_ap_dep_data_week_raw"
 myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
@@ -1111,7 +1111,7 @@ ao_apt_dep_data_wk <- assign(mydataframe, df) %>%
   )
 
 #### y2d ----
-mydataframe <- "ao_apt_dep_data_y2d_raw"
+mydataframe <- "ao_ap_dep_data_y2d_raw"
 myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
@@ -1314,7 +1314,7 @@ ao_apt_pair_data_day <- ao_apt_pair_data_day_int %>%
   )
 
 #### week ----
-mydataframe <- "ao_apt_pair_data_week_raw"
+mydataframe <- "ao_ap_pair_data_week_raw"
 myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
@@ -1373,7 +1373,7 @@ ao_apt_pair_data_wk <- assign(mydataframe, df) %>%
   )
 
 #### y2d ----
-mydataframe <- "ao_apt_pair_data_y2d_raw"
+mydataframe <- "ao_ap_pair_data_y2d_raw"
 myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 

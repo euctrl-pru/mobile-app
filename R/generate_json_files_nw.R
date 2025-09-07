@@ -1827,7 +1827,7 @@ if (archive_mode) {
   write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
 }
 
-st_dai_data_dy <- assign(mydataframe, df) %>%
+nw_st_dai_data_dy <- assign(mydataframe, df) %>%
   pivot_wider(names_from = "FLAG_DAY", values_from = TOT_MVT) %>%
   mutate(R_RANK = as.numeric(R_RANK)) %>%
   filter(R_RANK <= 10 & R_RANK != 0 & is.na(R_RANK) == FALSE) %>%
@@ -1871,7 +1871,7 @@ if (archive_mode) {
   
 }
 
-st_dai_data_wk <- assign(mydataframe, df) %>%
+nw_st_dai_data_wk <- assign(mydataframe, df) %>%
   mutate(R_RANK = as.numeric(R_RANK)) %>%
   pivot_wider(names_from = "FLAG_ROLLING_WEEK", values_from = TOT_MVT) %>%
   filter(R_RANK <= 10 & R_RANK != 0 & is.na(R_RANK) == FALSE) %>%
@@ -1917,7 +1917,7 @@ if (archive_mode) {
   
 }
 
-st_dai_data_y2d <- assign(mydataframe, df) %>%
+nw_st_dai_data_y2d <- assign(mydataframe, df) %>%
   mutate(R_RANK = as.numeric(R_RANK),
          TO_DATE = max(TO_DATE, na.rm = TRUE),
          FLAG_YEAR = case_when(
@@ -1948,14 +1948,14 @@ st_dai_data_y2d <- assign(mydataframe, df) %>%
 
 
 ### main card ----
-st_main_traffic <- st_dai_data_dy %>%
+nw_st_main_traffic <- nw_st_dai_data_dy %>%
   mutate(across(-DY_R_RANK_BY_DAY, ~ ifelse(DY_R_RANK_BY_DAY > 4, NA, .))) %>%
   select(DY_R_RANK_BY_DAY,
          MAIN_TFC_CTRY_NAME = DY_COUNTRY_NAME,
          MAIN_TFC_CTRY_DAI = DY_CTRY_DAI,
          MAIN_TFC_CTRY_CODE = DY_CTRY_ISO_CODE)
 
-st_main_traffic_dif <- nw_st_dai_day_raw %>%
+nw_st_main_traffic_dif <- nw_st_dai_day_raw %>%
   pivot_wider(names_from = "FLAG_DAY", values_from = TOT_MVT) %>%
   mutate(MAIN_TFC_CTRY_DIF = CURRENT_DAY - DAY_PREV_WEEK) %>%
   select(COUNTRY_NAME, ISO_COUNTRY_CODE, MAIN_TFC_CTRY_DIF) %>%
@@ -1974,12 +1974,12 @@ st_main_traffic_dif <- nw_st_dai_day_raw %>%
   )
 
 ### merge and reorder tables ----
-st_dai_data <- merge(x = st_dai_data_dy, y = st_dai_data_wk, by = "DY_R_RANK_BY_DAY")
-st_dai_data <- merge(x = st_dai_data, y = st_dai_data_y2d, by = "DY_R_RANK_BY_DAY")
-st_dai_data <- merge(x = st_dai_data, y = st_main_traffic, by = "DY_R_RANK_BY_DAY")
-st_dai_data <- merge(x = st_dai_data, y = st_main_traffic_dif, by = "DY_R_RANK_BY_DAY")
+nw_st_dai_data <- merge(x = nw_st_dai_data_dy, y = nw_st_dai_data_wk, by = "DY_R_RANK_BY_DAY")
+nw_st_dai_data <- merge(x = nw_st_dai_data, y = nw_st_dai_data_y2d, by = "DY_R_RANK_BY_DAY")
+nw_st_dai_data <- merge(x = nw_st_dai_data, y = nw_st_main_traffic, by = "DY_R_RANK_BY_DAY")
+nw_st_dai_data <- merge(x = nw_st_dai_data, y = nw_st_main_traffic_dif, by = "DY_R_RANK_BY_DAY")
 
-st_dai_data <- st_dai_data %>%
+nw_st_dai_data <- nw_st_dai_data %>%
   relocate(c(
     RANK = DY_R_RANK_BY_DAY,
     MAIN_TFC_CTRY_NAME,
@@ -2011,8 +2011,8 @@ st_dai_data <- st_dai_data %>%
   ))
 
 ### covert to json and save in app data folder and archive ----
-st_dai_data_j <- st_dai_data %>% toJSON(., pretty = TRUE)
-save_json(st_dai_data_j, "nw_ctry_ranking_traffic_DAI")
+nw_st_dai_data_j <- nw_st_dai_data %>% toJSON(., pretty = TRUE)
+save_json(nw_st_dai_data_j, "nw_ctry_ranking_traffic_DAI")
 
 ## Airport delay -----
 ### raw data
@@ -2463,14 +2463,14 @@ st_rank_delay_y2d <- assign(mydataframe, df) %>%
   )
 
 ### main card ----
-st_main_delay <- st_rank_delay_day %>%
+nw_st_main_delay <- st_rank_delay_day %>%
   mutate(across(-DY_RANK, ~ ifelse(DY_RANK > 4, NA, .))) %>%
   select(DY_RANK,
          MAIN_DLY_CTRY_NAME = DY_CTRY_DLY_NAME,
          MAIN_DLY_CTRY_DLY = DY_CTRY_DLY,
          MAIN_DLY_CTRY_CODE = DY_CTRY_DLY_CODE)
 
-st_main_delay_flt <- st_rank_delay_day %>%
+nw_st_main_delay_flt <- st_rank_delay_day %>%
   arrange(desc(DY_CTRY_DLY_PER_FLT), DY_CTRY_DLY_NAME) %>%
   mutate(DY_RANK = row_number(),
          across(-DY_RANK, ~ ifelse(DY_RANK > 4, NA, .))) %>%
@@ -2482,8 +2482,8 @@ st_main_delay_flt <- st_rank_delay_day %>%
 ### merge and reorder tables ----
 st_rank_delay <- merge(x = st_rank_delay_day, y = st_rank_delay_week, by = "DY_RANK")
 st_rank_delay <- merge(x = st_rank_delay, y = st_rank_delay_y2d, by = "DY_RANK")
-st_rank_delay <- merge(x = st_rank_delay, y = st_main_delay, by = "DY_RANK")
-st_rank_delay <- merge(x = st_rank_delay, y = st_main_delay_flt, by = "DY_RANK")
+st_rank_delay <- merge(x = st_rank_delay, y = nw_st_main_delay, by = "DY_RANK")
+st_rank_delay <- merge(x = st_rank_delay, y = nw_st_main_delay_flt, by = "DY_RANK")
 
 st_rank_delay <- st_rank_delay %>%
   select(
@@ -2958,14 +2958,14 @@ st_punct_y2d_bottom <- st_punct_y2d %>%
   )
 
 ### main card ----
-st_main_punct_top <- st_punct_dy_calc_top %>%
+nw_st_main_punct_top <- st_punct_dy_calc_top %>%
   mutate(across(-RANK, ~ ifelse(RANK > 4, NA, .))) %>%
   select(RANK,
          MAIN_PUNCT_CTRY_NAME = DY_CTRY_NAME,
          MAIN_PUNCT_CTRY_ARR_PUNCT = DY_CTRY_ARR_PUNCT,
          MAIN_PUNCT_CTRY_CODE = ISO_CT_CODE)
 
-st_main_punct_bottom <- st_punct_calc %>%
+nw_st_main_punct_bottom <- st_punct_calc %>%
   filter(DATE == last_punctuality_day) %>%
   mutate(
     RANK = max(RANK) + 1 - RANK,
@@ -2983,8 +2983,8 @@ st_main_punct_bottom <- st_punct_calc %>%
 ### merge and reorder tables ----
 st_punct_data <- merge(x = st_punct_dy_top, y = st_punct_wk_top, by = "RANK")
 st_punct_data <- merge(x = st_punct_data, y = st_punct_y2d_top, by = "RANK")
-st_punct_data <- merge(x = st_punct_data, y = st_main_punct_top, by = "RANK")
-st_punct_data <- merge(x = st_punct_data, y = st_main_punct_bottom, by = "RANK")
+st_punct_data <- merge(x = st_punct_data, y = nw_st_main_punct_top, by = "RANK")
+st_punct_data <- merge(x = st_punct_data, y = nw_st_main_punct_bottom, by = "RANK")
 
 st_punct_data <- st_punct_data %>%
   mutate(Y2D_TO_DATE = DY_TO_DATE) %>%

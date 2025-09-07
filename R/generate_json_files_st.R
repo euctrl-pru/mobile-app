@@ -129,8 +129,10 @@ st_billed_for_json <- st_billing %>%
 mydataframe <- "st_daio_day_raw"
 stakeholder <- "st"
 
-df <-  read_parquet(here(archive_dir_raw, stakeholder, paste0(mydataframe, ".parquet"))) %>% 
-  filter(YEAR == data_day_year)
+if (!exists("st_daio_data")) {
+  st_daio_data <- read_parquet(here(archive_dir_raw, stakeholder, paste0(mydataframe, ".parquet"))) %>% 
+    filter(YEAR == data_day_year)
+}
 
 # if (archive_mode & year(data_day_date) < year(today(tzone = "") +  days(-1))) {
 #   myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
@@ -155,8 +157,6 @@ df <-  read_parquet(here(archive_dir_raw, stakeholder, paste0(mydataframe, ".par
 # }
 
 # process data
-st_daio_data <- assign(mydataframe, df)
-
 st_daio_data_zone <- st_daio_data %>%
   mutate(daio_zone_lc = tolower(COUNTRY_NAME)) %>%
   right_join(state_daio, by = "daio_zone_lc", relationship = "many-to-many") %>%
@@ -212,8 +212,10 @@ st_daio_for_json <- st_daio_last_day %>%
 mydataframe <- "st_dai_day_raw"
 stakeholder <- "st"
 
-df <-  read_parquet(here(archive_dir_raw, stakeholder, paste0(mydataframe, ".parquet"))) %>% 
-  filter(YEAR == data_day_year)
+# if (!exists("st_dai_data")) {
+  st_dai_data <- read_parquet(here(archive_dir_raw, stakeholder, paste0(mydataframe, ".parquet"))) %>% 
+    filter(YEAR == data_day_year)
+# }
 
 # mydataframe <- "state_dai_raw"
 # stakeholder <- "st"
@@ -241,8 +243,6 @@ df <-  read_parquet(here(archive_dir_raw, stakeholder, paste0(mydataframe, ".par
 # }
 
 # process data
-st_dai_data <- assign(mydataframe, df)
-
 st_dai_data_zone <- st_dai_data %>%
   mutate(daio_zone_lc = tolower(COUNTRY_NAME)) %>%
   right_join(state_daio, by = "daio_zone_lc", relationship = "many-to-many") %>%
@@ -454,8 +454,10 @@ st_overflight_for_json <- st_overflight_last_day %>%
 mydataframe <- "st_delay_day_raw"
 stakeholder <- "st"
 
-df <-  read_parquet(here(archive_dir_raw, stakeholder, paste0(mydataframe, ".parquet"))) %>% 
-  filter(YEAR == data_day_year)
+if (!exists("st_delay_data")) {
+  st_delay_data <- read_parquet(here(archive_dir_raw, stakeholder, paste0(mydataframe, ".parquet"))) %>% 
+    filter(YEAR == data_day_year)
+}
 
 # mydataframe <- "state_delay_raw"
 # stakeholder <- "st"
@@ -483,8 +485,6 @@ df <-  read_parquet(here(archive_dir_raw, stakeholder, paste0(mydataframe, ".par
 # }
 
 # process data
-st_delay_data <- assign(mydataframe, df)
-
 st_delay_last_day <- st_delay_data %>%
   filter(FLIGHT_DATE == min(data_day_date,
                             max(LAST_DATA_DAY),
