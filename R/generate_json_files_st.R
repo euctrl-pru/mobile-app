@@ -212,10 +212,10 @@ st_daio_for_json <- st_daio_last_day %>%
 mydataframe <- "st_dai_day_raw"
 stakeholder <- "st"
 
-# if (!exists("st_dai_data")) {
+if (!exists("st_dai_data")) {
   st_dai_data <- read_parquet(here(archive_dir_raw, stakeholder, paste0(mydataframe, ".parquet"))) %>% 
     filter(YEAR == data_day_year)
-# }
+}
 
 # mydataframe <- "state_dai_raw"
 # stakeholder <- "st"

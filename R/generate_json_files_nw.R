@@ -1637,7 +1637,7 @@ if (archive_mode) {
   write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
 }
 
-apt_data_dy <- assign(mydataframe, df) %>%
+nw_apt_data_dy <- assign(mydataframe, df) %>%
   filter(R_RANK_BY_DAY <= 10 &
            R_RANK_BY_DAY != 0 &
            is.na(R_RANK_BY_DAY) == FALSE) %>%
@@ -1675,7 +1675,7 @@ if (archive_mode) {
   write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
 }
 
-apt_data_wk <- assign(mydataframe, df) %>%
+nw_apt_data_wk <- assign(mydataframe, df) %>%
   filter(R_RANK_BY_DAY <= 10 &
            R_RANK_BY_DAY != 0 &
            is.na(R_RANK_BY_DAY) == FALSE) %>%
@@ -1713,7 +1713,7 @@ if (archive_mode) {
   write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
 }
 
-apt_data_y2d <- assign(mydataframe, df) %>%
+nw_apt_data_y2d <- assign(mydataframe, df) %>%
   filter(R_RANK <= 10 & R_RANK != 0 & is.na(R_RANK) == FALSE) %>%
   mutate(FLAG_LAST_YEAR = case_when(
     YEAR == data_day_year ~ "Y2D_DEP_ARR_CURRENT_YEAR",
@@ -1742,13 +1742,13 @@ apt_data_y2d <- assign(mydataframe, df) %>%
   )
 
 ### main card ----
-apt_main_traffic <- apt_data_dy %>%
+nw_apt_main_traffic <- nw_apt_data_dy %>%
   mutate(across(-DY_R_RANK_BY_DAY, ~ ifelse(DY_R_RANK_BY_DAY > 4, NA, .))) %>%
   select(DY_R_RANK_BY_DAY,
          MAIN_TFC_AIRPORT_NAME = DY_AIRPORT_NAME,
          MAIN_TFC_AIRPORT_DEP_ARR = DY_DEP_ARR)
 
-apt_main_traffic_dif <- nw_apt_day_raw %>%
+nw_apt_main_traffic_dif <- nw_apt_day_raw %>%
   filter(R_RANK_BY_DAY <= 40) %>%
   select(AIRPORT_NAME,
          DEP_ARR_7DAY_DIFF) %>%
@@ -1765,12 +1765,12 @@ apt_main_traffic_dif <- nw_apt_day_raw %>%
   )
 
 ### merge and reorder tables ----
-apt_data <- merge(x = apt_data_dy, y = apt_data_wk, by = "DY_R_RANK_BY_DAY")
-apt_data <- merge(x = apt_data, y = apt_data_y2d, by = "DY_R_RANK_BY_DAY")
-apt_data <- merge(x = apt_data, y = apt_main_traffic, by = "DY_R_RANK_BY_DAY")
-apt_data <- merge(x = apt_data, y = apt_main_traffic_dif, by = "DY_R_RANK_BY_DAY")
+nw_apt_data <- merge(x = nw_apt_data_dy, y = nw_apt_data_wk, by = "DY_R_RANK_BY_DAY")
+nw_apt_data <- merge(x = nw_apt_data, y = nw_apt_data_y2d, by = "DY_R_RANK_BY_DAY")
+nw_apt_data <- merge(x = nw_apt_data, y = nw_apt_main_traffic, by = "DY_R_RANK_BY_DAY")
+nw_apt_data <- merge(x = nw_apt_data, y = nw_apt_main_traffic_dif, by = "DY_R_RANK_BY_DAY")
 
-apt_data <- apt_data %>%
+nw_apt_data <- nw_apt_data %>%
   mutate(WK_TO_DATE = WK_FROM_DATE + 6) %>%
   select(
     RANK = DY_R_RANK_BY_DAY,
@@ -1800,8 +1800,8 @@ apt_data <- apt_data %>%
   )
 
 ### covert to json and save in app data folder and archive ----
-apt_data_j <- apt_data %>% toJSON(., pretty = TRUE)
-save_json(apt_data_j, "nw_apt_ranking_traffic")
+nw_apt_data_j <- nw_apt_data %>% toJSON(., pretty = TRUE)
+save_json(nw_apt_data_j, "nw_apt_ranking_traffic")
 
 ## Country traffic DAI ----
 ### day----
@@ -2086,13 +2086,13 @@ apt_rank_data_y2d <- nw_apt_delay_raw %>%
   as.data.frame()
 
 ### main card ----
-apt_main_delay <- apt_rank_data_day %>%
+nw_apt_main_delay <- apt_rank_data_day %>%
   mutate(across(-R_RANK_DLY_DAY, ~ ifelse(R_RANK_DLY_DAY > 4, NA, .))) %>%
   select(R_RANK_DLY_DAY,
          MAIN_DLY_APT_NAME = ARP_NAME_DAY,
          MAIN_DLY_APT_DLY = DLY_ARR)
 
-apt_main_delay_flt <- apt_rank_data_day %>%
+nw_apt_main_delay_flt <- apt_rank_data_day %>%
   arrange(desc(DLY_PER_FLT), ARP_NAME_DAY) %>%
   mutate(R_RANK_DLY_DAY = row_number(),
          across(-R_RANK_DLY_DAY,
@@ -2104,8 +2104,8 @@ apt_main_delay_flt <- apt_rank_data_day %>%
 ### merge and reorder tables ----
 apt_rank_data <- merge(x = apt_rank_data_day, y = apt_rank_data_week, by = "R_RANK_DLY_DAY")
 apt_rank_data <- merge(x = apt_rank_data, y = apt_rank_data_y2d, by = "R_RANK_DLY_DAY")
-apt_rank_data <- merge(x = apt_rank_data, y = apt_main_delay, by = "R_RANK_DLY_DAY")
-apt_rank_data <- merge(x = apt_rank_data, y = apt_main_delay_flt, by = "R_RANK_DLY_DAY")
+apt_rank_data <- merge(x = apt_rank_data, y = nw_apt_main_delay, by = "R_RANK_DLY_DAY")
+apt_rank_data <- merge(x = apt_rank_data, y = nw_apt_main_delay_flt, by = "R_RANK_DLY_DAY")
 
 apt_rank_data <- apt_rank_data %>%
   select(
@@ -2350,7 +2350,7 @@ if (archive_mode) {
 }
 
 # process data
-st_rank_delay_day <- assign(mydataframe, df) %>%
+nw_st_rank_delay_day <- assign(mydataframe, df) %>%
   left_join(distinct(state_iso, state, iso_2letter),
             by = c("DY_CTRY_DLY_NAME" = "state")) %>%
   mutate(DY_CTRY_DLY_CODE = case_when(
@@ -2399,7 +2399,7 @@ if (archive_mode) {
 }
 
 # process data
-st_rank_delay_week <- assign(mydataframe, df) %>%
+nw_st_rank_delay_week <- assign(mydataframe, df) %>%
   filter(PERIOD_TYPE == "1_ROL_WEEK") %>%
   arrange(desc(AVG_DELAY), COUNTRY_NAME) %>%
   mutate(
@@ -2444,7 +2444,7 @@ if (archive_mode) {
 }
 
 # process data
-st_rank_delay_y2d <- assign(mydataframe, df) %>%
+nw_st_rank_delay_y2d <- assign(mydataframe, df) %>%
   filter(YEAR == data_day_year) %>%
   arrange(desc(AVG_DELAY), COUNTRY_NAME) %>%
   mutate(
@@ -2463,14 +2463,14 @@ st_rank_delay_y2d <- assign(mydataframe, df) %>%
   )
 
 ### main card ----
-nw_st_main_delay <- st_rank_delay_day %>%
+nw_st_main_delay <- nw_st_rank_delay_day %>%
   mutate(across(-DY_RANK, ~ ifelse(DY_RANK > 4, NA, .))) %>%
   select(DY_RANK,
          MAIN_DLY_CTRY_NAME = DY_CTRY_DLY_NAME,
          MAIN_DLY_CTRY_DLY = DY_CTRY_DLY,
          MAIN_DLY_CTRY_CODE = DY_CTRY_DLY_CODE)
 
-nw_st_main_delay_flt <- st_rank_delay_day %>%
+nw_st_main_delay_flt <- nw_st_rank_delay_day %>%
   arrange(desc(DY_CTRY_DLY_PER_FLT), DY_CTRY_DLY_NAME) %>%
   mutate(DY_RANK = row_number(),
          across(-DY_RANK, ~ ifelse(DY_RANK > 4, NA, .))) %>%
@@ -2480,12 +2480,12 @@ nw_st_main_delay_flt <- st_rank_delay_day %>%
          MAIN_DLY_FLT_CTRY_CODE = DY_CTRY_DLY_CODE)
 
 ### merge and reorder tables ----
-st_rank_delay <- merge(x = st_rank_delay_day, y = st_rank_delay_week, by = "DY_RANK")
-st_rank_delay <- merge(x = st_rank_delay, y = st_rank_delay_y2d, by = "DY_RANK")
-st_rank_delay <- merge(x = st_rank_delay, y = nw_st_main_delay, by = "DY_RANK")
-st_rank_delay <- merge(x = st_rank_delay, y = nw_st_main_delay_flt, by = "DY_RANK")
+nw_st_rank_delay <- merge(x = nw_st_rank_delay_day, y = nw_st_rank_delay_week, by = "DY_RANK")
+nw_st_rank_delay <- merge(x = nw_st_rank_delay, y = nw_st_rank_delay_y2d, by = "DY_RANK")
+nw_st_rank_delay <- merge(x = nw_st_rank_delay, y = nw_st_main_delay, by = "DY_RANK")
+nw_st_rank_delay <- merge(x = nw_st_rank_delay, y = nw_st_main_delay_flt, by = "DY_RANK")
 
-st_rank_delay <- st_rank_delay %>%
+nw_st_rank_delay <- nw_st_rank_delay %>%
   select(
     RANK,
     MAIN_DLY_CTRY_NAME,
@@ -2513,8 +2513,8 @@ st_rank_delay <- st_rank_delay %>%
   )
 
 ### covert to json and save in app data folder and archive ----
-st_rank_delay_j <- st_rank_delay %>% toJSON(., pretty = TRUE)
-save_json(st_rank_delay_j, "nw_ctry_ranking_delay")
+nw_st_rank_delay_j <- nw_st_rank_delay %>% toJSON(., pretty = TRUE)
+save_json(nw_st_rank_delay_j, "nw_ctry_ranking_delay")
 
 ## Airport punctuality ----
 if(exists("nw_apt_punct_raw") == FALSE) {
@@ -2525,7 +2525,7 @@ last_punctuality_day <- min(max(nw_apt_punct_raw$DAY_DATE),
                             data_day_date, na.rm = TRUE)
 
 ### calc
-apt_punct_calc <- nw_apt_punct_raw %>%
+nw_apt_punct_calc <- nw_apt_punct_raw %>%
   group_by(DAY_DATE) %>%
   arrange(DAY_DATE, desc(ARR_PUNCTUALITY_PERCENTAGE), ARP_NAME) %>%
   mutate(RANK = row_number()) %>%
@@ -2543,7 +2543,7 @@ apt_punct_calc <- nw_apt_punct_raw %>%
 
 ### day ----
 #### top
-apt_punct_dy_top <- apt_punct_calc %>%
+nw_apt_punct_dy_top <- nw_apt_punct_calc %>%
   filter(DAY_DATE == last_punctuality_day, RANK < 11) %>%
   mutate(
     DY_APT_NAME = ARP_NAME,
@@ -2561,7 +2561,7 @@ apt_punct_dy_top <- apt_punct_calc %>%
   )
 
 #### bottom
-apt_punct_dy_bottom <- apt_punct_calc %>%
+nw_apt_punct_dy_bottom <- nw_apt_punct_calc %>%
   filter(DAY_DATE == last_punctuality_day) %>%
   arrange(ARR_PUNCTUALITY_PERCENTAGE, ARP_NAME) %>%
   mutate(
@@ -2582,7 +2582,7 @@ apt_punct_dy_bottom <- apt_punct_calc %>%
   )
 
 ### week ----
-apt_punct_wk <- apt_punct_calc %>%
+nw_apt_punct_wk <- nw_apt_punct_calc %>%
   group_by(DAY_DATE) %>%
   arrange(DAY_DATE, desc(WK_APT_ARR_PUNCT), ARP_NAME) %>%
   mutate(
@@ -2599,7 +2599,7 @@ apt_punct_wk <- apt_punct_calc %>%
   ) %>%
   ungroup()
 
-apt_punct_wk_top <- apt_punct_wk %>%
+nw_apt_punct_wk_top <- nw_apt_punct_wk %>%
   filter(DAY_DATE == last_punctuality_day,
          RANK < 11) %>%
   mutate(
@@ -2619,7 +2619,7 @@ apt_punct_wk_top <- apt_punct_wk %>%
   )
 
 #### bottom
-apt_punct_wk_bottom <- apt_punct_wk %>%
+nw_apt_punct_wk_bottom <- nw_apt_punct_wk %>%
   filter(DAY_DATE == last_punctuality_day) %>%
   mutate(
     RANK = max(RANK) + 1 - RANK,
@@ -2641,7 +2641,7 @@ apt_punct_wk_bottom <- apt_punct_wk %>%
   )
 
 ### y2d ----
-apt_punct_y2d <- apt_punct_calc %>%
+nw_apt_punct_y2d <- nw_apt_punct_calc %>%
   mutate(MONTH_DAY = as.numeric(format(DAY_DATE, format = "%m%d"))) %>%
   filter(MONTH_DAY <= as.numeric(format(last_punctuality_day, format = "%m%d"))) %>%
   # mutate(YEAR = as.numeric(format(DAY_DATE, format = "%Y"))) %>%
@@ -2665,7 +2665,7 @@ apt_punct_y2d <- apt_punct_calc %>%
   ungroup()
 
 #### top
-apt_punct_y2d_top <- apt_punct_y2d %>%
+nw_apt_punct_y2d_top <- nw_apt_punct_y2d %>%
   filter(YEAR == max(YEAR), RANK < 11) %>%
   mutate(Y2D_APT_NAME = ARP_NAME) %>%
   select(
@@ -2678,7 +2678,7 @@ apt_punct_y2d_top <- apt_punct_y2d %>%
   )
 
 #### bottom
-apt_punct_y2d_bottom <- apt_punct_y2d %>%
+nw_apt_punct_y2d_bottom <- nw_apt_punct_y2d %>%
   filter(YEAR == max(YEAR)) %>%
   mutate(RANK = max(RANK) + 1 - RANK) %>%
   filter(RANK < 11) %>%
@@ -2693,13 +2693,13 @@ apt_punct_y2d_bottom <- apt_punct_y2d %>%
   )
 
 ### main card ----
-apt_main_punct_top <- apt_punct_dy_top %>%
+nw_apt_main_punct_top <- nw_apt_punct_dy_top %>%
   mutate(across(-RANK, ~ ifelse(RANK > 4, NA, .))) %>%
   select(RANK,
          MAIN_PUNCT_APT_NAME = DY_APT_NAME,
          MAIN_PUNCT_APT_ARR_PUNCT = DY_APT_ARR_PUNCT)
 
-apt_main_punct_bottom <- apt_punct_calc %>%
+nw_apt_main_punct_bottom <- nw_apt_punct_calc %>%
   filter(DAY_DATE == last_punctuality_day) %>%
   mutate(
     RANK = max(RANK) + 1 - RANK,
@@ -2714,12 +2714,12 @@ apt_main_punct_bottom <- apt_punct_calc %>%
   arrange(RANK)
 
 ### merge and reorder tables ----
-apt_punct_data <- merge(x = apt_punct_dy_top, y = apt_punct_wk_top, by = "RANK")
-apt_punct_data <- merge(x = apt_punct_data, y = apt_punct_y2d_top, by = "RANK")
-apt_punct_data <- merge(x = apt_punct_data, y = apt_main_punct_top, by = "RANK")
-apt_punct_data <- merge(x = apt_punct_data, y = apt_main_punct_bottom, by = "RANK")
+nw_apt_punct_data <- merge(x = nw_apt_punct_dy_top, y = nw_apt_punct_wk_top, by = "RANK")
+nw_apt_punct_data <- merge(x = nw_apt_punct_data, y = nw_apt_punct_y2d_top, by = "RANK")
+nw_apt_punct_data <- merge(x = nw_apt_punct_data, y = nw_apt_main_punct_top, by = "RANK")
+nw_apt_punct_data <- merge(x = nw_apt_punct_data, y = nw_apt_main_punct_bottom, by = "RANK")
 
-apt_punct_data <- apt_punct_data %>%
+nw_apt_punct_data <- nw_apt_punct_data %>%
   mutate(Y2D_TO_DATE = DY_TO_DATE) %>%
   select(
     RANK,
@@ -2749,17 +2749,17 @@ apt_punct_data <- apt_punct_data %>%
   )
 
 ### add bottom ranking at the end of the df
-apt_punct_data <- merge(x = apt_punct_data, y = apt_punct_dy_bottom, by = "RANK")
-apt_punct_data <- merge(x = apt_punct_data, y = apt_punct_wk_bottom, by = "RANK")
-apt_punct_data <- merge(x = apt_punct_data, y = apt_punct_y2d_bottom, by = "RANK")
+nw_apt_punct_data <- merge(x = nw_apt_punct_data, y = nw_apt_punct_dy_bottom, by = "RANK")
+nw_apt_punct_data <- merge(x = nw_apt_punct_data, y = nw_apt_punct_wk_bottom, by = "RANK")
+nw_apt_punct_data <- merge(x = nw_apt_punct_data, y = nw_apt_punct_y2d_bottom, by = "RANK")
 
-apt_punct_data <- apt_punct_data %>%
+nw_apt_punct_data <- nw_apt_punct_data %>%
   mutate(Y2D_TO_DATE_BOTTOM = Y2D_TO_DATE) %>%
   relocate (Y2D_TO_DATE_BOTTOM, .before = Y2D_APT_ARR_PUNCT_BOTTOM)
 
 ### covert to json and save in app data folder and archive ----
-apt_punct_data_j <- apt_punct_data %>% toJSON(., pretty = TRUE)
-save_json(apt_punct_data_j, "nw_apt_ranking_punctuality")
+nw_apt_punct_data_j <- nw_apt_punct_data %>% toJSON(., pretty = TRUE)
+save_json(nw_apt_punct_data_j, "nw_apt_ranking_punctuality")
 
 ## Country punctuality ----
 if(exists("st_punct_raw") == FALSE) {
@@ -2784,7 +2784,7 @@ last_punctuality_day <- min(max(st_punct_raw$DATE),
                             data_day_date, na.rm = TRUE)
 
 ### calc
-st_punct_calc <- st_punct_raw %>%
+nw_st_punct_calc <- st_punct_raw %>%
   group_by(DATE) %>%
   arrange(desc(ARR_PUNCTUALITY_PERCENTAGE), EC_ISO_CT_NAME) %>%
   mutate(RANK = row_number()) %>%
@@ -2801,7 +2801,7 @@ st_punct_calc <- st_punct_raw %>%
 
 ### day ----
 ####top
-st_punct_dy_calc_top <- st_punct_calc %>%
+nw_st_punct_dy_calc_top <- nw_st_punct_calc %>%
   filter(DATE == last_punctuality_day, RANK < 11) %>%
   mutate(
     DY_CTRY_NAME = EC_ISO_CT_NAME,
@@ -2809,7 +2809,7 @@ st_punct_dy_calc_top <- st_punct_calc %>%
     DY_TO_DATE = round_date(DATE, "day")
   )
 
-st_punct_dy_top <- st_punct_dy_calc_top %>%
+nw_st_punct_dy_top <- nw_st_punct_dy_calc_top %>%
   select(
     RANK,
     DY_RANK_DIF_PREV_WEEK,
@@ -2821,7 +2821,7 @@ st_punct_dy_top <- st_punct_dy_calc_top %>%
   )
 
 ####bottom
-st_punct_dy_calc_bottom <- st_punct_calc %>%
+nw_st_punct_dy_calc_bottom <- nw_st_punct_calc %>%
   filter(DATE == last_punctuality_day,
          RANK > max(RANK) - 11) %>%
   arrange(DATE, ARR_PUNCTUALITY_PERCENTAGE) %>%
@@ -2832,7 +2832,7 @@ st_punct_dy_calc_bottom <- st_punct_calc %>%
     DY_TO_DATE_BOTTOM = round_date(DATE, "day")
   )
 
-st_punct_dy_bottom <-st_punct_dy_calc_bottom %>%
+nw_st_punct_dy_bottom <-nw_st_punct_dy_calc_bottom %>%
   select(
     RANK,
     DY_RANK_DIF_PREV_WEEK_BOTTOM = DY_RANK_DIF_PREV_WEEK,
@@ -2844,7 +2844,7 @@ st_punct_dy_bottom <-st_punct_dy_calc_bottom %>%
   )
 
 ### week ----
-st_punct_wk <- st_punct_calc %>%
+nw_st_punct_wk <- nw_st_punct_calc %>%
   group_by(DATE) %>%
   arrange(DATE, desc(WK_CTRY_ARR_PUNCT), EC_ISO_CT_NAME) %>%
   mutate(
@@ -2862,7 +2862,7 @@ st_punct_wk <- st_punct_calc %>%
   ungroup()
 
 #### top
-st_punct_wk_top <- st_punct_wk %>%
+nw_st_punct_wk_top <- nw_st_punct_wk %>%
   filter(DATE == last_punctuality_day, RANK < 11) %>%
   mutate(
     WK_CTRY_NAME = EC_ISO_CT_NAME,
@@ -2881,7 +2881,7 @@ st_punct_wk_top <- st_punct_wk %>%
   )
 
 #### bottom
-st_punct_wk_bottom <- st_punct_wk %>%
+nw_st_punct_wk_bottom <- nw_st_punct_wk %>%
   filter(DATE == last_punctuality_day,
          RANK > max(RANK) - 11) %>%
   arrange(WK_CTRY_ARR_PUNCT, EC_ISO_CT_NAME) %>%
@@ -2903,7 +2903,7 @@ st_punct_wk_bottom <- st_punct_wk %>%
   )
 
 ### y2d ----
-st_punct_y2d <- st_punct_calc %>%
+nw_st_punct_y2d <- nw_st_punct_calc %>%
   mutate(MONTH_DAY = as.numeric(format(DATE, format = "%m%d"))) %>%
   filter(MONTH_DAY <= as.numeric(format(last_punctuality_day, format = "%m%d"))) %>%
   mutate(YEAR = as.numeric(format(DATE, format = "%Y"))) %>%
@@ -2927,7 +2927,7 @@ st_punct_y2d <- st_punct_calc %>%
   ungroup()
 
 #### top
-st_punct_y2d_top <- st_punct_y2d %>%
+nw_st_punct_y2d_top <- nw_st_punct_y2d %>%
   filter(YEAR == max(YEAR), RANK < 11) %>%
   mutate(Y2D_CTRY_NAME = EC_ISO_CT_NAME) %>%
   select(
@@ -2940,7 +2940,7 @@ st_punct_y2d_top <- st_punct_y2d %>%
   )
 
 #### bottom
-st_punct_y2d_bottom <- st_punct_y2d %>%
+nw_st_punct_y2d_bottom <- nw_st_punct_y2d %>%
   filter(YEAR == max(YEAR),
          RANK > max(RANK) - 11) %>%
   arrange(Y2D_CTRY_ARR_PUNCT, EC_ISO_CT_NAME) %>%
@@ -2958,14 +2958,14 @@ st_punct_y2d_bottom <- st_punct_y2d %>%
   )
 
 ### main card ----
-nw_st_main_punct_top <- st_punct_dy_calc_top %>%
+nw_st_main_punct_top <- nw_st_punct_dy_calc_top %>%
   mutate(across(-RANK, ~ ifelse(RANK > 4, NA, .))) %>%
   select(RANK,
          MAIN_PUNCT_CTRY_NAME = DY_CTRY_NAME,
          MAIN_PUNCT_CTRY_ARR_PUNCT = DY_CTRY_ARR_PUNCT,
          MAIN_PUNCT_CTRY_CODE = ISO_CT_CODE)
 
-nw_st_main_punct_bottom <- st_punct_calc %>%
+nw_st_main_punct_bottom <- nw_st_punct_calc %>%
   filter(DATE == last_punctuality_day) %>%
   mutate(
     RANK = max(RANK) + 1 - RANK,
@@ -2981,12 +2981,12 @@ nw_st_main_punct_bottom <- st_punct_calc %>%
   arrange(RANK)
 
 ### merge and reorder tables ----
-st_punct_data <- merge(x = st_punct_dy_top, y = st_punct_wk_top, by = "RANK")
-st_punct_data <- merge(x = st_punct_data, y = st_punct_y2d_top, by = "RANK")
-st_punct_data <- merge(x = st_punct_data, y = nw_st_main_punct_top, by = "RANK")
-st_punct_data <- merge(x = st_punct_data, y = nw_st_main_punct_bottom, by = "RANK")
+nw_st_punct_data <- merge(x = nw_st_punct_dy_top, y = nw_st_punct_wk_top, by = "RANK")
+nw_st_punct_data <- merge(x = nw_st_punct_data, y = nw_st_punct_y2d_top, by = "RANK")
+nw_st_punct_data <- merge(x = nw_st_punct_data, y = nw_st_main_punct_top, by = "RANK")
+nw_st_punct_data <- merge(x = nw_st_punct_data, y = nw_st_main_punct_bottom, by = "RANK")
 
-st_punct_data <- st_punct_data %>%
+nw_st_punct_data <- nw_st_punct_data %>%
   mutate(Y2D_TO_DATE = DY_TO_DATE) %>%
   select(
     RANK,
@@ -3018,17 +3018,17 @@ st_punct_data <- st_punct_data %>%
   )
 
 ### add bottom ranking at the end of the df
-st_punct_data <- merge(x = st_punct_data, y = st_punct_dy_bottom, by = "RANK")
-st_punct_data <- merge(x = st_punct_data, y = st_punct_wk_bottom, by = "RANK")
-st_punct_data <- merge(x = st_punct_data, y = st_punct_y2d_bottom, by = "RANK")
+nw_st_punct_data <- merge(x = nw_st_punct_data, y = nw_st_punct_dy_bottom, by = "RANK")
+nw_st_punct_data <- merge(x = nw_st_punct_data, y = nw_st_punct_wk_bottom, by = "RANK")
+nw_st_punct_data <- merge(x = nw_st_punct_data, y = nw_st_punct_y2d_bottom, by = "RANK")
 
-st_punct_data <- st_punct_data %>%
+nw_st_punct_data <- nw_st_punct_data %>%
   mutate(Y2D_TO_DATE_BOTTOM = Y2D_TO_DATE) %>%
   relocate (Y2D_TO_DATE_BOTTOM, .before = Y2D_CTRY_ARR_PUNCT_BOTTOM)
 
 ### covert to json and save in app data folder and archive ----
-st_punct_data_j <- st_punct_data %>% toJSON(., pretty = TRUE)
-save_json(st_punct_data_j, "nw_ctry_ranking_punctuality")
+nw_st_punct_data_j <- nw_st_punct_data %>% toJSON(., pretty = TRUE)
+save_json(nw_st_punct_data_j, "nw_ctry_ranking_punctuality")
 
 
 # MAPS ----
