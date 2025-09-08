@@ -167,7 +167,7 @@ st_dai <- function() {
     group_by(COUNTRY_CODE) %>% 
     mutate(
       #rolling week
-      RWK_AVG_TFC = rollsum(DAY_TFC, 7, fill = NA, align = "right") / 7
+      RWK_AVG_TFC = rollsum(coalesce(DAY_TFC, 0), 7, fill = NA, align = "right") / 7
     )  %>% 
     group_by(COUNTRY_CODE, YEAR) %>% 
     # arrange(AO_GRP_CODE, FLIGHT_DATE) %>% 

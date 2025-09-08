@@ -154,11 +154,11 @@ ao_traffic_delay <- function() {
       DAY_DELAYED_TFC_15_PERC = if_else(DAY_TFC == 0, NA, DAY_DELAYED_TFC_15/ DAY_TFC),
       
       #rolling week
-      RWK_AVG_TFC = rollsum(DAY_TFC, 7, fill = NA, align = "right") / 7,
-      RWK_AVG_DLY = rollsum(DAY_DLY, 7, fill = NA, align = "right") / 7,
+      RWK_AVG_TFC = rollsum(coalesce(DAY_TFC, 0), 7, fill = NA, align = "right") / 7,
+      RWK_AVG_DLY = rollsum(coalesce(DAY_DLY, 0), 7, fill = NA, align = "right") / 7,
       RWK_DLY_FLT = if_else(RWK_AVG_TFC == 0, NA, RWK_AVG_DLY/ RWK_AVG_TFC),
-      RWK_AVG_DELAYED_TFC = rollsum(DAY_DELAYED_TFC, 7, fill = NA, align = "right") / 7,
-      RWK_AVG_DELAYED_15_TFC = rollsum(DAY_DELAYED_TFC_15, 7, fill = NA, align = "right") / 7,
+      RWK_AVG_DELAYED_TFC = rollsum(coalesce(DAY_DELAYED_TFC, 0), 7, fill = NA, align = "right") / 7,
+      RWK_AVG_DELAYED_15_TFC = rollsum(coalesce(DAY_DELAYED_TFC_15, 0), 7, fill = NA, align = "right") / 7,
       
       RWK_DELAYED_TFC_PERC = if_else(RWK_AVG_TFC == 0, NA, RWK_AVG_DELAYED_TFC/ RWK_AVG_TFC),
       RWK_DELAYED_TFC_15_PERC = if_else(RWK_AVG_TFC == 0, NA, RWK_AVG_DELAYED_15_TFC/ RWK_AVG_TFC),

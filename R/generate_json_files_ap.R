@@ -1,4 +1,5 @@
 ## libraries
+library(arrow)
 library(data.table)
 library(fs)
 library(tibble)
@@ -74,13 +75,14 @@ apt_json_app <-""
 # ____________________________________________________________________________________________
 
 #### Traffic data ----
-#reading the traffic sheet
-if(!exists("apt_traffic_data")) {
-  apt_traffic_data <- export_query(query_ap_traffic(format(data_day_date, "%Y-%m-%d"))) %>%
-    as_tibble() %>%
-    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+mydataframe <- "ap_traffic_day_raw"
+stakeholder <- "ap"
+
+if (!exists("apt_traffic_data")) {
+  apt_traffic_data <- read_parquet(here(archive_dir_raw, stakeholder, paste0(mydataframe, ".parquet"))) %>% 
+    filter(YEAR == data_day_year)
 }
-  
+
 #getting the latest date's traffic data
 apt_traffic_last_day <- apt_traffic_data %>%
   filter(FLIGHT_DATE == min(data_day_date,
@@ -97,9 +99,9 @@ apt_traffic_for_json <- apt_traffic_last_day %>%
     DY_TFC_RANK = if_else(flag_top_apt == "N", NA, min_rank(desc(DAY_DEP_ARR))),
     WK_TFC_RANK = if_else(flag_top_apt == "N", NA, min_rank(desc(RWK_AVG_DEP_ARR))),
     Y2D_TFC_RANK = if_else(flag_top_apt == "N", NA, min_rank(desc(Y2D_DEP_ARR_YEAR))),
-
+    
     TFC_RANK_TEXT = "*Rank within top 40 airports\nTop rank for highest."
-
+    
   ) %>%
   ungroup() %>%
   select(
@@ -122,11 +124,61 @@ apt_traffic_for_json <- apt_traffic_last_day %>%
     Y2D_TFC_AVG = Y2D_AVG_DEP_ARR_YEAR,
     Y2D_TFC_DIF_PREV_YEAR_PERC = Y2D_DEP_ARR_DIF_PREV_YEAR_PERC,
     Y2D_TFC_DIF_2019_PERC = Y2D_DEP_ARR_DIF_2019_PERC,
-
+    
     TFC_RANK_TEXT
   )
 
-
+# #reading the traffic sheet
+# if(!exists("apt_traffic_data")) {
+#   apt_traffic_data <- export_query(query_ap_traffic(format(data_day_date, "%Y-%m-%d"))) %>%
+#     as_tibble() %>%
+#     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+# }
+#   
+# #getting the latest date's traffic data
+# apt_traffic_last_day <- apt_traffic_data %>%
+#   filter(FLIGHT_DATE == min(data_day_date,
+#                             max(LAST_DATA_DAY, na.rm = TRUE),
+#                             na.rm = TRUE)
+#   ) %>%
+#   arrange(ARP_NAME, FLIGHT_DATE)
+# 
+# #selecting columns and renaming
+# apt_traffic_for_json <- apt_traffic_last_day %>%
+#   right_join(apt_icao_full, by = c("ARP_CODE" = "apt_icao_code", "ARP_NAME" = "apt_name")) %>%
+#   group_by(flag_top_apt) %>%
+#   mutate(
+#     DY_TFC_RANK = if_else(flag_top_apt == "N", NA, min_rank(desc(DAY_DEP_ARR))),
+#     WK_TFC_RANK = if_else(flag_top_apt == "N", NA, min_rank(desc(RWK_AVG_DEP_ARR))),
+#     Y2D_TFC_RANK = if_else(flag_top_apt == "N", NA, min_rank(desc(Y2D_DEP_ARR_YEAR))),
+# 
+#     TFC_RANK_TEXT = "*Rank within top 40 airports\nTop rank for highest."
+# 
+#   ) %>%
+#   ungroup() %>%
+#   select(
+#     ARP_NAME,
+#     ARP_CODE,
+#     FLIGHT_DATE,
+#     #day
+#     DY_TFC_RANK,
+#     DY_TFC = DAY_DEP_ARR, #arrival and departure traffic
+#     DY_TFC_DIF_PREV_YEAR_PERC = DAY_DEP_ARR_DIF_PREV_YEAR_PERC,
+#     DY_TFC_DIF_2019_PERC = DAY_DEP_ARR_DIF_2019_PERC,
+#     #week average
+#     WK_TFC_RANK,
+#     WK_TFC_AVG_ROLLING = RWK_AVG_DEP_ARR,
+#     WK_TFC_DIF_PREV_YEAR_PERC = RWK_DEP_ARR_DIF_PREV_YEAR_PERC,
+#     WK_TFC_DIF_2019_PERC = RWK_DEP_ARR_DIF_2019_PERC,
+#     #year to date
+#     Y2D_TFC_RANK,
+#     Y2D_TFC = Y2D_DEP_ARR_YEAR,
+#     Y2D_TFC_AVG = Y2D_AVG_DEP_ARR_YEAR,
+#     Y2D_TFC_DIF_PREV_YEAR_PERC = Y2D_DEP_ARR_DIF_PREV_YEAR_PERC,
+#     Y2D_TFC_DIF_2019_PERC = Y2D_DEP_ARR_DIF_2019_PERC,
+# 
+#     TFC_RANK_TEXT
+#   )
 
 #### Delay data ----
 
