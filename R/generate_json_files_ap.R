@@ -83,7 +83,6 @@ if (!exists("apt_traffic_data")) {
     filter(YEAR == data_day_year)
 }
 
-tail(apt_traffic_data$FLIGHT_DATE_2019)
 #getting the latest date's traffic data
 apt_traffic_last_day <- apt_traffic_data %>%
   filter(FLIGHT_DATE == min(data_day_date,
@@ -2012,6 +2011,8 @@ apt_delay_cause_y2d <- apt_delay_cause_data %>%
          Y2D_SHARE_TDM_WD,
          Y2D_SHARE_TDM_NOCSGITWD
   )
+
+colnames(apt_delay_cause_y2d) <- column_names
 
 ### nest data
 apt_delay_value_y2d_long <- apt_delay_cause_y2d %>%
