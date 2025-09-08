@@ -30,18 +30,18 @@ dim_marktet_segment <- export_query(dim_ms_query)
 
 
 # prep data functions ----
-import_dataframe <- function(dfname, con = con) {
+import_dataframe <- function(dfname) {
   # import data 
   # dfname <- "ap_traffic_delay"
   mydataframe <- dfname
   myparquetfile <- paste0(mydataframe, "_day_base.parquet")
   
-  con <- duck_open()
-  df_base <- duck_ingest_parquet(con, here::here(archive_dir_raw, myparquetfile))  # now eager by default
+  # con <- duck_open()
+  # df_base <- duck_ingest_parquet(con, here::here(archive_dir_raw, myparquetfile))  # now eager by default
   
-  # df_base <- read_parquet_duckdb(here(archive_dir_raw, 
-  #                                     myparquetfile)
-  # ) 
+  df_base <- read_parquet_duckdb(here(archive_dir_raw,
+                                      myparquetfile)
+  )
   
   # filter to keep days and airports needed
   if ("ARP_PRU_ID" %in% names(df_base)) {
@@ -69,7 +69,7 @@ import_dataframe <- function(dfname, con = con) {
       )
     
   } else if (dfname == "ap_ms") {
-    df_app <- df_alldays %>% collect() %>% 
+    df_app <- df_alldays %>% compute(prudence = "lavish") %>% 
       mutate(MS_ID = case_when(
         MS_ID == -1 | MS_ID ==  1 | MS_ID == 5 ~ 0,
         .default = MS_ID)
@@ -81,7 +81,8 @@ import_dataframe <- function(dfname, con = con) {
       left_join(dim_airport, by = c("ARP_PRU_ID" = "APT_ID"))
     
   } else {
-    df_app <- df_alldays
+    df_app <- df_alldays %>% compute(prudence = "lavish") 
+
   }
 
   return(df_app) 
@@ -90,13 +91,11 @@ import_dataframe <- function(dfname, con = con) {
 # ap traffic delay ----
 ap_traffic_delay <- function() {
   mydataframe <-  "ap_traffic_delay"
-  mydatafile <- paste0("ap_traffic_day_raw.parquet")
   stakeholder <- str_sub(mydataframe, 1, 2)
   
-  con <- duck_open()
-  df_app <- import_dataframe(mydataframe, con = con)
+  df_app <- import_dataframe(mydataframe)
   
-  mydate <- max(df_app$FLIGHT_DATE, na.rm = TRUE)
+  mydate <- df_app %>% summarise(max(FLIGHT_DATE, na.rm = TRUE)) %>% pull()
   current_year = year(mydate)
   
   #### create date sequence
@@ -116,17 +115,28 @@ ap_traffic_delay <- function() {
     arrange(APT_ID, FLIGHT_DATE) %>% 
     group_by(APT_ID) %>% 
     mutate(
+      ARP_CODE = APT_ICAO_CODE,
+      ARP_NAME = APT_NAME,
       ICAO2LETTER = substr(ARP_CODE, 1,2),
       YEAR =  year(FLIGHT_DATE),
       
+      # traffic
       DAY_ARR = coalesce(ARR,0),
       DAY_DEP = coalesce(DEP,0),
       DAY_DEP_ARR = coalesce(DEP_ARR,0),
       
-      #rolling week
       RWK_AVG_DEP = rollsum(DAY_DEP, 7, fill = NA, align = "right") / 7,
       RWK_AVG_ARR = rollsum(DAY_ARR, 7, fill = NA, align = "right") / 7,
-      RWK_AVG_DEP_ARR = rollsum(DAY_DEP_ARR, 7, fill = NA, align = "right") / 7
+      RWK_AVG_DEP_ARR = rollsum(DAY_DEP_ARR, 7, fill = NA, align = "right") / 7,
+      
+      # delay
+      TDM_ARP_ARR = coalesce(TDM_ARP_ARR, 0),
+      TDF_ARP_ARR = coalesce(TDF_ARP_ARR, 0),
+      TDF_15_ARP_ARR = coalesce(TDF_15_ARP_ARR, 0),
+      TDM_ARP_ARR_G = coalesce(TDM_ARP_ARR_G, 0),
+      TDM_ARP_ARR_CS = coalesce(TDM_ARP_ARR_C, 0) + coalesce(TDM_ARP_ARR_S, 0),
+      TDM_ARP_ARR_WD = coalesce(TDM_ARP_ARR_W, 0) + coalesce(TDM_ARP_ARR_D, 0),
+      TDM_ARP_ARR_IT = coalesce(TDM_ARP_ARR_I, 0) + coalesce(TDM_ARP_ARR_T, 0)
     )  %>% 
     group_by(APT_ID, YEAR) %>% 
     mutate(
@@ -238,7 +248,7 @@ ap_traffic_delay <- function() {
     ) %>%  
     ungroup() %>% 
     select(
-      ARP_CODE,
+      ARP_CODE = APT_ICAO_CODE,
       ARP_NAME = APT_NAME,
       ICAO2LETTER,
       
@@ -315,11 +325,15 @@ ap_traffic_delay <- function() {
     ) %>% 
     arrange(ARP_NAME, FLIGHT_DATE)
   
+  
+  mydatafile <- paste0("ap_delay_day_raw.parquet")
+  df_day_year %>% write_parquet(here(archive_dir_raw, stakeholder, mydatafile))
+  
+  mydatafile <- paste0("ap_traffic_day_raw.parquet")
   df_day %>% write_parquet(here(archive_dir_raw, stakeholder, mydatafile))
   
   print(paste(format(now(), "%H:%M:%S"), mydataframe, mydate))
-  duck_close(con, clean = TRUE)
-  
+
  # test <- df_day %>% filter(YEAR == 2025) %>% 
  #  filter(FLIGHT_DATE > ymd(20250106)& FLIGHT_DATE != ymd(20250228))#  %>%
   # filter(ARP_CODE == 'LFPO') #%>%
@@ -375,8 +389,7 @@ ap_traffic_delay <- function() {
 ap_ao <- function(mydate =  current_day) {
   mydataframe <-  "ap_ao"
   
-  con <- duck_open()
-  df_app <- import_dataframe(mydataframe, con = con)
+  df_app <- import_dataframe(mydataframe)
   
     # mydate <- current_day
   data_day_text <- mydate %>% format("%Y%m%d")
@@ -671,7 +684,6 @@ ap_ao <- function(mydate =  current_day) {
 # 
 #   }
   
-  duck_close(con, clean = TRUE)
   print(paste(format(now(), "%H:%M:%S"), mydataframe, mydate))
 }
 
@@ -679,8 +691,7 @@ ap_ao <- function(mydate =  current_day) {
 ap_st_des <- function(mydate =  current_day) {
   mydataframe <-  "ap_st_des"
   
-  con <- duck_open()
-  df_app <- import_dataframe(mydataframe, con = con)
+  df_app <- import_dataframe(mydataframe)
   
     # mydate <- current_day
   data_day_text <- mydate %>% format("%Y%m%d")
@@ -969,7 +980,6 @@ ap_st_des <- function(mydate =  current_day) {
   #   print(paste(list_airport$APT_ICAO_CODE[i], all.equal(df1, ap_ms_app_day1)))
   # }
   
-  duck_close(con, clean = TRUE)
   print(paste(format(now(), "%H:%M:%S"), mydataframe, mydate))
 }
   
@@ -977,8 +987,7 @@ ap_st_des <- function(mydate =  current_day) {
 ap_ap_des <- function(mydate =  current_day) {
   mydataframe <-  "ap_ap_des"
   
-  con <- duck_open()
-  df_app <- import_dataframe(mydataframe, con = con)
+  df_app <- import_dataframe(mydataframe)
   
   # mydate <- current_day
   data_day_text <- mydate %>% format("%Y%m%d")
@@ -1270,7 +1279,6 @@ ap_ap_des <- function(mydate =  current_day) {
   # }
 
   
-  duck_close(con, clean = TRUE)
   print(paste(format(now(), "%H:%M:%S"), mydataframe, mydate))
   
 }
@@ -1279,8 +1287,7 @@ ap_ap_des <- function(mydate =  current_day) {
 ap_ms <- function(mydate =  current_day) {
   mydataframe <-  "ap_ms"
 
-  con <- duck_open()
-  df_app <- import_dataframe(mydataframe, con = con)
+  df_app <- import_dataframe(mydataframe)
   
   data_day_text <- mydate %>% format("%Y%m%d")
   day_prev_week <- mydate + days(-7)
@@ -1536,7 +1543,6 @@ ap_ms <- function(mydate =  current_day) {
   #   print(paste(list_airport$APT_ICAO_CODE[i], all.equal(df1, ap_ms_app_day1)))
   # }
   
-  duck_close(con, clean = TRUE)
   print(paste(format(now(), "%H:%M:%S"), mydataframe, mydate))
 }
 
@@ -1545,6 +1551,7 @@ ap_ms <- function(mydate =  current_day) {
 # til <- "2024-02-21"  #included in output
 # current_day <- seq(ymd(til), ymd(wef), by = "-1 day")
 
+ap_traffic_delay()
 purrr::walk(current_day, ap_ao)
 purrr::walk(current_day, ap_st_des)
 purrr::walk(current_day, ap_ap_des)

@@ -83,6 +83,7 @@ if (!exists("apt_traffic_data")) {
     filter(YEAR == data_day_year)
 }
 
+tail(apt_traffic_data$FLIGHT_DATE_2019)
 #getting the latest date's traffic data
 apt_traffic_last_day <- apt_traffic_data %>%
   filter(FLIGHT_DATE == min(data_day_date,
@@ -181,20 +182,19 @@ apt_traffic_for_json <- apt_traffic_last_day %>%
 #   )
 
 #### Delay data ----
+mydataframe <- "ap_delay_day_raw"
+stakeholder <- "ap"
 
-#arrival delay
-#reading the delay cause sheet
-apt_delay_data <-  export_query(query_ap_delay) %>%
-  as_tibble() %>%
-  mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+if (!exists("apt_delay_data")) {
+  apt_delay_data <- read_parquet(here(archive_dir_raw, stakeholder, paste0(mydataframe, ".parquet")))
+}
 
-#adding columns to the delay data
 #adding rolling week average and year-to-date(Y2D)
-apt_delay_data <- apt_delay_data %>%
+apt_delay_data_calc <- apt_delay_data %>%
   arrange(FLIGHT_DATE) %>%
   group_by(ARP_CODE) %>%
   mutate(#delay minutes
-    DAY_DLY = TDM_ARP,
+    DAY_DLY = TDM_ARP_ARR,
     AVG_DLY_ROLLING_WEEK = rollmean( DAY_DLY , 7, align = "right", fill = NA),
     #number of flights
     DAY_TFC = DAY_ARR,
@@ -223,13 +223,40 @@ apt_delay_data <- apt_delay_data %>%
   ungroup()
 
 #adding previous year and 2019 values
-apt_delay_data_ <- apt_delay_data %>%
+apt_delay_data_full <- apt_delay_data_calc %>%
   #2019, and previous year values
   mutate(DATE_PREV_YEAR = FLIGHT_DATE-(1)*364 - round(1 / 4) * 7,
          DATE_2019 = FLIGHT_DATE-(year ( FLIGHT_DATE ) - 2019)*364 - round((year ( FLIGHT_DATE) - 2019) / 4) * 7) %>%
   arrange(ARP_CODE, FLIGHT_DATE) %>%
-  #obtaining data for previous year
-  left_join(apt_delay_data %>% select(ARP_CODE,
+  # ensuring no nas get in the way
+  mutate(
+    #delay minutes
+    coalesce(DAY_DLY, 0),
+    coalesce(AVG_DLY_ROLLING_WEEK, 0),
+    coalesce(Y2D_DLY_YEAR, 0),
+    coalesce(Y2D_AVG_DLY, 0),
+    
+    #number of flights
+    coalesce(DAY_TFC, 0),
+    coalesce(AVG_TFC_ROLLING_WEEK, 0),
+    coalesce(Y2D_TFC_YEAR, 0),
+    coalesce(Y2D_AVG_TFC, 0),
+    
+    #number of delayed flights
+    coalesce(DAY_DELAYED_TFC, 0),
+    coalesce(AVG_DELAYED_TFC_ROLLING_WEEK, 0),
+    coalesce(Y2D_DELAYED_TFC_YEAR, 0),
+    coalesce(Y2D_AVG_DELAYED_TFC, 0),
+    
+    #number delayed flights >15 minutes'
+    coalesce(DAY_DELAYED_TFC_15, 0),
+    coalesce(AVG_DELAYED_TFC_15_ROLLING_WEEK, 0),
+    coalesce(Y2D_DELAYED_TFC_15_YEAR, 0),
+    coalesce(Y2D_AVG_DELAYED_TFC_15, 0)
+    ) %>% 
+   #obtaining data for previous year
+  left_join(apt_delay_data_calc %>% select(
+                                      ARP_CODE,
                                       FLIGHT_DATE,
                                       #delay minutes
                                       DAY_DLY,
@@ -259,7 +286,7 @@ apt_delay_data_ <- apt_delay_data %>%
   by = join_by(DATE_PREV_YEAR == FLIGHT_DATE, ARP_CODE == ARP_CODE),
   suffix = c("", "_PREV_YEAR"))  %>%
   #obtaining data for 2019
-  left_join(apt_delay_data %>% select(ARP_CODE,
+  left_join(apt_delay_data_calc %>% select(ARP_CODE,
                                       FLIGHT_DATE,
                                       #delay minutes
                                       DAY_DLY,
@@ -289,7 +316,7 @@ apt_delay_data_ <- apt_delay_data %>%
   suffix = c("", "_2019"))
 
 #getting the latest date's traffic data
-apt_delay_last_day <- apt_delay_data_ %>%
+apt_delay_last_day <- apt_delay_data_full %>%
   filter(FLIGHT_DATE == min(data_day_date,
                             max(FLIGHT_DATE),
                             na.rm = TRUE))
@@ -488,7 +515,6 @@ apt_delay_for_json  <- apt_delay_last_day %>%
   ) %>%
   arrange(ARP_CODE,
           ARP_NAME)
-
 
 #### Punctuality data ----
 #querying the data in SQL
@@ -1752,15 +1778,14 @@ save_json(apt_punct_evo_j, "apt_punct_evo_chart")
 
 ## DELAY ----
 ### Delay category ----
-
-apt_delay_cause_data <-  apt_delay_data_ %>%
+apt_delay_cause_data <-  apt_delay_data_full %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
   mutate(
     TDM = DAY_DLY,
-    TDM_G = TDM_ARP_ARR_G,
-    TDM_CS = TDM_ARP_ARR_CS,
-    TDM_IT = TDM_ARP_ARR_IT ,
-    TDM_WD = TDM_ARP_ARR_WD,
+    TDM_G = coalesce(TDM_ARP_ARR_G, 0),
+    TDM_CS = coalesce(TDM_ARP_ARR_CS, 0),
+    TDM_IT = coalesce(TDM_ARP_ARR_IT, 0),
+    TDM_WD = coalesce(TDM_ARP_ARR_WD, 0),
     TDM_NOCSGITWD = TDM - TDM_G - TDM_CS - TDM_IT - TDM_WD,
     TDM_PREV_YEAR = DAY_DLY_PREV_YEAR
   ) %>%                              # create 7day average for y2d graph
@@ -1773,6 +1798,7 @@ apt_delay_cause_data <-  apt_delay_data_ %>%
     RWK_TDM_PREV_YEAR = rollsum(TDM_PREV_YEAR, 7, fill = NA, align = "right") / 7
   ) %>%
   filter(FLIGHT_DATE >= as.Date(paste0("01-01-", data_day_year), format = "%d-%m-%Y"))
+
 
 #### day ----
 apt_delay_cause_day <- apt_delay_cause_data %>%
@@ -1856,9 +1882,6 @@ apt_delay_cause_evo_dy_j <- apt_delay_cause_day_long %>% toJSON(., pretty = TRUE
 save_json(apt_delay_cause_evo_dy_j, "apt_delay_category_evo_chart_dy")
 
 
-
-
-
 #### week ----
 apt_delay_cause_wk <- apt_delay_cause_data %>%
   filter(FLIGHT_DATE >= min(max(FLIGHT_DATE), data_day_date, na.rm  = TRUE) + lubridate::days(-6),
@@ -1875,12 +1898,12 @@ apt_delay_cause_wk <- apt_delay_cause_data %>%
     TDM_WD,
     TDM_NOCSGITWD,
     TDM_PREV_YEAR,
-    WK_TDM_G = sum(TDM_G),
-    WK_TDM_CS = sum(TDM_CS),
-    WK_TDM_IT = sum(TDM_IT),
-    WK_TDM_WD = sum(TDM_WD),
-    WK_TDM_NOCSGITWD = sum(TDM_NOCSGITWD),
-    WK_TDM = sum(TDM)
+    WK_TDM_G = sum(TDM_G, na.rm = TRUE),
+    WK_TDM_CS = sum(TDM_CS, na.rm = TRUE),
+    WK_TDM_IT = sum(TDM_IT, na.rm = TRUE),
+    WK_TDM_WD = sum(TDM_WD, na.rm = TRUE),
+    WK_TDM_NOCSGITWD = sum(TDM_NOCSGITWD, na.rm = TRUE),
+    WK_TDM = sum(TDM, na.rm = TRUE)
   ) %>%
   ungroup() %>%
   mutate(
@@ -1990,8 +2013,6 @@ apt_delay_cause_y2d <- apt_delay_cause_data %>%
          Y2D_SHARE_TDM_NOCSGITWD
   )
 
-colnames(apt_delay_cause_y2d) <- column_names
-
 ### nest data
 apt_delay_value_y2d_long <- apt_delay_cause_y2d %>%
   select(-c(share_aerodrome_capacity,
@@ -2030,7 +2051,7 @@ save_json(apt_delay_cause_evo_y2d_j, "apt_delay_category_evo_chart_y2d")
 
 ## DELAY Share ----
 ### 7-day % of delayed flights ----
-apt_delayed_flights_evo <- apt_delay_data_  %>%
+apt_delayed_flights_evo <- apt_delay_data_full  %>%
   mutate(RWK_DELAYED_TFC_PERC = AVG_DELAYED_TFC_ROLLING_WEEK/AVG_TFC_ROLLING_WEEK,
          RWK_DELAYED_TFC_PERC_PREV_YEAR =  AVG_DELAYED_TFC_ROLLING_WEEK_PREV_YEAR/ AVG_TFC_ROLLING_WEEK_PREV_YEAR,
          RWK_DELAYED_TFC_15_PERC = AVG_DELAYED_TFC_15_ROLLING_WEEK/AVG_TFC_ROLLING_WEEK,
