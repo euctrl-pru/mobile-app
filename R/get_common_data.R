@@ -112,11 +112,9 @@ state_statfor <-  read_xlsx(
   as_tibble()
 
 acc <-  read_xlsx(
-  path  = fs::path_abs(
-    str_glue(nw_base_file),
-    start = nw_base_dir),
-  sheet = "ACC_names",
-  range = cell_limits(c(2, 3), c(NA, NA))) %>%
+  here("stakeholder_lists.xlsx"),
+  sheet = "acc_lists",
+  range = cell_limits(c(1, 1), c(NA, NA))) %>%
   as_tibble()
 
 query <- "select * from PRU_AIRPORT"
