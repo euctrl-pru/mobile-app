@@ -2897,30 +2897,8 @@ save_json(nw_acc_delay_data_j, "nw_acc_ranking_delay")
 
 ## Country delay ----
 ### day ----
-mydataframe <- "nw_st_delay_day_raw"
-myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
-stakeholder <- str_sub(mydataframe, 1, 2)
+df <- export_query(query_nw_st_delay_day_raw(format(data_day_date, "%Y-%m%-%d")))
 
-if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
-  
-} else {
-  df <- read_xlsx(
-    path = fs::path_abs(
-      str_glue(nw_base_file),
-      start = nw_base_dir
-    ),
-    sheet = "CTRY_DLY_DAY",
-    range = cell_limits(c(5, 2), c(NA, 5))
-  ) %>%
-    as_tibble() %>%
-    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-  
-  # save pre-processed file in archive for generation of past json files
-  write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
-}
-
-# process data
 nw_st_rank_delay_day <- assign(mydataframe, df) %>%
   left_join(distinct(state_iso, state, iso_2letter),
             by = c("DY_CTRY_DLY_NAME" = "state")) %>%
@@ -2945,31 +2923,59 @@ nw_st_rank_delay_day <- assign(mydataframe, df) %>%
     DY_CTRY_DLY_CODE
   )
 
+### day old
+# mydataframe <- "nw_st_delay_day_raw"
+# myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+# stakeholder <- str_sub(mydataframe, 1, 2)
+# 
+# if (archive_mode) {
+#   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
+#   
+# } else {
+#   df <- read_xlsx(
+#     path = fs::path_abs(
+#       str_glue(nw_base_file),
+#       start = nw_base_dir
+#     ),
+#     sheet = "CTRY_DLY_DAY",
+#     range = cell_limits(c(5, 2), c(NA, 5))
+#   ) %>%
+#     as_tibble() %>%
+#     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+#   
+#   # save pre-processed file in archive for generation of past json files
+#   write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+# }
+# 
+# # process data
+# nw_st_rank_delay_day <- assign(mydataframe, df) %>%
+#   left_join(distinct(state_iso, state, iso_2letter),
+#             by = c("DY_CTRY_DLY_NAME" = "state")) %>%
+#   mutate(DY_CTRY_DLY_CODE = case_when(
+#     DY_CTRY_DLY_NAME == "Maastricht" ~ "MUAC",
+#     DY_CTRY_DLY_NAME == "Serbia/Montenegro" ~ "RSME",
+#     .default = iso_2letter
+#   )) %>%
+#   arrange(desc(DY_CTRY_DLY), DY_CTRY_DLY_NAME) %>%
+#   mutate(
+#     RANK = row_number(),
+#     DY_RANK = RANK
+#   ) %>%
+#   filter(DY_RANK <= 10) %>%
+#   select(
+#     RANK,
+#     DY_RANK,
+#     DY_CTRY_DLY_NAME,
+#     DY_TO_DATE,
+#     DY_CTRY_DLY,
+#     DY_CTRY_DLY_PER_FLT,
+#     DY_CTRY_DLY_CODE
+#   )
+# 
+
 ### week ----
-mydataframe <- "nw_st_delay_week_raw"
-myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
-stakeholder <- str_sub(mydataframe, 1, 2)
+df <- export_query(query_nw_st_delay_week_raw(format(data_day_date, "%Y-%m%-%d")))
 
-if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
-  
-} else {
-  df <- read_xlsx(
-    path = fs::path_abs(
-      str_glue(nw_base_file),
-      start = nw_base_dir
-    ),
-    sheet = "CTRY_DLY_WK_DATA",
-    range = cell_limits(c(5, 2), c(NA, NA))
-  ) %>%
-    as_tibble() %>%
-    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-  
-  # save pre-processed file in archive for generation of past json files
-  write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
-}
-
-# process data
 nw_st_rank_delay_week <- assign(mydataframe, df) %>%
   filter(PERIOD_TYPE == "1_ROL_WEEK") %>%
   arrange(desc(AVG_DELAY), COUNTRY_NAME) %>%
@@ -2990,32 +2996,56 @@ nw_st_rank_delay_week <- assign(mydataframe, df) %>%
     WK_CTRY_DLY_PER_FLT
   )
 
+### week old
+# mydataframe <- "nw_st_delay_week_raw"
+# myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+# stakeholder <- str_sub(mydataframe, 1, 2)
+# 
+# if (archive_mode) {
+#   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
+#   
+# } else {
+#   df <- read_xlsx(
+#     path = fs::path_abs(
+#       str_glue(nw_base_file),
+#       start = nw_base_dir
+#     ),
+#     sheet = "CTRY_DLY_WK_DATA",
+#     range = cell_limits(c(5, 2), c(NA, NA))
+#   ) %>%
+#     as_tibble() %>%
+#     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+#   
+#   # save pre-processed file in archive for generation of past json files
+#   write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+# }
+# 
+# # process data
+# nw_st_rank_delay_week <- assign(mydataframe, df) %>%
+#   filter(PERIOD_TYPE == "1_ROL_WEEK") %>%
+#   arrange(desc(AVG_DELAY), COUNTRY_NAME) %>%
+#   mutate(
+#     DY_RANK = row_number(),
+#     WK_RANK = DY_RANK,
+#     WK_FROM_DATE = TO_DATE + lubridate::days(-6),
+#     WK_CTRY_DLY_PER_FLT = if_else(AVG_FLIGHT == 0, 0,AVG_DELAY/ AVG_FLIGHT)
+#   ) %>%
+#   filter(DY_RANK <= 10) %>%
+#   select(
+#     DY_RANK,
+#     WK_RANK,
+#     WK_CTRY_DLY_NAME = COUNTRY_NAME,
+#     WK_FROM_DATE,
+#     WK_TO_DATE = TO_DATE,
+#     WK_CTRY_DLY = AVG_DELAY,
+#     WK_CTRY_DLY_PER_FLT
+#   )
+
+
 ### y2d ----
-mydataframe <- "nw_st_delay_y2d_raw"
-myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
-stakeholder <- str_sub(mydataframe, 1, 2)
+df <- export_query(query_nw_st_delay_y2d_raw(format(data_day_date, "%Y-%m%-%d")))
 
-if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
-  
-} else {
-  df <- read_xlsx(
-    path = fs::path_abs(
-      str_glue(nw_base_file),
-      start = nw_base_dir
-    ),
-    sheet = "CTRY_DLY_Y2D_DATA",
-    range = cell_limits(c(5, 2), c(NA, NA))
-  ) %>%
-    as_tibble() %>%
-    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-  
-  # save pre-processed file in archive for generation of past json files
-  write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
-}
-
-# process data
-nw_st_rank_delay_y2d <- assign(mydataframe, df) %>%
+nw_st_rank_delay_y2dn <- assign(mydataframe, df) %>%
   filter(YEAR == data_day_year) %>%
   arrange(desc(AVG_DELAY), COUNTRY_NAME) %>%
   mutate(
@@ -3032,6 +3062,49 @@ nw_st_rank_delay_y2d <- assign(mydataframe, df) %>%
     Y2D_CTRY_DLY = AVG_DELAY,
     Y2D_CTRY_DLY_PER_FLT
   )
+
+### y2d old
+# mydataframe <- "nw_st_delay_y2d_raw"
+# myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+# stakeholder <- str_sub(mydataframe, 1, 2)
+# 
+# if (archive_mode) {
+#   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
+#   
+# } else {
+#   df <- read_xlsx(
+#     path = fs::path_abs(
+#       str_glue(nw_base_file),
+#       start = nw_base_dir
+#     ),
+#     sheet = "CTRY_DLY_Y2D_DATA",
+#     range = cell_limits(c(5, 2), c(NA, NA))
+#   ) %>%
+#     as_tibble() %>%
+#     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+#   
+#   # save pre-processed file in archive for generation of past json files
+#   write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+# }
+# 
+# # process data
+# nw_st_rank_delay_y2d <- assign(mydataframe, df) %>%
+#   filter(YEAR == data_day_year) %>%
+#   arrange(desc(AVG_DELAY), COUNTRY_NAME) %>%
+#   mutate(
+#     DY_RANK = row_number(),
+#     Y2D_RANK = DY_RANK,
+#     Y2D_CTRY_DLY_PER_FLT = if_else(AVG_FLIGHT == 0, 0,AVG_DELAY/ AVG_FLIGHT)
+#   ) %>%
+#   filter(DY_RANK <= 10) %>%
+#   select(
+#     DY_RANK,
+#     Y2D_RANK,
+#     Y2D_CTRY_DLY_NAME = COUNTRY_NAME,
+#     Y2D_TO_DATE = TO_DATE,
+#     Y2D_CTRY_DLY = AVG_DELAY,
+#     Y2D_CTRY_DLY_PER_FLT
+#   )
 
 ### main card ----
 nw_st_main_delay <- nw_st_rank_delay_day %>%
