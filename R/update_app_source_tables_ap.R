@@ -20,6 +20,7 @@ dim_ao_group <- export_query(dim_ao_grp_query)
 ## airport ----
 dim_airport <- export_query(dim_ap_query) 
 list_airport <- export_query(list_ap_query) 
+list_airport_extended <- export_query(list_ap_ext_query)
 
 ## iso country ----
 dim_iso_country <- export_query(dim_iso_st_query) 
@@ -106,7 +107,7 @@ ap_traffic_delay <- function() {
     select(FLIGHT_DATE = value) 
   
   #### combine with ap list to get full sequence
-  days_ap <- crossing(days_sequence, list_airport) %>% 
+  days_ap <- crossing(days_sequence, list_airport_extended) %>% 
     arrange(APT_ID, FLIGHT_DATE)%>% 
     mutate(YEAR = year(FLIGHT_DATE))
   
