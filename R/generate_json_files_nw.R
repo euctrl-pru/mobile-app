@@ -692,6 +692,25 @@ column_names <- c("FLIGHT_DATE", data_day_year, data_day_year - 1, 2020, 2019)
 colnames(nw_traffic_evo) <- column_names
 
 
+# nw_traffic_evo_long <- nw_traffic_evo %>%
+#   pivot_longer(-c(FLIGHT_DATE, TOOLTIP), names_to = 'metric', values_to = 'value') %>%
+#   group_by(FLIGHT_DATE, TOOLTIP) %>%
+#   nest_legacy(.key = "statistics") %>% head()
+# 
+# 
+# TOOLTIP = paste0(
+#   format(FLIGHT_DATE, "%Y-%m-%d"), 
+#   '<br>',
+#   format(AVG_ROLLING_WEEK, big.mark = ","),
+#   '<br>',
+#   format(AVG_ROLLING_WEEK_PREV_YEAR, big.mark = ","),
+#   '<br>',
+#   format(AVG_ROLLING_WEEK_2020, big.mark = ","),
+#   '<br>',
+#   format(AVG_ROLLING_WEEK_2019, big.mark = ","),
+#   '<br>'
+#   
+
 ### nest data
 nw_traffic_evo_long <- nw_traffic_evo %>%
   pivot_longer(-c(FLIGHT_DATE), names_to = 'metric', values_to = 'value') %>%
@@ -2063,6 +2082,61 @@ nw_ap_data_j <- nw_ap_data %>% toJSON(., pretty = TRUE)
 save_json(nw_ap_data_j, "nw_apt_ranking_traffic")
 
 ## Country traffic DAI ----
+
+###############################
+# ### day ----
+# mydataframe <- "nw_st_dai_data_day_raw"
+# myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+# stakeholder <- str_sub(mydataframe, 1, 2)
+# 
+# df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
+# 
+# # process data
+# nw_st_dai_data_day_int <- assign(mydataframe, df) |>
+#   mutate(TO_DATE = max(TO_DATE, na.rm = TRUE)) |>
+#   spread(key = FLAG_PERIOD, value = DEP_ARR) |>
+#   arrange(R_RANK) |>
+#   mutate(
+#     DY_RANK_DIF_PREV_WEEK = case_when(
+#       is.na(RANK_PREV) ~ RANK,
+#       .default = RANK_PREV - RANK
+#     ),
+#     DY_FLT_DIF_PREV_WEEK_PERC =   case_when(
+#       DAY_PREV_WEEK == 0 | is.na(DAY_PREV_WEEK) ~ NA,
+#       .default = CURRENT_DAY / DAY_PREV_WEEK - 1
+#     ),
+#     DY_FLT_DIF_PREV_YEAR_PERC = case_when(
+#       DAY_PREV_YEAR == 0 | is.na(DAY_PREV_YEAR) ~ NA,
+#       .default = CURRENT_DAY / DAY_PREV_YEAR - 1
+#     ),
+#     TFC_DIF = CURRENT_DAY - DAY_PREV_WEEK
+#   ) 
+# 
+# nw_st_dai_data_day <- nw_st_dai_data_day_int %>% 
+#   filter(R_RANK < 11) %>% 
+#   select(
+#     DY_R_RANK_BY_DAY = R_RANK,
+#     DY_COUNTRY_NAME = COUNTRY_NAME,
+#     DY_TO_DATE = TO_DATE,
+#     DY_DEP_ARR = CURRENT_DAY,
+#     DY_DIF_PREV_WEEK_PERC = DY_FLT_DIF_PREV_WEEK_PERC,
+#     DY_DIF_PREV_YEAR_PERC = DY_FLT_DIF_PREV_YEAR_PERC,
+#     DY_RANK_DIF_PREV_WEEK,
+#   )
+# 
+# DY_R_RANK_BY_DAY = R_RANK,
+# DY_COUNTRY_NAME = COUNTRY_NAME,
+# DY_CTRY_ISO_CODE = ISO_COUNTRY_CODE,
+# DY_TO_DATE = TO_DATE,
+# DY_CTRY_DAI = CURRENT_DAY,
+# DY_DIF_PREV_WEEK_PERC,
+# DY_DIF_PREV_YEAR_PERC,
+# DY_RANK_DIF_PREV_WEEK
+
+
+###############################
+
+
 ### day----
 mydataframe <- "nw_st_dai_day_raw"
 myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
