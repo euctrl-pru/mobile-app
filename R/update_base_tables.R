@@ -118,7 +118,7 @@ update_base_tables <- function(mydataframe) {
   # write new updated table
   df_updated %>% write_parquet(here(archive_dir_raw, myarchivefile))
  
-  print(mydataframe) 
+  print(paste(mydataframe, "base table updated")) 
 }
 
 purrr::walk(mydataframes, update_base_tables)

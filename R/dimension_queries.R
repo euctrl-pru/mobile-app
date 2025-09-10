@@ -351,6 +351,12 @@ dim_iso_st_query <- "
     AIU_ISO_COUNTRY_NAME as country_name
   from prudev.pru_country_iso
   group by AIU_ISO_COUNTRY_CODE, AIU_ISO_COUNTRY_NAME
+  UNION ALL
+  select 
+    'RSME' as iso_country_code,
+    'Serbia/Montenegro' as country_name
+  from dual
+order by iso_country_code
 "
 
 ##list iso country ----

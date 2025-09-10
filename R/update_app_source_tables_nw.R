@@ -35,16 +35,19 @@ list_airport_ext <- export_query(list_ap_ext_query)
 ## iso country ----
 dim_iso_country <- export_query(dim_iso_st_query) 
 
+## icao country ----
+list_icao_country <- export_query(list_icao_st_query) %>% 
+  add_row(COUNTRY_CODE = 'LEGC', COUNTRY_NAME = 'Spain')
+
 
 # prep data functions ----
-import_dataframe <- function(dfname, con) {
+import_dataframe <- function(dfname) {
   # import data 
   # dfname <- "ap_traffic_delay"
   mydataframe <- dfname
   myparquetfile <- paste0(mydataframe, "_day_base.parquet")
   
-  con <- duck_open()
-  df_base <- duck_ingest_parquet(con, here::here(archive_dir_raw, myparquetfile))  # now eager by default
+  df_base <- read_parquet_duckdb(here(archive_dir_raw,myparquetfile))
   
   df_alldays <- df_base
   
@@ -55,6 +58,7 @@ import_dataframe <- function(dfname, con) {
     
     df_app <- df_alldays %>% 
       filter(ARP_ID != 1618) %>%  # undefined
+      compute(prudence = "lavish") %>% 
       filter(ARP_ID %in% list_airport_ext$APT_ID) 
 
   } else if (dfname == "ao_traffic_delay"){
@@ -67,6 +71,15 @@ import_dataframe <- function(dfname, con) {
         FLIGHT = sum(DAY_TFC, na.rm = TRUE),
         .by = c(YEAR, FLIGHT_DATE, AO_GRP_CODE, AO_GRP_NAME)
       )
+  } else if (dfname == "st_dai"){
+    
+    df_app <- df_alldays %>% 
+      filter(!(COUNTRY_CODE %in% c('LE', 'GC'))) %>%  # spain separated
+      # compute(prudence = "lavish") %>%
+      left_join(list_icao_country, by = c("COUNTRY_CODE")) %>% 
+      left_join(dim_iso_country, by = c("COUNTRY_NAME")) 
+    
+    
   } else {
     df_app <- df_alldays
   }
@@ -479,8 +492,7 @@ nw_traffic_delay <- function() {
 nw_ao <- function(mydate =  current_day) {
   mydatasource <-  "ao_traffic_delay"
   
-  con <- duck_open()
-  df_app <- import_dataframe(mydatasource, con = con)
+  df_app <- import_dataframe(mydatasource)
   
   mydataframe <-  "nw_ao"
   
@@ -629,7 +641,6 @@ nw_ao <- function(mydate =  current_day) {
     mutate(
       YEAR = year(FLIGHT_DATE)
     ) %>% 
-    filter(YEAR %in% c(current_year, current_year-1, 2019)) %>% 
     filter(FLIGHT_DATE %in% y2d_dates) %>% 
     group_by(YEAR) %>% 
     mutate(
@@ -693,15 +704,13 @@ nw_ao <- function(mydate =  current_day) {
   
   print(paste(format(now(), "%H:%M:%S"), mydataframe, mydate))
   
-  duck_close(con, clean = TRUE)
 }
 
 # nw ap ----
 nw_ap <- function(mydate =  current_day) {
   mydatasource <-  "ap_traffic_delay"
   
-  con <- duck_open()
-  df_app <- import_dataframe(mydatasource, con = con)
+  df_app <- import_dataframe(mydatasource)
   
   mydataframe <-  "nw_ap"
   
@@ -852,7 +861,6 @@ nw_ap <- function(mydate =  current_day) {
     mutate(
       YEAR = year(FLIGHT_DATE)
     ) %>% 
-    filter(YEAR %in% c(current_year, current_year-1, 2019)) %>% 
     filter(FLIGHT_DATE %in% y2d_dates) %>% 
     group_by(YEAR) %>% 
     mutate(
@@ -912,13 +920,229 @@ nw_ap <- function(mydate =  current_day) {
     ) %>% 
     arrange(desc(YEAR), R_RANK, APT_NAME)
   
-  df_y2d %>% filter(APT_CODE == 'LTFM')
-  
   df_y2d %>% write_csv(here(archive_dir_raw, stakeholder, mycsvfile))
   
   print(paste(format(now(), "%H:%M:%S"), mydataframe, mydate))
   
-  duck_close(con, clean = TRUE)
+}
+
+
+# nw st dai ----
+nw_st_dai <- function(mydate =  current_day) {
+  mydatasource <-  "st_dai"
+  
+  df_app <- import_dataframe(mydatasource)
+  
+  mydataframe <-  "nw_st_dai"
+  
+  # mydate <- current_day
+  data_day_text <- mydate %>% format("%Y%m%d")
+  day_prev_week <- mydate + days(-7)
+  day_prev_year <- mydate + days(-364)
+  day_2019 <- mydate - days(364 * (year(mydate) - 2019) + floor((year(mydate) - 2019) / 4) * 7)
+  current_year = year(mydate)
+  
+  stakeholder <- str_sub(mydataframe, 1, 2)
+  
+  ## day ----
+  mycsvfile <- paste0(data_day_text, "_", mydataframe, "_data_day_raw.csv")
+  
+  df_day <- df_app %>%
+    filter(FLIGHT_DATE %in% c(mydate, day_prev_week, day_2019, day_prev_year)) %>% 
+    summarise(DEP_ARR = sum(DAY_TFC, na.rm = TRUE), .by = c(FLIGHT_DATE, COUNTRY_CODE, COUNTRY_NAME, ISO_COUNTRY_CODE)) %>% 
+    group_by(FLIGHT_DATE) %>%
+    arrange(FLIGHT_DATE, desc(DEP_ARR), COUNTRY_NAME) %>% 
+    mutate(
+      R_RANK = case_when( 
+        FLIGHT_DATE == mydate ~ row_number(),
+        .default = NA
+      ),
+      RANK = case_when( 
+        FLIGHT_DATE == mydate ~ min_rank(desc(DEP_ARR)),
+        .default = NA
+      ),
+      RANK_PREV = case_when( 
+        FLIGHT_DATE == day_prev_week ~ min_rank(desc(DEP_ARR)),
+        .default = NA
+      ),
+      FLAG_PERIOD = case_when( 
+        FLIGHT_DATE == mydate ~ "CURRENT_DAY",
+        FLIGHT_DATE == day_prev_week ~ "DAY_PREV_WEEK",
+        FLIGHT_DATE == day_2019 ~ "DAY_2019",
+        FLIGHT_DATE == day_prev_year ~ "DAY_PREV_YEAR",
+      )
+    ) %>% 
+    ungroup() %>% 
+    group_by(COUNTRY_CODE) %>% 
+    arrange(COUNTRY_CODE, desc(FLIGHT_DATE)) %>% 
+    fill(RANK, .direction = "down") %>% 
+    fill(R_RANK, .direction = "down") %>% 
+    fill(RANK_PREV, .direction = "down") %>% 
+    fill(RANK_PREV, .direction = "up") %>% 
+    ungroup() %>% 
+    # filter(R_RANK < 41) %>% 
+    select(
+      FLAG_PERIOD,
+      COUNTRY_CODE,
+      ISO_COUNTRY_CODE,
+      COUNTRY_NAME,
+      DEP_ARR,
+      R_RANK,
+      RANK,
+      RANK_PREV,
+      TO_DATE = FLIGHT_DATE
+      
+    ) %>% 
+    arrange(FLAG_PERIOD, R_RANK, COUNTRY_NAME)
+  
+  df_day %>% write_csv(here(archive_dir_raw, stakeholder, mycsvfile))
+  
+  ## week ----
+  mycsvfile <- paste0(data_day_text, "_", mydataframe, "_data_week_raw.csv")
+  
+  df_week <- df_app %>%
+    filter(
+      FLIGHT_DATE %in% c(seq.Date(mydate-6, mydate)) |
+        FLIGHT_DATE %in% c(seq.Date(day_prev_week-6, day_prev_week))|
+        FLIGHT_DATE %in% c(seq.Date(day_2019-6, day_2019)) |
+        FLIGHT_DATE %in% c(seq.Date(day_prev_year-6, day_prev_year))
+    ) %>% 
+    compute(prudence = "lavish") %>%
+    mutate(
+      FLAG_PERIOD = case_when( 
+        (FLIGHT_DATE >= mydate - days(6) & FLIGHT_DATE <= mydate) ~ "CURRENT_ROLLING_WEEK",
+        (FLIGHT_DATE >= day_prev_week - days(6) & FLIGHT_DATE <= day_prev_week) ~ "PREV_ROLLING_WEEK",
+        (FLIGHT_DATE >= day_2019 - days(6) & FLIGHT_DATE <= day_2019) ~ "ROLLING_WEEK_2019",
+        (FLIGHT_DATE >= day_prev_year - days(6) & FLIGHT_DATE <= day_prev_year) ~ "ROLLING_WEEK_PREV_YEAR"
+      )
+    ) %>% 
+    summarise(
+      DEP_ARR = sum(DAY_TFC, na.rm = TRUE),
+      .by = c(FLAG_PERIOD, COUNTRY_CODE, COUNTRY_NAME, ISO_COUNTRY_CODE)
+    ) %>% 
+    ungroup() %>% 
+    group_by(FLAG_PERIOD) %>%
+    arrange(FLAG_PERIOD, desc(DEP_ARR), COUNTRY_NAME) %>% 
+    mutate(
+      R_RANK = case_when( 
+        FLAG_PERIOD == "CURRENT_ROLLING_WEEK" ~ row_number(),
+        .default = NA
+      ),
+      RANK = case_when( 
+        FLAG_PERIOD == "CURRENT_ROLLING_WEEK" ~ min_rank(desc(DEP_ARR)),
+        .default = NA
+      ),
+      RANK_PREV = case_when( 
+        FLAG_PERIOD == "PREV_ROLLING_WEEK" ~ min_rank(desc(DEP_ARR)),
+        .default = NA
+      )
+    ) %>% 
+    ungroup() %>% 
+    group_by(COUNTRY_CODE) %>% 
+    arrange(COUNTRY_CODE, FLAG_PERIOD) %>% 
+    fill(RANK, .direction = "down") %>% 
+    fill(R_RANK, .direction = "down") %>% 
+    fill(RANK_PREV, .direction = "down") %>% 
+    fill(RANK_PREV, .direction = "up") %>% 
+    ungroup() %>% 
+    mutate(
+      FROM_DATE = mydate - days(6),
+      TO_DATE = mydate,
+      AVG_DEP_ARR = DEP_ARR/7
+    ) %>% 
+    select(
+      FLAG_PERIOD,
+      COUNTRY_CODE,
+      ISO_COUNTRY_CODE,
+      COUNTRY_NAME,
+      DEP_ARR,
+      AVG_DEP_ARR,
+      R_RANK,
+      RANK,
+      RANK_PREV,
+      FROM_DATE,
+      TO_DATE
+      
+    ) %>% 
+    arrange(FLAG_PERIOD, R_RANK, COUNTRY_NAME)
+  
+  df_week %>% write_csv(here(archive_dir_raw, stakeholder, mycsvfile))
+  
+  ## year ----
+  mycsvfile <- paste0(data_day_text, "_", mydataframe, "_data_y2d_raw.csv")
+  
+  y2d_dates <- seq.Date(ymd(paste0(2019,"01","01")),
+                        mydate) %>% as_tibble() %>% 
+    filter(year(value) %in% c(2019, current_year-1, current_year)) %>%
+    filter(format(value, "%m-%d") <= format(mydate, "%m-%d")) %>% 
+    pull()
+  
+  df_y2d <- df_app %>% 
+    compute(prudence = "lavish") %>%
+    mutate(
+      YEAR = year(FLIGHT_DATE)
+    ) %>% 
+    filter(FLIGHT_DATE %in% y2d_dates) %>% 
+    group_by(YEAR) %>% 
+    mutate(
+      TO_DATE = max(FLIGHT_DATE, na.rm = TRUE),
+      FROM_DATE = min(FLIGHT_DATE, na.rm = TRUE)
+    ) %>% 
+    ungroup() %>% 
+    summarise(DEP_ARR = sum(DAY_TFC, na.rm = TRUE), 
+              .by = c(YEAR, COUNTRY_CODE, COUNTRY_NAME, ISO_COUNTRY_CODE, FROM_DATE, TO_DATE)) %>% 
+    group_by(YEAR) %>%
+    arrange(YEAR, desc(DEP_ARR), COUNTRY_NAME) %>% 
+    mutate(
+      R_RANK = case_when( 
+        YEAR == current_year ~ row_number(),
+        .default = NA
+      ),
+      RANK = case_when( 
+        YEAR == current_year ~ min_rank(desc(DEP_ARR)),
+        .default = NA
+      ),
+      RANK_PREV = case_when( 
+        YEAR == current_year-1 ~ min_rank(desc(DEP_ARR)),
+        .default = NA
+      )
+    ) %>% 
+    ungroup() %>% 
+    group_by(COUNTRY_CODE) %>% 
+    arrange(COUNTRY_CODE, YEAR) %>% 
+    fill(R_RANK, .direction = "down") %>% 
+    fill(R_RANK, .direction = "up") %>% 
+    
+    fill(RANK, .direction = "down") %>% 
+    fill(RANK, .direction = "up") %>% 
+    fill(RANK_PREV, .direction = "down") %>% 
+    fill(RANK_PREV, .direction = "up") %>% 
+    ungroup() %>% 
+    mutate(
+      NO_DAYS = as.numeric(TO_DATE - FROM_DATE) +1,
+      AVG_DEP_ARR = DEP_ARR/NO_DAYS
+    ) %>%
+    select(
+      YEAR,
+      COUNTRY_CODE,
+      ISO_COUNTRY_CODE,
+      COUNTRY_NAME,
+      DEP_ARR,	
+      AVG_DEP_ARR,
+      R_RANK,
+      RANK,
+      RANK_PREV,
+      FROM_DATE,
+      TO_DATE
+      
+    ) %>% 
+    arrange(desc(YEAR), R_RANK, COUNTRY_NAME)
+  
+
+  df_y2d %>% write_csv(here(archive_dir_raw, stakeholder, mycsvfile))
+  
+  print(paste(format(now(), "%H:%M:%S"), mydataframe, mydate))
+  
 }
 
 
@@ -929,3 +1153,4 @@ nw_ap <- function(mydate =  current_day) {
 
 purrr::walk(current_day, nw_ao)
 purrr::walk(current_day, nw_ap)
+purrr::walk(current_day, nw_st_dai)

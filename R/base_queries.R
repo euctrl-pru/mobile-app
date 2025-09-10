@@ -429,8 +429,9 @@ WHERE  SUBSTR(A.flt_dep_ad,1,2) =  b.ICAO2LETTER   AND
     AND A.flt_state IN ('TE','TA','AA')
 GROUP BY  B.COUNTRY_code  ,
         TRUNC(A.flt_a_asp_prof_time_entry)
-)
+),
 
+DATA_SPAIN_SEPARATED AS (
 SELECT
          a.YEAR,
          a.MONTH,
@@ -448,10 +449,100 @@ FROM CTRY_DAY A
 LEFT JOIN DATA_DEP b on a.COUNTRY_code = B.COUNTRY_code and a.day_date = b.FLIGHT_date
 LEFT JOIN DATA_ARR c on a.COUNTRY_code = c.COUNTRY_code and a.day_date = c.FLIGHT_date
 LEFT JOIN DATA_DOMESTIC d on a.COUNTRY_code = d.COUNTRY_code and a.day_date = d.FLIGHT_date
+),
+
+
+ CTRY_DAY_SPAIN AS (
+SELECT 'LEGC' AS COUNTRY_code,
+        t.day_date,
+        t.month,
+        t.week,
+        t.week_nb_year,
+        t.day_type,
+        t.day_of_week_nb AS day_of_week,
+        t.year
+FROM prudev.pru_time_references t
+WHERE
+   t.day_date >= ", query_from, "
+  	AND t.DAY_date < trunc(sysdate)
+       ),
+
+
+DATA_DEP_SPAIN AS (
+(SELECT
+		'LEGC' AS country_code,
+        TRUNC(A.flt_a_asp_prof_time_entry) flight_DATE,
+        COUNT(a.flt_uid) DAY_TFC
+FROM prudev.v_aiu_flt a
+WHERE  SUBSTR(A.flt_dep_ad,1,2) IN ('GE', 'GC', 'LE') 
+    AND A.flt_lobt >= ", query_from, " -2
+    AND A.flt_lobt <  trunc(sysdate) + 2
+    AND A.flt_a_asp_prof_time_entry >= ", query_from, "
+    AND A.flt_a_asp_prof_time_entry <  trunc(sysdate)
+    AND A.flt_state IN ('TE','TA','AA')
+GROUP BY  TRUNC(A.flt_a_asp_prof_time_entry)
+)
+),
+
+DATA_ARR_SPAIN AS (
+SELECT
+		'LEGC' AS country_code,
+        TRUNC(A.flt_a_asp_prof_time_entry) flight_DATE,
+        COUNT(a.flt_uid) DAY_TFC
+FROM prudev.v_aiu_flt a
+WHERE  SUBSTR(A.flt_ctfm_ades,1,2) IN ('GE', 'GC', 'LE') 
+    AND A.flt_lobt >= ", query_from, " -2
+    AND A.flt_lobt <  trunc(sysdate) + 2
+    AND A.flt_a_asp_prof_time_entry >= ", query_from, "
+    AND A.flt_a_asp_prof_time_entry <  trunc(sysdate)
+    AND A.flt_state IN ('TE','TA','AA')
+GROUP BY  TRUNC(A.flt_a_asp_prof_time_entry)
+),
+
+
+DATA_DOMESTIC_SPAIN as
+(SELECT
+        'LEGC' AS country_code,
+        TRUNC(A.flt_a_asp_prof_time_entry) FLIGHT_DATE,
+        COUNT(a.flt_uid) DAY_TFC
+FROM prudev.v_aiu_flt a
+WHERE  SUBSTR(A.flt_dep_ad,1,2) IN ('GE', 'GC', 'LE')  AND
+       SUBSTR(A.flt_ctfm_ades,1,2) IN ('GE', 'GC', 'LE') 
+    AND A.flt_lobt >= ", query_from, " -2
+    AND A.flt_lobt <  trunc(sysdate) + 2
+    AND A.flt_a_asp_prof_time_entry >= ", query_from, "
+    AND A.flt_a_asp_prof_time_entry <  trunc(sysdate)
+    AND A.flt_state IN ('TE','TA','AA')
+GROUP BY  TRUNC(A.flt_a_asp_prof_time_entry)
+),
+
+DATA_SPAIN_TOGETHER AS (
+SELECT
+         a.YEAR,
+         a.MONTH,
+          a.WEEK,
+          a.WEEK_NB_YEAR,
+          a.day_type,
+          a.day_of_week,
+          a.day_date as flight_date,
+          a.COUNTRY_code,
+          coalesce(b.DAY_TFC,0) as DEP,
+          coalesce( c.DAY_TFC,0) as ARR ,
+          coalesce( d.DAY_TFC,0) as DOM ,
+         coalesce(b.DAY_TFC,0)  + coalesce( c.DAY_TFC,0) - coalesce( d.DAY_TFC,0) as DAY_TFC
+FROM CTRY_DAY_SPAIN A
+LEFT JOIN DATA_DEP_SPAIN b on a.day_date = b.FLIGHT_date
+LEFT JOIN DATA_ARR_SPAIN c on a.day_date = c.FLIGHT_date
+LEFT JOIN DATA_DOMESTIC_SPAIN d on a.day_date = d.FLIGHT_date
+)
+
+SELECT * FROM DATA_SPAIN_SEPARATED
+UNION ALL
+SELECT * FROM DATA_SPAIN_TOGETHER
 "
 )
 
-## st_delay ====
+## st_delay ----
 st_delay_day_query <- "
 WITH
 
