@@ -54,7 +54,8 @@ import_dataframe <- function(dfname) {
     
   } else if ("ARP_ID" %in% names(df_base)) {
     df_alldays <- df_base %>% 
-      filter(ARP_ID %in% list_airport$APT_ID)  
+      compute(prudence = "lavish") %>% 
+      filter(ARP_ID %in% list_airport_extended$APT_ID)  
     
   }
   
@@ -95,7 +96,7 @@ ap_traffic_delay <- function() {
   stakeholder <- str_sub(mydataframe, 1, 2)
   
   df_app <- import_dataframe(mydataframe)
-  
+
   mydate <- df_app %>% summarise(max(FLIGHT_DATE, na.rm = TRUE)) %>% pull()
   current_year = year(mydate)
   
@@ -332,6 +333,8 @@ ap_traffic_delay <- function() {
   
   mydatafile <- paste0("ap_traffic_day_raw.parquet")
   df_day %>% write_parquet(here(archive_dir_raw, stakeholder, mydatafile))
+  
+  # df_day %>% filter(ARP_CODE == "EBCI") %>% filter(FLIGHT_DATE == current_day) %>% select(DAY_ARR)
   
   print(paste(format(now(), "%H:%M:%S"), mydataframe, mydate))
 
