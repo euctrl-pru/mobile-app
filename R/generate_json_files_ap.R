@@ -78,10 +78,11 @@ apt_json_app <-""
 mydataframe <- "ap_traffic_day_raw"
 stakeholder <- "ap"
 
-if (!exists("apt_traffic_data")) {
-  apt_traffic_data <- read_parquet(here(archive_dir_raw, stakeholder, paste0(mydataframe, ".parquet"))) %>% 
-    filter(YEAR == data_day_year)
+if (!exists("apt_traffic_data_all")) {
+  apt_traffic_data_all <- read_parquet(here(archive_dir_raw, stakeholder, paste0(mydataframe, ".parquet"))) 
 }
+
+apt_traffic_data <- apt_traffic_data_all %>% filter(YEAR == data_day_year)
 
 #getting the latest date's traffic data
 apt_traffic_last_day <- apt_traffic_data %>%

@@ -50,7 +50,7 @@ export_query <- function(query, schema = "PRU_DEV") {
 }
 
 
-export_query_keep_time <- function(query, schema = "PRU_DEV") {
+export_query_keep_time <- function(query, schema = "PRU_READ") {
   withr::local_envvar(c(
     "TZ" = "UTC",
     "ORA_SDTZ" = "UTC",

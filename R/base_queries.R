@@ -2178,7 +2178,6 @@ SELECT flt_uid,
      AND A.flt_lobt < TRUNC (SYSDATE) +2
      AND a.flt_a_asp_prof_time_entry >= ", query_from, " 
      AND a.flt_a_asp_prof_time_entry < TRUNC (SYSDATE)
-     and extract (year from flt_a_asp_prof_time_entry) IN (2019, extract(year from (TRUNC (SYSDATE)-1))-1,extract(year from (TRUNC (SYSDATE)-1)))
        AND A.flt_state IN ('TE', 'TA', 'AA')
      )
      
