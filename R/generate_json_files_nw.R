@@ -3045,7 +3045,7 @@ nw_st_rank_delay_week <- assign(mydataframe, df) %>%
 ### y2d ----
 df <- export_query(query_nw_st_delay_y2d_raw(format(data_day_date, "%Y-%m%-%d")))
 
-nw_st_rank_delay_y2dn <- assign(mydataframe, df) %>%
+nw_st_rank_delay_y2d <- assign(mydataframe, df) %>%
   filter(YEAR == data_day_year) %>%
   arrange(desc(AVG_DELAY), COUNTRY_NAME) %>%
   mutate(
