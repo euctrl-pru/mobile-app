@@ -36,14 +36,14 @@ dim_iso_country <- export_query(dim_iso_st_query)
 
 
 # prep data functions ----
-import_dataframe <- function(dfname, con) {
+import_dataframe <- function(dfname) {
   # import data 
   # dfname <- "ao_ap_pair"
   mydataframe <- dfname
   myparquetfile <- paste0(mydataframe, "_day_base.parquet")
   
-  con <- duck_open()
-  df_base <- duck_ingest_parquet(con, here::here(archive_dir_raw, myparquetfile))  # now eager by default
+  df_base <- read_parquet_duckdb(here(archive_dir_raw, myparquetfile))
+  
   
   # filter to keep days and airports needed
   df_alldays <- df_base %>% 
@@ -125,8 +125,7 @@ ao_traffic_delay <- function() {
   mydatafile <- paste0(mydataframe, "_day_raw.parquet")
   stakeholder <- str_sub(mydataframe, 1, 2)
   
-  con <- duck_open()
-  df_app <- import_dataframe(mydataframe, con = con)
+  df_app <- import_dataframe(mydataframe)
   
   mydate <- max(df_app$FLIGHT_DATE, na.rm = TRUE)
   current_year = year(mydate)
@@ -469,9 +468,7 @@ ao_traffic_delay <- function() {
   df_day %>% write_parquet(here(archive_dir_raw, stakeholder, mydatafile))
   
   print(paste(mydataframe, mydate))
-  duck_close(con, clean = TRUE)
-  
-  
+
   # test <- df_day %>% filter(YEAR == 2024) %>% 
   #   filter(FLIGHT_DATE >= ymd(20240106)) # %>%
   #   # filter(AO_GRP_CODE == 'AEA') %>%
@@ -522,8 +519,7 @@ ao_traffic_delay <- function() {
 ao_st_des <- function(mydate =  current_day) {
   mydataframe <-  "ao_st_des"
   
-  con <- duck_open()
-  df_app <- import_dataframe(mydataframe, con = con)
+  df_app <- import_dataframe(mydataframe)
   
   # mydate <- today()- days(1)
   data_day_text <- mydate %>% format("%Y%m%d")
@@ -822,16 +818,13 @@ ao_st_des <- function(mydate =  current_day) {
   # }
   
   print(paste(format(now(), "%H:%M:%S"), mydataframe, mydate))
-  duck_close(con, clean = TRUE)
-  
 }
 
 # ao ap dep ----
 ao_ap_dep <- function(mydate =  current_day) {
   mydataframe <-  "ao_ap_dep"
   
-  con <- duck_open()
-  df_app <- import_dataframe(mydataframe, con = con)
+  df_app <- import_dataframe(mydataframe)
   
   # mydate <- today()- days(1)
   data_day_text <- mydate %>% format("%Y%m%d")
@@ -1130,7 +1123,6 @@ ao_ap_dep <- function(mydate =  current_day) {
   # }
   
   print(paste(format(now(), "%H:%M:%S"), mydataframe, mydate))
-  duck_close(con, clean = TRUE)
   
 }
 
@@ -1140,9 +1132,7 @@ ao_ap_pair <- function(mydate =  current_day) {
   mydataframe <-  "ao_ap_pair"
   stakeholder <- str_sub(mydataframe, 1, 2)
   
-  con <- duck_open()
-  df_app <- import_dataframe(mydataframe, con = con)
-  
+  df_app <- import_dataframe(mydataframe)
   
   # mydate <- today()- days(1)
   data_day_text <- mydate %>% format("%Y%m%d")
@@ -1468,15 +1458,13 @@ ao_ap_pair <- function(mydate =  current_day) {
   
   print(paste(format(now(), "%H:%M:%S"), mydataframe, mydate))
   
-  duck_close(con, clean = TRUE)
 }
 
 # ao ap arr delay ----
 ao_ap_arr_delay <- function(mydate =  current_day) {
   mydataframe <-  "ao_ap_arr_delay"
   
-  con <- duck_open()
-  df_app <- import_dataframe(mydataframe, con = con)
+  df_app <- import_dataframe(mydataframe)
   
   # mydate <- today()- days(1)
   data_day_text <- mydate %>% format("%Y%m%d")
@@ -1782,8 +1770,6 @@ ao_ap_arr_delay <- function(mydate =  current_day) {
   
   
   print(paste(format(now(), "%H:%M:%S"), mydataframe, mydate))
-  
-  duck_close(con, clean = TRUE)
   
 }
 

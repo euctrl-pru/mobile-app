@@ -37,18 +37,16 @@ list_iso_country <- export_query(list_iso_st_query)
 list_icao_country <- export_query(list_icao_st_query)
 
 # prep data functions ----
-import_dataframe <- function(dfname, con = con) {
+import_dataframe <- function(dfname) {
   # import data 
   # dfname <- "st_st"
   mydataframe <- dfname
   myparquetfile <- paste0(mydataframe, "_day_base.parquet")
   
-  con <- duck_open()
-  df_base <- duck_ingest_parquet(con, here::here(archive_dir_raw, myparquetfile))  # now eager by default
+  # con <- duck_open()
+  # df_base <- duck_ingest_parquet(con, here::here(archive_dir_raw, myparquetfile))  # now eager by default
  
-  # df_base <- read_parquet_duckdb(here(archive_dir_raw, 
-  #                                     myparquetfile)
-  # ) 
+  df_base <- read_parquet_duckdb(here(archive_dir_raw, myparquetfile))
   
   # filter to keep days and airports needed
   if ("ISO_CT_CODE" %in% names(df_base)) {
@@ -143,8 +141,8 @@ st_dai <- function() {
   mydatafile <- paste0(mydataframe, "_day_raw.parquet")
   stakeholder <- str_sub(mydataframe, 1, 2)
   
-  con <- duck_open()
-  df_app <- import_dataframe(mydataframe, con = con)
+  df_app <- import_dataframe(mydataframe) %>% 
+    compute(prudence = "lavish")    
   
   mydate <- max(df_app$FLIGHT_DATE, na.rm = TRUE)
   current_year = year(mydate)
@@ -322,8 +320,7 @@ st_dai <- function() {
   df_day %>% write_parquet(here(archive_dir_raw, stakeholder, mydatafile))
   
   print(paste(format(now(), "%H:%M:%S"), mydataframe, mydate))
-  duck_close(con, clean = TRUE)
-  
+
   # test <- df_day %>% filter(YEAR == 2024)
     # filter(FLIGHT_DATE >= ymd(20240106)) # %>%
     # filter(AO_GRP_CODE == 'AEA') %>%
@@ -378,9 +375,8 @@ st_dai <- function() {
 st_ao <- function(mydate =  current_day) {
   mydataframe <-  "st_ao"
   
-  con <- duck_open()
-  df_app <- import_dataframe(mydataframe, con = con)
-
+  df_app <- import_dataframe(mydataframe)
+  
     # mydate <- current_day
   data_day_text <- mydate %>% format("%Y%m%d")
   day_prev_week <- mydate + days(-7)
@@ -724,14 +720,12 @@ st_ao <- function(mydate =  current_day) {
 
   print(paste(format(now(), "%H:%M:%S"), mydataframe, mydate))
   
-  duck_close(con, clean = TRUE)
 }
 
 # st st ----
 st_st <- function(mydate =  current_day) {
   mydataframe <-  "st_st"
   
-  con <- duck_open()
   df_app <- import_dataframe(mydataframe)
   
   # mydate <- current_day
@@ -1094,15 +1088,13 @@ st_st <- function(mydate =  current_day) {
   # }
   print(paste(format(now(), "%H:%M:%S"), mydataframe, mydate))
   
-  duck_close(con, clean = TRUE)
 }
   
 # st ap ----
 st_ap <- function(mydate =  current_day) {
-    
   mydataframe <-  "st_ap"
-  con <- duck_open()
-  df_app <- import_dataframe(mydataframe, con = con)
+  
+  df_app <- import_dataframe(mydataframe)
   
   # mydate <- current_day
   data_day_text <- mydate %>% format("%Y%m%d")
@@ -1456,8 +1448,7 @@ st_ap <- function(mydate =  current_day) {
   
   print(paste(format(now(), "%H:%M:%S"), mydataframe, mydate))
   
-  duck_close(con, clean = TRUE)
-  
+
 }
 
 # execute functions ----
