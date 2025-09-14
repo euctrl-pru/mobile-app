@@ -1,5 +1,5 @@
 ## libraries
-library(data.table)
+library(arrow)
 library(fs)
 library(tibble)
 library(dplyr)
@@ -21,27 +21,41 @@ source(here::here("..", "mobile-app", "R", "helpers.R"))
 source(here("..", "mobile-app", "R", "params.R"))
 
 # Dimensions ----
-if (exists("ansp_list") == FALSE) {
-  ansp_list <-  read_xlsx(
-    path  = fs::path_abs(
-      str_glue(sp_base_file),
-      start = sp_base_dir),
-    sheet = "lists",
+source(here("..", "mobile-app", "R", "dimension_queries.R"))
+
+if (!exists("dim_ansp")) {
+  dim_ansp <- export_query(dim_ansp_query) 
+}
+  
+if (!exists("list_ansp")) {
+  list_ansp <-  read_xlsx(
+    here("stakeholder_lists.xlsx"),
+    sheet = "ansp_lists",
+    range = cell_limits(c(1, 1), c(NA, 3))) %>%
+    select(-ANSP_NAME) %>% 
+    as_tibble() %>% 
+    left_join(dim_ansp, by = "ANSP_ID")
+}
+
+# if (exists("list_ansp") == FALSE) {
+#   list_ansp <-  read_xlsx(
+#     path  = fs::path_abs(
+#       str_glue(sp_base_file),
+#       start = sp_base_dir),
+#     sheet = "lists",
+#     range = cell_limits(c(1, 1), c(NA, NA))) %>%
+#     as_tibble()
+# }
+
+if (!exists("acc")) {
+  acc <-  read_xlsx(
+    here("stakeholder_lists.xlsx"),
+    sheet = "acc_lists",
     range = cell_limits(c(1, 1), c(NA, NA))) %>%
     as_tibble()
 }
 
-if (exists("acc") == FALSE) {
-  acc <-  read_xlsx(
-    path  = fs::path_abs(
-      str_glue(nw_base_file),
-      start = nw_base_dir),
-    sheet = "ACC_names",
-    range = cell_limits(c(2, 3), c(NA, NA))) %>%
-    as_tibble()
-}
-
-rel_ansp_acc <- ansp_list %>% 
+rel_ansp_acc <- list_ansp %>% 
   mutate(
     iso_2letter = str_remove_all(ANSP_CODE, "_ANSP"),
     ## smatsa exception
@@ -50,10 +64,11 @@ rel_ansp_acc <- ansp_list %>%
   left_join(acc, by = "iso_2letter") %>% 
   select(
     ICAO_CODE = ICAO_code,
-    PRU_ID,
+    ANSP_ID,
     ANSP_CODE,
     ANSP_NAME
   )
+
 
 # archive mode for past dates
 if (exists("archive_mode") == FALSE) {archive_mode <- FALSE}
@@ -81,7 +96,7 @@ sp_traffic_data <-  read_xlsx(
     range = cell_limits(c(1, 1), c(NA, NA))) %>%
     as_tibble() %>%
     mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
-  left_join(ansp_list, by = c("ANSP_NAME"))
+  left_join(list_ansp, by = c("ANSP_NAME"))
 
 
 sp_traffic_calc <- sp_traffic_data %>%
@@ -156,7 +171,7 @@ sp_delay_data <-  read_xlsx(
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   as_tibble() %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
-  left_join(ansp_list, by = c("ANSP_NAME"))
+  left_join(list_ansp, by = c("ANSP_NAME"))
 
 ##### calc ----
 sp_delay_calc <-  sp_delay_data %>%
@@ -443,7 +458,7 @@ sp_delay_for_json <- sp_delay_last_day %>%
 
 #### Join strings and save  ----
 
-sp_json_app_j <- ansp_list %>% arrange(ANSP_NAME)
+sp_json_app_j <- list_ansp %>% arrange(ANSP_NAME)
 sp_json_app_j$sp_traffic <- select(arrange(sp_traffic_for_json, ANSP_NAME), -c(ANSP_CODE, ANSP_NAME))
 sp_json_app_j$sp_delay <- select(arrange(sp_delay_for_json, ANSP_NAME), -c(ANSP_CODE, ANSP_NAME))
 
@@ -478,7 +493,7 @@ days_current_year <- seq(ymd(wef), ymd(til), by = "1 day") %>%
   select(ENTRY_DATE = value)
 
 #### combine with ansp list to get full sequence
-days_ansp <- crossing(days_current_year, ansp_list) %>%
+days_ansp <- crossing(days_current_year, list_ansp) %>%
   arrange(ANSP_CODE, ENTRY_DATE)
 
 #### create dataset
@@ -809,7 +824,7 @@ days_current_year <- seq(ymd(wef), ymd(til), by = "1 day") %>%
   select(ENTRY_DATE = value)
 
 #### combine with ansp list to get full sequence
-days_ansp <- crossing(days_current_year, ansp_list) %>%
+days_ansp <- crossing(days_current_year, list_ansp) %>%
   arrange(ANSP_CODE, ENTRY_DATE)
 
 sp_delayed_flights_evo <- days_ansp %>%
@@ -1077,7 +1092,7 @@ i = 0
 for (i in 1:10) {
   i = i + 1
   ansp_ranking <- ansp_ranking %>%
-    bind_rows(ansp_list, .)
+    bind_rows(list_ansp, .)
 }
 
 ansp_ranking <- ansp_ranking %>%
