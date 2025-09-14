@@ -406,3 +406,15 @@ list_icao_st_query <-"
   AND  ec_icao_country_code not in ('LV', 'LX', 'EU','LN')
   ORDER BY COUNTRY_code
 "
+
+
+# ANSP----
+## dim ansp ----  
+dim_ansp_query <- " 
+SELECT 
+ANSP_ID, ANSP_NAME 
+FROM PRUDEV.V_PRU_REL_CFMU_AUA_ANSP
+--WHERE ANSP_ID  in (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,26,27,28,29,30,31,32,33,39,42,44,45,46,50,53,56,57)
+group by  ANSP_ID, ANSP_NAME
+"
+
