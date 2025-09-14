@@ -914,7 +914,7 @@ sp_acc_traffic_day_int <- assign(mydataframe, df) %>%
   mutate(
     DY_FLT_RANK = rank(desc(FLIGHT), ties.method = "max"),
   ) %>% 
-  group_by(PRU_ID) %>% 
+  group_by(ANSP_ID) %>% 
   mutate(
     SP_RANK = paste0(ANSP_CODE, row_number()),
     DY_FLT_DIF_PREV_WEEK_PERC = if_else(FLIGHT_7DAY == 0, NA, FLIGHT / FLIGHT_7DAY -1),
@@ -922,7 +922,7 @@ sp_acc_traffic_day_int <- assign(mydataframe, df) %>%
      
     DY_FLT_DIF_PREV_WEEK = FLIGHT - FLIGHT_7DAY
     ) %>% 
-  arrange(PRU_ID, SP_RANK) %>% 
+  arrange(ANSP_ID, SP_RANK) %>% 
   ungroup()
 
 if(archive_mode) {
@@ -970,13 +970,13 @@ sp_acc_traffic_week_int <- assign(mydataframe, df) %>%
   mutate(
     WK_FLT_RANK = rank(desc(FLIGHT), ties.method = "max")
   ) %>% 
-  group_by(PRU_ID) %>% 
+  group_by(ANSP_ID) %>% 
   mutate(
     SP_RANK = paste0(ANSP_CODE, row_number()),
     WK_FLT_DIF_PREV_WEEK_PERC = if_else(FLIGHT_7DAY == 0, NA, FLIGHT / FLIGHT_7DAY -1),
     WK_FLT_DIF_PREV_YEAR_PERC = if_else(FLIGHT_PREV_YEAR == 0, NA, FLIGHT / FLIGHT_PREV_YEAR -1)
   ) %>% 
-  arrange(PRU_ID, SP_RANK) %>% 
+  arrange(ANSP_ID, SP_RANK) %>% 
   ungroup() 
 
 if(archive_mode) {
@@ -1026,13 +1026,13 @@ sp_acc_traffic_y2d_int <- assign(mydataframe, df) %>%
   mutate(
     Y2D_FLT_RANK = rank(desc(FLIGHT), ties.method = "max"),
   ) %>% 
-  group_by(PRU_ID) %>% 
+  group_by(ANSP_ID) %>% 
   mutate(
     SP_RANK = paste0(ANSP_CODE, row_number()),
     Y2D_FLT_DIF_PREV_YEAR_PERC = if_else(Y2D_AVG_FLIGHT_PY == 0, NA,  Y2D_AVG_FLIGHT /  Y2D_AVG_FLIGHT_PY-1),
     Y2D_FLT_DIF_2019_PERC = if_else(Y2D_AVG_FLIGHT_2019 == 0, NA, Y2D_AVG_FLIGHT / Y2D_AVG_FLIGHT_2019 -1)
   ) %>% 
-  arrange(PRU_ID, SP_RANK) %>% 
+  arrange(ANSP_ID, SP_RANK) %>% 
   ungroup()
 
 if(archive_mode) {
@@ -1096,7 +1096,7 @@ for (i in 1:10) {
 }
 
 ansp_ranking <- ansp_ranking %>%
-  select(-PRU_ID) %>% 
+  select(-ANSP_ID) %>% 
   arrange(ANSP_CODE) %>%
   group_by(ANSP_CODE) %>%
   mutate(
@@ -1128,7 +1128,7 @@ sp_acc_delay_day_int <- sp_acc_traffic_day_int %>%
   mutate(
     DY_DLY_RANK = rank(desc(DLY), ties.method = "max")
   ) %>% 
-  group_by(PRU_ID) %>% 
+  group_by(ANSP_ID) %>% 
   mutate(
     SP_RANK = paste0(ANSP_CODE, row_number()),
     DY_DLY_DIF_PREV_WEEK_PERC = if_else(DLY_7DAY == 0, NA, DLY / DLY_7DAY -1),
@@ -1142,7 +1142,7 @@ sp_acc_delay_day_int <- sp_acc_traffic_day_int %>%
     
     
   ) %>% 
-  arrange(PRU_ID, SP_RANK) %>% 
+  arrange(ANSP_ID, SP_RANK) %>% 
   ungroup()
 
 sp_acc_delay_day <- sp_acc_delay_day_int %>% 
@@ -1161,11 +1161,11 @@ sp_acc_delay_flight_day <- sp_acc_delay_day_int %>%
   mutate(
     DY_DLY_FLT_RANK = rank(desc(DY_DLY_FLT), ties.method = "max"),
   ) %>% 
-  group_by(PRU_ID) %>% 
+  group_by(ANSP_ID) %>% 
   mutate(
     SP_RANK = paste0(ANSP_CODE, row_number()),
   ) %>% 
-  arrange(PRU_ID, SP_RANK) %>% 
+  arrange(ANSP_ID, SP_RANK) %>% 
   ungroup() %>% 
   select(
     SP_RANK,
@@ -1184,7 +1184,7 @@ sp_acc_delay_week_int <- sp_acc_traffic_week_int %>%
   mutate(
     WK_DLY_RANK = rank(desc(DAILY_DLY), ties.method = "max")
   ) %>%
-  group_by(PRU_ID) %>% 
+  group_by(ANSP_ID) %>% 
   mutate(
     SP_RANK = paste0(ANSP_CODE, row_number()),
     WK_DLY_DIF_PREV_WEEK_PERC = if_else(DAILY_DLY_7DAY == 0, NA,  DAILY_DLY / DAILY_DLY_7DAY -1),
@@ -1198,7 +1198,7 @@ sp_acc_delay_week_int <- sp_acc_traffic_week_int %>%
     
     
   ) %>% 
-  arrange(PRU_ID, SP_RANK) %>% 
+  arrange(ANSP_ID, SP_RANK) %>% 
   ungroup()
 
 sp_acc_delay_week <- sp_acc_delay_week_int %>% 
@@ -1219,11 +1219,11 @@ sp_acc_delay_flight_week <- sp_acc_delay_week_int %>%
   mutate(
     WK_DLY_FLT_RANK = rank(desc(WK_DLY_FLT), ties.method = "max"),
   ) %>% 
-  group_by(PRU_ID) %>% 
+  group_by(ANSP_ID) %>% 
   mutate(
     SP_RANK = paste0(ANSP_CODE, row_number()),
   ) %>% 
-  arrange(PRU_ID, SP_RANK) %>% 
+  arrange(ANSP_ID, SP_RANK) %>% 
   ungroup() %>% 
   select(
     SP_RANK,
@@ -1242,7 +1242,7 @@ sp_acc_delay_y2d_int <- sp_acc_traffic_y2d_int %>%
   mutate(
     Y2D_DLY_RANK = rank(desc(Y2D_AVG_DLY), ties.method = "max"),
     ) %>% 
-  group_by(PRU_ID) %>% 
+  group_by(ANSP_ID) %>% 
   mutate(
     SP_RANK = paste0(ANSP_CODE, row_number()),
     Y2D_DLY_DIF_PREV_YEAR_PERC = if_else(Y2D_AVG_DLY_PY == 0, NA,  Y2D_AVG_DLY /  Y2D_AVG_DLY_PY -1),
@@ -1255,7 +1255,7 @@ sp_acc_delay_y2d_int <- sp_acc_traffic_y2d_int %>%
     Y2D_DLY_FLT_DIF_2019_PERC = if_else(Y2D_DLY_FLT_2019 == 0, NA, Y2D_DLY_FLT / Y2D_DLY_FLT_2019 -1),
     
   ) %>% 
-  arrange(PRU_ID, SP_RANK) %>% 
+  arrange(ANSP_ID, SP_RANK) %>% 
   ungroup()
 
 sp_acc_delay_y2d <- sp_acc_delay_y2d_int %>% 
@@ -1274,11 +1274,11 @@ sp_acc_delay_flight_y2d <- sp_acc_delay_y2d_int %>%
   mutate(
     Y2D_DLY_FLT_RANK = rank(desc(Y2D_DLY_FLT), ties.method = "max"),
   ) %>% 
-  group_by(PRU_ID) %>% 
+  group_by(ANSP_ID) %>% 
   mutate(
     SP_RANK = paste0(ANSP_CODE, row_number()),
   ) %>% 
-  arrange(PRU_ID, SP_RANK) %>% 
+  arrange(ANSP_ID, SP_RANK) %>% 
   ungroup() %>% 
   select(
     SP_RANK,
