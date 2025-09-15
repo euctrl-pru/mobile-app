@@ -62,8 +62,6 @@ mydataframes <- c(
   "st_ao",
   "st_st",
   "st_ap",
-  
-  "sp_traffic_delay",
   NULL
 )
 
@@ -124,3 +122,23 @@ update_base_tables <- function(mydataframe) {
 }
 
 purrr::walk(mydataframes, update_base_tables)
+
+# update base sp table ----
+# the sp table is built with the last days embedded in the query
+mydataframe <- "sp_traffic_delay"
+
+myarchivefile <- paste0(mydataframe, "_day_base.parquet")
+mybackupfile <- paste0(mydataframe, "_day_base_backup.parquet")
+query_y2d <- get(paste0(mydataframe, "_day_base_query"))
+
+file.copy(from = here(archive_dir_raw, myarchivefile), 
+          to = here(archive_dir_raw, "backup", mybackupfile),
+          overwrite = TRUE,
+          copy.mode = TRUE,
+          recursive = FALSE)
+
+# run query
+df <- export_query(query_y2d) 
+
+df %>%  write_parquet(here(archive_dir_raw, myarchivefile))
+print(paste(mydataframe, "base table updated")) 

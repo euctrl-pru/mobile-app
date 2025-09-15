@@ -23,7 +23,7 @@ archive_mode <- FALSE
 
 if (archive_mode) {
   wef <- "2024-01-01"  #included in output
-  til <- "2024-11-17"  #included in output
+  til <- "2025-09-10"  #included in output
   data_day_date <- seq(ymd(wef), ymd(til), by = "day")
 } else {
   data_day_date <- lubridate::today(tzone = "") +  days(-1)
@@ -43,8 +43,8 @@ source(here("..", "mobile-app", "R", "update_app_source_tables_nw.R"))
 stakeholders <- if(!archive_mode) {
   c("nw","st","ao","ap", "sp", NULL) # don't touch this line
   } else {c(
-    # "nw",
-    "st",
+    "nw",
+    # "st",
     # "ao",
     # "ap",
     # "sp",
@@ -165,7 +165,7 @@ if(archive_mode | data_status){
     data_day_date <- data_day_date_temp[[i]]
     # generate and copy data for date sequence ----
     walk(data_day_date, .f = process_app_data)
-    print(data_day_date)
+    print(paste(format(now(), "%H:%M:%S"),data_day_date))
   }
 }
 

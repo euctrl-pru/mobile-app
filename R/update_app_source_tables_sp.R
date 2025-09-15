@@ -41,9 +41,11 @@ import_dataframe <- function(dfname) {
   
   # filter to keep days and airports needed
   df_alldays <- df_base %>% 
-    filter(ANSP_ID %in% list_ansp$ANSP_ID)  
+    filter(ANSP_ID %in% list_ansp$ANSP_ID) 
   
   rm(df_base)
+  
+  df_alldays %>% arrange(ANSP_ID, ENTRY_DATE)
   
   # pre-process data
 
@@ -51,7 +53,7 @@ import_dataframe <- function(dfname) {
     
     df_app <- df_alldays %>% 
       compute(prudence = "lavish") %>%
-      left_join(list_ansp, by = "ANSP_ID") 
+      left_join(list_ansp, by = "ANSP_ID")
   } 
   
   rm(df_alldays)
@@ -67,7 +69,7 @@ sp_traffic_delay <- function() {
   
   df_app <- import_dataframe(mydatasource)
   
-  mydate <- max(df_app$ENTRY_DATE, na.rm = TRUE)
+  mydate <- df_app %>% summarise(max(ENTRY_DATE, na.rm = TRUE)) %>% pull()
   current_year = year(mydate)
   
   #### create date sequence
@@ -124,21 +126,20 @@ sp_traffic_delay <- function() {
   
   ## split table ----
   df_day <- df_day_year %>% 
+    select(-starts_with("TDM_")) %>% 
     mutate(
       ENTRY_DATE_2019 = ENTRY_DATE - days((YEAR-2019)*364+ floor((YEAR - 2019) / 4) * 7),
       ENTRY_DATE_2020 = ENTRY_DATE - days((YEAR-2020)*364+ floor((YEAR - 2020) / 4) * 7),
       ENTRY_DATE_2019_SD = ENTRY_DATE %m-% years(YEAR-2019),
       ENTRY_DATE_PREV_YEAR_SD = ENTRY_DATE %m-% years(1) 
     ) %>% 
-    left_join(select(df_day_year, ANSP_ID, ANSP_NAME, YEAR, ENTRY_DATE, starts_with(c("Y2D"))), by = c("ANSP_ID", "ENTRY_DATE_PREV_YEAR_SD" = "ENTRY_DATE"), suffix = c("","_PREV_YEAR")) %>% 
-    left_join(select(df_day_year, ANSP_ID, ANSP_NAME, YEAR, ENTRY_DATE, starts_with(c("Y2D"))), by = c("ANSP_ID", "ENTRY_DATE_2019_SD" = "ENTRY_DATE"), suffix = c("","_2019")) %>% 
-    left_join(select(df_day_year, ANSP_ID, ANSP_NAME, YEAR, ENTRY_DATE, starts_with(c("DAY", "RW"))), by = c("ANSP_ID", "ENTRY_DATE_2019" = "ENTRY_DATE"), suffix = c("","_2019")) %>% 
-    left_join(select(df_day_year, ANSP_ID, ANSP_NAME, YEAR, ENTRY_DATE, RW_AVG_FLT_DAIO), by = c("ANSP_ID", "ENTRY_DATE_2020" = "ENTRY_DATE"), suffix = c("","_2020")) %>% 
-    collect() %>% 
-    arrange(ANSP_ID, ENTRY_DATE) %>%
+    left_join(select(df_day_year, ANSP_ID, ENTRY_DATE, starts_with(c("Y2D"))), by = c("ANSP_ID", "ENTRY_DATE_PREV_YEAR_SD" = "ENTRY_DATE"), suffix = c("","_PREV_YEAR")) %>% 
+    left_join(select(df_day_year, ANSP_ID, ENTRY_DATE, starts_with(c("Y2D"))), by = c("ANSP_ID", "ENTRY_DATE_2019_SD" = "ENTRY_DATE"), suffix = c("","_2019")) %>% 
+    left_join(select(df_day_year, ANSP_ID, ENTRY_DATE, starts_with(c("DAY", "RW"))), by = c("ANSP_ID", "ENTRY_DATE_2019" = "ENTRY_DATE"), suffix = c("","_2019")) %>% 
+    left_join(select(df_day_year, ANSP_ID, ENTRY_DATE, RW_AVG_FLT_DAIO), by = c("ANSP_ID", "ENTRY_DATE_2020" = "ENTRY_DATE"), suffix = c("","_2020")) %>% 
+    arrange(ANSP_ID, ENTRY_DATE)  %>% 
     group_by(ANSP_ID) %>% 
     mutate(
-      ANSP_CODE = coalesce (ANSP_CODE.x, ANSP_CODE.y),
       # prev week
       ENTRY_DATE_PREV_WEEK = lag(ENTRY_DATE, 7),
       DAY_FLT_DAIO_PREV_WEEK = lag(DAY_FLT_DAIO , 7),

@@ -36,6 +36,8 @@ source(here("..", "mobile-app", "R", "params.R")) # so it can be launched from t
 # common data ----
 source(here("..", "mobile-app", "R", "get_common_data.R")) # so it can be launched from the checkupdates script in grounded aircraft
 
+print(paste("Generating nw json files", format(data_day_date, "%Y-%m-%d"), "..."))
+
 # MAIN PAGE ----
 nw_json_app <- ""
 
@@ -48,7 +50,7 @@ if (exists("nw_billed_per_cz") == FALSE) {nw_billed_per_cz <- get_billing_data()
 # calculate network total
 nw_billing <- nw_billed_per_cz %>%
   group_by(year, month, billing_period_start_date) %>%
-  summarise(total_billing = sum(route_charges)) %>%
+  summarise(total_billing = sum(route_charges), .groups = "drop") %>%
   ungroup()
 
 # extract date parameters
@@ -527,7 +529,8 @@ nw_punct_data_y2d <- nw_punct_data_raw %>%
     Y2D_ARR_PUN_DIF_2019 = Y2D_ARR_PUN_DIF_2019_PERC,
     Y2D_DEP_PUN_DIF_2019 = Y2D_DEP_PUN_DIF_2019_PERC
   ) %>%
-  mutate(INDEX = 1)
+  mutate(INDEX = 1) %>% 
+  ungroup()
 
 # merge day/week and y2d tables
 nw_punct_for_json <- merge(nw_punct_data_d_w, nw_punct_data_y2d, by = "INDEX") %>%
@@ -562,7 +565,8 @@ co2_data_evo_nw <- co2_data_raw %>%
     MM_CO2_DEP = MM_CO2 / MM_TTF
   ) %>%
   arrange(FLIGHT_MONTH) %>%
-  mutate(FLIGHT_MONTH = ceiling_date(as_date(FLIGHT_MONTH), unit = "month") - 1)
+  mutate(FLIGHT_MONTH = ceiling_date(as_date(FLIGHT_MONTH), unit = "month") - 1) %>% 
+  ungroup()
 
 # pull out date parameters
 co2_last_date <- min(max(co2_data_evo_nw$FLIGHT_MONTH, na.rm = TRUE),
@@ -679,6 +683,7 @@ nw_json_app <- paste0(
 )
 
 save_json(nw_json_app, "nw_json_app")
+print(paste(format(now(), "%H:%M:%S"), "nw_json_app"))
 
 
 # GRAPHS -------
@@ -726,6 +731,7 @@ nw_traffic_evo_j <- nw_traffic_evo_long %>% toJSON(., pretty = TRUE)
 
 ### save and archive
 save_json(nw_traffic_evo_j, "nw_traffic_evo_chart_daily")
+print(paste(format(now(), "%H:%M:%S"), "nw_traffic_evo_chart_daily"))
 
 ## delay ----
 nw_delay_raw <- read_xlsx(
@@ -823,6 +829,7 @@ nw_delay_cause_day_long <- cbind(nw_delay_value_day_long, nw_delay_share_day_lon
 #### convert to json and save in data folder and archive
 nw_delay_cause_evo_dy_j <- nw_delay_cause_day_long %>% toJSON(., pretty = TRUE)
 save_json(nw_delay_cause_evo_dy_j, "nw_delay_category_evo_chart_dy")
+print(paste(format(now(), "%H:%M:%S"), "nw_delay_category_evo_chart_dy"))
 
 #### week ----
 nw_delay_cause_wk <- nw_delay_evo %>%
@@ -884,6 +891,7 @@ nw_delay_cause_wk_long <- cbind(nw_delay_value_wk_long, nw_delay_share_wk_long) 
 #### convert to json and save in data folder and archive
 nw_delay_cause_evo_wk_j <- nw_delay_cause_wk_long %>% toJSON(., pretty = TRUE)
 save_json(nw_delay_cause_evo_wk_j, "nw_delay_category_evo_chart_wk")
+print(paste(format(now(), "%H:%M:%S"), "nw_delay_category_evo_chart_wk"))
 
 #### y2d ----
 nw_delay_cause_y2d <- nw_delay_evo %>%
@@ -944,6 +952,7 @@ nw_delay_cause_y2d_long <- cbind(nw_delay_value_y2d_long, nw_delay_share_y2d_lon
 #### convert to json and save in data folder and archive
 nw_delay_cause_evo_y2d_j <- nw_delay_cause_y2d_long %>% toJSON(., pretty = TRUE)
 save_json(nw_delay_cause_evo_y2d_j, "nw_delay_category_evo_chart_y2d")
+print(paste(format(now(), "%H:%M:%S"), "nw_delay_category_evo_chart_y2d"))
 
 
 ### delay per flight per type v1----
@@ -1050,6 +1059,7 @@ nw_delay_flt_day_long <- cbind(nw_delay_flt_value_day_long, nw_delay_flt_share_d
 #### convert to json and save in data folder and archive
 nw_delay_flt_day_j <- nw_delay_flt_day_long %>% toJSON(., pretty = TRUE)
 save_json(nw_delay_flt_day_j, "nw_delay_flt_type_evo_chart_dy")
+print(paste(format(now(), "%H:%M:%S"), "nw_delay_flt_type_evo_chart_dy"))
 
 #### week ----
 nw_delay_flt_wk <- nw_delay_flt_evo %>%
@@ -1097,6 +1107,7 @@ nw_delay_flt_wk_long <- cbind(nw_delay_flt_value_wk_long, nw_delay_flt_share_wk_
 #### convert to json and save in data folder and archive
 nw_delay_flt_wk_j <- nw_delay_flt_wk_long %>% toJSON(., pretty = TRUE)
 save_json(nw_delay_flt_wk_j, "nw_delay_flt_type_evo_chart_wk")
+print(paste(format(now(), "%H:%M:%S"), "nw_delay_flt_type_evo_chart_wk"))
 
 #### y2d ----
 nw_delay_flt_y2d <- nw_delay_flt_evo %>%
@@ -1143,6 +1154,7 @@ nw_delay_flt_y2d_long <- cbind(nw_delay_flt_value_y2d_long, nw_delay_flt_share_y
 #### convert to json and save in data folder and archive
 nw_delay_flt_y2d_j <- nw_delay_flt_y2d_long %>% toJSON(., pretty = TRUE)
 save_json(nw_delay_flt_y2d_j, "nw_delay_flt_type_evo_chart_y2d")
+print(paste(format(now(), "%H:%M:%S"), "nw_delay_flt_type_evo_chart_y2d"))
 
 ### delay per flight split ert/apt ----
 #### En-route ----
@@ -1186,7 +1198,7 @@ nw_delay_ERT_flt_value_day_long <- nw_delay_flt_ERT_evo %>%
 #### convert to json and save in data folder and archive
 nw_delay_ERT_flt_value_day_long_j <- nw_delay_ERT_flt_value_day_long %>% toJSON(., pretty = TRUE)
 save_json(nw_delay_ERT_flt_value_day_long_j, "nw_delay_ert_per_flight_evo_chart")
-
+print(paste(format(now(), "%H:%M:%S"), "nw_delay_ert_per_flight_evo_chart"))
 
 
 #### Airport ----
@@ -1237,6 +1249,7 @@ nw_delay_APT_flt_value_day_long <- nw_delay_flt_APT_evo_app %>%
 #### convert to json and save in data folder and archive
 nw_delay_APT_flt_value_day_long_j <- nw_delay_APT_flt_value_day_long %>% toJSON(., pretty = TRUE)
 save_json(nw_delay_APT_flt_value_day_long_j, "nw_delay_apt_per_flight_evo_chart")
+print(paste(format(now(), "%H:%M:%S"), "nw_delay_apt_per_flight_evo_chart"))
 
 
 
@@ -1270,6 +1283,7 @@ nw_punct_evo_app_v2_long <- nw_punct_evo_app %>%
 
 nw_punct_evo_v2_j <- nw_punct_evo_app_v2_long %>% toJSON(., pretty = TRUE)
 save_json(nw_punct_evo_v2_j, "nw_punct_evo_chart")
+print(paste(format(now(), "%H:%M:%S"), "nw_punct_evo_chart"))
 
 ## billing ----
 nw_billing_evo <- nw_billing %>%
@@ -1323,6 +1337,7 @@ nw_billing_evo_v2_long <- nw_billing_evo %>%
 
 nw_billing_evo_v2_j <- nw_billing_evo_v2_long %>% toJSON(., pretty = TRUE)
 save_json(nw_billing_evo_v2_j, "nw_billing_evo_chart")
+print(paste(format(now(), "%H:%M:%S"), "nw_billing_evo_chart"))
 
 
 ## co2 emissions ----
@@ -1354,7 +1369,8 @@ nw_co2_evo <- co2_data_raw %>%
     FLIGHT_MONTH,
     CO2_IDX,
     DEP_IDX
-  )
+  ) %>% 
+  ungroup()
 
 column_names <- c(
   "month",
@@ -1372,6 +1388,7 @@ nw_co2_evo_v2_long <- nw_co2_evo %>%
 
 nw_co2_evo_v2_j <- nw_co2_evo_v2_long %>% toJSON(., pretty = TRUE)
 save_json(nw_co2_evo_v2_j, "nw_co2_evo_chart")
+print(paste(format(now(), "%H:%M:%S"), "nw_co2_evo_chart"))
 
 ## traffic forecast ----
 ### input data
@@ -1431,6 +1448,7 @@ nw_forecast_graph_daio_nest <- nw_forecast_graph_daio %>%
 nw_forecast_graph_daio_nest_j <- nw_forecast_graph_daio_nest %>% toJSON(., pretty = TRUE)
 
 save_json(nw_forecast_graph_daio_nest_j, "nw_traffic_forecast_chart")
+print(paste(format(now(), "%H:%M:%S"), "nw_traffic_forecast_chart"))
 
 
 

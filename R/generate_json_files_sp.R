@@ -88,6 +88,82 @@ sp_json_app <-""
 # ____________________________________________________________________________________________
 
 #### Traffic data ----
+##############################################
+mydataframe <- "sp_traffic_day_raw"
+stakeholder <- "sp"
+
+sp_traffic_data_new <-  read_parquet(here(archive_dir_raw, stakeholder, paste0(mydataframe, ".parquet"))) %>% 
+  filter(YEAR == data_day_year)
+
+sp_traffic_data_new %>% summarise(max(ENTRY_DATE))
+
+sp_traffic_calc_new <- sp_traffic_data_new %>%
+  mutate(
+    DY_TFC_DIF_PREV_YEAR_PERC = if_else(DAY_FLT_DAIO_PREV_YEAR == 0 | is.na(DAY_FLT_DAIO_PREV_YEAR),
+                                        NA,
+                                        DAY_FLT_DAIO / DAY_FLT_DAIO_PREV_YEAR -1),
+    DY_TFC_DIF_2019_PERC = if_else(DAY_FLT_DAIO_2019 == 0 | is.na(DAY_FLT_DAIO_2019),
+                                   NA,
+                                   DAY_FLT_DAIO / DAY_FLT_DAIO_2019 -1),
+    
+    WK_TFC_DIF_PREV_YEAR_PERC = if_else(RW_AVG_FLT_DAIO_PREV_YEAR == 0 | is.na(RW_AVG_FLT_DAIO_PREV_YEAR),
+                                        NA,
+                                        RW_AVG_FLT_DAIO / RW_AVG_FLT_DAIO_PREV_YEAR -1),
+    WK_TFC_DIF_2019_PERC = if_else(RW_AVG_FLT_DAIO_2019 == 0 | is.na(RW_AVG_FLT_DAIO_2019),
+                                   NA,
+                                   RW_AVG_FLT_DAIO / RW_AVG_FLT_DAIO_2019 -1),
+    
+    Y2D_TFC_DIF_PREV_YEAR_PERC = if_else(Y2D_FLT_DAIO_PREV_YEAR == 0 | is.na(Y2D_FLT_DAIO_PREV_YEAR),
+                                         NA,
+                                         Y2D_FLT_DAIO_YEAR / Y2D_FLT_DAIO_PREV_YEAR -1),
+    Y2D_TFC_DIF_2019_PERC = if_else(Y2D_FLT_DAIO_2019 == 0 | is.na(Y2D_FLT_DAIO_2019),
+                                    NA,
+                                    Y2D_FLT_DAIO_YEAR / Y2D_FLT_DAIO_2019 -1)
+  )
+
+sp_traffic_last_day_new <- sp_traffic_calc_new %>%
+  filter(ENTRY_DATE == min(data_day_date,
+                           max(LAST_DATA_DAY, na.rm = TRUE),
+                           na.rm = TRUE)
+  ) %>%
+  arrange(ANSP_NAME, ENTRY_DATE)
+
+sp_traffic_for_json_new <- sp_traffic_last_day_new %>%
+  ### rank calculation
+  mutate(
+    DY_TFC_RANK = min_rank(desc(DAY_FLT_DAIO)),
+    WK_TFC_RANK = min_rank(desc(RW_AVG_FLT_DAIO)),
+    Y2D_TFC_RANK = min_rank(desc(Y2D_AVG_FLT_DAIO_YEAR)),
+    TFC_RANK_TEXT = "*Top rank for highest.",
+    
+  ) %>%
+  select(
+    ANSP_NAME,
+    ANSP_CODE,
+    FLIGHT_DATE = ENTRY_DATE,
+    
+    DY_TFC_RANK,
+    DY_TFC = DAY_FLT_DAIO,
+    DY_TFC_DIF_PREV_YEAR_PERC,
+    DY_TFC_DIF_2019_PERC,
+    
+    WK_TFC_RANK,
+    WK_TFC_AVG_ROLLING = RW_AVG_FLT_DAIO,
+    WK_TFC_DIF_PREV_YEAR_PERC,
+    WK_TFC_DIF_2019_PERC,
+    
+    Y2D_TFC_RANK,
+    Y2D_TFC = Y2D_FLT_DAIO_YEAR,
+    Y2D_TFC_AVG = Y2D_AVG_FLT_DAIO_YEAR,
+    Y2D_TFC_DIF_PREV_YEAR_PERC,
+    Y2D_TFC_DIF_2019_PERC
+  )
+
+
+
+
+##############################################
+
 sp_traffic_data <-  read_xlsx(
     path  = fs::path_abs(
       str_glue(sp_base_file),
@@ -160,6 +236,8 @@ sp_traffic_for_json <- sp_traffic_last_day %>%
     Y2D_TFC_DIF_PREV_YEAR_PERC,
     Y2D_TFC_DIF_2019_PERC
   )
+
+all.equal(sp_traffic_for_json_new, sp_traffic_for_json)
 
 #### Delay data ----
 ##### import ----
