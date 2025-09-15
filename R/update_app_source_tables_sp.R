@@ -85,12 +85,10 @@ sp_traffic_delay <- function() {
     mutate(YEAR = year(ENTRY_DATE))
   
   df_day_year <- days_sp %>%
-    left_join(df_app, by = c("ENTRY_DATE", "ANSP_ID")) %>% 
+    left_join(df_app, by = c("ENTRY_DATE", "ANSP_ID","ANSP_NAME", "ANSP_CODE")) %>% 
     arrange(ANSP_ID, ENTRY_DATE) %>%
     group_by(ANSP_ID)  %>% 
     mutate(
-      ANSP_NAME = ANSP_NAME.x,
-      ANSP_CODE = ANSP_CODE.x,
       DAY_FLT_DAIO = if_else(ENTRY_DATE >mydate, NA, coalesce(FLT_DAIO, 0)), 
       
       TDM = coalesce(TDM, 0),
@@ -113,6 +111,8 @@ sp_traffic_delay <- function() {
       TDM_ERT_V = coalesce(TDM_ERT_V, 0),
       TDM_ERT_W = coalesce(TDM_ERT_W, 0),
       TDM_ERT_NA = coalesce(TDM_ERT_NA, 0),
+      
+      TDF_ERT = coalesce(TDF_ERT, 0),
       
       #rolling week
       RW_AVG_FLT_DAIO = rollsum(DAY_FLT_DAIO, 7, fill = NA, align = "right") / 7

@@ -211,15 +211,60 @@ sp_traffic_for_json <- sp_traffic_last_day %>%
 
 #### Delay data ----
 ##### import ----
-sp_delay_data <-  read_xlsx(
-  path  = fs::path_abs(
-    str_glue(sp_base_file),
-    start = sp_base_dir),
-  sheet = "ansp_delay",
-  range = cell_limits(c(1, 1), c(NA, NA))) %>%
-  as_tibble() %>%
-  mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
-  left_join(list_ansp, by = c("ANSP_NAME"))
+mydataframe <- "sp_delay_day_raw"
+stakeholder <- "sp"
+
+sp_delay_data <-  read_parquet(here(archive_dir_raw, stakeholder, paste0(mydataframe, ".parquet"))) %>% 
+  select(
+    ANSP_NAME,
+    ANSP_ID,
+    ANSP_CODE,
+    YEAR,
+    ENTRY_DATE,
+    TDM,
+    TDM_ERT,
+    TDF_ERT,
+    TDM_15_ERT,
+    TDF_15_ERT,
+    TDM_ERT_A,
+    TDM_ERT_C,
+    TDM_ERT_D,
+    TDM_ERT_E,
+    TDM_ERT_G,
+    TDM_ERT_I,
+    TDM_ERT_M,
+    TDM_ERT_N,
+    TDM_ERT_O,
+    TDM_ERT_P,
+    TDM_ERT_R,
+    TDM_ERT_S,
+    TDM_ERT_T,	
+    TDM_ERT_V,
+    TDM_ERT_W,
+    TDM_ERT_NA,
+    FLT_DAIO = DAY_FLT_DAIO,
+  ) %>% 
+  arrange(ANSP_NAME, ENTRY_DATE)
+
+# old
+# sp_delay_data <-  read_xlsx(
+#   path  = fs::path_abs(
+#     str_glue(sp_base_file),
+#     start = sp_base_dir),
+#   sheet = "ansp_delay",
+#   range = cell_limits(c(1, 1), c(NA, NA))) %>%
+#   as_tibble() %>%
+#   mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
+#   left_join(list_ansp, by = c("ANSP_NAME", "ANSP_ID")) %>% 
+#   select(-c(
+#     MONTH,
+#     WEEK,
+#     WEEK_NB_YEAR,
+#     DAY_TYPE,
+#     DAY_OF_WEEK,
+#   )) %>% 
+#   filter(ENTRY_DATE >= ymd("20181224")) %>% 
+#   arrange(ANSP_NAME, ENTRY_DATE)
 
 ##### calc ----
 sp_delay_calc <-  sp_delay_data %>%
