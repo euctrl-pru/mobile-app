@@ -23,6 +23,9 @@ source(here("..", "mobile-app", "R", "params.R"))
 # Dimensions ----
 source(here("..", "mobile-app", "R", "dimension_queries.R"))
 
+# queries ----
+source(here("..", "mobile-app", "R", "queries_nw.R")) 
+
 if (!exists("dim_ansp")) {
   dim_ansp <- export_query(dim_ansp_query) 
 }
@@ -983,9 +986,11 @@ save_json(sp_delayed_flights_evo_j, "sp_delayed_flights_evo_chart_daily")
 ## TRAFFIC ----
 ### ACC ----
 #### day ----
-mydataframe <- "nw_acc_delay_day_raw"
-myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
-stakeholder <- str_sub(mydataframe, 1, 2)
+if(!exists("nw_acc_delay_day_raw")) {
+  nw_acc_delay_day_raw <- export_query(query_nw_acc_delay_day_raw(format(data_day_date, "%Y-%m%-%d")))
+}
+
+# all.equal(df, nw_acc_delay_day_raw)
 
 if (archive_mode) {
   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)

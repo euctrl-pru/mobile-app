@@ -53,7 +53,7 @@ stakeholders <- if(!archive_mode) {
 }
 
 # check data status ----
-files_to_read <- setdiff(stakeholders, c("ap", "ao", "st")) %>%
+files_to_read <- setdiff(stakeholders, c("ap", "ao", "st", "sp")) %>%
   compact() %>%  # Remove NULLs
   map_chr(~ here(get(paste0(.x, "_base_dir")), get(paste0(.x, "_base_file"))))
 
