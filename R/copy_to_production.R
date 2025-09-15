@@ -37,6 +37,7 @@ source(here("..", "mobile-app", "R", "update_app_source_tables_ap.R"))
 source(here("..", "mobile-app", "R", "update_app_source_tables_ao.R"))
 source(here("..", "mobile-app", "R", "update_app_source_tables_st.R"))
 source(here("..", "mobile-app", "R", "update_app_source_tables_nw.R"))
+source(here("..", "mobile-app", "R", "update_app_source_tables_sp.R"))
 }
 
 # set the stakeholders you want to generate when using archive mode

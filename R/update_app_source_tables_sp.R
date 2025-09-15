@@ -80,7 +80,7 @@ sp_traffic_delay <- function() {
     select(ENTRY_DATE = value) 
   
   #### combine with ansp list to get full sequence
-  days_sp <- crossing(days_sequence, select(list_ansp, ANSP_ID)) %>% 
+  days_sp <- crossing(days_sequence, select(list_ansp, ANSP_ID, ANSP_NAME, ANSP_CODE)) %>% 
     arrange(ANSP_ID, ENTRY_DATE)%>% 
     mutate(YEAR = year(ENTRY_DATE))
   
@@ -89,7 +89,9 @@ sp_traffic_delay <- function() {
     arrange(ANSP_ID, ENTRY_DATE) %>%
     group_by(ANSP_ID)  %>% 
     mutate(
-      DAY_FLT_DAIO = coalesce(FLT_DAIO, 0), 
+      ANSP_NAME = ANSP_NAME.x,
+      ANSP_CODE = ANSP_CODE.x,
+      DAY_FLT_DAIO = if_else(ENTRY_DATE >mydate, NA, coalesce(FLT_DAIO, 0)), 
       
       TDM = coalesce(TDM, 0),
       TDM_ERT = coalesce(TDM_ERT, 0),
@@ -116,6 +118,7 @@ sp_traffic_delay <- function() {
       RW_AVG_FLT_DAIO = rollsum(DAY_FLT_DAIO, 7, fill = NA, align = "right") / 7
 
     )  %>% 
+    ungroup() %>% 
     group_by(ANSP_ID, YEAR) %>% 
     mutate(
       # year to date
@@ -147,9 +150,9 @@ sp_traffic_delay <- function() {
       
       # dif prev week
       DAY_FLT_DAIO_DIF_PREV_WEEK = coalesce(DAY_FLT_DAIO,0) - coalesce(DAY_FLT_DAIO_PREV_WEEK, 0),
-      DAY_FLT_DAIO_DIF_PREV_WEEK_PERC = if_else(DAY_FLT_DAIO_PREV_WEEK == 0, NA, DAY_FLT_DAIO/ DAY_FLT_DAIO_PREV_WEEK) -1,
+      DAY_FLT_DAIO_DIF_PREV_WEEK_PERC = if_else(DAY_FLT_DAIO_PREV_WEEK == 0, NA, DAY_FLT_DAIO/ DAY_FLT_DAIO_PREV_WEEK -1 ),
       
-      RW_TFC_DIF_PREV_WEEK_PERC = if_else(RW_AVG_FLT_DAIO_PREV_WEEK == 0, NA, RW_AVG_FLT_DAIO/ RW_AVG_FLT_DAIO_PREV_WEEK)-1,
+      RW_TFC_DIF_PREV_WEEK_PERC = if_else(RW_AVG_FLT_DAIO_PREV_WEEK == 0, NA, RW_AVG_FLT_DAIO/ RW_AVG_FLT_DAIO_PREV_WEEK -1 ),
       
       # prev year
       ENTRY_DATE_PREV_YEAR = lag(ENTRY_DATE, 364),
@@ -160,9 +163,9 @@ sp_traffic_delay <- function() {
 
       # dif prev year
       DAY_FLT_DAIO_DIF_PREV_YEAR = coalesce(DAY_FLT_DAIO, 0) - coalesce(DAY_FLT_DAIO_PREV_YEAR, 0),
-      DAY_FLT_DAIO_DIF_PREV_YEAR_PERC = if_else(DAY_FLT_DAIO_PREV_YEAR == 0, NA, DAY_FLT_DAIO/ DAY_FLT_DAIO_PREV_YEAR)-1,
-      RW_FLT_DAIO_DIF_PREV_YEAR_PERC = if_else(RW_AVG_FLT_DAIO_PREV_YEAR == 0, NA, RW_AVG_FLT_DAIO/ RW_AVG_FLT_DAIO_PREV_YEAR)-1,
-      Y2D_FLT_DAIO_DIF_PREV_YEAR_PERC = if_else(Y2D_AVG_FLT_DAIO_PREV_YEAR == 0, NA, Y2D_AVG_FLT_DAIO_YEAR/ Y2D_AVG_FLT_DAIO_PREV_YEAR)-1,
+      DAY_FLT_DAIO_DIF_PREV_YEAR_PERC = if_else(DAY_FLT_DAIO_PREV_YEAR == 0, NA, DAY_FLT_DAIO/ DAY_FLT_DAIO_PREV_YEAR-1),
+      RW_FLT_DAIO_DIF_PREV_YEAR_PERC = if_else(RW_AVG_FLT_DAIO_PREV_YEAR == 0, NA, RW_AVG_FLT_DAIO/ RW_AVG_FLT_DAIO_PREV_YEAR-1),
+      Y2D_FLT_DAIO_DIF_PREV_YEAR_PERC = if_else(Y2D_AVG_FLT_DAIO_PREV_YEAR == 0, NA, Y2D_AVG_FLT_DAIO_YEAR/ Y2D_AVG_FLT_DAIO_PREV_YEAR-1),
       
       # 2020
       ENTRY_DATE_2020 = ENTRY_DATE_2020,
@@ -177,9 +180,9 @@ sp_traffic_delay <- function() {
       
       # dif 2019
       DAY_FLT_DAIO_DIF_2019 = coalesce(DAY_FLT_DAIO, 0) - coalesce(DAY_FLT_DAIO_2019, 0),
-      DAY_FLT_DAIO_DIF_2019_PERC = if_else(DAY_FLT_DAIO_2019 == 0, NA, DAY_FLT_DAIO/ DAY_FLT_DAIO_2019)-1,
-      RW_FLT_DAIO_DIF_2019_PERC = if_else(RW_AVG_FLT_DAIO_2019 == 0, NA, RW_AVG_FLT_DAIO/ RW_AVG_FLT_DAIO_2019)-1,
-      Y2D_FLT_DAIO_DIF_2019_PERC = if_else(Y2D_AVG_FLT_DAIO_2019 == 0, NA, Y2D_AVG_FLT_DAIO_YEAR/ Y2D_AVG_FLT_DAIO_2019)-1,
+      DAY_FLT_DAIO_DIF_2019_PERC = if_else(DAY_FLT_DAIO_2019 == 0, NA, DAY_FLT_DAIO/ DAY_FLT_DAIO_2019-1),
+      RW_FLT_DAIO_DIF_2019_PERC = if_else(RW_AVG_FLT_DAIO_2019 == 0, NA, RW_AVG_FLT_DAIO/ RW_AVG_FLT_DAIO_2019 -1 ),
+      Y2D_FLT_DAIO_DIF_2019_PERC = if_else(Y2D_AVG_FLT_DAIO_2019 == 0, NA, Y2D_AVG_FLT_DAIO_YEAR/ Y2D_AVG_FLT_DAIO_2019 -1 ),
 
       LAST_DATA_DAY = mydate
     ) %>% 
@@ -193,7 +196,7 @@ sp_traffic_delay <- function() {
       DAY_FLT_DAIO_DIF_PREV_YEAR = if_else(ANSP_ID == 46 & YEAR < 2025, NA, DAY_FLT_DAIO_DIF_PREV_YEAR),
       DAY_FLT_DAIO_DIF_2019 = if_else(ANSP_ID == 46, NA, DAY_FLT_DAIO_DIF_2019),
       DAY_FLT_DAIO_DIF_PREV_WEEK_PERC = if_else(ANSP_ID == 46 & YEAR < 2024, NA, DAY_FLT_DAIO_DIF_PREV_WEEK_PERC),
-      DAY_FLT_DAIO_DIF_PREV_YEAR_PERC = if_else(ANSP_ID == 46 & YEAR < 2025, NA, DAY_FLT_DAIO_DIF_PREV_WEEK_PERC),
+      DAY_FLT_DAIO_DIF_PREV_YEAR_PERC = if_else(ANSP_ID == 46 & YEAR < 2025, NA, DAY_FLT_DAIO_DIF_PREV_YEAR_PERC),
       DAY_FLT_DAIO_DIF_2019_PERC = if_else(ANSP_ID == 46, NA, DAY_FLT_DAIO_DIF_2019_PERC),
       
       RW_AVG_FLT_DAIO = if_else(ANSP_ID == 46 & YEAR < 2024, NA, RW_AVG_FLT_DAIO),
@@ -204,14 +207,14 @@ sp_traffic_delay <- function() {
       RW_FLT_DAIO_DIF_PREV_YEAR_PERC = if_else(ANSP_ID == 46 & YEAR < 2025, NA, RW_FLT_DAIO_DIF_PREV_YEAR_PERC),
       RW_FLT_DAIO_DIF_2019_PERC = if_else(ANSP_ID == 46, NA, RW_FLT_DAIO_DIF_2019_PERC),
       
-      Y2D_FLT_DAIO_YEAR = if_else(ANSP_ID == 46 & YEAR < 2024, NA, RW_AVG_FLT_DAIO_PREV_WEEK),
-      Y2D_FLT_DAIO_PREV_YEAR = if_else(ANSP_ID == 46 & YEAR < 2025, NA, RW_AVG_FLT_DAIO_PREV_WEEK),
-      Y2D_FLT_DAIO_2019 = if_else(ANSP_ID == 46, NA, RW_AVG_FLT_DAIO_PREV_WEEK),
-      Y2D_AVG_FLT_DAIO_YEAR = if_else(ANSP_ID == 46 & YEAR < 2024, NA, RW_AVG_FLT_DAIO_PREV_WEEK),
-      Y2D_AVG_FLT_DAIO_PREV_YEAR = if_else(ANSP_ID == 46 & YEAR < 2025, NA, RW_AVG_FLT_DAIO_PREV_WEEK),
-      Y2D_AVG_FLT_DAIO_2019 = if_else(ANSP_ID == 46, NA, RW_AVG_FLT_DAIO_PREV_WEEK),
-      Y2D_FLT_DAIO_DIF_PREV_YEAR_PERC = if_else(ANSP_ID == 46 & YEAR < 2025, NA, RW_AVG_FLT_DAIO_PREV_WEEK),
-      Y2D_FLT_DAIO_DIF_2019_PERC = if_else(ANSP_ID == 46, NA, RW_AVG_FLT_DAIO_PREV_WEEK),
+      Y2D_FLT_DAIO_YEAR = if_else(ANSP_ID == 46 & YEAR < 2024, NA, Y2D_FLT_DAIO_YEAR),
+      Y2D_FLT_DAIO_PREV_YEAR = if_else(ANSP_ID == 46 & YEAR < 2025, NA, Y2D_FLT_DAIO_PREV_YEAR),
+      Y2D_FLT_DAIO_2019 = if_else(ANSP_ID == 46, NA, Y2D_FLT_DAIO_2019),
+      Y2D_AVG_FLT_DAIO_YEAR = if_else(ANSP_ID == 46 & YEAR < 2024, NA, Y2D_AVG_FLT_DAIO_YEAR),
+      Y2D_AVG_FLT_DAIO_PREV_YEAR = if_else(ANSP_ID == 46 & YEAR < 2025, NA, Y2D_AVG_FLT_DAIO_PREV_YEAR),
+      Y2D_AVG_FLT_DAIO_2019 = if_else(ANSP_ID == 46, NA, Y2D_AVG_FLT_DAIO_2019),
+      Y2D_FLT_DAIO_DIF_PREV_YEAR_PERC = if_else(ANSP_ID == 46 & YEAR < 2025, NA, Y2D_FLT_DAIO_DIF_PREV_YEAR_PERC),
+      Y2D_FLT_DAIO_DIF_2019_PERC = if_else(ANSP_ID == 46, NA, Y2D_FLT_DAIO_DIF_2019_PERC),
       
     ) %>% 
     select(
@@ -261,7 +264,8 @@ sp_traffic_delay <- function() {
     arrange(ANSP_NAME, ENTRY_DATE)
   
   mydatafile <- paste0("sp_delay_day_raw.parquet")
-  df_day_year %>% write_parquet(here(archive_dir_raw, stakeholder, mydatafile))
+  df_day_year %>% filter(ENTRY_DATE <= mydate) %>% 
+    write_parquet(here(archive_dir_raw, stakeholder, mydatafile))
   
   mydatafile <- paste0("sp_traffic_day_raw.parquet")
   df_day %>% write_parquet(here(archive_dir_raw, stakeholder, mydatafile))
@@ -270,50 +274,6 @@ sp_traffic_delay <- function() {
   
   print(paste(format(now(), "%H:%M:%S"), mydataframe, mydate))
   
-  # test <- df_day %>% filter(YEAR == 2024) %>% 
-  #   filter(ENTRY_DATE >= ymd(20240106)) # %>%
-  #   # filter(AO_GRP_CODE == 'AEA') %>%
-  #   # select(AO_GRP_CODE, ENTRY_DATE,ENTRY_DATE_PREV_YEAR, ENTRY_DATE_2019, Y2D_TFC_YEAR,	Y2D_TFC_PREV_YEAR,	Y2D_TFC_2019)
-  # 
-  # 
-  # test %>% write_csv(here(archive_dir_raw,"test.csv"))
-  
-  # # dcheck
-  # dfc <- read_xlsx(
-  #   path  = fs::path_abs(
-  #     str_glue(ao_base_file),
-  #     start = ao_base_dir),
-  #   sheet = "ao_traffic_delay",
-  #   range = cell_limits(c(1, 1), c(NA, NA))) |>
-  #   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-  # 
-  # dfc <- read_csv(here(archive_dir_raw, stakeholder, "20241231_ao_traffic_delay_raw.csv"), show_col_types = FALSE)
-  # 
-  # df <- dfc %>% arrange(AO_GRP_CODE, ENTRY_DATE) %>%
-  #   filter(YEAR == 2024) %>% 
-  #   filter(ENTRY_DATE >= ymd(20240106))
-  #   # filter(AO_GRP_CODE == 'AEA') %>%
-  #   # select(AO_GRP_CODE, ENTRY_DATE,ENTRY_DATE_PREV_YEAR, ENTRY_DATE_2019, Y2D_TFC_YEAR,	Y2D_TFC_PREV_YEAR,	Y2D_TFC_2019)
-  
-  
-  # for (i in 1:nrow(list_ao_group)) {
-  #   df1 <- df %>% filter(AO_GRP_CODE == list_ao_group$AO_GRP_CODE[i])
-  # 
-  #   df_day1 <- test %>% filter(AO_GRP_CODE == list_ao_group$AO_GRP_CODE[i])
-  # 
-  #   # print(paste(list_ao_group$AO_GRP_CODE[i], all.equal(df1, df_day1)))
-  #   # nrow(df1)
-  #   for (j in 1:nrow(df1)) {
-  #     for (t in 14:112){
-  #       if (((coalesce(df1[[j,t]],0) - coalesce(df_day1[[j,t]],0))<10^-8) == FALSE) {
-  #         print(paste(t,df1[[j,1]], df1[[j,9]], (df1[[j,t]] - df_day1[[j,t]])<10^-8))
-  #         break}
-  #       # print(paste(t,df1[[j,1]], df1[[j,9]], (df1[[j,t]] - df_day1[[j,t]])<10^-8))
-  #     }
-  #   }
-  #   print(paste(t,df1[[j,1]], df1[[j,9]], (df1[[j,t]] - df_day1[[j,t]])<10^-8))
-  #   
-  # }
 }
 
 # ao st des ----
@@ -631,7 +591,3 @@ ao_st_des <- function(mydate =  current_day) {
 
 sp_traffic_delay()
 # purrr::walk(current_day, ao_st_des)
-# purrr::walk(current_day, ao_ap_dep)
-# purrr::walk(current_day, ao_ap_pair)
-# purrr::walk(current_day, ao_ap_arr_delay)
-
