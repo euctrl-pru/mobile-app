@@ -2651,10 +2651,10 @@ nw_ap_rank_data_j <- nw_ap_rank_data %>% toJSON(., pretty = TRUE)
 save_json(nw_ap_rank_data_j, "nw_apt_ranking_delay")
 
 ## ACC delay ----
-df <- export_query(query_nw_acc_delay_day_raw(format(data_day_date, "%Y-%m%-%d")))
+nw_acc_delay_day_raw <- export_query(query_nw_acc_delay_day_raw(format(data_day_date, "%Y-%m%-%d")))
 
 ### day ----
-nw_acc_delay_day_all <- assign(mydataframe, df) %>%
+nw_acc_delay_day_all <- nw_acc_delay_day_raw %>%
   left_join(distinct(acc, Name, ICAO_code), by = c("UNIT_CODE" = "ICAO_code")) %>% 
   rename(NAME = Name) %>%
   arrange(desc(DLY_ER), NAME) %>%
