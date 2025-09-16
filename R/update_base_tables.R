@@ -118,7 +118,7 @@ update_base_tables <- function(mydataframe) {
   # write new updated table
   df_updated %>% write_parquet(here(archive_dir_raw, myarchivefile))
  
-  print(paste(mydataframe, "base table updated")) 
+  print(paste(format(now(), "%H:%M:%S"), mydataframe, "base table updated")) 
 }
 
 purrr::walk(mydataframes, update_base_tables)
@@ -141,4 +141,5 @@ file.copy(from = here(archive_dir_raw, myarchivefile),
 df <- export_query(query_y2d) 
 
 df %>%  write_parquet(here(archive_dir_raw, myarchivefile))
-print(paste(mydataframe, "base table updated")) 
+print(paste(format(now(), "%H:%M:%S"), mydataframe, "base table updated")) 
+print(" ") 

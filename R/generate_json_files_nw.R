@@ -1451,7 +1451,6 @@ save_json(nw_forecast_graph_daio_nest_j, "nw_traffic_forecast_chart")
 print(paste(format(now(), "%H:%M:%S"), "nw_traffic_forecast_chart"))
 
 
-
 # RANKING TABLES ----
 ## Airline traffic ----
 ### day ----
@@ -1782,6 +1781,7 @@ nw_ao_data <- nw_ao_data %>%
 ### covert to json and save in app data folder and archive ----
 nw_ao_data_j <- nw_ao_data %>% toJSON(., pretty = TRUE)
 save_json(nw_ao_data_j, "nw_ao_ranking_traffic")
+print(paste(format(now(), "%H:%M:%S"), "nw_ao_ranking_traffic"))
 
 
 ## Airport traffic ----
@@ -2102,6 +2102,7 @@ nw_ap_data <- nw_ap_data %>%
 ### covert to json and save in app data folder and archive ----
 nw_ap_data_j <- nw_ap_data %>% toJSON(., pretty = TRUE)
 save_json(nw_ap_data_j, "nw_apt_ranking_traffic")
+print(paste(format(now(), "%H:%M:%S"), "nw_apt_ranking_traffic"))
 
 ## Country traffic DAI ----
 ### day ----
@@ -2442,6 +2443,7 @@ nw_st_dai_data <- nw_st_dai_data %>%
 ### covert to json and save in app data folder and archive ----
 nw_st_dai_data_j <- nw_st_dai_data %>% toJSON(., pretty = TRUE)
 save_json(nw_st_dai_data_j, "nw_ctry_ranking_traffic_DAI")
+print(paste(format(now(), "%H:%M:%S"), "nw_ctry_ranking_traffic_DAI"))
 
 
 ## Airport delay -----
@@ -2649,6 +2651,7 @@ nw_ap_rank_data <- nw_ap_rank_data %>%
 ### covert to json and save in app data folder and archive ----
 nw_ap_rank_data_j <- nw_ap_rank_data %>% toJSON(., pretty = TRUE)
 save_json(nw_ap_rank_data_j, "nw_apt_ranking_delay")
+print(paste(format(now(), "%H:%M:%S"), "nw_apt_ranking_delay"))
 
 ## ACC delay ----
 nw_acc_delay_day_raw <- export_query(query_nw_acc_delay_day_raw(format(data_day_date, "%Y-%m%-%d")))
@@ -2912,6 +2915,7 @@ nw_acc_delay_data <- nw_acc_delay_data %>%
 ### covert to json and save in app data folder and archive ----
 nw_acc_delay_data_j <- nw_acc_delay_data %>% toJSON(., pretty = TRUE)
 save_json(nw_acc_delay_data_j, "nw_acc_ranking_delay")
+print(paste(format(now(), "%H:%M:%S"), "nw_acc_ranking_delay"))
 
 ## Country delay ----
 ### day ----
@@ -3177,6 +3181,7 @@ nw_st_rank_delay <- nw_st_rank_delay %>%
 ### covert to json and save in app data folder and archive ----
 nw_st_rank_delay_j <- nw_st_rank_delay %>% toJSON(., pretty = TRUE)
 save_json(nw_st_rank_delay_j, "nw_ctry_ranking_delay")
+print(paste(format(now(), "%H:%M:%S"), "nw_ctry_ranking_delay"))
 
 ## Airport punctuality ----
 if(exists("nw_apt_punct_raw") == FALSE) {
@@ -3422,6 +3427,7 @@ nw_apt_punct_data <- nw_apt_punct_data %>%
 ### covert to json and save in app data folder and archive ----
 nw_apt_punct_data_j <- nw_apt_punct_data %>% toJSON(., pretty = TRUE)
 save_json(nw_apt_punct_data_j, "nw_apt_ranking_punctuality")
+print(paste(format(now(), "%H:%M:%S"), "nw_apt_ranking_punctuality"))
 
 ## Country punctuality ----
 if(exists("st_punct_raw") == FALSE) {
@@ -3691,6 +3697,7 @@ nw_st_punct_data <- nw_st_punct_data %>%
 ### covert to json and save in app data folder and archive ----
 nw_st_punct_data_j <- nw_st_punct_data %>% toJSON(., pretty = TRUE)
 save_json(nw_st_punct_data_j, "nw_ctry_ranking_punctuality")
+print(paste(format(now(), "%H:%M:%S"), "nw_ctry_ranking_punctuality"))
 
 
 # MAPS ----
@@ -3762,3 +3769,6 @@ nw_acc_delay_map_j <- nw_acc_delay_map %>% toJSON(., pretty = TRUE)
 
 ### save and archive
 save_json(nw_acc_delay_map_j, "nw_acc_delay_map")
+print(paste(format(now(), "%H:%M:%S"), "nw_acc_delay_map"))
+
+print(" ")
