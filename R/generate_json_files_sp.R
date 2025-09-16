@@ -367,29 +367,27 @@ sp_delay_calc <-  sp_delay_data %>%
                                    NA, WK_DLY_AVG_ROLLING/WK_DLY_AVG_ROLLING_2019 -1),
     WK_DELAYED_TFC_PERC_DIF_2019 = WK_DELAYED_TFC_PERC - WK_DELAYED_TFC_PERC_2019,
     WK_DELAYED_TFC_15_PERC_DIF_2019 = WK_DELAYED_TFC_15_PERC - WK_DELAYED_TFC_15_PERC_2019,
+    ENTRY_DATE_2019_SD = ENTRY_DATE %m-% years(YEAR-2019),
+    ENTRY_DATE_PREV_YEAR_SD = ENTRY_DATE %m-% years(1) 
 
   )
 
 ##### y2d prev year and 2019 ----
 sp_delay_calc_prev_year <- sp_delay_calc %>%
-  mutate(
-    ENTRY_DATE_PREV_YEAR = add_with_rollback(ENTRY_DATE, years(1))
-  ) %>%
   select(
     ANSP_NAME,
-    ENTRY_DATE_PREV_YEAR,
+    ENTRY_DATE,
     Y2D_DLY_AVG_PREV_YEAR = Y2D_DLY_AVG,
     Y2D_DLY_FLT_PREV_YEAR = Y2D_DLY_FLT,
     Y2D_DELAYED_TFC_PERC_PREV_YEAR = Y2D_DELAYED_TFC_PERC,
     Y2D_DELAYED_TFC_15_PERC_PREV_YEAR = Y2D_DELAYED_TFC_15_PERC
   )
 
+
 sp_delay_calc_2019 <- sp_delay_calc %>%
-  mutate(
-    ENTRY_DATE_2019 = add_with_rollback(ENTRY_DATE, years((data_day_year -2019 )))) %>%
   select(
     ANSP_NAME,
-    ENTRY_DATE_2019,
+    ENTRY_DATE,
     Y2D_DLY_AVG_2019 = Y2D_DLY_AVG,
     Y2D_DLY_FLT_2019 = Y2D_DLY_FLT,
     Y2D_DELAYED_TFC_PERC_2019 = Y2D_DELAYED_TFC_PERC,
@@ -398,8 +396,8 @@ sp_delay_calc_2019 <- sp_delay_calc %>%
 
 ##### full dataset ----
 sp_delay <- sp_delay_calc %>%
-  left_join(sp_delay_calc_prev_year, by = c("ANSP_NAME", "ENTRY_DATE" = "ENTRY_DATE_PREV_YEAR")) %>%
-  left_join(sp_delay_calc_2019, by = c("ANSP_NAME", "ENTRY_DATE" = "ENTRY_DATE_2019")) %>%
+  left_join(sp_delay_calc_prev_year, by = c("ANSP_NAME", "ENTRY_DATE_PREV_YEAR_SD" = "ENTRY_DATE")) %>%
+  left_join(sp_delay_calc_2019, by = c("ANSP_NAME", "ENTRY_DATE_2019_SD" = "ENTRY_DATE")) %>%
   mutate(
     Y2D_DLY_DIF_PREV_YEAR_PERC = if_else(Y2D_DLY_AVG_PREV_YEAR == 0,
                                         NA, Y2D_DLY_AVG/Y2D_DLY_AVG_PREV_YEAR -1),
