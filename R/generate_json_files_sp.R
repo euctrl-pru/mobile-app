@@ -995,6 +995,10 @@ print(paste(format(now(), "%H:%M:%S"), "sp_delayed_flights_evo_chart_daily"))
 ### ACC ----
 #### day ----
 if(!exists("nw_acc_delay_day_raw")) {
+    nw_acc_delay_day_raw <- export_query(query_nw_acc_delay_day_raw(format(data_day_date, "%Y-%m%-%d"))) 
+}
+
+if (max(nw_acc_delay_day_raw$ENTRY_DATE) != data_day_date) {
   nw_acc_delay_day_raw <- export_query(query_nw_acc_delay_day_raw(format(data_day_date, "%Y-%m%-%d"))) 
 }
 
@@ -1084,6 +1088,10 @@ sp_acc_traffic_day <- sp_acc_traffic_day_int %>%
   
 #### week ----
 if(!exists("nw_acc_delay_week_raw")) {
+  nw_acc_delay_week_raw <- export_query(query_nw_acc_delay_week_raw(format(data_day_date, "%Y-%m%-%d"))) 
+}
+
+if (max(nw_acc_delay_week_raw$MAX_ENTRY_DATE) != data_day_date) {
   nw_acc_delay_week_raw <- export_query(query_nw_acc_delay_week_raw(format(data_day_date, "%Y-%m%-%d"))) 
 }
 
@@ -1180,6 +1188,10 @@ sp_acc_traffic_week <- sp_acc_traffic_week_int %>%
 
 #### y2d ----
 if(!exists("nw_acc_delay_y2d_raw")) {
+  nw_acc_delay_y2d_raw <- export_query(query_nw_acc_delay_y2d_raw(format(data_day_date, "%Y-%m%-%d"))) 
+}
+
+if (max(nw_acc_delay_y2d_raw$ENTRY_DATE) != data_day_date) {
   nw_acc_delay_y2d_raw <- export_query(query_nw_acc_delay_y2d_raw(format(data_day_date, "%Y-%m%-%d"))) 
 }
 
