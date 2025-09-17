@@ -3313,8 +3313,7 @@ nw_apt_punct_y2d <- nw_apt_punct_calc %>%
   filter(MONTH_DAY <= as.numeric(format(last_punctuality_day, format = "%m%d"))) %>%
   # mutate(YEAR = as.numeric(format(DAY_DATE, format = "%Y"))) %>%
   group_by(ARP_NAME, ARP_CODE, YEAR) %>%
-  summarise(Y2D_APT_ARR_PUNCT = sum(ARR_PUNCTUAL_FLIGHTS, na.rm = TRUE) / sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE)) %>%
-  ungroup() %>%
+  summarise(Y2D_APT_ARR_PUNCT = sum(ARR_PUNCTUAL_FLIGHTS, na.rm = TRUE) / sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE), .groups = "drop") %>%
   group_by(YEAR) %>%
   arrange(YEAR, desc(Y2D_APT_ARR_PUNCT), ARP_NAME) %>%
   mutate(
@@ -3576,8 +3575,7 @@ nw_st_punct_y2d <- nw_st_punct_calc %>%
   filter(MONTH_DAY <= as.numeric(format(last_punctuality_day, format = "%m%d"))) %>%
   mutate(YEAR = as.numeric(format(DATE, format = "%Y"))) %>%
   group_by(EC_ISO_CT_NAME, YEAR) %>%
-  summarise(Y2D_CTRY_ARR_PUNCT = sum(ARR_PUNCTUAL_FLIGHTS, na.rm = TRUE) / sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE)) %>%
-  ungroup() %>%
+  summarise(Y2D_CTRY_ARR_PUNCT = sum(ARR_PUNCTUAL_FLIGHTS, na.rm = TRUE) / sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE), .groups = "drop") %>%
   group_by(YEAR) %>%
   arrange(YEAR, desc(Y2D_CTRY_ARR_PUNCT), EC_ISO_CT_NAME) %>%
   mutate(

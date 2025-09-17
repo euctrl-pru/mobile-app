@@ -14,9 +14,13 @@ library(jsonlite)
 library(here)
 library(RODBC)
 
-# functions
+# functions ----
 source(here("..", "mobile-app", "R", "helpers.R")) # so it can be launched from the checkupdates script in grounded aircraft
 
+# queries ----
+source(here("..", "mobile-app", "R", "queries_nw.R")) 
+
+# parameters ----
 # archive mode for past dates
 # run this before the params script to set up the forecast params
 if (!exists("archive_mode")) {archive_mode <- FALSE}
@@ -27,7 +31,6 @@ if (!exists("data_day_date")) {
 data_day_text <- data_day_date %>% format("%Y%m%d")
 data_day_year <- as.numeric(format(data_day_date,'%Y'))
 
-# parameters ----
 source(here("..", "mobile-app", "R", "params.R")) # so it can be launched from the checkupdates script in grounded aircraft
 
 # dimensions ----
@@ -2038,28 +2041,33 @@ save_json(st_st_data_j, "st_ctry_ranking_traffic_DAI")
 ## DELAY ----
 ### ACC  ----
 #### day ----
-mydataframe <- "nw_acc_delay_day_raw"
-myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
-stakeholder <- str_sub(mydataframe, 1, 2)
-
-if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
-
-} else {
-  df <-  read_xlsx(
-  path  = fs::path_abs(
-    str_glue(nw_base_file),
-    start = nw_base_dir),
-  sheet = "ACC_DAY_DELAY",
-  range = cell_limits(c(5, 2), c(NA, 20))) %>%
-  as_tibble() %>%
-  mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-
-  # saved already in the nw file
+if(!exists("nw_acc_delay_day_raw")) {
+  nw_acc_delay_day_raw <- export_query(query_nw_acc_delay_day_raw(format(data_day_date, "%Y-%m%-%d"))) 
 }
 
+
+# mydataframe <- "nw_acc_delay_day_raw"
+# myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+# stakeholder <- str_sub(mydataframe, 1, 2)
+# 
+# if (archive_mode) {
+#   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
+# 
+# } else {
+#   df <-  read_xlsx(
+#   path  = fs::path_abs(
+#     str_glue(nw_base_file),
+#     start = nw_base_dir),
+#   sheet = "ACC_DAY_DELAY",
+#   range = cell_limits(c(5, 2), c(NA, 20))) %>%
+#   as_tibble() %>%
+#   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+# 
+#   # saved already in the nw file
+# }
+
 # process data
-acc_delay_day_sorted <- assign(mydataframe, df) %>%
+acc_delay_day_sorted <-  nw_acc_delay_day_raw %>%
   left_join(distinct(acc, Name, ICAO_code), by = c("UNIT_CODE" = "ICAO_code")) %>%
   relocate(Name, .before = everything()) %>%
   rename(NAME = Name) %>%
@@ -2093,28 +2101,33 @@ acc_delay_day_sorted <- assign(mydataframe, df) %>%
     )
 
 #### week ----
-mydataframe <- "nw_acc_delay_week_raw"
-myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
-stakeholder <- str_sub(mydataframe, 1, 2)
-
-if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
-
-} else {
-  df <-  read_xlsx(
-  path  = fs::path_abs(
-    str_glue(nw_base_file),
-    start = nw_base_dir),
-  sheet = "ACC_WEEK_DELAY",
-  range = cell_limits(c(5, 2), c(NA, 16))) %>%
-  as_tibble() %>%
-  mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-
-  # saved already in the nw file
+if(!exists("nw_acc_delay_week_raw")) {
+  nw_acc_delay_week_raw <- export_query(query_nw_acc_delay_week_raw(format(data_day_date, "%Y-%m%-%d"))) 
 }
 
+# old
+# mydataframe <- "nw_acc_delay_week_raw"
+# myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+# stakeholder <- str_sub(mydataframe, 1, 2)
+# 
+# if (archive_mode) {
+#   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
+# 
+# } else {
+#   df <-  read_xlsx(
+#   path  = fs::path_abs(
+#     str_glue(nw_base_file),
+#     start = nw_base_dir),
+#   sheet = "ACC_WEEK_DELAY",
+#   range = cell_limits(c(5, 2), c(NA, 16))) %>%
+#   as_tibble() %>%
+#   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+# 
+#   # saved already in the nw file
+# }
+
 # process data
-acc_delay_week <- assign(mydataframe, df) %>%
+acc_delay_week <- nw_acc_delay_week_raw %>%
   left_join(distinct(acc, Name, ICAO_code), by = c("UNIT_CODE" = "ICAO_code")) %>%
   relocate(Name, .before = everything()) %>%
   rename(NAME = Name) %>%
@@ -2148,28 +2161,32 @@ acc_delay_week <- assign(mydataframe, df) %>%
   )
 
 #### y2d ----
-mydataframe <- "nw_acc_delay_y2d_raw"
-myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
-stakeholder <- str_sub(mydataframe, 1, 2)
-
-if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
-
-} else {
-  df <-  read_xlsx(
-  path  = fs::path_abs(
-    str_glue(nw_base_file),
-    start = nw_base_dir),
-  sheet = "ACC_Y2D_DELAY",
-  range = cell_limits(c(7, 2), c(NA, 13))) %>%
-  as_tibble() %>%
-  mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-
-  # saved already in the nw file
+if(!exists("nw_acc_delay_y2d_raw")) {
+  nw_acc_delay_y2d_raw <- export_query(query_nw_acc_delay_y2d_raw(format(data_day_date, "%Y-%m%-%d"))) 
 }
 
+# mydataframe <- "nw_acc_delay_y2d_raw"
+# myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+# stakeholder <- str_sub(mydataframe, 1, 2)
+# 
+# if (archive_mode) {
+#   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
+# 
+# } else {
+#   df <-  read_xlsx(
+#   path  = fs::path_abs(
+#     str_glue(nw_base_file),
+#     start = nw_base_dir),
+#   sheet = "ACC_Y2D_DELAY",
+#   range = cell_limits(c(7, 2), c(NA, 13))) %>%
+#   as_tibble() %>%
+#   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+# 
+#   # saved already in the nw file
+# }
+
 # process data
-acc_delay_y2d <- assign(mydataframe, df) %>%
+acc_delay_y2d <- nw_acc_delay_y2d_raw %>%
   rename(Y2D_FROM_DATE = MIN_DATE) %>%
   left_join(distinct(acc, Name, ICAO_code), by = c("UNIT_CODE" = "ICAO_code")) %>%
   relocate(Name, .before = everything()) %>%
