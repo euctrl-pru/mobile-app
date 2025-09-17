@@ -98,7 +98,7 @@ mydataframe <- "sp_traffic_day_raw"
 stakeholder <- "sp"
 
 sp_traffic_data <-  read_parquet(here(archive_dir_raw, stakeholder, paste0(mydataframe, ".parquet"))) %>% 
-  filter(YEAR >= 2025) 
+  filter(YEAR == data_day_year) 
 
 sp_traffic_last_day <- sp_traffic_data %>%
   filter(ENTRY_DATE == min(data_day_date,
@@ -995,12 +995,12 @@ print(paste(format(now(), "%H:%M:%S"), "sp_delayed_flights_evo_chart_daily"))
 ### ACC ----
 #### day ----
 if(!exists("nw_acc_delay_day_raw")) {
-  nw_acc_delay_day_raw <- export_query(query_nw_acc_delay_day_raw(format(data_day_date, "%Y-%m%-%d"))) %>% 
-    left_join(unique(select(acc, Name, ICAO_code)), by = c("UNIT_CODE" = "ICAO_code")) 
+  nw_acc_delay_day_raw <- export_query(query_nw_acc_delay_day_raw(format(data_day_date, "%Y-%m%-%d"))) 
 }
 
 # process data
-sp_acc_traffic_day_int <- nw_acc_delay_day_raw %>% 
+sp_acc_traffic_day_int <- nw_acc_delay_day_raw %>%
+  left_join(unique(select(acc, Name, ICAO_code)), by = c("UNIT_CODE" = "ICAO_code")) %>% 
   left_join(rel_ansp_acc, by = c("UNIT_CODE" = "ICAO_CODE")) %>% 
   mutate(
     DY_FLT_RANK = rank(desc(FLIGHT), ties.method = "max"),
@@ -1084,11 +1084,11 @@ sp_acc_traffic_day <- sp_acc_traffic_day_int %>%
   
 #### week ----
 if(!exists("nw_acc_delay_week_raw")) {
-  nw_acc_delay_week_raw <- export_query(query_nw_acc_delay_week_raw(format(data_day_date, "%Y-%m%-%d"))) %>% 
-    left_join(unique(select(acc, Name, ICAO_code)), by = c("UNIT_CODE" = "ICAO_code")) 
+  nw_acc_delay_week_raw <- export_query(query_nw_acc_delay_week_raw(format(data_day_date, "%Y-%m%-%d"))) 
 }
 
 sp_acc_traffic_week_int <- nw_acc_delay_week_raw %>% 
+  left_join(unique(select(acc, Name, ICAO_code)), by = c("UNIT_CODE" = "ICAO_code")) %>% 
   left_join(rel_ansp_acc, by = c("UNIT_CODE" = "ICAO_CODE")) %>% 
   mutate(
     WK_FLT_RANK = rank(desc(FLIGHT), ties.method = "max")
@@ -1180,12 +1180,12 @@ sp_acc_traffic_week <- sp_acc_traffic_week_int %>%
 
 #### y2d ----
 if(!exists("nw_acc_delay_y2d_raw")) {
-  nw_acc_delay_y2d_raw <- export_query(query_nw_acc_delay_y2d_raw(format(data_day_date, "%Y-%m%-%d"))) %>% 
-    left_join(unique(select(acc, Name, ICAO_code)), by = c("UNIT_CODE" = "ICAO_code")) 
+  nw_acc_delay_y2d_raw <- export_query(query_nw_acc_delay_y2d_raw(format(data_day_date, "%Y-%m%-%d"))) 
 }
 
 # process data
 sp_acc_traffic_y2d_int <- nw_acc_delay_y2d_raw %>% 
+  left_join(unique(select(acc, Name, ICAO_code)), by = c("UNIT_CODE" = "ICAO_code")) %>% 
   left_join(rel_ansp_acc, by = c("UNIT_CODE" = "ICAO_CODE")) %>% 
   mutate(
     Y2D_FLT_RANK = rank(desc(FLIGHT), ties.method = "max"),

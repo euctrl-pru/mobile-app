@@ -272,7 +272,7 @@ sp_traffic_delay <- function() {
   
   # df_day %>% filter(ARP_CODE == "EBCI") %>% filter(FLIGHT_DATE == current_day) %>% select(DAY_ARR)
   
-  print(paste(format(now(), "%H:%M:%S"), mydataframe, mydate))
+  print(paste(format(now(), "%H:%M:%S"), mydatasource, mydate))
   
 }
 
