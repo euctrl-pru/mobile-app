@@ -1,3 +1,158 @@
+# NETWORK ----
+## nw delay cause ----
+nw_delay_cause_day_base_query <- paste0("
+WITH
+
+TIME_REF as
+( select t.day_date
+FROM prudev.pru_time_references t
+WHERE
+   t.day_date  >= ", query_from, "
+   AND  t.day_date  < (TRUNC (SYSDATE))
+),
+
+NM_AREA_FLT
+    AS
+        (SELECT 
+                a_first_entry_time_date FLIGHT_DATE , 
+                SUM(nvl(a.all_traffic,0)) FLT
+           FROM  prudev.v_aiu_agg_global_daily_counts a
+           WHERE 
+                 a.a_first_entry_time_date  >= ", query_from, "
+            AND a.a_first_entry_time_date  < TRUNC (SYSDATE)
+           GROUP BY  a.a_first_entry_time_date 
+        ),
+
+NM_AREA_DLY as
+(
+SELECT 
+        agg_flt_a_first_entry_date FLIGHT_DATE,
+        SUM (NVL(agg_flt_total_delay, 0)) TDM,
+        SUM (NVL((CASE WHEN agg_flt_mp_regu_loc_ty = 'Airport' THEN  agg_flt_total_delay END),0)) 
+          TDM_ARP,
+        
+        SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('A') AND agg_flt_mp_regu_loc_ty = 'En route' THEN agg_flt_total_delay END),0))  
+          TDM_ERT_A,
+        SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('C') AND agg_flt_mp_regu_loc_ty = 'En route' THEN agg_flt_total_delay END),0))  
+          TDM_ERT_C,
+        SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('D') AND agg_flt_mp_regu_loc_ty = 'En route' THEN agg_flt_total_delay END),0))  
+          TDM_ERT_D,
+        SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('E') AND agg_flt_mp_regu_loc_ty = 'En route' THEN agg_flt_total_delay END),0))  
+          TDM_ERT_E,
+        SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('G') AND agg_flt_mp_regu_loc_ty = 'En route' THEN agg_flt_total_delay END),0))  
+          TDM_ERT_G,
+        SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('I') AND agg_flt_mp_regu_loc_ty = 'En route' THEN agg_flt_total_delay END),0))  
+          TDM_ERT_I,
+        SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('M') AND agg_flt_mp_regu_loc_ty = 'En route' THEN agg_flt_total_delay END),0))  
+          TDM_ERT_M,
+        SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('N') AND agg_flt_mp_regu_loc_ty = 'En route' THEN agg_flt_total_delay END),0))  
+          TDM_ERT_N,
+        SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('O') AND agg_flt_mp_regu_loc_ty = 'En route' THEN agg_flt_total_delay END),0))  
+          TDM_ERT_O,
+        SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('P') AND agg_flt_mp_regu_loc_ty = 'En route' THEN agg_flt_total_delay END),0))  
+          TDM_ERT_P,
+        SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('R') AND agg_flt_mp_regu_loc_ty = 'En route' THEN agg_flt_total_delay END),0))  
+          TDM_ERT_R,
+        SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('S') AND agg_flt_mp_regu_loc_ty = 'En route' THEN agg_flt_total_delay END),0))  
+          TDM_ERT_S,
+        SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('T') AND agg_flt_mp_regu_loc_ty = 'En route' THEN agg_flt_total_delay END),0))  
+          TDM_ERT_T,
+        SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('V') AND agg_flt_mp_regu_loc_ty = 'En route' THEN agg_flt_total_delay END),0))  
+          TDM_ERT_V,
+        SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('W') AND agg_flt_mp_regu_loc_ty = 'En route' THEN agg_flt_total_delay END),0))  
+          TDM_ERT_W,
+        SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('NA') AND agg_flt_mp_regu_loc_ty = 'En route' THEN agg_flt_total_delay END),0))  
+          TDM_ERT_NA,
+
+        SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('A') AND agg_flt_mp_regu_loc_ty = 'Airport' THEN agg_flt_total_delay END),0))  
+          TDM_ARP_A,
+        SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('C') AND agg_flt_mp_regu_loc_ty = 'Airport' THEN agg_flt_total_delay END),0))  
+          TDM_ARP_C,
+        SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('D') AND agg_flt_mp_regu_loc_ty = 'Airport' THEN agg_flt_total_delay END),0))  
+          TDM_ARP_D,
+        SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('E') AND agg_flt_mp_regu_loc_ty = 'Airport' THEN agg_flt_total_delay END),0))  
+          TDM_ARP_E,
+        SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('G') AND agg_flt_mp_regu_loc_ty = 'Airport' THEN agg_flt_total_delay END),0))  
+          TDM_ARP_G,
+        SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('I') AND agg_flt_mp_regu_loc_ty = 'Airport' THEN agg_flt_total_delay END),0))  
+          TDM_ARP_I,
+        SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('M') AND agg_flt_mp_regu_loc_ty = 'Airport' THEN agg_flt_total_delay END),0))  
+          TDM_ARP_M,
+        SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('N') AND agg_flt_mp_regu_loc_ty = 'Airport' THEN agg_flt_total_delay END),0))  
+          TDM_ARP_N,
+        SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('O') AND agg_flt_mp_regu_loc_ty = 'Airport' THEN agg_flt_total_delay END),0))  
+          TDM_ARP_O,
+        SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('P') AND agg_flt_mp_regu_loc_ty = 'Airport' THEN agg_flt_total_delay END),0))  
+          TDM_ARP_P,
+        SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('R') AND agg_flt_mp_regu_loc_ty = 'Airport' THEN agg_flt_total_delay END),0))  
+          TDM_ARP_R,
+        SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('S') AND agg_flt_mp_regu_loc_ty = 'Airport' THEN agg_flt_total_delay END),0))  
+          TDM_ARP_S,
+        SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('T') AND agg_flt_mp_regu_loc_ty = 'Airport' THEN agg_flt_total_delay END),0))  
+          TDM_ARP_T,
+        SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('V') AND agg_flt_mp_regu_loc_ty = 'Airport' THEN agg_flt_total_delay END),0))  
+          TDM_ARP_V,
+        SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('W') AND agg_flt_mp_regu_loc_ty = 'Airport' THEN agg_flt_total_delay END),0))  
+          TDM_ARP_W,
+        SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('NA') AND agg_flt_mp_regu_loc_ty = 'Airport' THEN agg_flt_total_delay END),0))  
+          TDM_ARP_NA
+
+
+      FROM prudev.v_aiu_agg_flt_flow
+      WHERE agg_flt_a_first_entry_date >= ", query_from, "
+        AND agg_flt_a_first_entry_date < TRUNC (SYSDATE)
+        AND agg_flt_regu_reas is not null 
+        AND agg_flt_mp_regu_loc_ty is not null
+      group by agg_flt_a_first_entry_date
+)
+
+select 
+    'Total Network Manager Area' as AREA,
+    a.*,
+        TDM,
+ 		TDM - TDM_ARP AS TDM_ERT,
+		TDM_ARP,
+        
+        TDM_ERT_A,
+        TDM_ERT_C,
+        TDM_ERT_D,
+        TDM_ERT_E,
+        TDM_ERT_G,
+        TDM_ERT_I,
+        TDM_ERT_M,
+        TDM_ERT_N,
+        TDM_ERT_O,
+        TDM_ERT_P,
+        TDM_ERT_R,
+        TDM_ERT_S,
+        TDM_ERT_T,
+        TDM_ERT_V,
+        TDM_ERT_W,
+        TDM_ERT_NA,
+
+        TDM_ARP_A,
+        TDM_ARP_C,
+        TDM_ARP_D,
+        TDM_ARP_E,
+        TDM_ARP_G,
+        TDM_ARP_I,
+        TDM_ARP_M,
+        TDM_ARP_N,
+        TDM_ARP_O,
+        TDM_ARP_P,
+        TDM_ARP_R,
+        TDM_ARP_S,
+        TDM_ARP_T,
+        TDM_ARP_V,
+        TDM_ARP_W,
+        TDM_ARP_NA 
+
+
+from NM_AREA_FLT a
+left join NM_AREA_DLY b on a.FLIGHT_DATE=b.FLIGHT_DATE
+"
+)
+
 # STATE ----
 ## st_daio ----
 st_daio_day_query <- "

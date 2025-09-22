@@ -216,7 +216,7 @@ where a.day_date >='24-dec-2018'
 
       ", mydate, "-1 as LAST_DATA_DAY
       FROM NM_AREA_CALC_PREV
-      where flight_date >=to_date('01-01-'|| extract(year from (", mydate, "-1)),'dd-mm-yyyy')
+
 "
 )
 }
@@ -251,7 +251,6 @@ SELECT
                 t.day_date
            FROM  prudev.pru_time_references t
           WHERE day_date  >= to_date('24-12-2018','dd-mm-yyyy')
---          and  day_date  <  ", mydate, "
             and day_date <= to_date('31-12-'|| extract(year from (", mydate, "-1)),'dd-mm-yyyy')
 ),
 
@@ -577,7 +576,6 @@ where a.day_date >='24-dec-2018'
        y2d_avg_dly_apt_2019
 
       FROM NM_AREA_CALC_PREV
-      where flight_date >=to_date('01-01-'||extract(year from (", mydate, "-1)),'dd-mm-yyyy')
 "
 )
 }

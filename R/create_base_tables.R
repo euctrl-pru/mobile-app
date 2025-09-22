@@ -12,7 +12,7 @@ query_from <- "TO_DATE('2018-12-24', 'yyyy-mm-dd')"
 source(here::here("..", "mobile-app", "R", "base_queries.R"))
 
 # update base table ----
-mydataframe <- "sp_traffic_delay"
+mydataframe <- "nw_delay_cause"
 
 myarchivefile <- paste0(mydataframe, "_day_base.parquet")
 query_y2d <- get(paste0(mydataframe, "_day_base_query"))
