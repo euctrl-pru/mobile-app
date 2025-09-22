@@ -46,6 +46,8 @@ source(here::here("..", "mobile-app", "R", "base_queries.R"))
 
 # update base table ----
 mydataframes <- c(
+  "nw_delay_cause",
+  
   "ap_traffic_delay",
   "ap_ao",
   "ap_st_des",
