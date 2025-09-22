@@ -737,25 +737,30 @@ save_json(nw_traffic_evo_j, "nw_traffic_evo_chart_daily")
 print(paste(format(now(), "%H:%M:%S"), "nw_traffic_evo_chart_daily"))
 
 ## delay ----
-nw_delay_raw <- read_xlsx(
-  path = fs::path_abs(
-    str_glue(nw_base_file),
-    start = nw_base_dir
-  ),
-  sheet = "NM_Delay_for_graph",
-  range = cell_limits(c(2, 1), c(NA, 34))
-) %>%
-  as_tibble()
+# nw_delay_raw_old <- read_xlsx(
+#   path = fs::path_abs(
+#     str_glue(nw_base_file),
+#     start = nw_base_dir
+#   ),
+#   sheet = "NM_Delay_for_graph",
+#   range = cell_limits(c(2, 1), c(NA, 34))
+# ) %>%
+#   as_tibble()
+
+mydataframe <- "nw_delay_cause_day_raw"
+stakeholder <- "nw"
+
+nw_delay_cause <- read_parquet(here(archive_dir_raw, stakeholder, paste0(mydataframe, ".parquet"))) %>% as_tibble()
 
 ### delay per cause ----
-nw_delay_evo <- nw_delay_raw %>%
+nw_delay_evo <- nw_delay_cause %>%
   filter(FLIGHT_DATE <= data_day_date) %>%
   mutate(
     ROLL_WK_AVG_DLY_PREV_YEAR = lag(ROLL_WK_AVG_DLY, 364),
     DAY_DLY_PREV_YEAR = lag(DAY_DLY, 364)
   ) %>%
-  filter(FLIGHT_DATE >= paste0(data_day_year, "-01-01")) %>%
-  mutate(FLIGHT_DATE = as.Date(FLIGHT_DATE))
+  filter(FLIGHT_DATE >= paste0(data_day_year, "-01-01")) 
+
 
 #### day ----
 nw_delay_cause_day <- nw_delay_evo %>%
@@ -959,7 +964,7 @@ print(paste(format(now(), "%H:%M:%S"), "nw_delay_category_evo_chart_y2d"))
 
 
 ### delay per flight per type ----
-nw_delay_flt_evo <- nw_delay_raw %>%
+nw_delay_flt_evo <- nw_delay_cause %>%
   filter(FLIGHT_DATE <= data_day_date) %>%
   mutate(
     ROLL_WK_AVG_FLT = rollmeanr(DAY_FLT, 7, fill = NA, align = "right"),
@@ -987,23 +992,6 @@ nw_delay_flt_evo <- nw_delay_raw %>%
     ROLL_WK_AVG_DLY_FLT_APT,
     ROLL_WK_AVG_DLY_FLT_PREV_YEAR
   )
-
-# nw_delay_flt_evo_app <- nw_delay_flt_evo %>%
-#   select(
-#     FLIGHT_DATE,
-#     ROLL_WK_AVG_DLY_FLT_ERT,
-#     ROLL_WK_AVG_DLY_FLT_APT,
-#     ROLL_WK_AVG_DLY_FLT_PREV_YEAR
-#   )
-# 
-# column_names <- c(
-#   "FLIGHT_DATE",
-#   "En-route ATFM delay/flight",
-#   "Airport ATFM delay/flight",
-#   paste0("Total ATFM delay/flight ", data_day_year - 1)
-# )
-# 
-# colnames(nw_delay_flt_evo_app) <- column_names
 
 #### day ----
 nw_delay_flt_day <- nw_delay_flt_evo %>%
@@ -1159,7 +1147,7 @@ print(paste(format(now(), "%H:%M:%S"), "nw_delay_flt_type_evo_chart_y2d"))
 
 ### delay per flight split ert/apt ----
 #### En-route ----
-nw_delay_flt_ERT_evo <- nw_delay_raw %>%
+nw_delay_flt_ERT_evo <- nw_delay_cause %>%
   filter(FLIGHT_DATE <= data_day_date) %>%
   mutate(
     ROLL_WK_AVG_FLT = rollmeanr(DAY_FLT, 7, fill = NA, align = "right"),
@@ -1203,7 +1191,7 @@ print(paste(format(now(), "%H:%M:%S"), "nw_delay_ert_per_flight_evo_chart"))
 
 
 #### Airport ----
-nw_delay_flt_APT_evo <- nw_delay_raw %>%
+nw_delay_flt_APT_evo <- nw_delay_cause %>%
   filter(FLIGHT_DATE <= data_day_date) %>%
   mutate(
     ROLL_WK_AVG_FLT = rollmeanr(DAY_FLT, 7, fill = NA, align = "right"),

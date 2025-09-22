@@ -10,13 +10,22 @@ source(here::here("..", "mobile-app", "R", "helpers.R"))
 source(here::here("..", "mobile-app", "R", "params.R"))
 
 # check if base aiu_flt table is updated
-check_synthesis <- read_xlsx(
-  path  = here(nw_base_dir, "000_Initial_check.xlsx"),
-  sheet = "Sheet1",
-  range = cell_limits(c(6, 7), c(7, 7))) %>%
-  pull()
+query_check <-"SELECT 
+                a_first_entry_time_date FLIGHT_DATE , 
+                SUM(nvl(a.all_traffic,0)) TOT_TFC
+           FROM  prudev.v_aiu_agg_global_daily_counts a
+           WHERE a.a_first_entry_time_date  > TRUNC (SYSDATE) -10
+           GROUP BY  a.a_first_entry_time_date"
 
-if (check_synthesis == 0) {
+synthesis_last_day <- export_query(query_check)
+
+check_day <- max(synthesis_last_day$FLIGHT_DATE, na.rm = TRUE) == today() - days(1)
+check_flt <- synthesis_last_day %>% filter (FLIGHT_DATE == max(FLIGHT_DATE, na.rm = TRUE)) %>%
+  select(TOT_TFC) %>% pull() !=0
+
+check_synthesis <- check_day + check_flt
+
+if (check_synthesis != 2) {
   from    <- "oscar.alfaro@eurocontrol.int"
   to      <- c("oscar.alfaro@eurocontrol.int"
                # ,

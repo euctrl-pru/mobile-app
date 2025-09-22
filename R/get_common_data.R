@@ -23,18 +23,6 @@ if (exists("punct_data_spain_raw") == FALSE) {
   punct_data_spain_raw <- get_punct_data_spain()
 }
 
-# network traffic data ---
-nw_traffic_data <- read_xlsx(
-  path = fs::path_abs(
-    str_glue(nw_base_file),
-    start = nw_base_dir
-  ),
-  sheet = "NM_Daily_Traffic_All",
-  range = cell_limits(c(2, 1), c(NA, 39))
-) %>%
-  as_tibble() %>%
-  mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-
 # network punctuality data ----
 query <- "
 WITH

@@ -116,8 +116,7 @@ nw_delay_cause <- function() {
       DAY_DLY_CAP_STAF_NOG = TDM_ERT_C + TDM_ERT_S + TDM_ARP_C + TDM_ARP_S,
       DAY_DLY_DISR = TDM_ERT_I + TDM_ERT_T + TDM_ARP_I + TDM_ARP_T,
       DAY_DLY_WTH	= TDM_ERT_W + TDM_ERT_D + TDM_ARP_W + TDM_ARP_D,
-      DAY_DLY_APT_CAP = TDM_ARP_G,
-      # DAY_DLY_APT_CAP = TDM_ERT_G + TDM_ARP_G,
+      DAY_DLY_APT_CAP = TDM_ERT_G + TDM_ARP_G,
       DAY_DLY_OTH	= TDM - DAY_DLY_CAP_STAF_NOG - DAY_DLY_DISR - DAY_DLY_WTH - DAY_DLY_APT_CAP,
 
       #rolling week
@@ -137,6 +136,9 @@ nw_delay_cause <- function() {
       
     )  %>% 
     select(
+      AREA,
+      FLIGHT_DATE,
+      
       DAY_FLT, 
       
       DAY_DLY,
