@@ -1,6 +1,5 @@
 ## libraries
 library(arrow)
-library(data.table)
 library(fs)
 library(tibble)
 library(dplyr)
@@ -23,6 +22,9 @@ source(here("..", "mobile-app", "R", "params.R"))
 
 # dimensions
 source(here("..", "mobile-app", "R", "dimension_queries.R"))
+
+print(paste("Generating ao json files", format(data_day_date, "%Y-%m-%d"), "..."))
+
 
 if (exists("ao_grp_icao") == FALSE) {
   ao_grp_icao_full <-  export_query(list_ao_grp_query)
@@ -66,9 +68,8 @@ last_billing_month <- month(last_billing_date)
 
 ao_billing <- ao_billed_clean %>%
   group_by(AO_GRP_CODE, AO_GRP_NAME, year, month, billing_period_start_date) %>%
-  summarise(total_billing = sum(route_charges)) %>%
-  mutate(total_billing = 0) %>%   ## while figure are not showable
-  ungroup()
+  summarise(total_billing = sum(route_charges), .groups = "drop") %>%
+  mutate(total_billing = 0)   ## while figure are not showable
 
 ao_billed_for_json <- ao_billing %>%
   arrange(AO_GRP_CODE, year, billing_period_start_date) %>%
@@ -319,8 +320,10 @@ ao_punct_data <- ao_punct_raw %>%
     ARR_PUNCTUAL_FLIGHTS = sum(ARR_PUNCTUAL_FLIGHTS, na.rm = TRUE),
     ARR_SCHEDULE_FLIGHT = sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE),
     DEP_PUNCTUAL_FLIGHTS = sum(DEP_PUNCTUAL_FLIGHTS, na.rm = TRUE),
-    DEP_SCHEDULE_FLIGHT = sum(DEP_SCHEDULE_FLIGHT, na.rm = TRUE)
+    DEP_SCHEDULE_FLIGHT = sum(DEP_SCHEDULE_FLIGHT, na.rm = TRUE),
+    .groups = "drop"
   ) %>%
+  group_by(AO_GRP_NAME) %>%
   arrange(AO_GRP_NAME, DAY_DATE) %>%
   mutate(
     YEAR = lubridate::year(DAY_DATE),
@@ -396,8 +399,12 @@ ao_punct_y2d <- ao_punct_raw %>%
     ) %>%
   filter(MONTH_DAY <= as.numeric(format(last_day_punct, format="%m%d"))) %>%
   group_by(AO_GRP_NAME, AO_GRP_CODE, YEAR) %>%
-  summarise (Y2D_ARR_PUN = sum(ARR_PUNCTUAL_FLIGHTS, na.rm=TRUE) / sum(ARR_SCHEDULE_FLIGHT, na.rm=TRUE) * 100,
-             Y2D_DEP_PUN = sum(DEP_PUNCTUAL_FLIGHTS, na.rm=TRUE) / sum(DEP_SCHEDULE_FLIGHT, na.rm=TRUE) * 100) %>%
+  summarise (
+    Y2D_ARR_PUN = sum(ARR_PUNCTUAL_FLIGHTS, na.rm=TRUE) / sum(ARR_SCHEDULE_FLIGHT, na.rm=TRUE) * 100,
+    Y2D_DEP_PUN = sum(DEP_PUNCTUAL_FLIGHTS, na.rm=TRUE) / sum(DEP_SCHEDULE_FLIGHT, na.rm=TRUE) * 100,
+    .groups = "drop"
+    ) %>%
+  group_by(AO_GRP_CODE, YEAR) %>%
   mutate(Y2D_ARR_PUN_PY = lag(Y2D_ARR_PUN, 1),
          Y2D_DEP_PUN_PY = lag(Y2D_DEP_PUN, 1),
          Y2D_ARR_PUN_2019 = lag(Y2D_ARR_PUN, last_year_punct - 2019),
@@ -585,12 +592,12 @@ ao_co2_data <- ao_co2_raw %>%
          MONTH) %>%
   group_by(AO_GRP_NAME, AO_GRP_CODE, FLIGHT_MONTH, YEAR, MONTH) %>%
   summarise (MM_DEP = sum(TF, na.rm=TRUE) / 10^6,
-             MM_CO2 = sum(CO2_QTY, na.rm=TRUE) / 10^6
+             MM_CO2 = sum(CO2_QTY, na.rm=TRUE) / 10^6,
+             .groups = "drop"
              # MM_CO2_PY = sum(LY_CO2_QTY_TONNES, na.rm=TRUE) / 10^6,
              # MM_DEP_PY = sum(LY_TF, na.rm=TRUE) / 10^6,
 
   ) %>%
-  ungroup() %>%
   group_by(AO_GRP_NAME, AO_GRP_CODE) %>%
   mutate(MM_DEP_PY = lag(MM_DEP, 12),
          MM_CO2_PY = lag(MM_CO2, 12)) %>%

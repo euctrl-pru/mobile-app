@@ -758,13 +758,15 @@ where (substr(ADEP, 1,2) in ('GC', 'GE', 'LE') or substr(ADES, 1,2) in ('GC', 'G
     group_by(ISO_CT_CODE_DES, ARR_DATE) |>
     summarise(ARR_PUNCTUAL_FLIGHTS = sum(ARR_PUNCTUAL_FLIGHTS, na.rm = TRUE),
               ARR_SCHEDULE_FLIGHT = sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE),
-              ARR_FLIGHTS = n())
+              ARR_FLIGHTS = n(),
+              .groups = "drop")
 
   punct_data_dep <- punct_data_raw_calc |>
     group_by(ISO_CT_CODE_DEP, DEP_DATE) |>
     summarise(DEP_PUNCTUAL_FLIGHTS = sum(DEP_PUNCTUAL_FLIGHTS, na.rm = TRUE),
               DEP_SCHEDULE_FLIGHT = sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE),
-              DEP_FLIGHTS = n())
+              DEP_FLIGHTS = n(),
+              .groups = "drop")
 
   start_date <- min(min(punct_data_arr$ARR_DATE, na.rm = TRUE), min(punct_data_dep$DEP_DATE, na.rm = TRUE)) +days(2)
   end_date <- lubridate::today() + days(-1)
