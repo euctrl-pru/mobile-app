@@ -2526,7 +2526,7 @@ st_ap_delay_y2d <- st_ap_delay_raw %>%
 
 
 #### main card ----
-st_ap_main_delay_new <- st_ap_delay_day_sorted %>%
+st_ap_main_delay <- st_ap_delay_day_sorted %>%
   mutate(
     MAIN_DLY_APT_RANK = DY_RANK,
     MAIN_DLY_APT_NAME = DY_APT_NAME,
