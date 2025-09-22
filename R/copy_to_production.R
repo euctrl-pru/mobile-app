@@ -22,8 +22,8 @@ network_data_folder_dev <- here(destination_dir, "data", "v5")
 archive_mode <- FALSE
 
 if (archive_mode) {
-  wef <- "2025-09-17"  #included in output
-  til <- "2025-09-17"  #included in output
+  wef <- "2024-01-01"  #included in output
+  til <- "2025-09-20"  #included in output
   data_day_date <- seq(ymd(wef), ymd(til), by = "day")
 } else {
   data_day_date <- lubridate::today(tzone = "") +  days(-1)
@@ -44,8 +44,8 @@ source(here("..", "mobile-app", "R", "update_app_source_tables_sp.R"))
 stakeholders <- if(!archive_mode) {
   c("nw","st","ao","ap", "sp", NULL) # don't touch this line
   } else {c(
-    # "nw",
-    "st",
+    "nw",
+    # "st",
     # "ao",
     # "ap",
     # "sp",
@@ -138,7 +138,6 @@ process_app_data <- function(data_day_date) {
 
 
 # generate and copy app files ----
-if(archive_mode | data_status){
   # get helper functions and common data sets ----
   source(here("..", "mobile-app", "R", "helpers.R"))
   source(here("..", "mobile-app", "R", "get_common_data.R"))
@@ -150,20 +149,12 @@ if(archive_mode | data_status){
     # generate and copy data for date sequence ----
     walk(data_day_date, .f = process_app_data)
     print(paste(format(now(), "%H:%M:%S"),data_day_date))
-  }
 }
 
 # send email ----
 ## email parameters ----
-if (data_status) {
-  sbj = "All app datasets copied successfully to folder"
-  msg = "All good, relax!"
-
-} else {
-  sbj = "App datasets not copied - some tables not updated"
-  msg = "Some tables were not updated."
-
-}
+sbj = "All app datasets copied successfully to folder"
+msg = "All good, relax!"
 
 from    <- "oscar.alfaro@eurocontrol.int"
 to      <- c("oscar.alfaro@eurocontrol.int"
