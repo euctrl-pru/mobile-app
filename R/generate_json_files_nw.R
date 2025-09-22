@@ -107,34 +107,34 @@ nw_billed_json <- nw_billed_for_json %>%
 
 ## Network traffic ----
 # traffic data
-mydataframe <- "nw_traffic_data"
-stakeholder <- "nw"
+nw_traffic_data <- export_query(query_nw_traffic_data(format(data_day_date, "%Y-%m-%d")))
 
-if (archive_mode & year(data_day_date) < year(today(tzone = "") +  days(-1))) {
-  myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
-  
-} else {
-  df <- read_xlsx(
-    path = fs::path_abs(
-      str_glue(nw_base_file),
-      start = nw_base_dir
-    ),
-    sheet = "NM_Daily_Traffic_All",
-    range = cell_limits(c(2, 1), c(NA, 39))
-  ) %>%
-    as_tibble() %>%
-    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-  
-  # save pre-processed file in archive for generation of past json files
-  # only last day of the year
-  if(format(data_day_date, "%m%d") == "1231") {
-    myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
-    write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
-  }
-}
-
-nw_traffic_data <- assign(mydataframe, df)
+# old
+# if (archive_mode & year(data_day_date) < year(today(tzone = "") +  days(-1))) {
+#   myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
+#   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
+#   
+# } else {
+#   df <- read_xlsx(
+#     path = fs::path_abs(
+#       str_glue(nw_base_file),
+#       start = nw_base_dir
+#     ),
+#     sheet = "NM_Daily_Traffic_All",
+#     range = cell_limits(c(2, 1), c(NA, 39))
+#   ) %>%
+#     as_tibble() %>%
+#     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+#   
+#   # save pre-processed file in archive for generation of past json files
+#   # only last day of the year
+#   if(format(data_day_date, "%m%d") == "1231") {
+#     myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
+#     write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+#   }
+# }
+# 
+# nw_traffic_data <- assign(mydataframe, df)
 
 # get data for last date
 nw_traffic_last_day <- nw_traffic_data %>%
@@ -165,35 +165,37 @@ nw_traffic_json <- nw_traffic_for_json %>%
 
 ## Network delay ----
 # delay data
+nw_delay_data <- export_query(query_nw_delay_data(format(data_day_date, "%Y-%m-%d")))
 
-mydataframe <- "nw_delay_data"
-stakeholder <- "nw"
-
-if (archive_mode & year(data_day_date) < year(today(tzone = "") +  days(-1))) {
-  myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
-  
-} else {
-  df <-  read_xlsx(
-    path = fs::path_abs(
-      str_glue(nw_base_file),
-      start = nw_base_dir
-    ),
-    sheet = "NM_Daily_Delay_All",
-    range = cell_limits(c(2, 1), c(NA, NA))
-  ) %>%
-    as_tibble() %>%
-    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-  
-  # save pre-processed file in archive for generation of past json files
-  # only last day of the year
-  if(format(data_day_date, "%m%d") == "1231") {
-    myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
-    write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
-  }
-}
-
-nw_delay_data <- assign(mydataframe, df)
+# old 
+# mydataframe <- "nw_delay_data"
+# stakeholder <- "nw"
+# 
+# if (archive_mode & year(data_day_date) < year(today(tzone = "") +  days(-1))) {
+#   myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
+#   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
+#   
+# } else {
+#   df <-  read_xlsx(
+#     path = fs::path_abs(
+#       str_glue(nw_base_file),
+#       start = nw_base_dir
+#     ),
+#     sheet = "NM_Daily_Delay_All",
+#     range = cell_limits(c(2, 1), c(NA, NA))
+#   ) %>%
+#     as_tibble() %>%
+#     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+#   
+#   # save pre-processed file in archive for generation of past json files
+#   # only last day of the year
+#   if(format(data_day_date, "%m%d") == "1231") {
+#     myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
+#     write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+#   }
+# }
+# 
+# nw_delay_data <- assign(mydataframe, df)
 
 # calcs
 nw_delay_last_day <- nw_delay_data %>%
@@ -689,6 +691,7 @@ print(paste(format(now(), "%H:%M:%S"), "nw_json_app"))
 # GRAPHS -------
 ## traffic -----
 nw_traffic_evo <- nw_traffic_data %>%
+  filter(YEAR == data_day_year) %>% 
   mutate(AVG_ROLLING_WEEK = if_else(FLIGHT_DATE > min(data_day_date,
                                                       max(LAST_DATA_DAY, na.rm = TRUE),na.rm = TRUE), NA, AVG_ROLLING_WEEK)
   ) %>%
@@ -955,7 +958,7 @@ save_json(nw_delay_cause_evo_y2d_j, "nw_delay_category_evo_chart_y2d")
 print(paste(format(now(), "%H:%M:%S"), "nw_delay_category_evo_chart_y2d"))
 
 
-### delay per flight per type v1----
+### delay per flight per type ----
 nw_delay_flt_evo <- nw_delay_raw %>%
   filter(FLIGHT_DATE <= data_day_date) %>%
   mutate(
@@ -985,25 +988,23 @@ nw_delay_flt_evo <- nw_delay_raw %>%
     ROLL_WK_AVG_DLY_FLT_PREV_YEAR
   )
 
-nw_delay_flt_evo_app <- nw_delay_flt_evo %>%
-  select(
-    FLIGHT_DATE,
-    ROLL_WK_AVG_DLY_FLT_ERT,
-    ROLL_WK_AVG_DLY_FLT_APT,
-    ROLL_WK_AVG_DLY_FLT_PREV_YEAR
-  )
+# nw_delay_flt_evo_app <- nw_delay_flt_evo %>%
+#   select(
+#     FLIGHT_DATE,
+#     ROLL_WK_AVG_DLY_FLT_ERT,
+#     ROLL_WK_AVG_DLY_FLT_APT,
+#     ROLL_WK_AVG_DLY_FLT_PREV_YEAR
+#   )
+# 
+# column_names <- c(
+#   "FLIGHT_DATE",
+#   "En-route ATFM delay/flight",
+#   "Airport ATFM delay/flight",
+#   paste0("Total ATFM delay/flight ", data_day_year - 1)
+# )
+# 
+# colnames(nw_delay_flt_evo_app) <- column_names
 
-column_names <- c(
-  "FLIGHT_DATE",
-  "En-route ATFM delay/flight",
-  "Airport ATFM delay/flight",
-  paste0("Total ATFM delay/flight ", data_day_year - 1)
-)
-
-colnames(nw_delay_flt_evo_app) <- column_names
-
-### delay per flight per type v2----
-#graphs not implemented, maybe for v4
 #### day ----
 nw_delay_flt_day <- nw_delay_flt_evo %>%
   filter(FLIGHT_DATE == max(FLIGHT_DATE)) %>%
