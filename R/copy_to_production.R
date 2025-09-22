@@ -22,8 +22,8 @@ network_data_folder_dev <- here(destination_dir, "data", "v5")
 archive_mode <- FALSE
 
 if (archive_mode) {
-  wef <- "2024-01-01"  #included in output
-  til <- "2025-09-10"  #included in output
+  wef <- "2025-09-17"  #included in output
+  til <- "2025-09-17"  #included in output
   data_day_date <- seq(ymd(wef), ymd(til), by = "day")
 } else {
   data_day_date <- lubridate::today(tzone = "") +  days(-1)
@@ -44,8 +44,8 @@ source(here("..", "mobile-app", "R", "update_app_source_tables_sp.R"))
 stakeholders <- if(!archive_mode) {
   c("nw","st","ao","ap", "sp", NULL) # don't touch this line
   } else {c(
-    "nw",
-    # "st",
+    # "nw",
+    "st",
     # "ao",
     # "ap",
     # "sp",
@@ -116,6 +116,7 @@ copy_app_data <- function(data_day_date) {
   }
 
   # copy files to the network folders ----
+  print("Copying files to network folders...")
   walk(stakeholders, ~ {
     files_to_copy <- list.files(get(paste0(.x, "_local_data_folder")), full.names = TRUE)
     # assign(paste0(.x, "_files_to_copy"), files_to_copy, envir = .GlobalEnv)  # Assign dynamically to global environment
