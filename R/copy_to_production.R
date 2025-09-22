@@ -52,24 +52,6 @@ stakeholders <- if(!archive_mode) {
     NULL)
 }
 
-# check data status ----
-files_to_read <- setdiff(stakeholders, c("ap", "ao", "st", "sp")) %>%
-  compact() %>%  # Remove NULLs
-  map_chr(~ here(get(paste0(.x, "_base_dir")), get(paste0(.x, "_base_file"))))
-
-check_status <- function(check_file) {
-  checK_last_date <- read_xlsx(check_file,
-           sheet = "checks",
-           range = cell_limits(c(1, 4), c(2, 4))) %>% pull()
-  return(checK_last_date == data_day_date )
-}
-
-data_status <- tryCatch({
-  prod(map_lgl(files_to_read, check_status)) == 1
-}, error = function(e) {
-  FALSE
-})
-
 # clean folder function
 clean_folder <- function(folder_address) {
   files <- list.files(folder_address, full.names = TRUE)
