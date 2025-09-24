@@ -8,8 +8,8 @@ library(stringr)
 # load query functions -----
 source(here("..", "mobile-app", "R", "helpers.R"))
 source(here("..", "mobile-app", "R", "params.R"))
-source(here("..", "mobile-app", "R", "queries_st.R"))
-source(here("..", "mobile-app", "R", "queries_ao.R"))
+# source(here("..", "mobile-app", "R", "queries_st.R"))
+# source(here("..", "mobile-app", "R", "queries_ao.R"))
 source(here("..", "mobile-app", "R", "queries_nw.R"))
 if(exists("mydate") == FALSE) {mydate <- "2024-01-01"}
 source(here("..", "mobile-app", "R", "queries_ap.R"))
@@ -24,8 +24,8 @@ test_archive_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Proje
 # file.rename(files_to_rename, new_filenames)
 
 # set period
-wef <- "2025-08-02"  #included in output
-til <- "2025-08-02"  #included in output
+wef <- "2025-05-06"  #included in output
+til <- "2025-05-06"  #included in output
 
 # functions list -----
 # get functions list for multiple queries
@@ -61,12 +61,12 @@ function_list <- function_list_full[!sapply(function_list_full, function(x) x %i
 # create archive -----
 # set to true to execute all queries for the stakeholder
 # set to false to execute only the query below regardless of the stakeholders selected
-all_stk_queries <- TRUE
+all_stk_queries <- FALSE
 if (all_stk_queries) {
   myquery_string <- function_list
   myquery_string_full <- function_list_full
   } else {
-  myquery_string <- "query_nw_delay_data"
+  myquery_string <- "query_nw_acc_delay_y2d_raw"
   myquery_string_full <- myquery_string
   }
 
