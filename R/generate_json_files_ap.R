@@ -1,6 +1,5 @@
 ## libraries
 library(arrow)
-library(data.table)
 library(fs)
 library(tibble)
 library(dplyr)
@@ -537,8 +536,10 @@ apt_punct_data <- apt_punct_raw %>%
     ARR_PUNCTUAL_FLIGHTS = sum( ARR_PUNCTUAL_FLIGHTS , na.rm = TRUE),
     ARR_SCHEDULE_FLIGHT = sum( ARR_SCHEDULE_FLIGHT , na.rm = TRUE),
     DEP_PUNCTUAL_FLIGHTS = sum( DEP_PUNCTUAL_FLIGHTS , na.rm = TRUE),
-    DEP_SCHEDULE_FLIGHT = sum( DEP_SCHEDULE_FLIGHT , na.rm = TRUE)
+    DEP_SCHEDULE_FLIGHT = sum( DEP_SCHEDULE_FLIGHT , na.rm = TRUE),
+    .groups = "drop"
   ) %>%
+  group_by(ARP_CODE, ARP_NAME) %>%
   arrange( ARP_CODE, DAY_DATE ) %>%
   mutate(
     YEAR = lubridate::year(DAY_DATE),
@@ -589,6 +590,7 @@ apt_punct_data <- apt_punct_raw %>%
          WEEK_DEP_PUNCT_DIF_2019 = WEEK_DEP_PUNCT - WEEK_DEP_PUNCT_2019
   )
 
+
 #filtering the data and selecting and renaming columns
 apt_punct_d_w <- apt_punct_data %>%
   filter (DAY_DATE == last_day_punct) %>%
@@ -624,8 +626,12 @@ apt_punct_y2d <- apt_punct_raw %>%
   ) %>%
   filter(MONTH_DAY <= as.numeric(format(last_day_punct, format="%m%d"))) %>%
   group_by(ARP_CODE, ARP_NAME, YEAR) %>%
-  summarise (Y2D_ARR_PUN = sum(ARR_PUNCTUAL_FLIGHTS, na.rm=TRUE) / sum(ARR_SCHEDULE_FLIGHT, na.rm=TRUE) * 100,
-             Y2D_DEP_PUN = sum(DEP_PUNCTUAL_FLIGHTS, na.rm=TRUE) / sum(DEP_SCHEDULE_FLIGHT, na.rm=TRUE) * 100) %>%
+  summarise (
+    Y2D_ARR_PUN = sum(ARR_PUNCTUAL_FLIGHTS, na.rm=TRUE) / sum(ARR_SCHEDULE_FLIGHT, na.rm=TRUE) * 100,
+    Y2D_DEP_PUN = sum(DEP_PUNCTUAL_FLIGHTS, na.rm=TRUE) / sum(DEP_SCHEDULE_FLIGHT, na.rm=TRUE) * 100,
+    .groups = "drop"
+    ) %>%
+  group_by(ARP_CODE, ARP_NAME) %>%
   mutate(Y2D_ARR_PUN_PY = lag(Y2D_ARR_PUN, 1),
          Y2D_DEP_PUN_PY = lag(Y2D_DEP_PUN, 1),
          Y2D_ARR_PUN_2019 = lag(Y2D_ARR_PUN, last_year_punct - 2019),
@@ -646,6 +652,7 @@ apt_punct_y2d <- apt_punct_raw %>%
          Y2D_ARR_PUN_DIF_2019,
          Y2D_DEP_PUN_DIF_2019
   )
+
 
 #merging the totals and the year to date data
 apt_punct_for_json <- merge(apt_punct_d_w, apt_punct_y2d, by= c("ARP_CODE", "ARP_NAME")) %>%
@@ -692,6 +699,7 @@ apt_json_app_j <- apt_json_app_j %>%   group_by(APT_CODE, apt_name)
 apt_json_app <- apt_json_app_j %>% toJSON(., pretty = TRUE)
 
 save_json(apt_json_app, "apt_json_app", archive_file = FALSE)
+print(paste(format(now(), "%H:%M:%S"), "apt_json_app"))
 
 
 
@@ -947,7 +955,7 @@ apt_ao_ranking_traffic <- apt_ao_main_traffic |>
 apt_ao_ranking_traffic_j <- apt_ao_ranking_traffic |> toJSON(pretty = TRUE)
 
 save_json(apt_ao_ranking_traffic_j, "apt_ao_ranking_traffic", archive_file = FALSE)
-
+print(paste(format(now(), "%H:%M:%S"), "apt_ao_ranking_traffic"))
 
 
 ### Airports ----
@@ -1193,6 +1201,7 @@ apt_apt_ranking_traffic <- apt_apt_main_traffic |>
 apt_apt_ranking_traffic_j <- apt_apt_ranking_traffic |> toJSON(pretty = TRUE)
 
 save_json(apt_apt_ranking_traffic_j, "apt_apt_ranking_traffic", archive_file = FALSE)
+print(paste(format(now(), "%H:%M:%S"), "apt_apt_ranking_traffic"))
 
 
 ### States ----
@@ -1438,6 +1447,7 @@ apt_st_ranking_traffic <- apt_st_main_traffic |>
 apt_st_ranking_traffic_j <- apt_st_ranking_traffic |> toJSON(pretty = TRUE)
 
 save_json(apt_st_ranking_traffic_j, "apt_st_ranking_traffic", archive_file = FALSE)
+print(paste(format(now(), "%H:%M:%S"), "apt_st_ranking_traffic"))
 
 
 
@@ -1682,6 +1692,7 @@ apt_ms_ranking_traffic <- apt_ms_data_day |>
 apt_ms_ranking_traffic_j <- apt_ms_ranking_traffic |> toJSON(pretty = TRUE)
 
 save_json(apt_ms_ranking_traffic_j, "apt_ms_ranking_traffic", archive_file = FALSE)
+print(paste(format(now(), "%H:%M:%S"), "apt_ms_ranking_traffic"))
 
 
 
@@ -1723,6 +1734,7 @@ apt_traffic_evo_long <- apt_traffic_evo %>%
 apt_traffic_evo_j <- apt_traffic_evo_long %>% toJSON(., pretty = TRUE)
 
 save_json(apt_traffic_evo_j, "apt_traffic_evo_chart_daily")
+print(paste(format(now(), "%H:%M:%S"), "apt_traffic_evo_chart_daily"))
 
 
 ## PUNCTUALITY ----
@@ -1774,6 +1786,7 @@ apt_punct_evo_long <- apt_punct_evo %>%
 apt_punct_evo_j <- apt_punct_evo_long %>% toJSON(., pretty = TRUE)
 
 save_json(apt_punct_evo_j, "apt_punct_evo_chart")
+print(paste(format(now(), "%H:%M:%S"), "apt_punct_evo_chart"))
 
 
 ## DELAY ----
@@ -1880,6 +1893,7 @@ apt_delay_cause_day_long <- cbind(apt_delay_value_day_long, apt_delay_share_day_
 apt_delay_cause_evo_dy_j <- apt_delay_cause_day_long %>% toJSON(., pretty = TRUE)
 
 save_json(apt_delay_cause_evo_dy_j, "apt_delay_category_evo_chart_dy")
+print(paste(format(now(), "%H:%M:%S"), "apt_delay_category_evo_chart_dy"))
 
 
 #### week ----
@@ -1966,6 +1980,7 @@ apt_delay_cause_wk_long <- cbind(apt_delay_value_wk_long, apt_delay_share_wk_lon
 apt_delay_cause_evo_wk_j <- apt_delay_cause_wk_long %>% toJSON(., pretty = TRUE)
 
 save_json(apt_delay_cause_evo_wk_j, "apt_delay_category_evo_chart_wk")
+print(paste(format(now(), "%H:%M:%S"), "apt_delay_category_evo_chart_wk"))
 
 
 #### y2d ----
@@ -2048,6 +2063,7 @@ apt_delay_cause_y2d_long <- cbind(apt_delay_value_y2d_long, apt_delay_share_y2d_
 apt_delay_cause_evo_y2d_j <- apt_delay_cause_y2d_long %>% toJSON(., pretty = TRUE)
 
 save_json(apt_delay_cause_evo_y2d_j, "apt_delay_category_evo_chart_y2d")
+print(paste(format(now(), "%H:%M:%S"), "apt_delay_category_evo_chart_y2d"))
 
 
 
@@ -2103,3 +2119,6 @@ apt_delayed_flights_evo_long <- apt_delayed_flights_evo %>%
 apt_delayed_flights_evo_j <- apt_delayed_flights_evo_long %>% toJSON(., pretty = TRUE)
 
 save_json(apt_delayed_flights_evo_j, "apt_delayed_flights_evo_chart")
+print(paste(format(now(), "%H:%M:%S"), "apt_delayed_flights_evo_chart"))
+
+print(" ")
