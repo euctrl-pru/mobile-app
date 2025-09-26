@@ -161,6 +161,15 @@ if (!exists("st_daio_data")) {
 
 # process data
 st_daio_data_zone <- st_daio_data %>%
+  group_by(FLIGHT_DATE) %>% 
+  ### rank calculation
+  mutate(
+    DY_DAIO_RANK = min_rank(desc(DAY_TFC)),
+    WK_DAIO_RANK = min_rank(desc(AVG_ROLLING_WEEK)),
+    Y2D_DAIO_RANK = min_rank(desc(Y2D_TFC_YEAR)),
+    # DAIO_RANK_TEXT = "*Top rank for highest.",
+  ) %>%
+  ungroup() %>% 
   mutate(daio_zone_lc = tolower(COUNTRY_NAME)) %>%
   right_join(state_daio, by = "daio_zone_lc", relationship = "many-to-many") %>%
   arrange(iso_2letter, daio_zone_lc, FLIGHT_DATE)
@@ -169,13 +178,6 @@ st_daio_last_day <- st_daio_data_zone %>%
   filter(FLIGHT_DATE == data_day_date)
 
 st_daio_for_json <- st_daio_last_day %>%
-  ### rank calculation
-  mutate(
-    DY_DAIO_RANK = min_rank(desc(DAY_TFC)),
-    WK_DAIO_RANK = min_rank(desc(AVG_ROLLING_WEEK)),
-    Y2D_DAIO_RANK = min_rank(desc(Y2D_TFC_YEAR)),
-    # DAIO_RANK_TEXT = "*Top rank for highest.",
-  ) %>%
   # Iceland exception
   mutate(
     DAY_DIFF_PREV_YEAR_PERC =  if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, DAY_DIFF_PREV_YEAR_PERC),
@@ -220,33 +222,17 @@ if (!exists("st_dai_data")) {
     filter(YEAR == data_day_year)
 }
 
-# mydataframe <- "state_dai_raw"
-# stakeholder <- "st"
-# 
-# if (archive_mode & year(data_day_date) < year(today(tzone = "") +  days(-1))) {
-#   myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
-#   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
-# 
-# } else {
-  # dfc <-  read_xlsx(
-  #   path  = fs::path_abs(
-  #     str_glue(st_base_file),
-  #     start = st_base_dir),
-  #   sheet = "state_dai",
-  #   range = cell_limits(c(1, 1), c(NA, NA))) %>%
-  #   as_tibble() %>%
-  #   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-# 
-#   # save pre-processed file in archive for generation of past json files
-#   # only last day of the year
-#   if(format(data_day_date, "%m%d") == "1231") {
-#     myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
-#     write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
-#   }
-# }
-
 # process data
 st_dai_data_zone <- st_dai_data %>%
+  group_by(FLIGHT_DATE) %>% 
+  ### rank calculation
+  mutate(
+    DY_DAI_RANK = min_rank(desc(DAY_TFC)),
+    WK_DAI_RANK = min_rank(desc(AVG_ROLLING_WEEK)),
+    Y2D_DAI_RANK = min_rank(desc(Y2D_TFC_YEAR)),
+    # DAI_RANK_TEXT = "*Top rank for highest.",
+  ) %>%
+  ungroup() %>% 
   mutate(daio_zone_lc = tolower(COUNTRY_NAME)) %>%
   right_join(state_daio, by = "daio_zone_lc", relationship = "many-to-many") %>%
   arrange(iso_2letter, daio_zone_lc, FLIGHT_DATE)
@@ -255,13 +241,6 @@ st_dai_last_day <- st_dai_data_zone %>%
   filter(FLIGHT_DATE == data_day_date)
 
 st_dai_for_json <- st_dai_last_day %>%
-  ### rank calculation
-  mutate(
-    DY_DAI_RANK = min_rank(desc(DAY_TFC)),
-    WK_DAI_RANK = min_rank(desc(AVG_ROLLING_WEEK)),
-    Y2D_DAI_RANK = min_rank(desc(Y2D_TFC_YEAR)),
-    # DAI_RANK_TEXT = "*Top rank for highest.",
-  ) %>%
   # Iceland exception
   mutate(
     DAY_DIFF_PREV_YEAR_PERC =  if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, DAY_DIFF_PREV_YEAR_PERC),
