@@ -2748,6 +2748,7 @@ WHERE
       a.ao_code,
       a.arp_pru_id_1,
       a.arp_pru_id_2,
+      (a.arp_pru_id_1 || '-' || a.arp_pru_id_1) as arp_pair_id,
      count(flt_uid) as flight
   FROM DATA_DAY a  
   where ao_id != 99999
