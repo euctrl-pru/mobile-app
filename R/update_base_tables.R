@@ -77,7 +77,7 @@ mydataframes <- c(
 )
 
 update_base_tables <- function(mydataframe) {
-# mydataframe <-   "ap_traffic_delay"
+# mydataframe <-   "ao_ap_arr_delay"
   myarchivefile <- paste0(mydataframe, "_day_base.parquet")
   mybackupfile <- paste0(mydataframe, "_day_base_backup.parquet")
   query_7d <- get(paste0(mydataframe, "_day_base_query"))
