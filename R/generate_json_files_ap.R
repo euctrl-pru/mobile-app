@@ -28,31 +28,37 @@ source(here("..", "mobile-app", "R", "params.R"))
 source(here("..", "mobile-app", "R", "queries_ap.R"))
 
 
+# Dimensions ----
+source(here("..", "mobile-app", "R", "dimension_queries.R"))
 
-# airport dimension table (lists the airports and their ICAO codes)
-query <- "SELECT
-arp_code AS apt_icao_code,
-arp_name AS apt_name,
-flag_top_apt,
-latitude,
-longitude
 
-FROM pruprod.v_aiu_app_dim_airport a
-INNER JOIN (
-  SELECT ec_ap_code, latitude, longitude
-  FROM (
-    SELECT ec_ap_code, latitude, longitude,
-           ROW_NUMBER() OVER (PARTITION BY ec_ap_code ORDER BY sk_ap_id DESC) AS rn
-    FROM swh_fct.dim_airport
-  ) t
-  WHERE rn = 1
-) b ON a.arp_code = b.ec_ap_code
-"
+# # airport dimension table (lists the airports and their ICAO codes)
+# query <- "SELECT
+# arp_code AS apt_icao_code,
+# arp_name AS apt_name,
+# flag_top_apt,
+# latitude,
+# longitude
+# 
+# FROM pruprod.v_aiu_app_dim_airport a
+# INNER JOIN (
+#   SELECT ec_ap_code, latitude, longitude
+#   FROM (
+#     SELECT ec_ap_code, latitude, longitude,
+#            ROW_NUMBER() OVER (PARTITION BY ec_ap_code ORDER BY sk_ap_id DESC) AS rn
+#     FROM swh_fct.dim_airport
+#   ) t
+#   WHERE rn = 1
+# ) b ON a.arp_code = b.ec_ap_code
+# "
+# 
+# apt_icao_full <- export_query(query) %>%
+#   janitor::clean_names()
+# 
+# apt_icao <- apt_icao_full %>% select (apt_icao_code, apt_name)
 
-apt_icao_full <- export_query(query) %>%
-  janitor::clean_names()
-
-apt_icao <- apt_icao_full %>% select (apt_icao_code, apt_name)
+list_airport_extended <- export_query(list_ap_ext_query) %>% 
+  janitor::clean_names() %>% select(-apt_id)
 
 
 # archive mode for past dates
@@ -93,7 +99,7 @@ apt_traffic_last_day <- apt_traffic_data %>%
 
 #selecting columns and renaming
 apt_traffic_for_json <- apt_traffic_last_day %>%
-  right_join(apt_icao_full, by = c("ARP_CODE" = "apt_icao_code", "ARP_NAME" = "apt_name")) %>%
+  right_join(list_airport_extended, by = c("ARP_CODE" = "apt_icao_code", "ARP_NAME" = "apt_name")) %>%
   group_by(flag_top_apt) %>%
   mutate(
     DY_TFC_RANK = if_else(flag_top_apt == "N", NA, min_rank(desc(DAY_DEP_ARR))),
@@ -145,7 +151,7 @@ apt_traffic_for_json <- apt_traffic_last_day %>%
 # 
 # #selecting columns and renaming
 # apt_traffic_for_json <- apt_traffic_last_day %>%
-#   right_join(apt_icao_full, by = c("ARP_CODE" = "apt_icao_code", "ARP_NAME" = "apt_name")) %>%
+#   right_join(list_airport_extended, by = c("ARP_CODE" = "apt_icao_code", "ARP_NAME" = "apt_name")) %>%
 #   group_by(flag_top_apt) %>%
 #   mutate(
 #     DY_TFC_RANK = if_else(flag_top_apt == "N", NA, min_rank(desc(DAY_DEP_ARR))),
@@ -407,7 +413,7 @@ apt_delay_for_json  <- apt_delay_last_day %>%
 
   ) %>%
   ### rank calculation
-  right_join(apt_icao_full, by = c("ARP_CODE" = "apt_icao_code", "ARP_NAME" = "apt_name")) %>%
+  right_join(list_airport_extended, by = c("ARP_CODE" = "apt_icao_code", "ARP_NAME" = "apt_name")) %>%
   group_by(flag_top_apt) %>%
   mutate(
     DY_DLY_RANK = if_else(flag_top_apt == "N", NA, 
@@ -657,7 +663,7 @@ apt_punct_y2d <- apt_punct_raw %>%
 #merging the totals and the year to date data
 apt_punct_for_json <- merge(apt_punct_d_w, apt_punct_y2d, by= c("ARP_CODE", "ARP_NAME")) %>%
   ### rank calculation
-  right_join(apt_icao_full, by = c("ARP_CODE" = "apt_icao_code", "ARP_NAME" = "apt_name")) %>%
+  right_join(list_airport_extended, by = c("ARP_CODE" = "apt_icao_code", "ARP_NAME" = "apt_name")) %>%
   group_by(flag_top_apt) %>%
   mutate(
     DY_ARR_PUN_RANK = if_else(flag_top_apt == "N", NA, min_rank(desc(DY_ARR_PUN))),
@@ -674,7 +680,7 @@ apt_punct_for_json <- merge(apt_punct_d_w, apt_punct_y2d, by= c("ARP_CODE", "ARP
   ungroup()
 
 #### Join strings and save  ----
-apt_json_app_j <- apt_icao_full %>%
+apt_json_app_j <- list_airport_extended %>%
   select (
     -flag_top_apt,
     APT_LATITUDE = latitude,
@@ -1755,7 +1761,7 @@ apt_punct_evo <- apt_punct_raw %>%
   ) %>%
   filter(DAY_DATE >= as.Date(paste0("01-01-", data_day_year-1), format = "%d-%m-%Y"),
          DAY_DATE <= last_day_punct) %>%
-  right_join(apt_icao, join_by("ARP_CODE"=="apt_icao_code")) %>%
+  right_join(select(list_airport_extended, apt_icao_code, apt_name), join_by("ARP_CODE"=="apt_icao_code")) %>%
   select(
     ARP_CODE,
     ARP_NAME,
