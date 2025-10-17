@@ -91,7 +91,7 @@ if (!exists("data_day_date")) {
 }
 
 # Filter and select the latest valid forecast
-valid_rows <- forecast_list[as.Date(forecast_list$publication_date) < data_day_date, ]
+valid_rows <- forecast_list[as.Date(forecast_list$publication_date) < data_day_date + days(2), ]
 latest_row <- valid_rows[which.max(as.Date(valid_rows$publication_date)), ]
 
 forecast_id <- latest_row$id
