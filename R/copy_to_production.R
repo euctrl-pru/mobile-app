@@ -12,8 +12,8 @@ library(purrr)
 source(here("..", "mobile-app", "R", "params.R"))
 
 destination_dir <- '//ihx-vdm05/LIVE_var_www_performance$/briefing'
-network_data_folder_prod <- here(destination_dir, "data", "v4")
-network_data_folder_dev <- here(destination_dir, "data", "v5")
+network_data_folder_prod <- here(destination_dir, "data", "v5")
+# network_data_folder_dev <- here(destination_dir, "data", "v5")
 
 # set the archive_mode to FALSE to run the scripts for day-1.
 # set the archive_mode to TRUE to run the scripts
@@ -22,8 +22,8 @@ network_data_folder_dev <- here(destination_dir, "data", "v5")
 archive_mode <- FALSE
 
 if (archive_mode) {
-  wef <- "2024-01-01"  #included in output
-  til <- "2024-03-26"  #included in output
+  wef <- "2025-10-03"  #included in output
+  til <- "2025-10-03"  #included in output
   data_day_date <- seq(ymd(wef), ymd(til), by = "day")
 } else {
   data_day_date <- lubridate::today(tzone = "") +  days(-1)
@@ -45,9 +45,9 @@ stakeholders <- if(!archive_mode) {
   c("nw","st","ao","ap", "sp", NULL) # don't touch this line
   } else {c(
     # "nw",
-    "st",
+    # "st",
     # "ao",
-    # "ap",
+    "ap",
     # "sp",
     NULL)
 }
@@ -86,16 +86,16 @@ copy_app_data <- function(data_day_date) {
   # parameters ----
   data_day_text_dash <- data_day_date %>% format("%Y-%m-%d")
   network_data_folder_prod_date <- here(network_data_folder_prod, data_day_text_dash)
-  network_data_folder_dev_date <- here(network_data_folder_dev, data_day_text_dash)
+  # network_data_folder_dev_date <- here(network_data_folder_dev, data_day_text_dash)
 
   # check if date folders already exist ----
   if (!dir.exists(network_data_folder_prod_date)) {
     dir.create(network_data_folder_prod_date)
   }
 
-  if (!dir.exists(network_data_folder_dev_date)) {
-    dir.create(network_data_folder_dev_date)
-  }
+  # if (!dir.exists(network_data_folder_dev_date)) {
+  #   dir.create(network_data_folder_dev_date)
+  # }
 
   # copy files to the network folders ----
   print("Copying files to network folders...")
@@ -104,10 +104,10 @@ copy_app_data <- function(data_day_date) {
     # assign(paste0(.x, "_files_to_copy"), files_to_copy, envir = .GlobalEnv)  # Assign dynamically to global environment
 
     if (get(paste0(.x, "_status")) == "prod") {
-        file.copy(from = files_to_copy, to = network_data_folder_prod_date, overwrite = TRUE)
+      copied <- file.copy(from = files_to_copy, to = network_data_folder_prod_date, overwrite = TRUE)
     }
     # print(files_to_copy)
-    copied <- file.copy(from = files_to_copy, to = network_data_folder_dev_date, overwrite = TRUE)
+    # copied <- file.copy(from = files_to_copy, to = network_data_folder_dev_date, overwrite = TRUE)
     print(paste(.x, all(copied)))
     
     if (!all(copied)) {
@@ -133,9 +133,9 @@ copy_app_data <- function(data_day_date) {
 
   # copy also one file in the root folder for the checkupdates script to verify
   if(!archive_mode) {
-    file.copy(from = here(nw_local_data_folder, "nw_json_app.json"),
-              to = network_data_folder_dev,
-              overwrite = TRUE)
+    # file.copy(from = here(nw_local_data_folder, "nw_json_app.json"),
+    #           to = network_data_folder_dev,
+    #           overwrite = TRUE)
 
     file.copy(from = here(nw_local_data_folder, "nw_json_app.json"),
               to = network_data_folder_prod,
@@ -177,12 +177,11 @@ msg = "All good, relax!"
 
 from    <- "oscar.alfaro@eurocontrol.int"
 to      <- c("oscar.alfaro@eurocontrol.int"
-             ,
-             "quinten.goens@eurocontrol.int",
-             "enrico.spinielli@eurocontrol.int",
-             "delia.budulan@eurocontrol.int",
-             "nora.cashman@eurocontrol.int"
-             ,  "denis.huet@eurocontrol.int"
+             # ,
+             # "quinten.goens@eurocontrol.int",
+             # "enrico.spinielli@eurocontrol.int",
+             # "delia.budulan@eurocontrol.int",
+             # , "nora.cashman@eurocontrol.int"
 )
 # cc      <- c("enrico.spinielli@eurocontrol.int")
 control <- list(smtpServer="mailservices.eurocontrol.int")

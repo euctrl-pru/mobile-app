@@ -62,13 +62,13 @@ mydataframes <- c(
   "ap_st_des",
   "ap_ap_des",
   "ap_ms",
-
+  
   "ao_traffic_delay",
   "ao_st_des",
   "ao_ap_dep",
   "ao_ap_pair",
   "ao_ap_arr_delay",
-
+  
   "st_dai",
   "st_ao",
   "st_st",
@@ -77,7 +77,7 @@ mydataframes <- c(
 )
 
 update_base_tables <- function(mydataframe) {
-# mydataframe <-   "ao_ap_arr_delay"
+  # mydataframe <-   "ao_ap_arr_delay"
   myarchivefile <- paste0(mydataframe, "_day_base.parquet")
   mybackupfile <- paste0(mydataframe, "_day_base_backup.parquet")
   query_7d <- get(paste0(mydataframe, "_day_base_query"))
@@ -94,7 +94,7 @@ update_base_tables <- function(mydataframe) {
   
   # define today
   today_date <- today(tzone = "")
-
+  
   # materialise table
   # df <- df_tmp %>% collect() 
   
@@ -128,7 +128,7 @@ update_base_tables <- function(mydataframe) {
   
   # write new updated table
   df_updated %>% write_parquet(here(archive_dir_raw, myarchivefile))
- 
+  
   print(paste(format(now(), "%H:%M:%S"), mydataframe, "base table updated")) 
 }
 
