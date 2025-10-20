@@ -115,29 +115,6 @@ stakeholder <- "ao"
 df <-  read_parquet(here(archive_dir_raw, stakeholder, paste0(mydataframe, ".parquet"))) %>% 
   filter(YEAR == data_day_year)
 
-# if (archive_mode & year(data_day_date) < year(today(tzone = "") +  days(-1))) {
-#   myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
-#   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
-# 
-# } else {
-# 
-#   df <-  read_xlsx(
-#     path  = fs::path_abs(
-#       str_glue(ao_base_file),
-#       start = ao_base_dir),
-#     sheet = "ao_traffic_delay",
-#     range = cell_limits(c(1, 1), c(NA, NA))) %>%
-#     as_tibble() %>%
-#     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-# 
-#   # save pre-processed file in archive for generation of past json files
-#   # only last day of the year
-#   if(format(data_day_date, "%m%d") == "1231") {
-#     myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
-#     write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
-#   }
-# }
-
 ao_traffic_delay_data <- assign(mydataframe, df)
 
 ao_traffic_delay_last_day <- ao_traffic_delay_data %>%
@@ -448,6 +425,7 @@ ao_punct_for_json <- merge(ao_punct_d_w, ao_punct_y2d, by= c("AO_GRP_NAME", "AO_
     PUN_RANK_TEXT = "*Rank within top 40 aircraft operators.\nTop rank for highest."
   ) %>%
   ungroup()
+
 
 #### CO2 data ----
 # it won't be published initially, but we prepare the data
