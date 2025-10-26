@@ -273,6 +273,20 @@ dim_ap_query <- "
   from prudev.pru_airport
 "
 
+dim_ap_query_new <- "
+select * from pruread.v_aiu_dim_airport
+
+"
+
+## list airport new ----
+list_ap_query_new <- "
+select a.*,
+	latitude, longitude
+from pruread.v_aiu_app_list_airport a
+INNER JOIN pruread.v_aiu_dim_airport b ON a.ec_ap_code = b.ec_ap_code
+GROUP BY 	a.EC_AP_CODE, a.BK_AP_ID, a.EC_AP_NAME, a.icao2letter, a.flag_top_apt, latitude, longitude
+"
+
 
 ## list airport ----
 list_ap_query <- "SELECT
@@ -293,6 +307,42 @@ INNER JOIN (
   ) t
   WHERE rn = 1
 ) b ON a.arp_code = b.ec_ap_code
+"
+
+
+
+## list airport extended new ----
+list_ap_ext_query_new <- "
+select 
+	a.ec_ap_code,
+	a.bk_ap_id,
+	a.EC_AP_NAME,
+	icao2letter,
+	flag_top_apt,
+	latitude, longitude
+from pruread.v_aiu_app_list_airport a
+INNER JOIN pruread.v_aiu_dim_airport b ON a.ec_ap_code = b.ec_ap_code
+GROUP BY 	a.EC_AP_CODE, a.BK_AP_ID, a.EC_AP_NAME, a.icao2letter, a.flag_top_apt, latitude, longitude
+
+UNION ALL
+SELECT
+	ec_ap_code,
+	bk_ap_id,
+	ec_ap_name,
+	SUBSTR(EC_AP_CODE, 1 ,2 ) AS icao2letter,
+	'N' AS flag_top_apt,
+	latitude,
+	longitude
+
+FROM pruread.v_aiu_dim_airport
+ where ec_ap_code in (
+  'BIKF','BIRK','EBCI','EBLG','EDDN','EDDP','EDDS','EDDV','EGAA','EGBB','EGGD','EGLC','EGNX','EGPD','EGPF','ENBR','ENVA','ENZV',
+  'EPKK','ESGG','ESSB','GCRR','GCTS','GCXO','LBSF','LEAL','LEBB','LEIB','LEVC','LEZL','LFBD','LFBO','LFLL','LFML','LFPB','LFRS',
+  'LFSB','LGIR','LGTS','LICC','LICJ','LIME','LIML','LIPE','LIPZ','LIRA','LIRN','LPFR','LPPR','LTAC','LTBA','LTBJ','UKBB'
+	)
+	AND EC_AP_CODE NOT IN (SELECT EC_AP_CODE FROM pruread.v_aiu_app_list_airport)
+	AND VALID_TO >= trunc(sysdate)
+	 GROUP BY 	EC_AP_CODE, BK_AP_ID, EC_AP_NAME, SUBSTR (EC_AP_CODE, 1, 2), latitude, longitude
 "
 
 ## list airport extended ----

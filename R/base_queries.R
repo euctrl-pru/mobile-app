@@ -3,19 +3,12 @@
 nw_delay_cause_day_base_query <- paste0("
 WITH
 
-TIME_REF as
-( select t.day_date
-FROM prudev.pru_time_references t
-WHERE
-   t.day_date  >= ", query_from, "
-   AND  t.day_date  < (TRUNC (SYSDATE))
-),
-
 NM_AREA_FLT
     AS
         (SELECT 
                 a_first_entry_time_date FLIGHT_DATE , 
-                SUM(nvl(a.all_traffic,0)) FLT
+                SUM(nvl(a.all_traffic,0)) FLT,
+                SUM(nvl(a.delayed_traffic,0)) TDF
            FROM  prudev.v_aiu_agg_global_daily_counts a
            WHERE 
                  a.a_first_entry_time_date  >= ", query_from, "
@@ -108,6 +101,7 @@ SELECT
 
 select 
     'Total Network Manager Area' as AREA,
+    cast(extract(year from a.flight_date) as integer) as year,
     a.*,
         TDM,
  		TDM - TDM_ARP AS TDM_ERT,
@@ -150,8 +144,13 @@ select
 
 from NM_AREA_FLT a
 left join NM_AREA_DLY b on a.FLIGHT_DATE=b.FLIGHT_DATE
+order by a.FLIGHT_DATE
 "
 )
+
+## nw delay cause new ----
+nw_delay_cause_new_day_base_query <- nw_delay_cause_day_base_query
+
 
 # STATE ----
 ## st_daio ----
@@ -696,6 +695,9 @@ UNION ALL
 SELECT * FROM DATA_SPAIN_TOGETHER
 "
 )
+
+## st_dai new ----
+st_dai_new_day_base_query <- st_dai_day_base_query
 
 ## st_delay ----
 st_delay_day_query <- "
@@ -1591,6 +1593,136 @@ select
  order by country_name, flight_date
 
 "
+## st_ao new ----
+st_ao_new_day_base_query <- paste0("
+with 
+
+DIM_AO
+ as ( SELECT distinct
+ 		ao_id,
+ 		ao_code, 
+ 		wef,
+ 		til
+ from  ldw_acc.AO_GROUPS_ASSOCIATION
+ ) ,
+ 
+DIM_AIRPORT AS (
+SELECT a.*,
+       CASE WHEN SUBSTR(cfmu_ap_code, 1, 2) = 'GC' then 'IC'
+            ELSE aiu_iso_ct_code
+       END iso_ct_code_spain
+FROM pruread.v_aiu_dim_airport a
+WHERE cfmu_ap_code IS NOT NULL
+),
+
+AIRP_FLIGHT as (
+SELECT flt_uid,
+       TRUNC (flt_a_asp_prof_time_entry) AS ENTRY_DATE,
+		CASE WHEN (TRUNC (flt_a_asp_prof_time_entry) >= c1.valid_from AND TRUNC (flt_a_asp_prof_time_entry) <= c1.valid_to)
+			THEN nvl(c1.iso_ct_code_spain, '##') 
+			ELSE '99999'
+		END arr_iso_ct_code, 
+		CASE WHEN (TRUNC (flt_a_asp_prof_time_entry) >= c2.valid_from AND TRUNC (flt_a_asp_prof_time_entry) <= c2.valid_to)
+			THEN nvl(c2.iso_ct_code_spain, '##') 
+			ELSE '99999'
+		END dep_iso_ct_code,
+        CASE WHEN (TRUNC(A.flt_a_asp_prof_time_entry) >= d.wef AND TRUNC(A.flt_a_asp_prof_time_entry) <= d.til)
+        		THEN nvl(d.ao_id, 1777) 
+        		ELSE 99999
+        END ao_id, 
+        nvl(d.ao_code,'ZZZ') ao_code
+       
+  FROM prudev.v_aiu_flt a
+     left outer join DIM_AIRPORT c1 ON  (a.flt_dep_ad = c1.cfmu_ap_code)
+     left outer join DIM_AIRPORT c2 ON  (a.flt_ctfm_ades  = c2.cfmu_ap_code)
+     left outer join DIM_AO d  on ( (a.ao_icao_id = d.ao_code ) )
+  WHERE A.flt_lobt >= ", query_from, " - 2 
+                        AND A.flt_lobt < TRUNC (SYSDATE) + 2
+                        AND A.flt_a_asp_prof_time_entry >=  ", query_from, " 
+                        AND A.flt_a_asp_prof_time_entry < TRUNC (SYSDATE)-0 
+ 
+       AND A.flt_state IN ('TE', 'TA', 'AA')
+     )
+     
+   
+, CTRY_PAIR_FLIGHT as (
+SELECT entry_date,
+      CASE WHEN   dep_iso_ct_code <= arr_iso_ct_code
+           THEN dep_iso_ct_code 
+           ELSE   arr_iso_ct_code 
+       END          
+        iso_ct_code1, 
+      CASE WHEN  dep_iso_ct_code <= arr_iso_ct_code
+           THEN arr_iso_ct_code  
+           ELSE   dep_iso_ct_code 
+       END          
+        iso_ct_code2, 
+        ao_id,
+        ao_code,
+        flt_uid
+  FROM AIRP_FLIGHT 
+  WHERE dep_iso_ct_code != '99999' AND arr_iso_ct_code != '99999'
+ 
+  )
+  
+ , CTRY_PAIR_ARP_1 as (
+ SELECT
+        entry_date, 
+        iso_ct_code1,
+        iso_ct_code2, 
+        ao_id,
+        ao_code,
+        flt_uid 
+ FROM 
+ CTRY_PAIR_FLIGHT 
+ 
+ 
+ )  
+ 
+ , CTRY_PAIR_ARP_2 as (
+SELECT entry_date,
+       iso_ct_code2 as iso_ct_code1,
+       iso_ct_code1 as iso_ct_code2,
+        ao_id,
+        ao_code,
+        flt_uid 
+FROM CTRY_PAIR_ARP_1  
+  WHERE iso_ct_code1 <> iso_ct_code2
+ )
+ 
+, CTRY_PAIR_ARP as (
+ SELECT  iso_ct_code1 as iso_ct_code,
+ 		entry_date,
+ 		ao_id,
+        ao_code,
+        flt_uid 
+ FROM CTRY_PAIR_ARP_1
+ UNION ALL
+ SELECT  iso_ct_code1 as iso_ct_code, entry_date,
+ 		ao_id,
+        ao_code,
+        flt_uid 
+ FROM  CTRY_PAIR_ARP_2
+ ) 
+
+
+select 
+    extract(year from entry_date) as year,
+    entry_date,
+		iso_ct_code,  
+ 		ao_id,
+    ao_code,
+		count(flt_uid) as flight
+from CTRY_PAIR_ARP a
+where ao_id != 99999 AND iso_Ct_code = 'BE'
+ group by entry_date,
+ 		iso_ct_code,  
+ 		ao_id,
+    ao_code
+ORDER BY iso_ct_code, entry_date desc, flight desc
+
+")
+
 ## st_ao ----
 st_ao_day_base_query <- paste0("
 with 
@@ -1714,6 +1846,70 @@ ORDER BY iso_ct_code, flight desc
 "
 )
 
+## st_ap new----
+st_ap_new_day_base_query <- paste0("
+WITH
+
+DIM_AIRPORT AS (
+SELECT a.*,
+       CASE WHEN SUBSTR(cfmu_ap_code, 1, 2) = 'GC' then 'IC'
+            ELSE aiu_iso_ct_code
+       END iso_ct_code_spain
+FROM pruread.v_aiu_dim_airport a
+WHERE cfmu_ap_code IS NOT NULL
+),
+
+DATA_FLIGHT_DEP as (
+SELECT 
+        A.adep_DAY_FLT_DATE  AS FLIGHT_DATE,
+				b.iso_ct_code_spain AS dep_iso_ct_code,
+				CASE WHEN (TRUNC (adep_DAY_FLT_DATE) >= b.valid_from AND TRUNC (adep_DAY_FLT_DATE) <= b.valid_to)
+					THEN nvl(b.bk_ap_id, -1) 
+					ELSE 99999
+				END dep_bk_ap_id, 
+				adep_day_adep AS adep_code,
+				nvl(A.adep_day_all_trf,0) AS dep 
+FROM  prudev.v_aiu_agg_dep_day A 
+ left outer  join DIM_AIRPORT b ON  ( A.adep_day_adep=  b.cfmu_ap_code)
+ where A.adep_DAY_FLT_DATE >=  ", query_from, "
+        AND A.adep_DAY_FLT_DATE < TRUNC (SYSDATE)-0 
+ORDER BY A.adep_DAY_FLT_DATE, dep_bk_ap_id
+    
+)
+
+,DATA_FLIGHT_ARR as (
+SELECT 
+				A.ades_DAY_FLT_DATE  AS FLIGHT_DATE,
+				b.iso_ct_code_spain AS arr_iso_ct_code,
+				CASE WHEN (TRUNC (ades_DAY_FLT_DATE) >= b.valid_from AND TRUNC (ades_DAY_FLT_DATE) <= b.valid_to)
+					THEN nvl(b.bk_ap_id, -1) 
+					ELSE 99999
+				END arr_bk_ap_id, 
+				ades_day_ades_ctfm AS ades_code,
+				nvl(A.ades_day_all_trf,0) AS arr
+ FROM  prudev.v_aiu_agg_arr_day A 
+ left outer  join DIM_AIRPORT b ON  ( A.ades_day_ades_ctfm=  b.cfmu_ap_code)
+ where  A.ades_DAY_FLT_DATE >=  ", query_from, "
+         AND A.ades_DAY_FLT_DATE < TRUNC (SYSDATE)-0 
+ORDER BY A.ades_DAY_FLT_DATE, arr_bk_ap_id
+     
+
+)
+
+SELECT 
+		CAST(EXTRACT(YEAR FROM COALESCE(a.FLIGHT_DATE, b.FLIGHT_DATE)) AS integer) AS YEAR,
+		COALESCE(a.FLIGHT_DATE, b.FLIGHT_DATE) AS flight_date,
+        coalesce(a.dep_iso_ct_code, b.arr_iso_ct_code) AS iso_ct_code,
+        coalesce(a.dep_bk_ap_id, b.arr_bk_ap_id) AS bk_ap_id,
+        coalesce(a.adep_code, b.ades_code) AS ap_code,
+		COALESCE(a.dep, 0) AS dep, 
+        COALESCE(b.arr, 0) AS arr, 
+        COALESCE(a.dep, 0) + COALESCE(b.arr, 0) AS dep_arr 
+  FROM DATA_FLIGHT_DEP a   
+  full outer JOIN DATA_FLIGHT_ARR b on (a.FLIGHT_DATE = b.FLIGHT_DATE AND a.dep_bk_ap_id = b.arr_bk_ap_id)                
+  WHERE a.dep_bk_ap_id != 99999 AND b.arr_bk_ap_id != 99999 
+")
+
 ## st_ap ----
 st_ap_day_base_query <- paste0("
 with 
@@ -1778,6 +1974,96 @@ UNION ALL -- union is all as we count all dep and arrival
 
 "
 )
+
+## st_st new ----
+st_st_new_day_base_query <- paste0("
+with 
+--
+DIM_AIRPORT AS (
+SELECT a.*,
+       CASE WHEN SUBSTR(cfmu_ap_code, 1, 2) = 'GC' then 'IC'
+            ELSE aiu_iso_ct_code
+       END iso_ct_code_spain
+FROM pruread.v_aiu_dim_airport a
+WHERE cfmu_ap_code IS NOT NULL
+),
+
+AIRP_FLIGHT as (
+SELECT count(flt_uid) as mvt,
+       TRUNC (flt_a_asp_prof_time_entry) AS entry_date,
+		CASE WHEN (TRUNC (flt_a_asp_prof_time_entry) >= c1.valid_from AND TRUNC (flt_a_asp_prof_time_entry) <= c1.valid_to)
+			THEN nvl(c1.iso_ct_code_spain, '##') 
+			ELSE '99999'
+		END arr_iso_ct_code, 
+		CASE WHEN (TRUNC (flt_a_asp_prof_time_entry) >= c2.valid_from AND TRUNC (flt_a_asp_prof_time_entry) <= c2.valid_to)
+			THEN nvl(c2.iso_ct_code_spain, '##') 
+			ELSE '99999'
+		END dep_iso_ct_code
+  FROM prudev.v_aiu_flt a, DIM_AIRPORT c1, DIM_AIRPORT c2
+ WHERE A.flt_lobt >= ", query_from, " -2
+                        AND A.flt_lobt < TRUNC (SYSDATE)+2
+                        AND A.flt_a_asp_prof_time_entry >=  ", query_from, "
+                        AND A.flt_a_asp_prof_time_entry < TRUNC (SYSDATE)
+ 
+       AND A.flt_state IN ('TE', 'TA', 'AA')
+       AND flt_dep_ad = c1.cfmu_ap_code and  flt_ctfm_ades = c2.cfmu_ap_code
+       GROUP BY c1.iso_ct_code_spain, c2.iso_ct_code_spain, TRUNC (flt_a_asp_prof_time_entry),
+       c1.valid_from, c1.valid_to, c2.valid_from, c2.valid_to
+     ),
+     
+    
+CTRY_PAIR_FLIGHT as
+(
+SELECT entry_date,
+      CASE WHEN   dep_iso_ct_code <= arr_iso_ct_code
+           THEN dep_iso_ct_code 
+           ELSE   arr_iso_ct_code 
+       END          
+        iso_ct_code1, 
+      CASE WHEN  dep_iso_ct_code <= arr_iso_ct_code
+           THEN arr_iso_ct_code  
+           ELSE   dep_iso_ct_code 
+       END          
+        iso_ct_code2 , 
+        mvt
+  FROM AIRP_FLIGHT 
+  WHERE dep_iso_ct_code != '99999' AND arr_iso_ct_code != '99999'
+ 
+  ),
+  
+ CTRY_PAIR_ARP_1 as 
+ (SELECT entry_date,
+        iso_ct_code1 as iso_ct_code,
+        iso_ct_code2, 
+        sum(mvt) as FLIGHT 
+ FROM 
+ CTRY_PAIR_FLIGHT 
+ group by entry_date, iso_ct_code1, iso_ct_code2
+ 
+ ),  
+ 
+ CTRY_PAIR_ARP_2 as 
+(
+SELECT entry_date,
+      iso_ct_code2 as iso_ct_code,
+       iso_ct_code as iso_ct_code2,
+       FLIGHT
+FROM CTRY_PAIR_ARP_1  
+  WHERE iso_ct_code <> iso_ct_code2
+ )
+
+ SELECT 
+ cast(extract(year from entry_date) as integer) as year,
+ entry_date, iso_ct_code, iso_ct_code2, FLIGHT 
+ FROM CTRY_PAIR_ARP_1
+ UNION ALL
+ SELECT 
+ cast(extract(year from entry_date) as integer) as year,
+ entry_date, iso_ct_code, iso_ct_code2, FLIGHT 
+ FROM  CTRY_PAIR_ARP_2
+ORDER BY entry_date, iso_ct_code, FLIGHT desc
+
+")
 
 ## st_st ----
 st_st_day_base_query <- paste0("
@@ -1865,6 +2151,371 @@ ORDER BY entry_date, iso_ct_code1, tot_mvt desc
 )
 
 # AIRPORT ----
+## ap_day new-----
+ap_traffic_delay_new_day_base_query <- paste0 (
+"
+WITH 
+
+ DIM_AIRPORT AS (
+SELECT 
+* FROM pruread.v_aiu_dim_airport
+WHERE cfmu_ap_code IS NOT NULL
+),
+
+  arp_SYN_ARR
+  AS
+  (SELECT 
+    SUM (nvl(f.ades_day_all_trf,0)) AS arr,
+    f.ades_day_ades_ctfm AS arp_code,
+    trunc(f.ades_DAY_FLT_DATE) AS flight_date
+    FROM prudev.v_aiu_agg_arr_day f
+    WHERE trunc(f.ades_DAY_FLT_DATE) >= ", query_from, "
+    GROUP BY
+    f.ades_day_ades_ctfm,
+    trunc(f.ades_DAY_FLT_DATE)
+  ),
+
+  
+  arp_SYN_DEP
+  AS
+  (SELECT 
+    SUM (nvl(f.adep_day_all_trf,0)) AS dep,
+    f.adep_day_adep AS arp_code,
+    trunc(f.adep_DAY_FLT_DATE) AS flight_date
+    FROM prudev.v_aiu_agg_dep_day f
+    WHERE trunc(f.adep_DAY_FLT_DATE) >= ", query_from, "
+    GROUP BY
+    f.adep_day_adep,
+    trunc(f.adep_DAY_FLT_DATE)
+  ),
+  
+  
+  arp_DELAY
+  AS
+  (  SELECT
+    a.ref_loc_id as arp_code,
+    a.agg_flt_a_first_entry_date AS entry_date,
+    
+    SUM (NVL(a.agg_flt_total_delay, 0))
+    tdm_arp,
+    SUM (NVL(agg_flt_delayed_traffic, 0))
+    tdf_arp,
+    SUM (NVL(a.agg_flt_regulated_traffic, 0))
+    trf_arp,
+    
+    SUM (NVL((CASE WHEN a.agg_flt_delay_interval IN  (']15,30]', ']30,60]', '> 60') THEN a.agg_flt_total_delay END),0))
+    tdm_15_arp,
+    SUM (NVL((CASE WHEN a.agg_flt_delay_interval IN  (']15,30]', ']30,60]', '> 60') THEN a.agg_flt_delayed_traffic END),0))
+    tdf_15_arp,
+    SUM (NVL((CASE WHEN a.agg_flt_delay_interval IN  (']15,30]', ']30,60]', '> 60') THEN NVL (a.agg_flt_regulated_traffic, 0) END),0))
+    trf_15_arp,    
+   
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('A')   THEN a.agg_flt_total_delay END),0))
+    tdm_arp_a,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('C')   THEN a.agg_flt_total_delay END),0))
+    tdm_arp_c,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('D')   THEN a.agg_flt_total_delay END),0))
+    tdm_arp_d,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('E')   THEN a.agg_flt_total_delay END),0))
+    tdm_arp_e,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('G')   THEN a.agg_flt_total_delay END),0))
+    tdm_arp_g,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('I')   THEN a.agg_flt_total_delay END),0))
+    tdm_arp_i,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('M')   THEN a.agg_flt_total_delay END),0))
+    tdm_arp_m,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('N')   THEN a.agg_flt_total_delay END),0))
+    tdm_arp_n,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('O')   THEN a.agg_flt_total_delay END),0))
+    tdm_arp_o,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('P')   THEN a.agg_flt_total_delay END),0))
+    tdm_arp_p,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('R')   THEN a.agg_flt_total_delay END),0))
+    tdm_arp_r,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('S')   THEN a.agg_flt_total_delay END),0))
+    tdm_arp_s,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('T')   THEN a.agg_flt_total_delay END),0))
+    tdm_arp_t,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('V')   THEN a.agg_flt_total_delay END),0))
+    tdm_arp_v,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('W')   THEN a.agg_flt_total_delay END),0))
+    tdm_arp_w,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('NA')   THEN a.agg_flt_total_delay END),0))
+    tdm_arp_na,  
+    
+    SUM (NVL((CASE WHEN a.MP_REGU_LOC_CAT = 'Arrival' THEN  a.agg_flt_total_delay END),0))
+    tdm_arp_arr,
+    SUM (NVL((CASE WHEN a.MP_REGU_LOC_CAT = 'Arrival' THEN  a.agg_flt_delayed_traffic END),0))
+    tdf_arp_arr,
+    SUM (NVL((CASE WHEN a.MP_REGU_LOC_CAT = 'Arrival' THEN  NVL (a.agg_flt_regulated_traffic, 0) END),0))
+    trf_arp_arr,
+    
+    SUM (NVL((CASE WHEN a.MP_REGU_LOC_CAT = 'Arrival'  AND a.agg_flt_delay_interval IN (']15,30]', ']30,60]', '> 60') THEN  a.agg_flt_total_delay END),0))
+    tdm_15_arp_arr,
+    SUM (NVL((CASE WHEN a.MP_REGU_LOC_CAT = 'Arrival'  AND a.agg_flt_delay_interval IN (']15,30]', ']30,60]', '> 60')  THEN  a.agg_flt_delayed_traffic END),0))
+    tdf_15_arp_arr,
+    SUM (NVL((CASE WHEN a.MP_REGU_LOC_CAT = 'Arrival'  AND a.agg_flt_delay_interval IN (']15,30]', ']30,60]', '> 60')THEN  NVL (a.agg_flt_regulated_traffic, 0) END),0))
+    trf_15_arp_arr,    
+   
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('A') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
+    tdm_arp_arr_a,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('C') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
+    tdm_arp_arr_c,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('D') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
+    tdm_arp_arr_d,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('E') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
+    tdm_arp_arr_e,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('G') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
+    tdm_arp_arr_g,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('I') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
+    tdm_arp_arr_i,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('M') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
+    tdm_arp_arr_m,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('N') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
+    tdm_arp_arr_n,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('O') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
+    tdm_arp_arr_o,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('P') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
+    tdm_arp_arr_p,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('R') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
+    tdm_arp_arr_r,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('S') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
+    tdm_arp_arr_s,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('T') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
+    tdm_arp_arr_t,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('V') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
+    tdm_arp_arr_v,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('W') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
+    tdm_arp_arr_w,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('NA') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
+    tdm_arp_arr_na,    
+  
+    SUM (NVL((CASE WHEN a.MP_REGU_LOC_CAT = 'Departure'  THEN a.agg_flt_total_delay END),0))
+    tdm_arp_dep,
+    SUM (NVL((CASE WHEN a.MP_REGU_LOC_CAT = 'Departure'  THEN a.agg_flt_delayed_traffic END),0))
+    tdf_arp_dep,
+    SUM (NVL((CASE WHEN a.MP_REGU_LOC_CAT = 'Departure'  THEN NVL (a.agg_flt_regulated_traffic, 0) END),0))
+    trf_arp_dep,
+    
+    SUM (NVL((CASE WHEN a.MP_REGU_LOC_CAT = 'Departure' AND a.agg_flt_delay_interval IN (']15,30]', ']30,60]', '> 60') THEN a.agg_flt_total_delay END),0))
+    tdm_15_arp_dep,
+    SUM (NVL((CASE WHEN a.MP_REGU_LOC_CAT = 'Departure' AND a.agg_flt_delay_interval IN (']15,30]', ']30,60]', '> 60') THEN a.agg_flt_delayed_traffic END),0))
+    tdf_15_arp_dep,
+    SUM (NVL((CASE WHEN a.MP_REGU_LOC_CAT = 'Departure' AND a.agg_flt_delay_interval IN (']15,30]', ']30,60]', '> 60') THEN  NVL (a.agg_flt_regulated_traffic, 0) END),0))
+    trf_15_arp_dep,    
+   
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('A') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
+    tdm_arp_dep_a,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('C') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
+    tdm_arp_dep_c,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('D') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
+    tdm_arp_dep_d,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('E') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
+    tdm_arp_dep_e,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('G') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
+    tdm_arp_dep_g,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('I') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
+    tdm_arp_dep_i,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('M') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
+    tdm_arp_dep_m,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('N') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
+    tdm_arp_dep_n,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('O') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
+    tdm_arp_dep_o,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('P') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
+    tdm_arp_dep_p,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('R') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
+    tdm_arp_dep_r,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('S') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
+    tdm_arp_dep_s,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('T') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
+    tdm_arp_dep_t,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('V') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
+    tdm_arp_dep_v,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('W') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
+    tdm_arp_dep_w,
+    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('NA') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
+    tdm_arp_dep_na
+    
+    FROM prudev.v_aiu_agg_flt_flow a
+    WHERE
+    a.agg_flt_a_first_entry_date >= ", query_from, "
+    and a.AGG_FLT_MP_REGU_LOC_TY = 'Airport'
+    GROUP BY
+    a.agg_flt_a_first_entry_date,
+    a.ref_loc_id
+  ),
+  
+  ALL_DAY_DATA as (
+    SELECT
+    coalesce(coalesce(a.arp_code,c.arp_code), b.arp_code) arp_code,
+    coalesce(coalesce(a.flight_date,c.flight_date), b.entry_date) flight_date,
+    coalesce(a.arr, 0) arr,
+    coalesce(c.dep, 0) dep, 
+    coalesce(TDM_ARP,0) as TDM_ARP,
+    coalesce(TDF_ARP,0) as TDF_ARP,
+    coalesce(TRF_ARP,0) as TRF_ARP,
+    coalesce(TDM_15_ARP,0) as TDM_15_ARP,
+    coalesce(TDF_15_ARP,0) as TDF_15_ARP,
+    coalesce(TRF_15_ARP,0) as TRF_15_ARP,
+    coalesce(TDM_ARP_A,0) as TDM_ARP_A,
+    coalesce(TDM_ARP_C,0) as TDM_ARP_C,
+    coalesce(TDM_ARP_D,0) as TDM_ARP_D,
+    coalesce(TDM_ARP_E,0) as TDM_ARP_E,
+    coalesce(TDM_ARP_G,0) as TDM_ARP_G,
+    coalesce(TDM_ARP_I,0) as TDM_ARP_I,
+    coalesce(TDM_ARP_M,0) as TDM_ARP_M,
+    coalesce(TDM_ARP_N,0) as TDM_ARP_N,
+    coalesce(TDM_ARP_O,0) as TDM_ARP_O,
+    coalesce(TDM_ARP_P,0) as TDM_ARP_P,
+    coalesce(TDM_ARP_R,0) as TDM_ARP_R,
+    coalesce(TDM_ARP_S,0) as TDM_ARP_S,
+    coalesce(TDM_ARP_T,0) as TDM_ARP_T,
+    coalesce(TDM_ARP_V,0) as TDM_ARP_V,
+    coalesce(TDM_ARP_W,0) as TDM_ARP_W,
+    coalesce(TDM_ARP_NA,0) as TDM_ARP_NA,
+    coalesce(TDM_ARP_ARR,0) as TDM_ARP_ARR,
+    coalesce(TDF_ARP_ARR,0) as TDF_ARP_ARR,
+    coalesce(TRF_ARP_ARR,0) as TRF_ARP_ARR,
+    coalesce(TDM_15_ARP_ARR,0) as TDM_15_ARP_ARR,
+    coalesce(TDF_15_ARP_ARR,0) as TDF_15_ARP_ARR,
+    coalesce(TRF_15_ARP_ARR,0) as TRF_15_ARP_ARR,
+    coalesce(TDM_ARP_ARR_A,0) as TDM_ARP_ARR_A,
+    coalesce(TDM_ARP_ARR_C,0) as TDM_ARP_ARR_C,
+    coalesce(TDM_ARP_ARR_D,0) as TDM_ARP_ARR_D,
+    coalesce(TDM_ARP_ARR_E,0) as TDM_ARP_ARR_E,
+    coalesce(TDM_ARP_ARR_G,0) as TDM_ARP_ARR_G,
+    coalesce(TDM_ARP_ARR_I,0) as TDM_ARP_ARR_I,
+    coalesce(TDM_ARP_ARR_M,0) as TDM_ARP_ARR_M,
+    coalesce(TDM_ARP_ARR_N,0) as TDM_ARP_ARR_N,
+    coalesce(TDM_ARP_ARR_O,0) as TDM_ARP_ARR_O,
+    coalesce(TDM_ARP_ARR_P,0) as TDM_ARP_ARR_P,
+    coalesce(TDM_ARP_ARR_R,0) as TDM_ARP_ARR_R,
+    coalesce(TDM_ARP_ARR_S,0) as TDM_ARP_ARR_S,
+    coalesce(TDM_ARP_ARR_T,0) as TDM_ARP_ARR_T,
+    coalesce(TDM_ARP_ARR_V,0) as TDM_ARP_ARR_V,
+    coalesce(TDM_ARP_ARR_W,0) as TDM_ARP_ARR_W,
+    coalesce(TDM_ARP_ARR_NA,0) as TDM_ARP_ARR_NA,
+    coalesce(TDM_ARP_DEP,0) as TDM_ARP_DEP,
+    coalesce(TDF_ARP_DEP,0) as TDF_ARP_DEP,
+    coalesce(TRF_ARP_DEP,0) as TRF_ARP_DEP,
+    coalesce(TDM_15_ARP_DEP,0) as TDM_15_ARP_DEP,
+    coalesce(TDF_15_ARP_DEP,0) as TDF_15_ARP_DEP,
+    coalesce(TRF_15_ARP_DEP,0) as TRF_15_ARP_DEP,
+    coalesce(TDM_ARP_DEP_A,0) as TDM_ARP_DEP_A,
+    coalesce(TDM_ARP_DEP_C,0) as TDM_ARP_DEP_C,
+    coalesce(TDM_ARP_DEP_D,0) as TDM_ARP_DEP_D,
+    coalesce(TDM_ARP_DEP_E,0) as TDM_ARP_DEP_E,
+    coalesce(TDM_ARP_DEP_G,0) as TDM_ARP_DEP_G,
+    coalesce(TDM_ARP_DEP_I,0) as TDM_ARP_DEP_I,
+    coalesce(TDM_ARP_DEP_M,0) as TDM_ARP_DEP_M,
+    coalesce(TDM_ARP_DEP_N,0) as TDM_ARP_DEP_N,
+    coalesce(TDM_ARP_DEP_O,0) as TDM_ARP_DEP_O,
+    coalesce(TDM_ARP_DEP_P,0) as TDM_ARP_DEP_P,
+    coalesce(TDM_ARP_DEP_R,0) as TDM_ARP_DEP_R,
+    coalesce(TDM_ARP_DEP_S,0) as TDM_ARP_DEP_S,
+    coalesce(TDM_ARP_DEP_T,0) as TDM_ARP_DEP_T,
+    coalesce(TDM_ARP_DEP_V,0) as TDM_ARP_DEP_V,
+    coalesce(TDM_ARP_DEP_W,0) as TDM_ARP_DEP_W,
+    coalesce(TDM_ARP_DEP_NA,0) as TDM_ARP_DEP_NA    
+    FROM arp_SYN_ARR A
+    FULL OUTER JOIN arp_SYN_dep c on a.arp_code  = c.arp_code  and a.flight_date = c.flight_date
+    FULL OUTER JOIN ARP_DELAY b on a.arp_code  = B.arp_code  and a.flight_date = b.entry_date
+    
+  ),
+  
+DATA_AP_ID AS (
+  
+  SELECT
+  CASE WHEN (flight_date >= b.valid_from AND flight_date < b.valid_to)
+       THEN nvl(b.bk_ap_id, -1) 
+       ELSE 99999
+  END bk_ap_id, 
+  CASE WHEN (flight_date >= b.valid_from AND flight_date < b.valid_to)
+       THEN nvl(b.ec_ap_code, 'ZZZZ') 
+       ELSE '99999'
+  END ap_code, 
+  cast(extract(year from flight_date) as integer) as year,
+  flight_date,
+  sum(arr) as arr,
+  sum(dep) as dep,
+  sum(dep) + sum(arr) dep_arr,
+  sum(TDM_ARP) as TDM_ARP,
+  sum(TDF_ARP) as TDF_ARP,
+  sum(TRF_ARP) as TRF_ARP,
+  sum(TDM_15_ARP) as TDM_15_ARP,
+  sum(TDF_15_ARP) as TDF_15_ARP,
+  sum(TRF_15_ARP) as TRF_15_ARP,
+  sum(TDM_ARP_A) as TDM_ARP_A,
+  sum(TDM_ARP_C) as TDM_ARP_C,
+  sum(TDM_ARP_D) as TDM_ARP_D,
+  sum(TDM_ARP_E) as TDM_ARP_E,
+  sum(TDM_ARP_G) as TDM_ARP_G,
+  sum(TDM_ARP_I) as TDM_ARP_I,
+  sum(TDM_ARP_M) as TDM_ARP_M,
+  sum(TDM_ARP_N) as TDM_ARP_N,
+  sum(TDM_ARP_O) as TDM_ARP_O,
+  sum(TDM_ARP_P) as TDM_ARP_P,
+  sum(TDM_ARP_R) as TDM_ARP_R,
+  sum(TDM_ARP_S) as TDM_ARP_S,
+  sum(TDM_ARP_T) as TDM_ARP_T,
+  sum(TDM_ARP_V) as TDM_ARP_V,
+  sum(TDM_ARP_W) as TDM_ARP_W,
+  sum(TDM_ARP_NA) as TDM_ARP_NA,
+  sum(TDM_ARP_ARR) as TDM_ARP_ARR,
+  sum(TDF_ARP_ARR) as TDF_ARP_ARR,
+  sum(TRF_ARP_ARR) as TRF_ARP_ARR,
+  sum(TDM_15_ARP_ARR) as TDM_15_ARP_ARR,
+  sum(TDF_15_ARP_ARR) as TDF_15_ARP_ARR,
+  sum(TRF_15_ARP_ARR) as TRF_15_ARP_ARR,
+  sum(TDM_ARP_ARR_A) as TDM_ARP_ARR_A,
+  sum(TDM_ARP_ARR_C) as TDM_ARP_ARR_C,
+  sum(TDM_ARP_ARR_D) as TDM_ARP_ARR_D,
+  sum(TDM_ARP_ARR_E) as TDM_ARP_ARR_E,
+  sum(TDM_ARP_ARR_G) as TDM_ARP_ARR_G,
+  sum(TDM_ARP_ARR_I) as TDM_ARP_ARR_I,
+  sum(TDM_ARP_ARR_M) as TDM_ARP_ARR_M,
+  sum(TDM_ARP_ARR_N) as TDM_ARP_ARR_N,
+  sum(TDM_ARP_ARR_O) as TDM_ARP_ARR_O,
+  sum(TDM_ARP_ARR_P) as TDM_ARP_ARR_P,
+  sum(TDM_ARP_ARR_R) as TDM_ARP_ARR_R,
+  sum(TDM_ARP_ARR_S) as TDM_ARP_ARR_S,
+  sum(TDM_ARP_ARR_T) as TDM_ARP_ARR_T,
+  sum(TDM_ARP_ARR_V) as TDM_ARP_ARR_V,
+  sum(TDM_ARP_ARR_W) as TDM_ARP_ARR_W,
+  sum(TDM_ARP_ARR_NA) as TDM_ARP_ARR_NA,
+  sum(TDM_ARP_DEP) as TDM_ARP_DEP,
+  sum(TDF_ARP_DEP) as TDF_ARP_DEP,
+  sum(TRF_ARP_DEP) as TRF_ARP_DEP,
+  sum(TDM_15_ARP_DEP) as TDM_15_ARP_DEP,
+  sum(TDF_15_ARP_DEP) as TDF_15_ARP_DEP,
+  sum(TRF_15_ARP_DEP) as TRF_15_ARP_DEP,
+  sum(TDM_ARP_DEP_A) as TDM_ARP_DEP_A,
+  sum(TDM_ARP_DEP_C) as TDM_ARP_DEP_C,
+  sum(TDM_ARP_DEP_D) as TDM_ARP_DEP_D,
+  sum(TDM_ARP_DEP_E) as TDM_ARP_DEP_E,
+  sum(TDM_ARP_DEP_G) as TDM_ARP_DEP_G,
+  sum(TDM_ARP_DEP_I) as TDM_ARP_DEP_I,
+  sum(TDM_ARP_DEP_M) as TDM_ARP_DEP_M,
+  sum(TDM_ARP_DEP_N) as TDM_ARP_DEP_N,
+  sum(TDM_ARP_DEP_O) as TDM_ARP_DEP_O,
+  sum(TDM_ARP_DEP_P) as TDM_ARP_DEP_P,
+  sum(TDM_ARP_DEP_R) as TDM_ARP_DEP_R,
+  sum(TDM_ARP_DEP_S) as TDM_ARP_DEP_S,
+  sum(TDM_ARP_DEP_T) as TDM_ARP_DEP_T,
+  sum(TDM_ARP_DEP_V) as TDM_ARP_DEP_V,
+  sum(TDM_ARP_DEP_W) as TDM_ARP_DEP_W,
+  sum(TDM_ARP_DEP_NA) as TDM_ARP_DEP_NA
+  FROM ALL_DAY_DATA a
+  LEFT JOIN dim_airport b ON a.arp_code = b.cfmu_ap_code
+  GROUP BY flight_date, b.ec_ap_code, b.bk_ap_id, b.valid_from, b.valid_to
+  order by b.ec_ap_code,  flight_date
+ )
+ 
+ SELECT * FROM DATA_AP_ID 
+ WHERE bk_ap_id != 99999 AND ap_code != '99999'
+")
+
 ## ap_day -----
 ap_traffic_delay_day_base_query <- paste0 (
 " WITH 
@@ -2218,6 +2869,117 @@ ap_traffic_delay_day_base_query <- paste0 (
   "
 )
 
+## ap_ao new ----
+ap_ao_new_day_base_query <- paste0("
+WITH
+
+DIM_AO
+ as ( SELECT distinct
+ 		ao_id,
+ 		ao_code, 
+ 		wef,
+ 		til
+ from  ldw_acc.AO_GROUPS_ASSOCIATION
+ ) ,   
+
+   
+DIM_AIRPORT AS (
+SELECT * FROM pruread.v_aiu_dim_airport
+WHERE cfmu_ap_code IS NOT NULL
+)
+
+, DATA_DAY AS (
+SELECT  
+        CASE WHEN (TRUNC(A.flt_a_asp_prof_time_entry) >= b.valid_from AND TRUNC(A.flt_a_asp_prof_time_entry) < b.valid_to)
+        		THEN nvl(b.bk_ap_id, -1) 
+        		ELSE 99999
+        END dep_bk_ap_id, 
+
+        CASE WHEN (TRUNC(A.flt_a_asp_prof_time_entry) >= c.valid_from AND TRUNC(A.flt_a_asp_prof_time_entry) < c.valid_to)
+        		THEN nvl(c.bk_ap_id, -1) 
+        		ELSE 99999
+        END arr_bk_ap_id, 
+
+       A.flt_dep_ad,
+       A.flt_ctfm_ades,
+        CASE WHEN (TRUNC(A.flt_a_asp_prof_time_entry) >= d.wef AND TRUNC(A.flt_a_asp_prof_time_entry) <= d.til)
+        		THEN nvl(d.ao_id, 1777 ) 
+        		ELSE 99999
+        END ao_id, 
+        nvl(d.ao_code,'ZZZ') ao_code,
+        TRUNC(A.flt_a_asp_prof_time_entry) ENTRY_DATE,
+        A.flt_uid
+FROM prudev.v_aiu_flt A 
+     left outer  join DIM_AIRPORT b ON  ( A.flt_dep_ad=  b.cfmu_ap_code)
+     left outer join DIM_AIRPORT C  ON  (A.flt_ctfm_ades = C.cfmu_ap_code)
+     left outer join DIM_AO d  on ( (a.ao_icao_id = d.ao_code ) )
+WHERE  
+     A.flt_lobt>= ", query_from, " -2 
+     AND A.flt_lobt < TRUNC (SYSDATE) +2
+     AND flt_a_asp_prof_time_entry >= ", query_from, "
+     AND flt_a_asp_prof_time_entry < TRUNC (SYSDATE)
+
+     AND A.flt_state IN ('TE', 'TA', 'AA')
+--     AND (flt_ctfm_ades = 'LTFJ' OR flt_dep_ad = 'LTFJ')
+)
+
+
+, DATA_DEP AS (
+SELECT  
+		dep_bk_ap_id AS bk_ap_id, 
+		flt_dep_ad AS ap_code,
+        a.ENTRY_DATE,
+        ao_code,
+        ao_id,
+--        a.flt_uid
+        COUNT(a.flt_uid) DEP_ARR
+FROM DATA_DAY a   
+where ao_id != 99999
+	AND dep_bk_ap_id != 99999 AND a.ARR_BK_AP_ID != 99999
+--	AND a.ENTRY_DATE = TO_DATE('30-09-2025', 'dd-mm-yyyy') AND ao_code = 'PGT' AND flt_dep_ad = 'LTFJ' AND flt_uid =49557220250930
+	GROUP BY  
+		dep_bk_ap_id, 
+		flt_dep_ad,
+        ENTRY_DATE,
+        ao_code,
+        ao_id
+
+),        
+ 
+DATA_ARR AS (
+SELECT  
+		arr_bk_ap_id AS bk_ap_id, 
+		flt_ctfm_ades AS ap_code,
+        ENTRY_DATE,
+        ao_code,
+        ao_id,
+        COUNT(a.flt_uid) DEP_ARR
+FROM DATA_DAY a  
+where ao_id != 99999
+	AND dep_bk_ap_id != 99999 AND a.ARR_BK_AP_ID != 99999
+GROUP BY  arr_bk_ap_id,
+		flt_ctfm_ades,
+        ENTRY_DATE,
+        ao_code,
+        ao_id
+        )
+
+SELECT  
+          cast(extract(year from coalesce(a.entry_date, b.entry_date)) as INTEGER) as year,
+          coalesce(a.entry_date, b.entry_date) as entry_date,  
+          coalesce(a.bk_ap_id,b.bk_ap_id) as bk_ap_id,
+          coalesce(a.ap_code,b.ap_code) as ap_code,
+          coalesce(  a.ao_id,b.ao_id) as ao_id,
+          coalesce(  a.ao_code, b.ao_code) as ao_code,
+          coalesce(a.DEP_ARR,0) AS dep,
+          coalesce(b.DEP_ARR,0) AS arr,
+          coalesce(a.DEP_ARR,0)  + coalesce( b.DEP_ARR,0)  as DEP_ARR
+FROM DATA_DEP a 
+full outer join DATA_ARR b  on (a.bk_ap_id = b.bk_ap_id and a.entry_date = b.entry_date and a.ao_id = b.ao_id and a.ao_code = b.ao_code)
+oRDER BY dep_arr desc  
+"
+)
+
 ## ap_ao ----
 ap_ao_day_base_query <- paste0("
 WITH
@@ -2305,6 +3067,55 @@ oRDER BY dep_arr desc
 "
 )
 
+## ap_st_des new ----
+ap_st_des_new_day_base_query <- paste0("
+with 
+
+DIM_AIRPORT AS (
+SELECT a.*
+FROM pruread.v_aiu_dim_airport a
+WHERE cfmu_ap_code IS NOT NULL
+),
+
+
+ARP_FLIGHT as (
+SELECT flt_uid,
+       TRUNC (flt_a_asp_prof_time_entry) AS entry_date, 
+		CASE WHEN (TRUNC (flt_a_asp_prof_time_entry) >= b.valid_from AND TRUNC (flt_a_asp_prof_time_entry) <= b.valid_to)
+			THEN nvl(b.bk_ap_id, -1) 
+			ELSE 99999
+		END dep_bk_ap_id, 
+		flt_dep_ad AS adep_code,
+		CASE WHEN (TRUNC (flt_a_asp_prof_time_entry) >= c.valid_from AND TRUNC (flt_a_asp_prof_time_entry) <= c.valid_to)
+			THEN nvl(c.aiu_iso_ct_code, '##') 
+			ELSE '99999'
+		END arr_iso_ct_code 
+  FROM prudev.v_aiu_flt a
+     left outer  join DIM_AIRPORT b ON  ( A.flt_dep_ad=  b.cfmu_ap_code)
+     left outer join DIM_AIRPORT C  ON  (A.flt_ctfm_ades = C.cfmu_ap_code)
+ WHERE     
+     A.flt_lobt>= ", query_from, "  -2  
+     AND A.flt_lobt < TRUNC (SYSDATE) +2
+     AND a.flt_a_asp_prof_time_entry >= ", query_from, " 
+     AND a.flt_a_asp_prof_time_entry < TRUNC (SYSDATE)
+       AND A.flt_state IN ('TE', 'TA', 'AA')
+     )
+     
+SELECT 
+    cast(extract(year from entry_date) as integer) as year,
+    ENTRY_DATE,
+		dep_bk_ap_id as bk_ap_id,
+		adep_code,
+		arr_iso_ct_code,
+       count(flt_uid) AS dep
+ FROM  ARP_FLIGHT A 
+WHERE dep_bk_ap_id != 99999 AND A.ARR_ISO_CT_CODE != '99999' 
+GROUP BY ENTRY_DATE, dep_bk_ap_id, adep_code, arr_iso_ct_code
+ORDER BY A.ENTRY_DATE DESC , A.dep_bk_ap_id,  dep DESC
+
+"
+)
+
 ## ap_st_des ----
 ap_st_des_day_base_query <- paste0("
 with 
@@ -2346,6 +3157,59 @@ ORDER BY A.ENTRY_DATE DESC , A.DEP_ARP_PRU_ID,  dep DESC
 "
 )
 
+## ap_ap_des new----
+ap_ap_des_new_day_base_query <- paste0("
+with 
+
+DIM_AIRPORT AS (
+SELECT a.*
+FROM pruread.v_aiu_dim_airport a
+WHERE cfmu_ap_code IS NOT NULL
+),
+
+ARP_FLIGHT as (
+SELECT flt_uid,
+       TRUNC (flt_a_asp_prof_time_entry) AS ENTRY_DATE, 
+		CASE WHEN (TRUNC (flt_a_asp_prof_time_entry) >= b.valid_from AND TRUNC (flt_a_asp_prof_time_entry) <= b.valid_to)
+			THEN nvl(b.bk_ap_id, -1) 
+			ELSE 99999
+		END dep_bk_ap_id, 
+		flt_dep_ad AS adep_code,
+		CASE WHEN (TRUNC (flt_a_asp_prof_time_entry) >= c.valid_from AND TRUNC (flt_a_asp_prof_time_entry) <= c.valid_to)
+			THEN nvl(c.bk_ap_id, -1) 
+			ELSE 99999
+		END arr_bk_ap_id, 
+		flt_ctfm_ades AS ades_code
+  FROM prudev.v_aiu_flt a
+     left outer  join DIM_AIRPORT b ON  ( A.flt_dep_ad=  b.cfmu_ap_code)
+     left outer join DIM_AIRPORT C  ON  (A.flt_ctfm_ades = C.cfmu_ap_code)
+ WHERE      
+     A.flt_lobt>= ", query_from, " -2 
+     	AND A.flt_lobt < TRUNC (SYSDATE) + 2
+     AND a.flt_a_asp_prof_time_entry >= ", query_from, "
+     AND a.flt_a_asp_prof_time_entry < TRUNC (SYSDATE)
+       AND A.flt_state IN ('TE', 'TA', 'AA')
+)
+
+SELECT 
+    cast(extract(year from entry_date) as integer) as year,
+    ENTRY_DATE,
+		dep_bk_ap_id as bk_ap_id,
+		arr_bk_ap_id,
+		adep_code,
+		ades_code,
+       count(flt_uid) AS dep
+ FROM  ARP_FLIGHT A 
+WHERE dep_bk_ap_id != 99999 AND arr_bk_ap_id != 99999
+GROUP BY ENTRY_DATE,
+		dep_bk_ap_id,
+		arr_bk_ap_id,
+		adep_code,
+		ades_code
+ORDER BY A.ENTRY_DATE DESC , dep_bk_ap_id,  dep DESC
+"
+)
+
 ## ap_ap_des ----
 ap_ap_des_day_base_query <- paste0("
 with 
@@ -2379,6 +3243,97 @@ GROUP BY ENTRY_DATE, dep_arp_pru_id, arr_arp_pru_id
 ORDER BY A.ENTRY_DATE DESC , A.DEP_ARP_PRU_ID,  dep DESC
 "
 )
+
+## ap_ms new----
+ap_ms_new_day_base_query <- paste0("
+WITH
+
+dim_market_segment as 
+(select SK_FLT_TYPE_RULE_ID AS ms_id,  
+ 		rule_description as market_segment
+ from  SWH_FCT.DIM_FLIGHT_TYPE_RULE
+),
+
+
+DIM_AIRPORT AS (
+SELECT a.*
+FROM pruread.v_aiu_dim_airport a
+WHERE cfmu_ap_code IS NOT NULL
+),
+
+DATA_SOURCE as (
+SELECT  
+		CASE WHEN (TRUNC (flt_a_asp_prof_time_entry) >= b.valid_from AND TRUNC (flt_a_asp_prof_time_entry) <= b.valid_to)
+			THEN nvl(b.bk_ap_id, -1) 
+			ELSE 99999
+		END dep_bk_ap_id, 
+		flt_dep_ad AS adep_code,
+		CASE WHEN (TRUNC (flt_a_asp_prof_time_entry) >= c.valid_from AND TRUNC (flt_a_asp_prof_time_entry) <= c.valid_to)
+			THEN nvl(c.bk_ap_id, -1) 
+			ELSE 99999
+		END arr_bk_ap_id, 
+		flt_ctfm_ades AS ades_code,
+        TRUNC(A.flt_a_asp_prof_time_entry) ENTRY_DATE,
+        ms_id,
+        A.flt_uid
+FROM prudev.v_aiu_flt_mark_seg A 
+     left outer  join DIM_AIRPORT b ON  ( A.flt_dep_ad=  b.cfmu_ap_code)
+     left outer join DIM_AIRPORT C  ON  (A.flt_ctfm_ades = C.cfmu_ap_code)
+     left outer join dim_market_segment   d  ON (a.SK_FLT_TYPE_RULE_ID = d.ms_id )
+ WHERE  
+         A.flt_lobt>= ", query_from, " -2  
+         	AND A.flt_lobt < TRUNC (SYSDATE) + 2
+			  	AND a.flt_a_asp_prof_time_entry >= ", query_from, "
+			  	AND a.flt_a_asp_prof_time_entry < TRUNC (SYSDATE)
+    AND A.flt_state IN ('TE','TA','AA')
+
+),
+
+
+DATA_DEP AS (
+(SELECT  
+    	dep_bk_ap_id AS bk_ap_id,
+    	adep_code AS ap_code,
+        a.ENTRY_DATE,
+        ms_id,
+        COUNT(a.flt_uid) DEP_ARR
+FROM DATA_SOURCE a  
+WHERE dep_bk_ap_id != 99999 AND arr_bk_ap_id != 99999
+GROUP BY  
+        dep_bk_ap_id,
+        adep_code,
+        ENTRY_DATE,
+        ms_id
+)
+),        
+ 
+DATA_ARR AS (
+SELECT  
+    	arr_bk_ap_id AS bk_ap_id,
+    	ades_code AS ap_code,
+        ENTRY_DATE,
+        ms_id,
+        COUNT(a.flt_uid) DEP_ARR
+FROM DATA_SOURCE a  
+WHERE dep_bk_ap_id != 99999 AND arr_bk_ap_id != 99999
+GROUP BY  arr_bk_ap_id,
+		  ades_code,
+          ENTRY_DATE,
+        ms_id
+)
+
+
+SELECT  
+          cast(extract(year from coalesce(a.entry_date, b.entry_date)) as INTEGER) as year,
+          coalesce(a.entry_date, b.entry_date) as entry_date,  
+          coalesce(a.bk_ap_id, b.bk_ap_id) as bk_ap_id, 
+          coalesce(a.ap_code, b.ap_code) as ap_code, 
+          coalesce(a.ms_id, b.ms_id) as ms_id,
+          coalesce(a.DEP_ARR, 0) + coalesce(b.DEP_ARR, 0)  as DEP_ARR
+FROM DATA_DEP a full outer join DATA_ARR b  on (a.bk_ap_id = b.bk_ap_id  and a.entry_date = b.entry_date and a.ms_id = b.ms_id)
+ORDER BY entry_date, bk_ap_id, ms_id
+
+")
 
 ## ap_ms ----
 ap_ms_day_base_query <- paste0("
@@ -2551,6 +3506,71 @@ SELECT a.YEAR,
 "
 )
 
+## ao_day new ----
+ao_traffic_delay_new_day_base_query <- ao_traffic_delay_day_base_query
+
+## ao_st_des new ----
+ao_st_des_new_day_base_query <- paste0("
+with 
+
+DIM_AO
+ as ( SELECT distinct
+ 		ao_id,
+ 		ao_code, 
+ 		wef,
+ 		til
+ from  ldw_acc.AO_GROUPS_ASSOCIATION
+ ) , 
+
+DIM_AIRPORT AS (
+SELECT * FROM pruread.v_aiu_dim_airport
+WHERE cfmu_ap_code IS NOT NULL
+),
+
+DATA_DAY AS (
+SELECT  
+        CASE WHEN (TRUNC(A.flt_a_asp_prof_time_entry) >= c.valid_from AND TRUNC(A.flt_a_asp_prof_time_entry) <= c.valid_to)
+        		THEN nvl(c.aiu_iso_ct_code, '##') 
+        		ELSE '99999'
+        END arr_iso_ct_code, 
+
+        CASE WHEN (TRUNC(A.flt_a_asp_prof_time_entry) >= d.wef AND TRUNC(A.flt_a_asp_prof_time_entry) <= d.til)
+        		THEN nvl(d.ao_id, 1777 ) 
+        		ELSE 99999
+        END ao_id, 
+        nvl(d.ao_code,'ZZZ') ao_code,
+        TRUNC(A.flt_a_asp_prof_time_entry) ENTRY_DATE,
+        A.flt_uid
+FROM prudev.v_aiu_flt A 
+     left outer join DIM_AIRPORT C  ON  (A.flt_ctfm_ades = C.cfmu_ap_code)
+     left outer join DIM_AO d  on ( (a.ao_icao_id = d.ao_code ) )
+WHERE  
+     A.flt_lobt>= ", query_from, " -2 
+     AND A.flt_lobt < TRUNC (SYSDATE) +2
+     AND flt_a_asp_prof_time_entry >= ", query_from, "
+     AND flt_a_asp_prof_time_entry < TRUNC (SYSDATE)
+
+     AND A.flt_state IN ('TE', 'TA', 'AA')
+)
+
+ SELECT 
+      CAST(extract(year from a.entry_date) as INTEGER) as year,
+      a.entry_date,
+      a.ao_id,
+      a.ao_code,
+      a.arr_iso_ct_code,
+     count(flt_uid) as flight
+  FROM DATA_DAY a  
+  where ao_id != 99999 AND arr_iso_ct_code != '99999'
+GROUP BY  
+       a.entry_date,
+      a.ao_id,
+      a.ao_code,
+      a.arr_iso_ct_code
+ORDER BY a.entry_date, a.ao_id, flight desc     
+"
+)
+
 ## ao_st_des ----
 ao_st_des_day_base_query <- paste0("
 with 
@@ -2616,6 +3636,72 @@ ORDER BY a.entry_date, a.ao_id, flight desc
 "
 )
 
+## ao_ap_dep_new ----
+ao_ap_dep_new_day_base_query <- paste0("
+WITH 
+
+DIM_AIRPORT AS (
+SELECT * FROM pruread.v_aiu_dim_airport
+WHERE cfmu_ap_code IS NOT NULL
+),
+	
+DIM_AO
+ as ( SELECT distinct
+ 		ao_id,
+ 		ao_code, 
+ 		wef,
+ 		til
+ from  ldw_acc.AO_GROUPS_ASSOCIATION
+ )  
+
+, DATA_DAY AS (
+SELECT  
+
+        CASE WHEN (TRUNC(A.flt_a_asp_prof_time_entry) >= b.valid_from AND TRUNC(A.flt_a_asp_prof_time_entry) <= b.valid_to)
+        		THEN nvl(b.bk_ap_id, -1) 
+        		ELSE 99999
+        END bk_ap_id, 
+
+        CASE WHEN (TRUNC(A.flt_a_asp_prof_time_entry) >= d.wef AND TRUNC(A.flt_a_asp_prof_time_entry) <= d.til)
+        		THEN nvl(d.ao_id, 1777 ) 
+        		ELSE 99999
+        END ao_id, 
+        nvl(d.ao_code,'ZZZ') ao_code,
+        TRUNC(A.flt_a_asp_prof_time_entry) ENTRY_DATE,
+        flt_dep_ad AS ap_code,
+        A.flt_uid
+FROM prudev.v_aiu_flt A 
+     left outer  join DIM_AIRPORT b ON  ( A.flt_dep_ad=  b.cfmu_ap_code)
+     left outer join DIM_AO d  on ( (a.ao_icao_id = d.ao_code ) )
+WHERE  
+     A.flt_lobt>= ", query_from, " -2 
+     AND A.flt_lobt < TRUNC (SYSDATE) +2
+     AND flt_a_asp_prof_time_entry >= ", query_from, "
+     AND flt_a_asp_prof_time_entry < TRUNC (SYSDATE)
+
+     AND A.flt_state IN ('TE', 'TA', 'AA')
+)
+
+ SELECT 
+      CAST(extract(year from a.entry_date) as INTEGER) as year,
+      a.entry_date,
+      a.ao_id,
+      a.ao_code,
+      a.ap_code,
+      a.bk_ap_id,
+     count(flt_uid) as flight
+  FROM DATA_DAY a  
+  where ao_id != 99999 AND a.bk_ap_id != 99999 
+GROUP BY  
+      a.entry_date,
+      a.ao_id,
+      a.ao_code,
+      a.ap_code,
+      a.bk_ap_id
+ORDER BY a.entry_date, a.ao_id, flight desc     
+	
+"
+)
 
 ## ao_ap_dep ----
 ao_ap_dep_day_base_query <- paste0("
@@ -2682,6 +3768,108 @@ ORDER BY a.entry_date, a.ao_id, flight desc
 "
 )
 
+## ao_ap_pair new ----
+ao_ap_pair_new_day_base_query <- paste0("
+with 
+DIM_AO
+ as ( SELECT distinct
+ 		ao_id,
+ 		ao_code, 
+ 		wef,
+ 		til
+ from  ldw_acc.AO_GROUPS_ASSOCIATION
+ ) , 
+
+DIM_AIRPORT AS (
+SELECT * FROM pruread.v_aiu_dim_airport
+WHERE cfmu_ap_code IS NOT NULL
+),
+
+
+DATA_DAY AS (
+SELECT  
+		CASE WHEN (TRUNC(A.flt_a_asp_prof_time_entry) >= b.valid_from AND TRUNC(A.flt_a_asp_prof_time_entry) <= b.valid_to)
+        		THEN nvl(b.bk_ap_id, -1) 
+        		ELSE 99999
+        END bk_ap_id_dep, 
+        
+		CASE WHEN (TRUNC(A.flt_a_asp_prof_time_entry) >= b.valid_from AND TRUNC(A.flt_a_asp_prof_time_entry) <= b.valid_to)
+        		THEN nvl(c.bk_ap_id, -1) 
+        		ELSE 99999
+        END bk_ap_id_des,       
+        
+        a.flt_dep_ad AS adep_code,
+        a.flt_ctfm_ades AS ades_code,
+
+       CASE WHEN (TRUNC(A.flt_a_asp_prof_time_entry) >= d.wef AND TRUNC(A.flt_a_asp_prof_time_entry) <= d.til)
+        		THEN nvl(d.ao_id, 1777 ) 
+        		ELSE 99999
+        END ao_id, 
+        
+        nvl(d.ao_code,'ZZZ') ao_code,
+        TRUNC(A.flt_a_asp_prof_time_entry) ENTRY_DATE,
+        A.flt_uid
+FROM prudev.v_aiu_flt A 
+     left outer  join DIM_AIRPORT b ON  ( A.flt_dep_ad=  b.cfmu_ap_code)
+     left outer join DIM_AIRPORT C  ON  (A.flt_ctfm_ades = C.cfmu_ap_code)
+     left outer join DIM_AO d  on ( (a.ao_icao_id = d.ao_code ) )
+WHERE  
+     A.flt_lobt>= ", query_from, " -2 
+     AND A.flt_lobt < TRUNC (SYSDATE) +2
+     AND flt_a_asp_prof_time_entry >= ", query_from, "
+     AND flt_a_asp_prof_time_entry < TRUNC (SYSDATE)
+
+     AND A.flt_state IN ('TE', 'TA', 'AA')
+)
+
+
+, DATA_AIRPORT_PAIR AS (
+ SELECT 
+       a.entry_date,
+      a.ao_id,
+      a.ao_code,
+      case when  bk_ap_id_dep <= bk_ap_id_des
+        	 THEN  ades_code
+        	 else adep_code
+        END ad_code_1,
+        
+        case when  bk_ap_id_dep <= bk_ap_id_des
+        	 THEN  adep_code
+        	 else ades_code
+        END ad_code_2,
+ 
+       case when  bk_ap_id_dep <= bk_ap_id_des
+        	 THEN  bk_ap_id_des
+        	 else bk_ap_id_dep
+        END bk_ap_id_1,
+        
+        case when  bk_ap_id_dep <= bk_ap_id_des
+        	 THEN  bk_ap_id_dep
+        	 else bk_ap_id_des
+        END bk_ap_id_2,
+        count(flt_uid) as flight
+  FROM DATA_DAY a  
+  where ao_id != 99999
+    and bk_ap_id_des != 99999 and bk_ap_id_dep != 99999
+GROUP BY  
+       a.entry_date,
+      a.ao_id,
+      a.ao_code,
+      a.adep_code,
+      a.ades_code,
+      a.bk_ap_id_dep,
+      a.bk_ap_id_des
+ORDER BY a.entry_date, a.ao_id, flight desc   
+)
+
+SELECT 
+  CAST(extract(year from a.entry_date) as INTEGER) as year,
+	a.*,
+	(bk_ap_id_1 || '-' || bk_ap_id_2) as arp_pair_id
+FROM DATA_AIRPORT_PAIR a
+
+"
+)
 
 ## ao_ap_pair ----
 ao_ap_pair_day_base_query <- paste0("
@@ -2762,6 +3950,127 @@ ORDER BY a.entry_date, a.ao_id, flight desc
 "
 )
 
+## ao_ap_arr_delay new----
+ao_ap_arr_delay_new_day_base_query <- paste0("
+WITH
+
+DIM_AO
+ as ( SELECT distinct
+ 		ao_id,
+ 		ao_code, 
+ 		wef,
+ 		til
+ from  ldw_acc.AO_GROUPS_ASSOCIATION
+ ) , 
+                              
+
+  
+DIM_AIRPORT AS (
+SELECT * FROM pruread.v_aiu_dim_airport
+WHERE cfmu_ap_code IS NOT NULL
+),
+	 
+
+ Apt_arr_reg AS
+        (SELECT DISTINCT
+                Agg_flt_lobt     Flts_lobt
+              , Agg_flt_mp_regu_id
+              , Ref_loc_id       Reg_arpt
+           FROM Prudev.V_aiu_agg_flt_flow
+          WHERE Mp_regu_loc_cat = 'Arrival'
+            AND Agg_flt_mp_regu_loc_ty = 'Airport'
+            and agg_flt_lobt >= ", query_from, "
+ )
+ 
+   
+, DATA_DAY AS (
+SELECT  
+        Flt_ftfm_ades,
+        Flt_ctfm_ades,
+        Flt_most_penal_regu_id,
+        Atfm_delay,
+        CASE WHEN (TRUNC(A.Arvt_3) >= d.wef AND TRUNC(A.Arvt_3) <= d.til)
+        		THEN nvl(d.ao_id, 1777 ) 
+        		ELSE 99999
+        END ao_id, 
+        nvl(d.ao_code,'ZZZ') ao_code,
+        TRUNC(A.Arvt_3) arr_date,
+        TRUNC(A.Flt_lobt) flt_lobt,
+        A.flt_uid
+FROM prudev.v_aiu_flt A 
+     left outer join DIM_AO d  on ( (a.ao_icao_id = d.ao_code ) )
+WHERE  
+            TRUNC(A.Arvt_3) >= ", query_from, "
+            AND TRUNC(A.Arvt_3) < trunc(sysdate)
+            AND Flt_lobt >= ", query_from, " -2
+            AND Flt_lobt < trunc(sysdate) +2
+
+     AND A.flt_state IN ('TE', 'TA', 'AA')
+),
+
+            
+            
+    Apt_arr_delay_ao AS
+        (
+        SELECT DISTINCT
+              arr_date
+              , ao_id
+              , ao_code
+              , Flt_ctfm_ades
+              , COUNT(*)
+                    OVER(
+                        PARTITION BY arr_date
+                                   , ao_code
+                                   , Flt_ctfm_ades
+                    )                 Flts
+              , SUM(NVL2(Agg_flt_mp_regu_id, decode(atfm_delay,NULL,0,0,0, 1),0))
+                    OVER(
+                        PARTITION BY arr_date
+                                   , ao_code
+                                   , Flt_ctfm_ades
+                    )                 AS Delayed_flts
+              , SUM(NVL2(Agg_flt_mp_regu_id, Atfm_delay, 0))
+                    OVER(
+                        PARTITION BY arr_date
+                                   , ao_code
+                                   , Flt_ctfm_ades
+                    )                 AS Delay_amnt
+           FROM DATA_DAY  A
+                LEFT JOIN Apt_arr_reg B
+                    ON (Flt_lobt = B.Flts_lobt
+                    AND A.Flt_most_penal_regu_id =
+                        B.Agg_flt_mp_regu_id
+                    AND A.Flt_ftfm_ades = B.Reg_arpt)
+            where ao_id != 99999
+
+ ),
+ 
+DATA_GROUP as (
+        SELECT DISTINCT 
+        				arr_date
+                       , Ao_code
+                       , ao_id
+                       , flt_ctfm_ades AS ades_code
+				       , CASE WHEN (arr_date >= c.valid_from AND arr_date <= c.valid_to)
+				        		THEN nvl(c.bk_ap_id, -1) 
+				        		ELSE 99999
+				        END bk_ap_id 
+                       , SUM(Flts) Flts
+                       , SUM(Delayed_flts) Delayed_flts
+                       , SUM(Delay_amnt) Delay_amnt
+           FROM Apt_arr_delay_ao a
+     left outer join DIM_AIRPORT C  ON  (A.flt_ctfm_ades = C.cfmu_AP_CODE)
+     GROUP BY arr_date, ao_code, ao_id, flt_ctfm_ades, c.bk_ap_id, c.valid_from, c.valid_to    
+order BY ao_id, arr_date DESC, flts DESC, ao_code 
+)
+
+SELECT 
+  cast(extract (year from arr_date) as integer) as year,
+  a.*
+FROM data_group a
+WHERE bk_ap_id != 99999
+"
+)
 
 ## ao_ap_arr_delay ----
 ao_ap_arr_delay_day_base_query <- paste0("
@@ -2961,6 +4270,125 @@ WHERE  unit_kind = 'ANSP' and
 
 SELECT
 	COALESCE(b.unit_id, c.ansp_id) AS ansp_id,
+	COALESCE(b.entry_date, c.entry_date) AS entry_date,
+	COALESCE(tdm, 0) AS tdm,
+	COALESCE(tdm_ert, 0) AS tdm_ert,
+	COALESCE(tdf_ert, 0) AS tdf_ert,
+	COALESCE(tdm_15_ert, 0) AS tdm_15_ert,
+	COALESCE(tdf_15_ert, 0) AS tdf_15_ert,
+	COALESCE(tdm_ert_a, 0) AS tdm_ert_a,
+	COALESCE(tdm_ert_c, 0) AS tdm_ert_c,
+	COALESCE(tdm_ert_d, 0) AS tdm_ert_d,
+	COALESCE(tdm_ert_e, 0) AS tdm_ert_e,
+	COALESCE(tdm_ert_g, 0) AS tdm_ert_g,
+	COALESCE(tdm_ert_i, 0) AS tdm_ert_i,
+	COALESCE(tdm_ert_m, 0) AS tdm_ert_m,
+	COALESCE(tdm_ert_n, 0) AS tdm_ert_n,
+	COALESCE(tdm_ert_o, 0) AS tdm_ert_o,
+	COALESCE(tdm_ert_p, 0) AS tdm_ert_p,
+	COALESCE(tdm_ert_r, 0) AS tdm_ert_r,
+	COALESCE(tdm_ert_s, 0) AS tdm_ert_s,
+	COALESCE(tdm_ert_t, 0) AS tdm_ert_t,
+	COALESCE(tdm_ert_v, 0) AS tdm_ert_v,
+	COALESCE(tdm_ert_w, 0) AS tdm_ert_w,
+	COALESCE(tdm_ert_na, 0) AS tdm_ert_na,
+	COALESCE(c.flt_daio, 0) AS flt_daio
+FROM ANSP_DATA b
+FULL outer JOIN FLT_ANSP_DATA c ON b.entry_DATE = c.entry_date AND b.unit_id = c.ansp_id
+ORDER BY ansp_id, entry_date
+"
+)
+
+## sp_day new ----
+# the same with extract year at the end
+sp_traffic_delay_new_day_base_query <- paste0("
+WITH 
+ANSP_DATA AS (
+	SELECT
+		unit_id,
+		entry_date,
+		syn_tdm AS tdm,
+		syn_tdm_ert AS tdm_ert,
+		syn_tdf_ert AS tdf_ert,
+		syn_tdm_15_ert AS tdm_15_ert,
+		syn_tdf_15_ert AS tdf_15_ert,
+		syn_tdm_ert_a AS tdm_ert_a,
+		syn_tdm_ert_c AS tdm_ert_c,
+		syn_tdm_ert_d AS tdm_ert_d,
+		syn_tdm_ert_e AS tdm_ert_e,
+		syn_tdm_ert_g AS tdm_ert_g,
+		syn_tdm_ert_i AS tdm_ert_i,
+		syn_tdm_ert_m AS tdm_ert_m,
+		syn_tdm_ert_n AS tdm_ert_n,
+		syn_tdm_ert_o AS tdm_ert_o,
+		syn_tdm_ert_p AS tdm_ert_p,
+		syn_tdm_ert_r AS tdm_ert_r,
+		syn_tdm_ert_s AS tdm_ert_s,
+		syn_tdm_ert_t AS tdm_ert_t,
+		syn_tdm_ert_v AS tdm_ert_v,
+		syn_tdm_ert_w AS tdm_ert_w,
+		syn_tdm_ert_na AS tdm_ert_na
+	FROM
+		prudev.V_SYN12_FAC_DC_DD
+	WHERE
+		entry_date >= to_date('01-01-2019', 'dd-mm-yyyy')-10
+			AND unit_type = 'ANSP'
+),
+
+-- flights
+OP_AUA_DATA as 
+(
+SELECT 
+FLT_MODEL_FLT_UID flight_sk, c.ansp_id,  c.ansp_name,
+ASP_PROF_TIME_ENTRY as asp_time_entry
+FROM prudev.aiu_Asp_Prof_calc a
+inner join prudev.v_aiu_flt b on (a.FLT_MODEL_FLT_UID = b.flt_uid)
+inner join PRUDEV.V_PRU_REL_CFMU_AUA_ANSP C ON (a.ASP_PROF_ID = c.aua_code)
+where a.FLT_MODEL_TY =3 
+ and a.flt_model_lobt >= trunc(sysdate)-8 and a.flt_model_lobt < trunc(sysdate)+1 
+   and b.flt_lobt >= trunc(sysdate)-8 and b.flt_lobt < trunc(sysdate)+1
+and a.asp_prof_time_entry >= trunc(sysdate)-8  and a.asp_prof_time_entry < trunc(sysdate)+1   and asp_prof_ty = 'AUA'
+and b.flt_state IN ('TE', 'TA', 'AA') 
+and a.ASP_PROF_ID = c.aua_code and  a.ASP_PROF_TIME_ENTRY >= c.wef and  ASP_PROF_TIME_ENTRY <= c.till
+),
+
+ OP_ANSP_DATA as (
+SELECT flight_sk, ansp_id, ansp_name,asp_time_entry as first_entry_time,  
+     row_number() OVER ( PARTITION BY  ansp_id,flight_sk ORDER BY  asp_time_entry) row_num 
+FROM OP_AUA_DATA
+ ),
+ 
+OP_ANSP_DATA2  as (
+SELECT  ansp_id,  ansp_name
+       , trunc(first_entry_time) as ENTRY_DATE
+       , count(*) as FLT_DAIO 
+FROM  OP_ANSP_DATA
+WHERE 
+       row_num = 1 
+GROUP BY trunc(first_entry_time), ansp_name, ansp_id 
+)
+,
+
+FLT_ANSP_DATA as (
+SELECT ansp_name, ansp_id,
+       entry_date,
+       flt_daio
+FROM op_ansp_data2 
+where entry_date >=trunc(sysdate)-7 and entry_date < trunc(sysdate)
+
+UNION
+SELECT unit_name as ansp_name, unit_id as ansp_id,
+       FLIGHT_DATE as entry_date,
+       TTF_FLT as FLT_DAIO
+FROM  PRUDEV.V_PRU_FAC_TD_DD  
+WHERE  unit_kind = 'ANSP' and
+      flight_date >=to_date('01-01-2019', 'dd-mm-yyyy')-10 and 
+      flight_date < trunc(sysdate)-7
+)  
+
+SELECT
+	COALESCE(b.unit_id, c.ansp_id) AS ansp_id,
+	cast(extract(year from COALESCE(b.entry_date, c.entry_date)) as integer) AS year,
 	COALESCE(b.entry_date, c.entry_date) AS entry_date,
 	COALESCE(tdm, 0) AS tdm,
 	COALESCE(tdm_ert, 0) AS tdm_ert,
