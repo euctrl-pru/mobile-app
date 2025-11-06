@@ -87,7 +87,9 @@ if (!exists("apt_traffic_data_all")) {
   apt_traffic_data_all <- read_parquet(here(archive_dir_raw, stakeholder, paste0(mydataframe, ".parquet"))) 
 }
 
-apt_traffic_data <- apt_traffic_data_all %>% filter(YEAR == data_day_year)
+apt_traffic_data <- apt_traffic_data_all %>% filter(YEAR == data_day_year) %>% 
+  # iceland exception 
+  mutate(across(contains("2019"), ~ replace(.x, substr(ARP_CODE, 1,2) == "BI", NA)))
 
 #getting the latest date's traffic data
 apt_traffic_last_day <- apt_traffic_data %>%
@@ -132,59 +134,8 @@ apt_traffic_for_json <- apt_traffic_last_day %>%
     Y2D_TFC_DIF_2019_PERC = Y2D_DEP_ARR_DIF_2019_PERC,
     
     TFC_RANK_TEXT
-  )
+  ) 
 
-# #reading the traffic sheet
-# if(!exists("apt_traffic_data")) {
-#   apt_traffic_data <- export_query(query_ap_traffic(format(data_day_date, "%Y-%m-%d"))) %>%
-#     as_tibble() %>%
-#     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-# }
-#   
-# #getting the latest date's traffic data
-# apt_traffic_last_day <- apt_traffic_data %>%
-#   filter(FLIGHT_DATE == min(data_day_date,
-#                             max(LAST_DATA_DAY, na.rm = TRUE),
-#                             na.rm = TRUE)
-#   ) %>%
-#   arrange(ARP_NAME, FLIGHT_DATE)
-# 
-# #selecting columns and renaming
-# apt_traffic_for_json <- apt_traffic_last_day %>%
-#   right_join(list_airport_extended, by = c("ARP_CODE" = "apt_icao_code", "ARP_NAME" = "apt_name")) %>%
-#   group_by(flag_top_apt) %>%
-#   mutate(
-#     DY_TFC_RANK = if_else(flag_top_apt == "N", NA, min_rank(desc(DAY_DEP_ARR))),
-#     WK_TFC_RANK = if_else(flag_top_apt == "N", NA, min_rank(desc(RWK_AVG_DEP_ARR))),
-#     Y2D_TFC_RANK = if_else(flag_top_apt == "N", NA, min_rank(desc(Y2D_DEP_ARR_YEAR))),
-# 
-#     TFC_RANK_TEXT = "*Rank within top 40 airports\nTop rank for highest."
-# 
-#   ) %>%
-#   ungroup() %>%
-#   select(
-#     ARP_NAME,
-#     ARP_CODE,
-#     FLIGHT_DATE,
-#     #day
-#     DY_TFC_RANK,
-#     DY_TFC = DAY_DEP_ARR, #arrival and departure traffic
-#     DY_TFC_DIF_PREV_YEAR_PERC = DAY_DEP_ARR_DIF_PREV_YEAR_PERC,
-#     DY_TFC_DIF_2019_PERC = DAY_DEP_ARR_DIF_2019_PERC,
-#     #week average
-#     WK_TFC_RANK,
-#     WK_TFC_AVG_ROLLING = RWK_AVG_DEP_ARR,
-#     WK_TFC_DIF_PREV_YEAR_PERC = RWK_DEP_ARR_DIF_PREV_YEAR_PERC,
-#     WK_TFC_DIF_2019_PERC = RWK_DEP_ARR_DIF_2019_PERC,
-#     #year to date
-#     Y2D_TFC_RANK,
-#     Y2D_TFC = Y2D_DEP_ARR_YEAR,
-#     Y2D_TFC_AVG = Y2D_AVG_DEP_ARR_YEAR,
-#     Y2D_TFC_DIF_PREV_YEAR_PERC = Y2D_DEP_ARR_DIF_PREV_YEAR_PERC,
-#     Y2D_TFC_DIF_2019_PERC = Y2D_DEP_ARR_DIF_2019_PERC,
-# 
-#     TFC_RANK_TEXT
-#   )
 
 #### Delay data ----
 mydataframe <- "ap_delay_day_raw"
@@ -230,8 +181,10 @@ apt_delay_data_calc <- apt_delay_data %>%
 #adding previous year and 2019 values
 apt_delay_data_full <- apt_delay_data_calc %>%
   #2019, and previous year values
-  mutate(DATE_PREV_YEAR = FLIGHT_DATE-(1)*364 - round(1 / 4) * 7,
-         DATE_2019 = FLIGHT_DATE-(year ( FLIGHT_DATE ) - 2019)*364 - round((year ( FLIGHT_DATE) - 2019) / 4) * 7) %>%
+  mutate(DATE_PREV_YEAR = FLIGHT_DATE-364,
+         DATE_2019 = FLIGHT_DATE - days((YEAR-2019)*364+ floor((YEAR - 2019) / 4) * 7),
+         DATE_2019_SD = FLIGHT_DATE %m-% years(YEAR-2019),
+         DATE_PREV_YEAR_SD = FLIGHT_DATE %m-% years(1)) %>%
   arrange(ARP_CODE, FLIGHT_DATE) %>%
   # ensuring no nas get in the way
   mutate(
@@ -259,66 +212,94 @@ apt_delay_data_full <- apt_delay_data_calc %>%
     coalesce(Y2D_DELAYED_TFC_15_YEAR, 0),
     coalesce(Y2D_AVG_DELAYED_TFC_15, 0)
     ) %>% 
-   #obtaining data for previous year
+   #obtaining data for previous year op day
   left_join(apt_delay_data_calc %>% select(
                                       ARP_CODE,
                                       FLIGHT_DATE,
                                       #delay minutes
                                       DAY_DLY,
                                       AVG_DLY_ROLLING_WEEK,
-                                      Y2D_DLY_YEAR,
-                                      Y2D_AVG_DLY,
 
                                       #number of flights
                                       DAY_TFC,
                                       AVG_TFC_ROLLING_WEEK,
-                                      Y2D_TFC_YEAR,
-                                      Y2D_AVG_TFC,
 
                                       #number of delayed flights
                                       DAY_DELAYED_TFC,
                                       AVG_DELAYED_TFC_ROLLING_WEEK,
-                                      Y2D_DELAYED_TFC_YEAR,
-                                      Y2D_AVG_DELAYED_TFC,
 
                                       #number delayed flights >15 minutes'
                                       DAY_DELAYED_TFC_15,
                                       AVG_DELAYED_TFC_15_ROLLING_WEEK,
-                                      Y2D_DELAYED_TFC_15_YEAR,
-                                      Y2D_AVG_DELAYED_TFC_15
 
   ),
   by = join_by(DATE_PREV_YEAR == FLIGHT_DATE, ARP_CODE == ARP_CODE),
   suffix = c("", "_PREV_YEAR"))  %>%
-  #obtaining data for 2019
+  #obtaining data for previous year same date
+  left_join(apt_delay_data_calc %>% select(
+    ARP_CODE,
+    FLIGHT_DATE,
+    #delay minutes
+    Y2D_DLY_YEAR,
+    Y2D_AVG_DLY,
+    
+    #number of flights
+    Y2D_TFC_YEAR,
+    Y2D_AVG_TFC,
+    
+    #number of delayed flights
+    Y2D_DELAYED_TFC_YEAR,
+    Y2D_AVG_DELAYED_TFC,
+    
+    #number delayed flights >15 minutes'
+    Y2D_DELAYED_TFC_15_YEAR,
+    Y2D_AVG_DELAYED_TFC_15
+  ),
+  by = join_by(DATE_PREV_YEAR_SD == FLIGHT_DATE, ARP_CODE == ARP_CODE),
+  suffix = c("", "_PREV_YEAR"))  %>%
+  #obtaining data for 2019 op date
   left_join(apt_delay_data_calc %>% select(ARP_CODE,
                                       FLIGHT_DATE,
                                       #delay minutes
                                       DAY_DLY,
                                       AVG_DLY_ROLLING_WEEK,
-                                      Y2D_DLY_YEAR,
-                                      Y2D_AVG_DLY,
 
                                       #number of flights
                                       DAY_TFC,
                                       AVG_TFC_ROLLING_WEEK,
-                                      Y2D_TFC_YEAR,
-                                      Y2D_AVG_TFC,
 
                                       #number of delayed flights
                                       DAY_DELAYED_TFC,
                                       AVG_DELAYED_TFC_ROLLING_WEEK,
-                                      Y2D_DELAYED_TFC_YEAR,
-                                      Y2D_AVG_DELAYED_TFC,
-
+                                      
                                       #number delayed flights >15 minutes'
                                       DAY_DELAYED_TFC_15,
-                                      AVG_DELAYED_TFC_15_ROLLING_WEEK,
-                                      Y2D_DELAYED_TFC_15_YEAR,
-                                      Y2D_AVG_DELAYED_TFC_15
+                                      AVG_DELAYED_TFC_15_ROLLING_WEEK
   ),
   by = join_by(DATE_2019 == FLIGHT_DATE, ARP_CODE == ARP_CODE),
+  suffix = c("", "_2019")) %>% 
+  #obtaining data for 2019 same date
+  left_join(apt_delay_data_calc %>% select(ARP_CODE,
+                                           FLIGHT_DATE,
+                                           #delay minutes
+                                           Y2D_DLY_YEAR,
+                                           Y2D_AVG_DLY,
+                                           
+                                           #number of flights
+                                           Y2D_TFC_YEAR,
+                                           Y2D_AVG_TFC,
+                                           
+                                           #number of delayed flights
+                                           Y2D_DELAYED_TFC_YEAR,
+                                           Y2D_AVG_DELAYED_TFC,
+                                           
+                                           #number delayed flights >15 minutes'
+                                           Y2D_DELAYED_TFC_15_YEAR,
+                                           Y2D_AVG_DELAYED_TFC_15
+  ),
+  by = join_by(DATE_2019_SD == FLIGHT_DATE, ARP_CODE == ARP_CODE),
   suffix = c("", "_2019"))
+
 
 #getting the latest date's traffic data
 apt_delay_last_day <- apt_delay_data_full %>%
@@ -341,10 +322,10 @@ apt_delay_for_json  <- apt_delay_last_day %>%
 
     Y2D_AVG_DLY_YEAR = Y2D_AVG_DLY,
     Y2D_DLY_DIF_PREV_YEAR_PERC = if_else(
-      Y2D_DLY_YEAR_PREV_YEAR == 0 , NA , Y2D_DLY_YEAR / Y2D_DLY_YEAR_PREV_YEAR - 1
+      Y2D_AVG_DLY_PREV_YEAR == 0 , NA , Y2D_AVG_DLY / Y2D_AVG_DLY_PREV_YEAR - 1
     ),
     Y2D_DLY_DIF_2019_PERC = if_else(
-      Y2D_DLY_YEAR_2019 == 0 , NA , Y2D_DLY_YEAR / Y2D_DLY_YEAR_2019 - 1
+      Y2D_AVG_DLY_2019 == 0 , NA , Y2D_AVG_DLY / Y2D_AVG_DLY_2019 - 1
     ),
 
 
@@ -519,7 +500,9 @@ apt_delay_for_json  <- apt_delay_last_day %>%
     DLY_RANK_TEXT
   ) %>%
   arrange(ARP_CODE,
-          ARP_NAME)
+          ARP_NAME) %>% 
+  # iceland exception 
+  mutate(across(contains("2019"), ~ replace(.x, substr(ARP_CODE, 1,2) == "BI", NA)))
 
 #### Punctuality data ----
 #querying the data in SQL
@@ -970,21 +953,7 @@ mydataframe <- "ap_ap_des_data_day_raw"
 myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
-# if (archive_mode) {
   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
-
-# } else {
-#   df <- read_xlsx(
-#     path  = fs::path_abs(
-#       str_glue(ap_base_file),
-#       start = ap_base_dir),
-#     sheet = "apt_apt_des_day",
-#     range = cell_limits(c(1, 1), c(NA, NA))) |>
-#     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-# 
-#   # save pre-processed file in archive for generation of past json files
-#   write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
-# }
 
 # process data
 apt_apt_data_day_int <- assign(mydataframe, df) |>
