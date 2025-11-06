@@ -89,7 +89,9 @@ if (!exists("apt_traffic_data_all")) {
 
 apt_traffic_data <- apt_traffic_data_all %>% filter(YEAR == data_day_year) %>% 
   # iceland exception 
-  mutate(across(contains("2019"), ~ replace(.x, substr(ARP_CODE, 1,2) == "BI", NA)))
+  mutate(across(contains("2019"), ~ replace(.x, substr(ARP_CODE, 1,2) == "BI", NA))) %>% 
+  mutate(across(contains("2020"), ~ replace(.x, substr(ARP_CODE, 1,2) == "BI", NA))) 
+
 
 #getting the latest date's traffic data
 apt_traffic_last_day <- apt_traffic_data %>%
