@@ -708,24 +708,15 @@ mydataframe <- "ap_ao_data_day_raw"
 myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
-# if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
-
-# } else {
-#   df <- read_xlsx(
-#     path  = fs::path_abs(
-#       str_glue(ap_base_file),
-#       start = ap_base_dir),
-#     sheet = "apt_ao_day",
-#     range = cell_limits(c(1, 1), c(NA, NA))) |>
-#     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-# 
-#   # save pre-processed file in archive for generation of past json files
-#   write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
-# }
+df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
 # process data
 apt_ao_data_day_int <- assign(mydataframe, df) |>
+  # ensure we keep only the current code
+  mutate(AO_GRP_CODE = if_else(FLAG_DAY != "CURRENT_DAY", NA, AO_GRP_CODE)) %>% 
+  arrange(AO_GRP_NAME, AO_GRP_CODE) %>% 
+  fill(AO_GRP_CODE, .direction = "down") %>% 
+  arrange(ARP_CODE, FLAG_DAY, R_RANK) %>% 
   select(-TO_DATE) |>
   spread(key = FLAG_DAY, value = DEP_ARR) |>
   arrange(ARP_CODE, R_RANK) |>
@@ -764,21 +755,7 @@ mydataframe <- "ap_ao_data_week_raw"
 myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
-# if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
-
-# } else {
-#   df <- read_xlsx(
-#     path  = fs::path_abs(
-#       str_glue(ap_base_file),
-#       start = ap_base_dir),
-#     sheet = "apt_ao_week",
-#     range = cell_limits(c(1, 1), c(NA, NA))) |>
-#     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-# 
-#   # save pre-processed file in archive for generation of past json files
-#   write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
-# }
+df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
 # process data
 apt_ao_data_week <- assign(mydataframe, df) |>
@@ -786,6 +763,11 @@ apt_ao_data_week <- assign(mydataframe, df) |>
     WK_TO_DATE = max(TO_DATE),
     WK_FROM_DATE = WK_TO_DATE + days(-6)
   ) |>
+  # ensure we keep only the current code
+  mutate(AO_GRP_CODE = if_else(PERIOD_TYPE != "CURRENT_ROLLING_WEEK", NA, AO_GRP_CODE)) %>% 
+  arrange(AO_GRP_NAME, AO_GRP_CODE) %>% 
+  fill(AO_GRP_CODE, .direction = "down") %>% 
+  arrange(ARP_CODE, PERIOD_TYPE, R_RANK) %>% 
   select(-FROM_DATE, -TO_DATE, -LAST_DATA_DAY) |>
   spread(key = PERIOD_TYPE, value = DEP_ARR) |>
   arrange(ARP_CODE, R_RANK) |>
@@ -796,13 +778,13 @@ apt_ao_data_week <- assign(mydataframe, df) |>
     ),
     WK_FLT_DIF_PREV_WEEK_PERC =   case_when(
       PREV_ROLLING_WEEK == 0 | is.na(PREV_ROLLING_WEEK) ~ NA,
-      .default = round((CURRENT_ROLLING_WEEK / PREV_ROLLING_WEEK - 1), 3)
+      .default = CURRENT_ROLLING_WEEK / PREV_ROLLING_WEEK - 1
     ),
     WK_FLT_DIF_PREV_YEAR_PERC = case_when(
       ROLLING_WEEK_PREV_YEAR == 0 | is.na(ROLLING_WEEK_PREV_YEAR) ~ NA,
-      .default = round((CURRENT_ROLLING_WEEK / ROLLING_WEEK_PREV_YEAR - 1), 3)
+      .default = CURRENT_ROLLING_WEEK / ROLLING_WEEK_PREV_YEAR - 1
     ),
-    WK_FLT_AVG = round((CURRENT_ROLLING_WEEK/7), 2)
+    WK_FLT_AVG = CURRENT_ROLLING_WEEK/7
   ) |>
   select(
     APT_CODE = ARP_CODE,
@@ -822,21 +804,7 @@ mydataframe <- "ap_ao_data_y2d_raw"
 myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
-# if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
-
-# } else {
-#   df <- read_xlsx(
-#     path  = fs::path_abs(
-#       str_glue(ap_base_file),
-#       start = ap_base_dir),
-#     sheet = "apt_ao_y2d",
-#     range = cell_limits(c(1, 1), c(NA, NA))) |>
-#     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-# 
-#   # save pre-processed file in archive for generation of past json files
-#   write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
-# }
+df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
 apt_ao_y2d <- assign(mydataframe, df)
 
@@ -849,7 +817,7 @@ apt_ao_data_year <- apt_ao_y2d |>
   group_by(YEAR) |>
   mutate(Y2D_DAYS = as.numeric(max(TO_DATE, na.rm = TRUE) - min(FROM_DATE, na.rm = TRUE) +1)) |>
   ungroup() |>
-  arrange(ARP_CODE, AO_GRP_CODE, YEAR) |>
+  arrange(ARP_CODE, AO_GRP_NAME, YEAR) |>
   mutate(
     Y2D_RANK_DIF_PREV_YEAR =  RANK_PY - RANK,
     # Y2D_FLT_DIF_PREV_YEAR_PERC = ifelse(YEAR == "2024",
@@ -1817,7 +1785,8 @@ apt_delay_cause_day <- apt_delay_cause_data %>%
          SHARE_TDM_IT,
          SHARE_TDM_WD,
          SHARE_TDM_NOCSGITWD
-  )
+  ) %>% 
+  arrange(ARP_CODE)
 
 column_names <- c(
   "APT_CODE",
@@ -1918,7 +1887,8 @@ apt_delay_cause_wk <- apt_delay_cause_data %>%
          WK_SHARE_TDM_IT,
          WK_SHARE_TDM_WD,
          WK_SHARE_TDM_NOCSGITWD
-  )
+  ) %>% 
+  arrange(ARP_CODE, FLIGHT_DATE)
 
 
 colnames(apt_delay_cause_wk) <- column_names
@@ -2003,7 +1973,8 @@ apt_delay_cause_y2d <- apt_delay_cause_data %>%
          Y2D_SHARE_TDM_IT,
          Y2D_SHARE_TDM_WD,
          Y2D_SHARE_TDM_NOCSGITWD
-  )
+  ) %>% 
+  arrange(ARP_CODE, FLIGHT_DATE)
 
 colnames(apt_delay_cause_y2d) <- column_names
 
@@ -2072,7 +2043,8 @@ apt_delayed_flights_evo <- apt_delay_data_full  %>%
     RWK_DELAYED_TFC_15_PERC_PREV_YEAR
   ) %>%
   filter(FLIGHT_DATE >= as.Date(paste0("01-01-", data_day_year), format = "%d-%m-%Y"),
-         FLIGHT_DATE <= as.Date(paste0("31-12-", data_day_year), format = "%d-%m-%Y"))
+         FLIGHT_DATE <= as.Date(paste0("31-12-", data_day_year), format = "%d-%m-%Y")) %>% 
+  arrange(ARP_CODE, FLIGHT_DATE)
 
 column_names <- c('APT_CODE',
                   'APT_NAME',
