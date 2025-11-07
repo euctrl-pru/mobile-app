@@ -826,9 +826,9 @@ apt_ao_data_year <- apt_ao_y2d |>
     #                                round((DEP_ARR/lag(DEP_ARR, 5)-1), 3), NA)
     Y2D_FLT_AVG = DEP_ARR / Y2D_DAYS,
     Y2D_FLT_DIF_PREV_YEAR_PERC = ifelse(YEAR == apt_ao_y2d_max_year,
-                                        Y2D_FLT_AVG / lag(Y2D_FLT_AVG)-1, NA),
+                                        Y2D_FLT_AVG / lag(Y2D_FLT_AVG, 1)-1, NA),
     Y2D_FLT_DIF_2019_PERC = ifelse(YEAR == apt_ao_y2d_max_year,
-                                   Y2D_FLT_AVG / lag(Y2D_FLT_AVG, apt_ao_y2d_max_year - 2019)-1, NA)
+                                   Y2D_FLT_AVG / lag(Y2D_FLT_AVG, 2)-1, NA)
 
   ) |>
   filter(YEAR == apt_ao_y2d_max_year) |>
