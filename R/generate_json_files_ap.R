@@ -1062,7 +1062,7 @@ apt_apt_data_year <- apt_apt_y2d |>
     Y2D_FLT_DIF_PREV_YEAR_PERC = ifelse(YEAR == apt_apt_y2d_max_year,
                                         Y2D_FLT_AVG / lag(Y2D_FLT_AVG)-1, NA),
     Y2D_FLT_DIF_2019_PERC = ifelse(YEAR == apt_apt_y2d_max_year,
-                                   Y2D_FLT_AVG / lag(Y2D_FLT_AVG, apt_apt_y2d_max_year - 2019)-1, NA)
+                                   Y2D_FLT_AVG / lag(Y2D_FLT_AVG, 2)-1, NA)
   ) |>
   filter(YEAR == apt_apt_y2d_max_year) |>
   arrange(ARP_CODE_DEP, ARP_NAME_DEP, R_RANK) |>
@@ -1308,7 +1308,7 @@ apt_st_data_year <- apt_st_y2d |>
     Y2D_FLT_DIF_PREV_YEAR_PERC = ifelse(YEAR == apt_st_y2d_max_year,
                                         Y2D_FLT_AVG / lag(Y2D_FLT_AVG)-1, NA),
     Y2D_FLT_DIF_2019_PERC = ifelse(YEAR == apt_st_y2d_max_year,
-                                   Y2D_FLT_AVG / lag(Y2D_FLT_AVG, apt_st_y2d_max_year - 2019)-1, NA)
+                                   Y2D_FLT_AVG / lag(Y2D_FLT_AVG, 2)-1, NA)
   ) |>
   filter(YEAR == apt_st_y2d_max_year) |>
   arrange(ARP_CODE, ISO_CT_NAME_ARR, R_RANK) |>
@@ -1596,7 +1596,7 @@ apt_ms_data_year_prep <- apt_ms_y2d |>
     Y2D_FLT_DIF_PREV_YEAR_PERC = ifelse(YEAR == apt_ms_y2d_max_year,
                                         Y2D_FLT_AVG / lag(Y2D_FLT_AVG)-1, NA),
     Y2D_FLT_DIF_2019_PERC = ifelse(YEAR == apt_ms_y2d_max_year,
-                                   Y2D_FLT_AVG / lag(Y2D_FLT_AVG, apt_ms_y2d_max_year - 2019)-1, NA)
+                                   Y2D_FLT_AVG / lag(Y2D_FLT_AVG, 2)-1, NA)
   ) |>
   filter(YEAR == apt_ms_y2d_max_year) |>
   group_by(ARP_CODE) |>
