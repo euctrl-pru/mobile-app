@@ -1007,13 +1007,13 @@ apt_apt_data_week <- assign(mydataframe, df)  |>
     ),
     WK_FLT_DIF_PREV_WEEK_PERC =   case_when(
       PREV_ROLLING_WEEK == 0 | is.na(PREV_ROLLING_WEEK) ~ NA,
-      .default = round((CURRENT_ROLLING_WEEK / PREV_ROLLING_WEEK - 1), 3)
+      .default = (CURRENT_ROLLING_WEEK / PREV_ROLLING_WEEK - 1)
     ),
     WK_FLT_DIF_PREV_YEAR_PERC = case_when(
       ROLLING_WEEK_PREV_YEAR == 0 | is.na(ROLLING_WEEK_PREV_YEAR) ~ NA,
-      .default = round((CURRENT_ROLLING_WEEK / ROLLING_WEEK_PREV_YEAR - 1), 3)
+      .default = (CURRENT_ROLLING_WEEK / ROLLING_WEEK_PREV_YEAR - 1)
     ),
-    WK_FLT_AVG = round((CURRENT_ROLLING_WEEK/7), 2)
+    WK_FLT_AVG = (CURRENT_ROLLING_WEEK/7)
   ) |>
   select(
     APT_CODE = ARP_CODE_DEP,
@@ -1034,20 +1034,7 @@ myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
 # if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
-
-# } else {
-#   df <- read_xlsx(
-#     path  = fs::path_abs(
-#       str_glue(ap_base_file),
-#       start = ap_base_dir),
-#     sheet = "apt_apt_des_y2d",
-#     range = cell_limits(c(1, 1), c(NA, NA))) |>
-#     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-# 
-#   # save pre-processed file in archive for generation of past json files
-#   write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
-# }
+df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
 # process data
 apt_apt_y2d <- assign(mydataframe, df)
@@ -1059,22 +1046,30 @@ apt_apt_y2d_max_year <-  max(apt_apt_y2d$YEAR, na.rm = TRUE)
 apt_apt_data_year <- apt_apt_y2d |>
   # calculate number of days to date
   group_by(YEAR) |>
-  mutate(Y2D_DAYS = as.numeric(max(TO_DATE, na.rm = TRUE) - min(FROM_DATE, na.rm = TRUE) +1)) |>
+  mutate(
+    Y2D_DAYS = as.numeric(max(TO_DATE, na.rm = TRUE) - min(FROM_DATE, na.rm = TRUE) +1),
+    Y2D_FLT_AVG = DEP / Y2D_DAYS,
+    FLAG_PERIOD = case_when(
+      YEAR == 2019 ~ "YEAR2019",
+      YEAR == data_day_year ~ "CURRENT",
+      YEAR == data_day_year -1 ~ "PREVIOUS"
+    )
+  ) |>
   ungroup() |>
-  arrange(ARP_CODE_DEP, ARP_NAME_ARR, YEAR) |>
+  select(-TO_DATE, -FROM_DATE, -Y2D_DAYS, -DEP, -YEAR, -ARP_CODE_ARR) %>% 
+  pivot_wider(
+    # id_cols    = -c(YEAR, DEP_ARR),       
+    names_from = FLAG_PERIOD,                    
+    values_from = Y2D_FLT_AVG) %>% 
+  arrange(ARP_CODE_DEP, R_RANK) %>% 
   mutate(
     Y2D_RANK_DIF_PREV_YEAR =  RANK_PREV - RANK,
-    # Y2D_FLT_DIF_PREV_YEAR_PERC = ifelse(YEAR == "2024",
-    #                                     round((DEP/lag(DEP)-1), 3), NA),
-    # Y2D_FLT_DIF_2019_PERC = ifelse(YEAR == "2024",
-    #                                round((DEP/lag(DEP, 5)-1), 3), NA)
-    Y2D_FLT_AVG = DEP / Y2D_DAYS,
-    Y2D_FLT_DIF_PREV_YEAR_PERC = ifelse(YEAR == apt_apt_y2d_max_year,
-                                        Y2D_FLT_AVG / lag(Y2D_FLT_AVG)-1, NA),
-    Y2D_FLT_DIF_2019_PERC = ifelse(YEAR == apt_apt_y2d_max_year,
-                                   Y2D_FLT_AVG / lag(Y2D_FLT_AVG, 2)-1, NA)
+    Y2D_FLT_DIF_PREV_YEAR_PERC = ifelse(CURRENT == 0, NA,
+                                        CURRENT / PREVIOUS-1),
+    Y2D_FLT_DIF_2019_PERC = ifelse(CURRENT == 0, NA,
+                                   CURRENT / YEAR2019-1),
+    TO_DATE = data_day_date
   ) |>
-  filter(YEAR == apt_apt_y2d_max_year) |>
   arrange(ARP_CODE_DEP, ARP_NAME_DEP, R_RANK) |>
   select(
     APT_CODE = ARP_CODE_DEP,
@@ -1083,7 +1078,7 @@ apt_apt_data_year <- apt_apt_y2d |>
     Y2D_RANK_DIF_PREV_YEAR,
     Y2D_APT_NAME = ARP_NAME_ARR,
     Y2D_TO_DATE = LAST_DATA_DAY,
-    Y2D_FLT_AVG,
+    Y2D_FLT_AVG = CURRENT,
     Y2D_FLT_DIF_PREV_YEAR_PERC,
     Y2D_FLT_DIF_2019_PERC
   )
