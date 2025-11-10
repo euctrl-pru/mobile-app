@@ -975,27 +975,15 @@ mydataframe <- "ap_ap_des_data_week_raw"
 myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
-# if (archive_mode) {
   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
-# } else {
-#   df <- read_xlsx(
-#     path  = fs::path_abs(
-#       str_glue(ap_base_file),
-#       start = ap_base_dir),
-#     sheet = "apt_apt_des_week",
-#     range = cell_limits(c(1, 1), c(NA, NA))) |>
-#     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-# 
-#   # save pre-processed file in archive for generation of past json files
-#   write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
-# }
 
 # process data
 apt_apt_data_week <- assign(mydataframe, df)  |>
   mutate(
-    WK_TO_DATE = max(TO_DATE),
-    WK_FROM_DATE = WK_TO_DATE + days(-6)
+    #NOTE!! Temporary fix while the app is corrected
+    WK_TO_DATE = max(TO_DATE) - days(6),
+    WK_FROM_DATE = WK_TO_DATE - days(6)
   ) |>
   select(-FROM_DATE, -TO_DATE, -LAST_DATA_DAY) |>
   spread(key = FLAG_PERIOD, value = DEP) |>
@@ -1413,21 +1401,7 @@ mydataframe <- "ap_ms_data_day_raw"
 myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
-# if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
-
-# } else {
-#   df <- read_xlsx(
-#     path  = fs::path_abs(
-#       str_glue(ap_base_file),
-#       start = ap_base_dir),
-#     sheet = "apt_ms_day",
-#     range = cell_limits(c(1, 1), c(NA, NA))) |>
-#     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-# 
-#   # save pre-processed file in archive for generation of past json files
-#   write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
-# }
+df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
 apt_ms_data_day_raw <- assign(mydataframe, df)
 

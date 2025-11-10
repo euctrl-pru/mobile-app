@@ -1040,21 +1040,7 @@ mydataframe <- "ao_ap_dep_data_week_raw"
 myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
-# if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
-
-# } else {
-#   df <- read_xlsx(
-#     path  = fs::path_abs(
-#       str_glue(ao_base_file),
-#       start = ao_base_dir),
-#     sheet = "ao_apt_dep_week",
-#     range = cell_limits(c(1, 1), c(NA, NA))) %>%
-#     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-# 
-#   # save pre-processed file in archive for generation of past json files
-#   write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
-# }
+df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
 # process data
 ao_apt_dep_data_wk <- assign(mydataframe, df) %>%
@@ -1076,6 +1062,11 @@ ao_apt_dep_data_wk <- assign(mydataframe, df) %>%
     ),
     AO_GRP_RANK = paste0(tolower(AO_GRP_NAME), R_RANK)
   ) %>%
+  #NOTE!! Temporary fix while the app is corrected
+  mutate(
+    FROM_DATE = FROM_DATE - days(6),
+    TO_DATE = TO_DATE - days(6)
+  ) %>% 
   rename(
     WK_APT_DEP_NAME = ADEP_NAME,
     WK_FROM_DATE = FROM_DATE,

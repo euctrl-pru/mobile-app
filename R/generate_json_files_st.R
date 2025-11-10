@@ -1546,21 +1546,8 @@ mydataframe <- "st_ap_data_week_raw"
 myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
-# if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
+df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
-# } else {
-#   df <- read_xlsx(
-#   path  = fs::path_abs(
-#     str_glue(st_base_file),
-#     start = st_base_dir),
-#   sheet = "state_apt_week",
-#   range = cell_limits(c(1, 1), c(NA, NA))) %>%
-#   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-# 
-#   # save pre-processed file in archive for generation of past json files
-#   write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
-# }
 
 # process data
 st_apt_data_wk <- assign(mydataframe, df) %>%
@@ -1582,6 +1569,11 @@ st_apt_data_wk <- assign(mydataframe, df) %>%
     ),
     ST_RANK = paste0(tolower(COUNTRY_NAME), R_RANK)
   ) %>%
+  #NOTE!! Temporary fix while the app is corrected
+  mutate(
+    FROM_DATE = FROM_DATE - days(6),
+    TO_DATE = TO_DATE - days(6)
+  ) %>% 
   rename(
     WK_APT_NAME = AIRPORT_NAME,
     WK_FROM_DATE = FROM_DATE,
