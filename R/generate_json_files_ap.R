@@ -1441,9 +1441,9 @@ apt_ms_data_day_prep <- apt_ms_data_day_raw |>
 apt_ms_data_day <- full_grid |> 
   left_join(apt_ms_data_day_prep, by = c("ARP_CODE", "MARKET_SEGMENT")) |>
   group_by(ARP_CODE) |>
-  arrange(ARP_CODE, desc(CURRENT_DAY)) |>
+  arrange(ARP_CODE, desc(CURRENT_DAY), MARKET_SEGMENT) |>
   mutate(RANK = row_number())|>
-  fill(ARP_NAME, .direction = "down")|>
+  fill(c(ARP_NAME, LAST_DATA_DAY), .direction = "down")|>
   ungroup() |>
   select(
     APT_CODE = ARP_CODE,
@@ -1463,21 +1463,7 @@ mydataframe <- "ap_ms_data_week_raw"
 myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
-# if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
-
-# } else {
-#   df <- read_xlsx(
-#     path  = fs::path_abs(
-#       str_glue(ap_base_file),
-#       start = ap_base_dir),
-#     sheet = "apt_ms_week",
-#     range = cell_limits(c(1, 1), c(NA, NA))) |>
-#     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-# 
-#   # save pre-processed file in archive for generation of past json files
-#   write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
-# }
+df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
 # process data
 apt_ms_data_week_prep <- assign(mydataframe, df) |>
@@ -1495,13 +1481,13 @@ apt_ms_data_week_prep <- assign(mydataframe, df) |>
     ),
     WK_FLT_DIF_PREV_WEEK_PERC =   case_when(
       PREV_ROLLING_WEEK == 0 | is.na(PREV_ROLLING_WEEK) ~ NA,
-      .default = round((CURRENT_ROLLING_WEEK / PREV_ROLLING_WEEK - 1), 3)
+      .default = CURRENT_ROLLING_WEEK / PREV_ROLLING_WEEK - 1
     ),
     WK_FLT_DIF_PREV_YEAR_PERC = case_when(
       ROLLING_WEEK_PREV_YEAR == 0 | is.na(ROLLING_WEEK_PREV_YEAR) ~ NA,
-      .default = round((CURRENT_ROLLING_WEEK / ROLLING_WEEK_PREV_YEAR - 1), 3)
+      .default = CURRENT_ROLLING_WEEK / ROLLING_WEEK_PREV_YEAR - 1
     ),
-    WK_FLT_AVG = round((CURRENT_ROLLING_WEEK/7), 2)
+    WK_FLT_AVG = CURRENT_ROLLING_WEEK/7
   ) |>
   group_by(ARP_CODE) |>
   mutate(WK_MS_SHARE = ifelse(CURRENT_ROLLING_WEEK == 0, 0,
@@ -1512,7 +1498,7 @@ apt_ms_data_week_prep <- assign(mydataframe, df) |>
 apt_ms_data_week <- full_grid |> 
   left_join(apt_ms_data_week_prep, by = c("ARP_CODE", "MARKET_SEGMENT")) |>
   group_by(ARP_CODE) |>
-  arrange(ARP_CODE, desc(CURRENT_ROLLING_WEEK)) |>
+  arrange(ARP_CODE, desc(CURRENT_ROLLING_WEEK), MARKET_SEGMENT) |>
   mutate(RANK = row_number())|>
   fill(ARP_NAME, .direction = "down")|>
   ungroup() |>
