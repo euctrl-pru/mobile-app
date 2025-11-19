@@ -2027,26 +2027,6 @@ if (max(nw_acc_delay_day_raw$ENTRY_DATE) != data_day_date) {
   nw_acc_delay_day_raw <- export_query(query_nw_acc_delay_day_raw(format(data_day_date, "%Y-%m%-%d"))) 
 }
 
-# mydataframe <- "nw_acc_delay_day_raw"
-# myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
-# stakeholder <- str_sub(mydataframe, 1, 2)
-# 
-# if (archive_mode) {
-#   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
-# 
-# } else {
-#   df <-  read_xlsx(
-#   path  = fs::path_abs(
-#     str_glue(nw_base_file),
-#     start = nw_base_dir),
-#   sheet = "ACC_DAY_DELAY",
-#   range = cell_limits(c(5, 2), c(NA, 20))) %>%
-#   as_tibble() %>%
-#   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-# 
-#   # saved already in the nw file
-# }
-
 # process data
 acc_delay_day_sorted <-  nw_acc_delay_day_raw %>%
   left_join(distinct(acc, Name, ICAO_code), by = c("UNIT_CODE" = "ICAO_code")) %>%
@@ -2063,6 +2043,10 @@ acc_delay_day_sorted <-  nw_acc_delay_day_raw %>%
     DY_RANK_ER_DLY_FLT = rank(desc(DY_ACC_ER_DLY_FLT), ties.method = "max"),
     DY_TO_DATE = ENTRY_DATE) %>%
   right_join(acc, by = "ICAO_code") %>%
+  mutate( 
+    #canarias case
+    iso_2letter = if_else(substr(ICAO_code,1,2) == "GC", "IC", iso_2letter)
+  ) %>% 
   left_join(state_iso, by = "iso_2letter") %>%
   group_by(iso_2letter) %>%
   arrange(iso_2letter, desc(DY_ACC_ER_DLY), DY_ACC_NAME) %>%
@@ -2090,27 +2074,6 @@ if (max(nw_acc_delay_week_raw$MAX_ENTRY_DATE) != data_day_date) {
   nw_acc_delay_week_raw <- export_query(query_nw_acc_delay_week_raw(format(data_day_date, "%Y-%m%-%d"))) 
 }
   
-# old
-# mydataframe <- "nw_acc_delay_week_raw"
-# myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
-# stakeholder <- str_sub(mydataframe, 1, 2)
-# 
-# if (archive_mode) {
-#   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
-# 
-# } else {
-#   df <-  read_xlsx(
-#   path  = fs::path_abs(
-#     str_glue(nw_base_file),
-#     start = nw_base_dir),
-#   sheet = "ACC_WEEK_DELAY",
-#   range = cell_limits(c(5, 2), c(NA, 16))) %>%
-#   as_tibble() %>%
-#   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-# 
-#   # saved already in the nw file
-# }
-
 # process data
 acc_delay_week <- nw_acc_delay_week_raw %>%
   left_join(distinct(acc, Name, ICAO_code), by = c("UNIT_CODE" = "ICAO_code")) %>%
@@ -2128,6 +2091,10 @@ acc_delay_week <- nw_acc_delay_week_raw %>%
     WK_TO_DATE = MAX_ENTRY_DATE
     ) %>%
   right_join(acc, by = "ICAO_code") %>%
+  mutate( 
+    #canarias case
+    iso_2letter = if_else(substr(ICAO_code,1,2) == "GC", "IC", iso_2letter)
+  ) %>% 
   left_join(state_iso, by = "iso_2letter") %>%
   group_by(iso_2letter) %>%
   arrange(iso_2letter, desc(WK_ACC_ER_DLY), WK_ACC_NAME) %>%
@@ -2154,26 +2121,6 @@ if (max(nw_acc_delay_y2d_raw$ENTRY_DATE) != data_day_date) {
   nw_acc_delay_y2d_raw <- export_query(query_nw_acc_delay_y2d_raw(format(data_day_date, "%Y-%m%-%d"))) 
 }
 
-# mydataframe <- "nw_acc_delay_y2d_raw"
-# myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
-# stakeholder <- str_sub(mydataframe, 1, 2)
-# 
-# if (archive_mode) {
-#   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
-# 
-# } else {
-#   df <-  read_xlsx(
-#   path  = fs::path_abs(
-#     str_glue(nw_base_file),
-#     start = nw_base_dir),
-#   sheet = "ACC_Y2D_DELAY",
-#   range = cell_limits(c(7, 2), c(NA, 13))) %>%
-#   as_tibble() %>%
-#   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-# 
-#   # saved already in the nw file
-# }
-
 # process data
 acc_delay_y2d <- nw_acc_delay_y2d_raw %>%
   rename(Y2D_FROM_DATE = MIN_DATE) %>%
@@ -2192,6 +2139,10 @@ acc_delay_y2d <- nw_acc_delay_y2d_raw %>%
   ) %>%
   right_join(acc, by = "ICAO_code") %>%
   left_join(state_iso, by = "iso_2letter") %>%
+  mutate( 
+    #canarias case
+    iso_2letter = if_else(substr(ICAO_code,1,2) == "GC", "IC", iso_2letter)
+  ) %>% 
   group_by(iso_2letter) %>%
   arrange(iso_2letter, desc(Y2D_ACC_ER_DLY), Y2D_ACC_NAME) %>%
   mutate (
@@ -2279,6 +2230,10 @@ st_ap_delay_raw <- nw_ap_delay_raw %>%
     ICAO_CODE = APT_ICAO_CODE
   ) %>%
   left_join(airport, by = "ICAO_CODE") %>%
+  mutate(
+    #canarias case
+    iso_2letter = if_else(substr(ICAO_CODE,1,2) == "GC", "IC", iso_2letter)
+  ) %>% 
   left_join(state_iso, by = "iso_2letter")
 
 #### day ----
