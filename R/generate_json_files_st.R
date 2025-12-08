@@ -1207,24 +1207,12 @@ mydataframe <- "st_ao_data_day_raw"
 myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
-# if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
-
-# } else {
-#   df <- read_xlsx(
-#   path  = fs::path_abs(
-#     str_glue(st_base_file),
-#     start = st_base_dir),
-#   sheet = "state_ao_day",
-#   range = cell_limits(c(1, 1), c(NA, NA))) %>%
-#   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-# 
-#   # save pre-processed file in archive for generation of past json files
-#   write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
-# }
+df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
 # process data
 st_ao_data_day_int <- assign(mydataframe, df) %>%
+  # filter avoid issues with aos that changed codes
+  select(-AO_GRP_CODE) %>% 
   mutate(TO_DATE = max(TO_DATE, na.rm = TRUE)) %>%
   spread(., key = FLAG_DAY, value = FLIGHT_WITHOUT_OVERFLIGHT) %>%
   arrange(COUNTRY_NAME, R_RANK) %>%
@@ -1245,7 +1233,7 @@ st_ao_data_day_int <- assign(mydataframe, df) %>%
     ST_TFC_AO_GRP_DIF = CURRENT_DAY - DAY_PREV_WEEK
   ) %>%
   # filter out bad rows created by Iceland case
-  filter(!is.na(AO_GRP_CODE))
+  filter(!is.na(AO_GRP_NAME))
 
 st_ao_data_day <- st_ao_data_day_int %>%
   rename(
