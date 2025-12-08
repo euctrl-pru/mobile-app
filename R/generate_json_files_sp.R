@@ -138,83 +138,6 @@ sp_traffic_for_json <- sp_traffic_last_day %>%
     Y2D_TFC_DIF_2019_PERC = Y2D_FLT_DAIO_DIF_2019_PERC
   )
 
-# old calculation
-# sp_traffic_data <-  read_xlsx(
-#     path  = fs::path_abs(
-#       str_glue(sp_base_file),
-#       start = sp_base_dir),
-#     sheet = "ansp_traffic",
-#     range = cell_limits(c(1, 1), c(NA, NA))) %>%
-#     as_tibble() %>%
-#     mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
-#   left_join(list_ansp, by = c("ANSP_NAME"))
-# 
-# 
-# sp_traffic_calc <- sp_traffic_data %>%
-#   mutate(
-#     DY_TFC_DIF_PREV_YEAR_PERC = if_else(DAY_FLT_DAIO_PREV_YEAR == 0 | is.na(DAY_FLT_DAIO_PREV_YEAR),
-#                                         NA,
-#                                         DAY_FLT_DAIO / DAY_FLT_DAIO_PREV_YEAR -1),
-#     DY_TFC_DIF_2019_PERC = if_else(DAY_FLT_DAIO_2019 == 0 | is.na(DAY_FLT_DAIO_2019),
-#                                    NA,
-#                                    DAY_FLT_DAIO / DAY_FLT_DAIO_2019 -1),
-# 
-#     WK_TFC_DIF_PREV_YEAR_PERC = if_else(RW_AVG_FLT_DAIO_PREV_YEAR == 0 | is.na(RW_AVG_FLT_DAIO_PREV_YEAR),
-#                                         NA,
-#                                         RW_AVG_FLT_DAIO / RW_AVG_FLT_DAIO_PREV_YEAR -1),
-#     WK_TFC_DIF_2019_PERC = if_else(RW_AVG_FLT_DAIO_2019 == 0 | is.na(RW_AVG_FLT_DAIO_2019),
-#                                    NA,
-#                                    RW_AVG_FLT_DAIO / RW_AVG_FLT_DAIO_2019 -1),
-# 
-#     Y2D_TFC_DIF_PREV_YEAR_PERC = if_else(Y2D_AVG_FLT_DAIO_PREV_YEAR == 0 | is.na(Y2D_AVG_FLT_DAIO_PREV_YEAR),
-#                                          NA,
-#                                          Y2D_AVG_FLT_DAIO_YEAR / Y2D_AVG_FLT_DAIO_PREV_YEAR -1),
-#     Y2D_TFC_DIF_2019_PERC = if_else(Y2D_AVG_FLT_DAIO_2019 == 0 | is.na(Y2D_AVG_FLT_DAIO_2019),
-#                                     NA,
-#                                     Y2D_AVG_FLT_DAIO_YEAR / Y2D_AVG_FLT_DAIO_2019 -1)
-#   )
-# 
-# sp_traffic_last_day <- sp_traffic_calc %>%
-#   filter(ENTRY_DATE == min(data_day_date,
-#                             max(LAST_DATA_DAY, na.rm = TRUE),
-#                             na.rm = TRUE)
-#   ) %>%
-#   arrange(ANSP_NAME, ENTRY_DATE)
-# 
-# sp_traffic_for_json <- sp_traffic_last_day %>%
-#   ### rank calculation
-#   mutate(
-#     DY_TFC_RANK = min_rank(desc(DAY_FLT_DAIO)),
-#     WK_TFC_RANK = min_rank(desc(RW_AVG_FLT_DAIO)),
-#     Y2D_TFC_RANK = min_rank(desc(Y2D_AVG_FLT_DAIO_YEAR)),
-#     TFC_RANK_TEXT = "*Top rank for highest.",
-# 
-#   ) %>%
-#   select(
-#     ANSP_NAME,
-#     ANSP_CODE,
-#     FLIGHT_DATE = ENTRY_DATE,
-# 
-#     DY_TFC_RANK,
-#     DY_TFC = DAY_FLT_DAIO,
-#     DY_TFC_DIF_PREV_YEAR_PERC,
-#     DY_TFC_DIF_2019_PERC,
-# 
-#     WK_TFC_RANK,
-#     WK_TFC_AVG_ROLLING = RW_AVG_FLT_DAIO,
-#     WK_TFC_DIF_PREV_YEAR_PERC,
-#     WK_TFC_DIF_2019_PERC,
-# 
-#     Y2D_TFC_RANK,
-#     Y2D_TFC = Y2D_FLT_DAIO_YEAR,
-#     Y2D_TFC_AVG = Y2D_AVG_FLT_DAIO_YEAR,
-#     Y2D_TFC_DIF_PREV_YEAR_PERC,
-#     Y2D_TFC_DIF_2019_PERC
-#   )
-# 
-# 
-# all.equal(sp_traffic_for_json, sp_traffic_for_json)
-
 #### Delay data ----
 ##### import ----
 mydataframe <- "sp_delay_day_raw"
@@ -251,26 +174,6 @@ sp_delay_data <-  read_parquet(here(archive_dir_raw, stakeholder, paste0(mydataf
     FLT_DAIO = DAY_FLT_DAIO,
   ) %>% 
   arrange(ANSP_NAME, ENTRY_DATE)
-
-# old
-# sp_delay_data <-  read_xlsx(
-#   path  = fs::path_abs(
-#     str_glue(sp_base_file),
-#     start = sp_base_dir),
-#   sheet = "ansp_delay",
-#   range = cell_limits(c(1, 1), c(NA, NA))) %>%
-#   as_tibble() %>%
-#   mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
-#   left_join(list_ansp, by = c("ANSP_NAME", "ANSP_ID")) %>% 
-#   select(-c(
-#     MONTH,
-#     WEEK,
-#     WEEK_NB_YEAR,
-#     DAY_TYPE,
-#     DAY_OF_WEEK,
-#   )) %>% 
-#   filter(ENTRY_DATE >= ymd("20181224")) %>% 
-#   arrange(ANSP_NAME, ENTRY_DATE)
 
 ##### calc ----
 sp_delay_calc <-  sp_delay_data %>%
@@ -1033,59 +936,6 @@ sp_acc_traffic_day <- sp_acc_traffic_day_int %>%
   )
 
 
-# old
-# if (archive_mode) {
-#   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
-#   
-# } else {
-#   df <-  read_xlsx(
-#     path  = fs::path_abs(
-#       str_glue(nw_base_file),
-#       start = nw_base_dir),
-#     sheet = "ACC_DAY_DELAY",
-#     range = cell_limits(c(5, 1), c(NA, NA))) %>%
-#     as_tibble() %>%
-#     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))%>%
-#     arrange(desc(DLY), NAME)
-# }
-# 
-# # process data
-# sp_acc_traffic_day_int <- assign(mydataframe, df) %>% 
-#   left_join(rel_ansp_acc, by = c("UNIT_CODE" = "ICAO_CODE")) %>% 
-#   mutate(
-#     DY_FLT_RANK = rank(desc(FLIGHT), ties.method = "max"),
-#   ) %>% 
-#   group_by(ANSP_ID) %>% 
-#   mutate(
-#     SP_RANK = paste0(ANSP_CODE, row_number()),
-#     DY_FLT_DIF_PREV_WEEK_PERC = if_else(FLIGHT_7DAY == 0, NA, FLIGHT / FLIGHT_7DAY -1),
-#     DY_FLT_DIF_PREV_YEAR_PERC = if_else(FLIGHT_PREV_YEAR == 0, NA, FLIGHT / FLIGHT_PREV_YEAR -1),
-#      
-#     DY_FLT_DIF_PREV_WEEK = FLIGHT - FLIGHT_7DAY
-#     ) %>% 
-#   arrange(ANSP_ID, SP_RANK) %>% 
-#   ungroup()
-# 
-# if(archive_mode) {
-#   sp_acc_traffic_day_int <- sp_acc_traffic_day_int %>% 
-#     left_join(
-#       select(acc, NAME = Name, UNIT_CODE = ICAO_code), 
-#       by = ("UNIT_CODE"),
-#       relationship = "many-to-many")
-# }
-# 
-# sp_acc_traffic_day <- sp_acc_traffic_day_int %>% 
-#   select(
-#     SP_RANK,
-#     DY_FLT_RANK,
-#     DY_FLT_ACC_NAME = NAME,
-#     DY_TO_DATE = ENTRY_DATE,
-#     # DY_FLT_TO_DATE = ENTRY_DATE,
-#     DY_FLT = FLIGHT,
-#     DY_FLT_DIF_PREV_WEEK_PERC,
-#     DY_FLT_DIF_PREV_YEAR_PERC
-#   )
-  
 #### week ----
 if(!exists("nw_acc_delay_week_raw")) {
   nw_acc_delay_week_raw <- export_query(query_nw_acc_delay_week_raw(format(data_day_date, "%Y-%m%-%d"))) 
@@ -1125,66 +975,6 @@ sp_acc_traffic_week <- sp_acc_traffic_week_int %>%
     WK_FLT_DIF_PREV_YEAR_PERC
   ) %>% 
   arrange(WK_FLT_RANK)
-
-# old
-# mydataframe <- "nw_acc_delay_week_raw"
-# myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
-# stakeholder <- str_sub(mydataframe, 1, 2)
-# 
-# if (archive_mode) {
-#   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
-#   
-# } else {
-#   df <-  read_xlsx(
-#     path  = fs::path_abs(
-#       str_glue(nw_base_file),
-#       start = nw_base_dir),
-#     sheet = "ACC_WEEK_DELAY",
-#     range = cell_limits(c(5, 1), c(NA, NA))) %>%
-#     as_tibble() %>%
-#     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-# }
-# 
-# # process data
-# sp_acc_traffic_week_int <- assign(mydataframe, df) %>% 
-#   left_join(rel_ansp_acc, by = c("UNIT_CODE" = "ICAO_CODE")) %>% 
-#   mutate(
-#     WK_FLT_RANK = rank(desc(FLIGHT), ties.method = "max")
-#   ) %>% 
-#   group_by(ANSP_ID) %>% 
-#   arrange(ANSP_ID, NAME) %>% 
-#   mutate(
-#     SP_RANK = paste0(ANSP_CODE, row_number()),
-#     WK_FLT_DIF_PREV_WEEK_PERC = if_else(FLIGHT_7DAY == 0, NA, FLIGHT / FLIGHT_7DAY -1),
-#     WK_FLT_DIF_PREV_YEAR_PERC = if_else(FLIGHT_PREV_YEAR == 0, NA, FLIGHT / FLIGHT_PREV_YEAR -1)
-#   ) %>% 
-#   arrange(ANSP_ID, SP_RANK) %>% 
-#   ungroup() 
-# 
-# if(archive_mode) {
-#   sp_acc_traffic_week_int <- sp_acc_traffic_week_int %>% 
-#     left_join(
-#       select(acc, NAME = Name, UNIT_CODE = ICAO_code), 
-#       by = ("UNIT_CODE"),
-#       relationship = "many-to-many")
-# }
-# 
-# sp_acc_traffic_week <- sp_acc_traffic_week_int %>% 
-#   select(
-#     SP_RANK,
-#     WK_FLT_RANK,
-#     WK_FLT_ACC_NAME = NAME,
-#     WK_FROM_DATE = MIN_ENTRY_DATE,
-#     WK_TO_DATE = MAX_ENTRY_DATE,
-#     # WK_FLT_FROM_DATE = MIN_ENTRY_DATE,
-#     # WK_FLT_TO_DATE = MAX_ENTRY_DATE,
-#     WK_FLT =  DAILY_FLIGHT,
-#     WK_FLT_DIF_PREV_WEEK_PERC,
-#     WK_FLT_DIF_PREV_YEAR_PERC
-#   ) %>% 
-#   arrange(WK_FLT_RANK)
-# 
-# all.equal(sp_acc_traffic_week, sp_acc_traffic_week_new)
 
 #### y2d ----
 if(!exists("nw_acc_delay_y2d_raw")) {
@@ -1226,65 +1016,6 @@ sp_acc_traffic_y2d <- sp_acc_traffic_y2d_int %>%
     Y2D_FLT_DIF_2019_PERC
   )%>% 
   arrange(Y2D_FLT_RANK)
-
-# old
-# mydataframe <- "nw_acc_delay_y2d_raw"
-# myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
-# stakeholder <- str_sub(mydataframe, 1, 2)
-# 
-# if (archive_mode) {
-#   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
-#   
-# } else {
-#   df <-  read_xlsx(
-#     path  = fs::path_abs(
-#       str_glue(nw_base_file),
-#       start = nw_base_dir),
-#     sheet = "ACC_Y2D_DELAY",
-#     range = cell_limits(c(7, 1), c(NA, NA))) %>%
-#     as_tibble() %>%
-#     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-# }
-# 
-# # process data
-# sp_acc_traffic_y2d_int <- assign(mydataframe, df) %>% 
-#   left_join(rel_ansp_acc, by = c("UNIT_CODE" = "ICAO_CODE")) %>% 
-#   mutate(
-#     Y2D_FLT_RANK = rank(desc(FLIGHT), ties.method = "max"),
-#   ) %>% 
-#   group_by(ANSP_ID) %>% 
-#   arrange(ANSP_ID, NAME) %>% 
-#   mutate(
-#     SP_RANK = paste0(ANSP_CODE, row_number()),
-#     Y2D_FLT_DIF_PREV_YEAR_PERC = if_else(Y2D_AVG_FLIGHT_PY == 0, NA,  Y2D_AVG_FLIGHT /  Y2D_AVG_FLIGHT_PY-1),
-#     Y2D_FLT_DIF_2019_PERC = if_else(Y2D_AVG_FLIGHT_2019 == 0, NA, Y2D_AVG_FLIGHT / Y2D_AVG_FLIGHT_2019 -1)
-#   ) %>% 
-#   arrange(ANSP_ID, SP_RANK) %>% 
-#   ungroup()
-# 
-# if(archive_mode) {
-#   sp_acc_traffic_y2d_int <- sp_acc_traffic_y2d_int %>% 
-#     left_join(
-#       select(acc, NAME = Name, UNIT_CODE = ICAO_code), 
-#       by = ("UNIT_CODE"),
-#       relationship = "many-to-many")
-# }
-# 
-# sp_acc_traffic_y2d <- sp_acc_traffic_y2d_int %>% 
-#   select(
-#     SP_RANK,
-#     Y2D_FLT_RANK,
-#     Y2D_FLT_ACC_NAME = NAME,
-#     Y2D_FROM_DATE = MIN_DATE,
-#     Y2D_TO_DATE = ENTRY_DATE,
-#     # Y2D_FLT_FROM_DATE = MIN_DATE,
-#     # Y2D_FLT_TO_DATE = ENTRY_DATE,
-#     Y2D_FLT =  Y2D_AVG_FLIGHT,
-#     Y2D_FLT_DIF_PREV_YEAR_PERC,
-#     Y2D_FLT_DIF_2019_PERC
-#   ) %>% 
-#   arrange(Y2D_FLT_RANK)
-
 
 #### main card ----
 sp_acc_main_traffic <- sp_acc_traffic_day_int %>%

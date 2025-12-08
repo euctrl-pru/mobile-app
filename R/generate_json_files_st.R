@@ -2032,7 +2032,6 @@ acc_delay_day_sorted <-  nw_acc_delay_day_raw %>%
   left_join(distinct(acc, Name, ICAO_code), by = c("UNIT_CODE" = "ICAO_code")) %>%
   relocate(Name, .before = everything()) %>%
   rename(NAME = Name) %>%
-
   arrange(desc(DLY_ER), NAME) %>%
   mutate(
     DY_RANK = rank(desc(DLY_ER), ties.method = "max"),
@@ -2055,7 +2054,7 @@ acc_delay_day_sorted <-  nw_acc_delay_day_raw %>%
   ) %>%
   ungroup()
 
-  acc_delay_day <- acc_delay_day_sorted %>%
+acc_delay_day <- acc_delay_day_sorted %>%
   select(
     ST_RANK,
     DY_RANK,
@@ -2138,11 +2137,11 @@ acc_delay_y2d <- nw_acc_delay_y2d_raw %>%
     Y2D_TO_DATE = ENTRY_DATE
   ) %>%
   right_join(acc, by = "ICAO_code") %>%
-  left_join(state_iso, by = "iso_2letter") %>%
   mutate( 
     #canarias case
     iso_2letter = if_else(substr(ICAO_code,1,2) == "GC", "IC", iso_2letter)
   ) %>% 
+  left_join(state_iso, by = "iso_2letter") %>%
   group_by(iso_2letter) %>%
   arrange(iso_2letter, desc(Y2D_ACC_ER_DLY), Y2D_ACC_NAME) %>%
   mutate (

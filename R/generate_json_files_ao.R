@@ -901,8 +901,9 @@ ao_st_des_main_traffic <- ao_st_des_data_day_int %>%
   ) %>%
   select(AO_GRP_RANK,
          MAIN_TFC_ST_DES_NAME = ISO_CT_NAME_ARR,
-         MAIN_TFC_ST_DES_FLT = CURRENT_DAY,
-         MAIN_TFC_ST_DES_CODE = ISO_CT_CODE_ARR)
+         MAIN_TFC_ST_DES_CODE = ISO_CT_CODE_ARR,
+         MAIN_TFC_ST_DES_FLT = CURRENT_DAY
+)
 
 ao_st_des_main_traffic_dif <- ao_st_des_data_day_int %>%
   arrange(AO_GRP_NAME,
@@ -937,7 +938,7 @@ ao_st_des_main_traffic_dif <- ao_st_des_data_day_int %>%
     AO_GRP_RANK = paste0(tolower(AO_GRP_NAME), RANK_MAIN_DIF)
   ) %>%
   ungroup() %>%
-  select(AO_GRP_RANK, MAIN_TFC_DIF_ST_DES_NAME, MAIN_TFC_DIF_ST_DES_FLT_DIF, MAIN_TFC_DIF_ST_DES_CODE)
+  select(AO_GRP_RANK, MAIN_TFC_DIF_ST_DES_NAME, MAIN_TFC_DIF_ST_DES_CODE, MAIN_TFC_DIF_ST_DES_FLT_DIF)
 
 #### join tables ----
 # create list of ao_grp/rankings for left join

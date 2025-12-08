@@ -138,7 +138,6 @@ apt_traffic_for_json <- apt_traffic_last_day %>%
     TFC_RANK_TEXT
   ) 
 
-
 #### Delay data ----
 mydataframe <- "ap_delay_day_raw"
 stakeholder <- "ap"
@@ -662,7 +661,8 @@ apt_punct_for_json <- merge(apt_punct_d_w, apt_punct_y2d, by= c("ARP_CODE", "ARP
     PUN_RANK_TEXT = "*Rank within top 40 airports.\nTop rank for highest."
 
   ) %>%
-  ungroup()
+  ungroup() %>% 
+  arrange(ARP_CODE)
 
 #### Join strings and save  ----
 apt_json_app_j <- list_airport_extended %>%
@@ -1522,21 +1522,7 @@ mydataframe <- "ap_ms_data_y2d_raw"
 myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
-# if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
-
-# } else {
-#   df <- read_xlsx(
-#     path  = fs::path_abs(
-#       str_glue(ap_base_file),
-#       start = ap_base_dir),
-#     sheet = "apt_ms_y2d",
-#     range = cell_limits(c(1, 1), c(NA, NA))) |>
-#     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-# 
-#   # save pre-processed file in archive for generation of past json files
-#   write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
-# }
+df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
 # process data
 apt_ms_y2d <- assign(mydataframe, df)
@@ -1553,10 +1539,6 @@ apt_ms_data_year_prep <- apt_ms_y2d |>
   arrange(ARP_CODE, MARKET_SEGMENT, YEAR) |>
   mutate(
     Y2D_RANK_DIF_PREV_YEAR =  RANK_PREV - RANK,
-    # Y2D_FLT_DIF_PREV_YEAR_PERC = ifelse(YEAR == "2024",
-    #                                     round((DEP_ARR/lag(DEP_ARR)-1), 3), NA),
-    # Y2D_FLT_DIF_2019_PERC = ifelse(YEAR == "2024",
-    #                                round((DEP_ARR/lag(DEP_ARR, 5)-1), 3), NA)
     Y2D_FLT_AVG = DEP_ARR / Y2D_DAYS,
     Y2D_FLT_DIF_PREV_YEAR_PERC = ifelse(YEAR == apt_ms_y2d_max_year,
                                         Y2D_FLT_AVG / lag(Y2D_FLT_AVG)-1, NA),
@@ -1573,9 +1555,9 @@ apt_ms_data_year_prep <- apt_ms_y2d |>
 apt_ms_data_year <- full_grid |> 
   left_join(apt_ms_data_year_prep, by = c("ARP_CODE", "MARKET_SEGMENT")) |>
   group_by(ARP_CODE) |>
-  arrange(ARP_CODE, desc(DEP_ARR)) |>
+  arrange(ARP_CODE, desc(DEP_ARR), MARKET_SEGMENT) |>
   mutate(RANK = row_number())|>
-  fill(ARP_NAME, .direction = "down")|>
+  fill(ARP_NAME, LAST_DATA_DAY, .direction = "down")|>
   ungroup() |>
   select(
     APT_CODE = ARP_CODE,
