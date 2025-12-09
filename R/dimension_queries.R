@@ -209,9 +209,9 @@ WITH
            LEFT JOIN PRUDEV.V_COVID_DSH_LIST_AO C ON (a.ao_code = c.ao_code)
    )
 
-   select 
-             a.ao_id
-    	  ,a.ao_code
+   select  a.til
+          ,a.ao_id
+    	    ,a.ao_code
           ,a.ao_name
           ,a.ao_grp_code
           ,a.ao_grp_name
@@ -227,6 +227,10 @@ WITH
 --  				GROUP BY ao_id)
 "
 
+
+
+
+
 ## list ao ----
 list_ao_query <-"
 SELECT a.ao_code,
@@ -239,6 +243,19 @@ GROUP BY a.ao_code, a.ao_name,
 		b.ao_id
 ORDER BY ao_id
 "
+
+list_ao_query_new <-"
+SELECT 		ao_id,
+    ao_code,
+		ao_name,
+		wef,
+		til,
+  	ao_grp_code,
+		ao_grp_name
+FROM pruread.v_aiu_app_list_ao_grp 
+ORDER BY ao_id
+"
+
 
 ## list ao group ----
 list_ao_grp_query <-"select ao_grp_code, 

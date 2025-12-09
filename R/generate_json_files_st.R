@@ -36,6 +36,8 @@ source(here("..", "mobile-app", "R", "queries_nw.R"))
 print(paste("Generating st json files", format(data_day_date, "%Y-%m-%d"), "..."))
 
 # dimensions ----
+source(here("..", "mobile-app", "R", "dimensions.R")) # so it can be launched from the checkupdates script in grounded aircraft
+
 statfor_states <- read_xlsx(
   here("stakeholder_lists.xlsx"),
   sheet = "state_lists",
@@ -1233,7 +1235,9 @@ st_ao_data_day_int <- assign(mydataframe, df) %>%
     ST_TFC_AO_GRP_DIF = CURRENT_DAY - DAY_PREV_WEEK
   ) %>%
   # filter out bad rows created by Iceland case
-  filter(!is.na(AO_GRP_NAME))
+  filter(!is.na(AO_GRP_NAME)) %>% 
+  # restore last ao_grp code
+  left_join(select(dim_ao_group1_last, AO_GRP_CODE, AO_GRP_NAME), by = "AO_GRP_NAME")
 
 st_ao_data_day <- st_ao_data_day_int %>%
   rename(
@@ -1256,24 +1260,12 @@ mydataframe <- "st_ao_data_week_raw"
 myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
-# if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
+df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
-# } else {
-#   df <- read_xlsx(
-#   path  = fs::path_abs(
-#     str_glue(st_base_file),
-#     start = st_base_dir),
-#   sheet = "state_ao_week",
-#   range = cell_limits(c(1, 1), c(NA, NA))) %>%
-#   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-# 
-#   # save pre-processed file in archive for generation of past json files
-#   write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
-# }
-
-  # process data
+# process data
 st_ao_data_wk <- assign(mydataframe, df) %>%
+  # filter avoid issues with aos that changed codes
+  select(-AO_GRP_CODE) %>% 
   mutate(FLIGHT_WITHOUT_OVERFLIGHT = FLIGHT_WITHOUT_OVERFLIGHT / 7) %>%
   spread(., key = FLAG_ROLLING_WEEK, value = FLIGHT_WITHOUT_OVERFLIGHT) %>%
   arrange(COUNTRY_NAME, R_RANK) %>%
@@ -1316,21 +1308,7 @@ mydataframe <- "st_ao_data_y2d_raw"
 myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
-# if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
-
-# } else {
-#   df <- read_xlsx(
-#   path  = fs::path_abs(
-#     str_glue(st_base_file),
-#     start = st_base_dir),
-#   sheet = "state_ao_y2d",
-#   range = cell_limits(c(1, 1), c(NA, NA))) %>%
-#   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-# 
-#   # save pre-processed file in archive for generation of past json files
-#   write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
-# }
+df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
 # process data
 st_ao_data_y2d <- assign(mydataframe, df) %>%
