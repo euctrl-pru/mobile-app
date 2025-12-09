@@ -31,6 +31,7 @@ source(here("..", "mobile-app", "R", "queries_ap.R"))
 # Dimensions ----
 source(here("..", "mobile-app", "R", "dimension_queries.R"))
 
+print(paste("Generating ap json files", format(data_day_date, "%Y-%m-%d"), "..."))
 
 # # airport dimension table (lists the airports and their ICAO codes)
 # query <- "SELECT
