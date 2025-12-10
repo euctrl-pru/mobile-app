@@ -1321,7 +1321,7 @@ st_ao_data_y2d <- assign(mydataframe, df) %>%
            .default = paste0('PERIOD_', YEAR)
            )
          ) %>%
-  select(-FLIGHT_WITHOUT_OVERFLIGHT, -YEAR) %>%
+  select(-FLIGHT_WITHOUT_OVERFLIGHT, -YEAR, -AO_GRP_CODE) %>%
   spread(., key = PERIOD, value = AVG_FLT) %>%
   arrange(COUNTRY_NAME, R_RANK) %>%
   mutate(
