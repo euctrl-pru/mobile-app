@@ -319,7 +319,7 @@ ANSP_DATA AS (
 		syn_tdm_ert_w AS tdm_ert_w,
 		syn_tdm_ert_na AS tdm_ert_na
 	FROM
-		prudev.V_SYN12_FAC_DC_DD
+		prudev.V_SYN12_FAC_DC_DD_APP
 	WHERE
 		entry_date >= to_date('01-01-2019', 'dd-mm-yyyy')-10
 			AND unit_type = 'ANSP'

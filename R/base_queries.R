@@ -1714,7 +1714,7 @@ select
     ao_code,
 		count(flt_uid) as flight
 from CTRY_PAIR_ARP a
-where ao_id != 99999 AND iso_Ct_code = 'BE'
+where ao_id != 99999
  group by entry_date,
  		iso_ct_code,  
  		ao_id,
@@ -1868,11 +1868,17 @@ SELECT
 					ELSE 99999
 				END dep_bk_ap_id, 
 				adep_day_adep AS adep_code,
-				nvl(A.adep_day_all_trf,0) AS dep 
+				sum(nvl(A.adep_day_all_trf,0)) AS dep 
 FROM  prudev.v_aiu_agg_dep_day A 
- left outer  join DIM_AIRPORT b ON  ( A.adep_day_adep=  b.cfmu_ap_code)
- where A.adep_DAY_FLT_DATE >=  ", query_from, "
+left outer  join DIM_AIRPORT b ON  ( A.adep_day_adep=  b.cfmu_ap_code)
+where A.adep_DAY_FLT_DATE >=  ", query_from, "
         AND A.adep_DAY_FLT_DATE < TRUNC (SYSDATE)-0 
+GROUP BY A.adep_DAY_FLT_DATE, b.iso_ct_code_spain, 
+				CASE WHEN (TRUNC (adep_DAY_FLT_DATE) >= b.valid_from AND TRUNC (adep_DAY_FLT_DATE) <= b.valid_to)
+					THEN nvl(b.bk_ap_id, -1) 
+					ELSE 99999
+				END, 
+				adep_day_adep
 ORDER BY A.adep_DAY_FLT_DATE, dep_bk_ap_id
     
 )
@@ -1886,11 +1892,17 @@ SELECT
 					ELSE 99999
 				END arr_bk_ap_id, 
 				ades_day_ades_ctfm AS ades_code,
-				nvl(A.ades_day_all_trf,0) AS arr
+				sum(nvl(A.ades_day_all_trf,0)) AS arr
  FROM  prudev.v_aiu_agg_arr_day A 
  left outer  join DIM_AIRPORT b ON  ( A.ades_day_ades_ctfm=  b.cfmu_ap_code)
- where  A.ades_DAY_FLT_DATE >=  ", query_from, "
+where  A.ades_DAY_FLT_DATE >=  ", query_from, "
          AND A.ades_DAY_FLT_DATE < TRUNC (SYSDATE)-0 
+GROUP BY A.ades_DAY_FLT_DATE, b.iso_ct_code_spain,
+				CASE WHEN (TRUNC (ades_DAY_FLT_DATE) >= b.valid_from AND TRUNC (ades_DAY_FLT_DATE) <= b.valid_to)
+					THEN nvl(b.bk_ap_id, -1) 
+					ELSE 99999
+				END,
+				ades_day_ades_ctfm
 ORDER BY A.ades_DAY_FLT_DATE, arr_bk_ap_id
      
 
@@ -1907,7 +1919,8 @@ SELECT
         COALESCE(a.dep, 0) + COALESCE(b.arr, 0) AS dep_arr 
   FROM DATA_FLIGHT_DEP a   
   full outer JOIN DATA_FLIGHT_ARR b on (a.FLIGHT_DATE = b.FLIGHT_DATE AND a.dep_bk_ap_id = b.arr_bk_ap_id)                
-  WHERE a.dep_bk_ap_id != 99999 AND b.arr_bk_ap_id != 99999 
+   AND (a.dep_bk_ap_id IS NULL OR a.dep_bk_ap_id <> 99999)
+   AND (b.arr_bk_ap_id IS NULL OR b.arr_bk_ap_id <> 99999)
 ")
 
 ## st_ap ----
@@ -3793,7 +3806,7 @@ SELECT
         		ELSE 99999
         END bk_ap_id_dep, 
         
-		CASE WHEN (TRUNC(A.flt_a_asp_prof_time_entry) >= b.valid_from AND TRUNC(A.flt_a_asp_prof_time_entry) <= b.valid_to)
+		CASE WHEN (TRUNC(A.flt_a_asp_prof_time_entry) >= c.valid_from AND TRUNC(A.flt_a_asp_prof_time_entry) <= c.valid_to)
         		THEN nvl(c.bk_ap_id, -1) 
         		ELSE 99999
         END bk_ap_id_des,       
@@ -4211,7 +4224,7 @@ ANSP_DATA AS (
 		syn_tdm_ert_w AS tdm_ert_w,
 		syn_tdm_ert_na AS tdm_ert_na
 	FROM
-		prudev.V_SYN12_FAC_DC_DD
+		prudev.V_SYN12_FAC_DC_DD_APP
 	WHERE
 		entry_date >= to_date('01-01-2019', 'dd-mm-yyyy')-10
 			AND unit_type = 'ANSP'
@@ -4329,7 +4342,7 @@ ANSP_DATA AS (
 		syn_tdm_ert_w AS tdm_ert_w,
 		syn_tdm_ert_na AS tdm_ert_na
 	FROM
-		prudev.V_SYN12_FAC_DC_DD
+		prudev.V_SYN12_FAC_DC_DD_APP
 	WHERE
 		entry_date >= to_date('01-01-2019', 'dd-mm-yyyy')-10
 			AND unit_type = 'ANSP'

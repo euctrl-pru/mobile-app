@@ -1450,21 +1450,7 @@ mydataframe <- "st_ap_data_day_raw"
 myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
-# if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
-
-# } else {
-#   df <- read_xlsx(
-#   path  = fs::path_abs(
-#     str_glue(st_base_file),
-#     start = st_base_dir),
-#   sheet = "state_apt_day",
-#   range = cell_limits(c(1, 1), c(NA, NA))) %>%
-#   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-# 
-#   # save pre-processed file in archive for generation of past json files
-#   write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
-# }
+df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
 # process data
 st_apt_data_day_int <- assign(mydataframe, df) %>%
@@ -1564,21 +1550,7 @@ mydataframe <- "st_ap_data_y2d_raw"
 myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
-# if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
-
-# } else {
-#   df <- read_xlsx(
-#   path  = fs::path_abs(
-#     str_glue(st_base_file),
-#     start = st_base_dir),
-#   sheet = "state_apt_y2d",
-#   range = cell_limits(c(1, 1), c(NA, NA))) %>%
-#   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-# 
-#   # save pre-processed file in archive for generation of past json files
-#   write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
-# }
+df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
 # process data
 st_apt_data_y2d <- assign(mydataframe, df) %>%
@@ -1708,21 +1680,7 @@ mydataframe <- "st_st_data_day_raw"
 myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
-# if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
-
-# } else {
-#   df <- read_xlsx(
-#   path  = fs::path_abs(
-#     str_glue(st_base_file),
-#     start = st_base_dir),
-#   sheet = "state_st_day",
-#   range = cell_limits(c(1, 1), c(NA, NA))) %>%
-#   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-# 
-#   # save pre-processed file in archive for generation of past json files
-#   write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
-# }
+df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
 # process data
 st_st_data_day_int <- assign(mydataframe, df) %>%
