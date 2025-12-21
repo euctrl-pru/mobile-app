@@ -33,31 +33,6 @@ source(here("..", "mobile-app", "R", "dimension_queries.R"))
 
 print(paste("Generating ap json files", format(data_day_date, "%Y-%m-%d"), "..."))
 
-# # airport dimension table (lists the airports and their ICAO codes)
-# query <- "SELECT
-# arp_code AS apt_icao_code,
-# arp_name AS apt_name,
-# flag_top_apt,
-# latitude,
-# longitude
-# 
-# FROM pruprod.v_aiu_app_dim_airport a
-# INNER JOIN (
-#   SELECT ec_ap_code, latitude, longitude
-#   FROM (
-#     SELECT ec_ap_code, latitude, longitude,
-#            ROW_NUMBER() OVER (PARTITION BY ec_ap_code ORDER BY sk_ap_id DESC) AS rn
-#     FROM swh_fct.dim_airport
-#   ) t
-#   WHERE rn = 1
-# ) b ON a.arp_code = b.ec_ap_code
-# "
-# 
-# apt_icao_full <- export_query(query) %>%
-#   janitor::clean_names()
-# 
-# apt_icao <- apt_icao_full %>% select (apt_icao_code, apt_name)
-
 list_airport_extended <- export_query(list_ap_ext_query) %>% 
   janitor::clean_names() %>% select(-apt_id)
 

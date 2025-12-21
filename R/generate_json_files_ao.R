@@ -255,7 +255,7 @@ query <- "
 
       AO_LIST AS (
         SELECT *
-        FROM pruprod.v_aiu_app_dim_ao_grp
+        FROM pruread.v_aiu_app_list_ao_grp
        )
 
       , AO_DAY AS (
