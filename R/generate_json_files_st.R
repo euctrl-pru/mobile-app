@@ -1728,21 +1728,7 @@ mydataframe <- "st_st_data_week_raw"
 myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
-# if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
-
-# } else {
-#   df <- read_xlsx(
-#   path  = fs::path_abs(
-#     str_glue(st_base_file),
-#     start = st_base_dir),
-#   sheet = "state_st_week",
-#   range = cell_limits(c(1, 1), c(NA, NA))) %>%
-#   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-# 
-#   # save pre-processed file in archive for generation of past json files
-#   write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
-# }
+df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
 # process data
 st_st_data_wk <- assign(mydataframe, df) %>%
@@ -1789,21 +1775,7 @@ mydataframe <- "st_st_data_y2d_raw"
 myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
-# if (archive_mode) {
-  df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
-
-# } else {
-#   df <- read_xlsx(
-#   path  = fs::path_abs(
-#     str_glue(st_base_file),
-#     start = st_base_dir),
-#   sheet = "state_st_y2d",
-#   range = cell_limits(c(1, 1), c(NA, NA))) %>%
-#   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-# 
-#   # save pre-processed file in archive for generation of past json files
-#   write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
-# }
+df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
 # process data
 st_st_data_y2d <- assign(mydataframe, df) %>%
@@ -2186,7 +2158,7 @@ st_ap_delay_day <- st_ap_delay_day_sorted %>%
     DY_TO_DATE,
     DY_APT_ARR_DLY,
     DY_APT_ARR_DLY_FLT
-  )
+  ) 
 
 #### week ----
 st_ap_delay_week <- st_ap_delay_raw %>%
@@ -2260,120 +2232,6 @@ st_ap_delay_y2d <- st_ap_delay_raw %>%
     Y2D_APT_ARR_DLY_FLT
   )
   
-
-
-# raw data old
-# mydataframe <- "nw_apt_delay_raw"
-# myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
-# stakeholder <- str_sub(mydataframe, 1, 2)
-# 
-# if (archive_mode) {
-#   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
-# 
-# } else {
-#   df <-  read_xlsx(
-#   path  = fs::path_abs(
-#     str_glue(nw_base_file),
-#     start = nw_base_dir),
-#   sheet = "APT_DELAY",
-#   range = cell_limits(c(5, 2), c(NA, 50))) %>%
-#   as_tibble() %>%
-#   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-# 
-#   # saved already in the nw file
-# }
-# 
-# st_apt_delay_raw <- assign(mydataframe, df) %>%
-#   rename(
-#     ICAO_CODE = ARP_CODE,
-#     APT_NAME = ARP_NAME
-#   ) %>%
-#   left_join(airport, by = "ICAO_CODE") %>%
-#   left_join(state_iso, by = "iso_2letter")
-
-#### day 
-# st_apt_delay_day_sorted <- st_apt_delay_raw %>%
-#   arrange(desc(DLY_ARR),APT_NAME) %>%
-#   mutate(
-#     DY_RANK = rank(desc(DLY_ARR), ties.method = "max"),
-#     DY_APT_NAME = APT_NAME,
-#     DY_APT_ARR_DLY = DLY_ARR,
-#     DY_APT_ARR_DLY_FLT = ifelse(FLT_ARR == 0, 0, round(DLY_ARR / FLT_ARR, 2)),
-#     DY_RANK_ARR_DLY_FLT = rank(desc(DY_APT_ARR_DLY_FLT), ties.method = "max"),
-#     DY_TO_DATE = FLIGHT_DATE) %>%
-#   group_by(iso_2letter) %>%
-#   arrange(iso_2letter, desc(DY_APT_ARR_DLY), DY_APT_NAME) %>%
-#   mutate (
-#     ST_RANK = paste0(tolower(state), row_number()),
-#   ) %>%
-#   ungroup()
-# 
-# st_apt_delay_day <- st_apt_delay_day_sorted %>%
-#   select(
-#     ST_RANK,
-#     DY_RANK,
-#     DY_APT_NAME,
-#     DY_TO_DATE,
-#     DY_APT_ARR_DLY,
-#     DY_APT_ARR_DLY_FLT
-#   )
-
-
-
-#### week 
-# st_apt_delay_week <- st_apt_delay_raw %>%
-#   arrange(desc(ROLL_WEEK_DLY_ARR),APT_NAME) %>%
-#   mutate(
-#     WK_RANK = rank(desc(ROLL_WEEK_DLY_ARR), ties.method = "max"),
-#     WK_APT_NAME = APT_NAME,
-#     WK_APT_ARR_DLY = ROLL_WEEK_DLY_ARR,
-#     WK_APT_ARR_DLY_FLT = ifelse(ROLL_WEEK_ARR == 0, 0, round(ROLL_WEEK_DLY_ARR / ROLL_WEEK_ARR,2)),
-#     WK_FROM_DATE =  FLIGHT_DATE +  days(-6),
-#     WK_TO_DATE = FLIGHT_DATE
-#     ) %>%
-#   group_by(iso_2letter) %>%
-#   arrange(iso_2letter, desc(WK_APT_ARR_DLY), WK_APT_NAME) %>%
-#   mutate (
-#     ST_RANK = paste0(tolower(state), row_number()),
-#   ) %>%
-#   ungroup() %>%
-#   select(
-#     ST_RANK,
-#     WK_RANK,
-#     WK_APT_NAME,
-#     WK_FROM_DATE,
-#     WK_TO_DATE,
-#     WK_APT_ARR_DLY,
-#     WK_APT_ARR_DLY_FLT
-#   )
-
-
-#### y2d 
-# st_apt_delay_y2d <- st_apt_delay_raw %>%
-#   arrange(desc(Y2D_AVG_DLY_ARR),APT_NAME) %>%
-#   mutate(
-#     Y2D_RANK = rank(desc(Y2D_AVG_DLY_ARR), ties.method = "max"),
-#     Y2D_APT_NAME = APT_NAME,
-#     Y2D_APT_ARR_DLY = Y2D_AVG_DLY_ARR,
-#     Y2D_APT_ARR_DLY_FLT = ifelse(Y2D_AVG_ARR == 0, 0, round(Y2D_AVG_DLY_ARR / Y2D_AVG_ARR, 2)),
-#     Y2D_TO_DATE = FLIGHT_DATE
-#   ) %>%
-#   group_by(iso_2letter) %>%
-#   arrange(iso_2letter, desc(Y2D_APT_ARR_DLY), Y2D_APT_NAME) %>%
-#   mutate (
-#     ST_RANK = paste0(tolower(state), row_number()),
-#   ) %>%
-#   ungroup() %>%
-#   select(
-#     ST_RANK,
-#     Y2D_RANK,
-#     Y2D_APT_NAME,
-#     Y2D_TO_DATE,
-#     Y2D_APT_ARR_DLY,
-#     Y2D_APT_ARR_DLY_FLT
-#   )
-
-
 #### main card ----
 st_ap_main_delay <- st_ap_delay_day_sorted %>%
   mutate(

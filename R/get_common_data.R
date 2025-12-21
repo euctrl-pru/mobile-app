@@ -122,22 +122,22 @@ ao_grp_icao <- ao_grp_icao_full %>%
   select('AO_GRP_CODE', 'AO_GRP_NAME')
 
 query <- "SELECT
-arp_code AS apt_icao_code,
-arp_name AS apt_name,
+ec_ap_code AS apt_icao_code,
+ec_ap_name AS apt_name,
 flag_top_apt,
 latitude,
 longitude
 
-FROM pruprod.v_aiu_app_dim_airport a
+FROM pruread.v_aiu_app_list_airport a
 INNER JOIN (
-  SELECT ec_ap_code, latitude, longitude
+  SELECT bk_ap_id, latitude, longitude
   FROM (
-    SELECT ec_ap_code, latitude, longitude,
-           ROW_NUMBER() OVER (PARTITION BY ec_ap_code ORDER BY sk_ap_id DESC) AS rn
-    FROM swh_fct.dim_airport
+    SELECT bk_ap_id, latitude, longitude,
+           ROW_NUMBER() OVER (PARTITION BY bk_ap_id ORDER by valid_to DESC) AS rn
+    FROM pruread.v_aiu_dim_airport
   ) t
   WHERE rn = 1
-) b ON a.arp_code = b.ec_ap_code
+) b ON a.bk_ap_id = b.bk_ap_id
 "
 
 apt_icao_full <- export_query(query) %>%
