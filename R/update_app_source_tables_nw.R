@@ -57,8 +57,8 @@ import_dataframe <- function(dfname) {
   if (dfname == "ap_traffic_delay"){
     
     df_app <- df_alldays %>% 
-      filter(ARP_ID != 1618) %>%  # undefined
       compute(prudence = "lavish") %>% 
+      filter(ARP_ID != 1618) %>%  # undefined
       filter(ARP_ID %in% list_airport_ext$APT_ID) 
 
   } else if (dfname == "ao_traffic_delay"){

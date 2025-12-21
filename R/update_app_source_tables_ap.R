@@ -458,33 +458,6 @@ ap_ao <- function(mydate =  current_day) {
     arrange(ARP_CODE, FLAG_DAY, R_RANK, AO_GRP_NAME)
   
   df_day %>% write_csv(here(archive_dir_raw, stakeholder, mycsvfile))
-  # test <- df_day %>% 
-  #   filter(ARP_CODE == "EFHK") 
-  
-  # dcheck
-  # df <- read_xlsx(
-  #   path  = fs::path_abs(
-  #     str_glue(ap_base_file),
-  #     start = ap_base_dir),
-  #   sheet = "apt_ao_day",
-  #   range = cell_limits(c(1, 1), c(NA, NA))) |>
-  #   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-  # 
-  # df <- df %>% arrange(ARP_CODE, FLAG_DAY, R_RANK, AO_GRP_NAME)
-  # 
-  # for (i in 1:nrow(list_airport)) {
-  #   df1 <- df %>% filter(ARP_CODE == list_airport$APT_ICAO_CODE[i])
-  # 
-  #   df_day1 <- df_day %>% filter(ARP_CODE == list_airport$APT_ICAO_CODE[i])
-  # 
-  #   print(paste(list_airport$APT_ICAO_CODE[i], all.equal(df1, df_day1)))
-  # 
-  #   # for (j in 1:nrow(df1)) {
-  #   #
-  #   #   print(paste(j, df1[[j,4]] == df_day1[[j,4]]))
-  #   #
-  #   # }
-  # }
 
 ## week ----
   mycsvfile <- paste0(data_day_text, "_", mydataframe, "_data_week_raw.csv")
@@ -561,31 +534,6 @@ ap_ao <- function(mydate =  current_day) {
   
   df_week %>% write_csv(here(archive_dir_raw, stakeholder, mycsvfile))
 
-  # dcheck
-  # df <- read_xlsx(
-  #   path  = fs::path_abs(
-  #     str_glue(ap_base_file),
-  #     start = ap_base_dir),
-  #   sheet = "apt_ao_week",
-  #   range = cell_limits(c(1, 1), c(NA, NA))) |>
-  #   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-  # 
-  # df <- df %>% arrange(ARP_CODE, PERIOD_TYPE, R_RANK, AO_GRP_NAME)
-  # 
-  # for (i in 1:nrow(list_airport)) {
-  #   df1 <- df %>% filter(ARP_CODE == list_airport$APT_ICAO_CODE[i])
-  # 
-  #   df_day1 <- df_week %>% filter(ARP_CODE == list_airport$APT_ICAO_CODE[i])
-  # 
-  #   print(paste(list_airport$APT_ICAO_CODE[i], all.equal(df1, df_day1)))
-  # 
-  #   # for (j in 1:nrow(df)) {
-  #   #
-  #   #   print(paste(j, df1[[j,1]] == df_day1[[j,1]]))
-  #   #
-  #   # }
-  # }
-  
   ## year ----
   mycsvfile <- paste0(data_day_text, "_", mydataframe, "_data_y2d_raw.csv")
 
@@ -607,6 +555,12 @@ ap_ao <- function(mydate =  current_day) {
       TO_DATE = max(ENTRY_DATE, na.rm = TRUE),
       FROM_DATE = min(ENTRY_DATE, na.rm = TRUE)
     ) %>% 
+    # ensure we keep only the latest code per year
+    mutate(AO_GRP_CODE = if_else(ENTRY_DATE != TO_DATE, NA, AO_GRP_CODE)) %>% 
+    arrange(YEAR, AO_GRP_NAME, AO_GRP_CODE) %>% 
+    fill(AO_GRP_CODE, .direction = "down") %>% 
+    arrange(ENTRY_DATE, ARP_PRU_ID, AO_GRP_NAME) %>% 
+    #
     ungroup() %>%
     summarise(
       DEP_ARR = sum(DEP_ARR, na.rm = TRUE),
