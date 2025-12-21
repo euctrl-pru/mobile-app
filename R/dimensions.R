@@ -67,6 +67,7 @@ dim_airport_new <- export_query(dim_ap_query_new) %>%
 
 list_airport_new <- export_query(list_ap_query_new) 
 list_airport_extended_new <- export_query(list_ap_ext_query_new)
+list_airport_extended_iso_new <- export_query(list_ap_ext_iso_query_new)
 
 ## country ----
 ### iso ----
