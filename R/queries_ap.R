@@ -2,9 +2,9 @@
 # airport dimension table (lists the airports and their ICAO codes)
 if (exists("apt_icao") == FALSE) {
   query <- "SELECT
-arp_code AS apt_icao_code,
-arp_name AS apt_name
-FROM pruprod.v_aiu_app_dim_airport"
+ec_ap_code AS apt_icao_code,
+ec_ap_name AS apt_name
+FROM pruread.V_AIU_APP_LIST_AIRPORT"
 
   apt_icao <- export_query(query) %>%
     janitor::clean_names()
@@ -18,13 +18,15 @@ query_ap_traffic <- function(mydate_string) {
 with
 
 LIST_AIRPORT  as
-(select * from pruprod.v_aiu_app_dim_airport ),
+(select 
+* 
+from pruread.v_aiu_app_list_airport ),
 
 AIRPORT_DAY
 as
-(select a.arp_id,
-       a.arp_code,
-       a.arp_name,
+(select a.bk_ap_id as arp_id,
+       a.ec_ap_code as arp_code,
+       a.ec_ap_name as arp_name,
        a.icao2letter,
        t.day_date,
        t.year,
@@ -384,13 +386,15 @@ query_ap_delay <- paste0("
 with
 
 LIST_AIRPORT  as
-(select * from pruprod.v_aiu_app_dim_airport ),
+(select 
+* 
+from pruread.v_aiu_app_list_airport ),
 
 AIRPORT_DAY
 as
-(select a.arp_id,
-  a.arp_code,
-  a.arp_name,
+(select a.bk_ap_id as arp_id,
+       a.ec_ap_code as arp_code,
+       a.ec_ap_name as arp_name,
   a.icao2letter,
   t.day_date,
   t.year,
@@ -1101,13 +1105,13 @@ paste0(
   "WITH
   --Getting the list of airports
 LIST_AIRPORT  as
-(select * from pruprod.v_aiu_app_dim_airport ),
+(select * from pruread.v_aiu_app_list_airport ),
 
 --creating a table with the airport codes and dates since 2019
   AP_DAY AS
   (SELECT
-              a.arp_code,
-              a.arp_name,
+              a.ec_ap_code as arp_code,
+              a.ec_ap_name as arp_name,
               t.year,
               t.month,
               t.week,
@@ -1167,7 +1171,13 @@ DIM_AO
  as ( select  ao_code, ao_name, ao_grp_code, ao_grp_name, ao_nm_group_code, ao_nm_group_name  from  prudev.v_covid_dim_ao) ,
 
 DIM_APT as
-(select * from pruprod.v_aiu_app_dim_airport )
+(select 
+ec_ap_code as arp_code,
+bk_ap_id as arp_id,
+ec_ap_name as arp_name,
+icao2letter,
+flag_top_apt
+from pruread.v_aiu_app_list_airport )
 
 , DATA_SOURCE as (
 SELECT
@@ -1345,7 +1355,13 @@ DIM_AO
  as ( select  ao_code, ao_name, ao_grp_code, ao_grp_name, ao_nm_group_code, ao_nm_group_name  from  prudev.v_covid_dim_ao) ,
 
 DIM_APT as
-(select * from pruprod.v_aiu_app_dim_airport )
+(select 
+ec_ap_code as arp_code,
+bk_ap_id as arp_id,
+ec_ap_name as arp_name,
+icao2letter,
+flag_top_apt
+from pruread.v_aiu_app_list_airport )
 
 , DATA_SOURCE as (
 SELECT
@@ -1527,7 +1543,13 @@ DIM_AO
  as ( select  ao_code, ao_name, ao_grp_code, ao_grp_name, ao_nm_group_code, ao_nm_group_name  from  prudev.v_covid_dim_ao) ,
 
 DIM_APT as
-(select * from pruprod.v_aiu_app_dim_airport ),
+(select 
+ec_ap_code as arp_code,
+bk_ap_id as arp_id,
+ec_ap_name as arp_name,
+icao2letter,
+flag_top_apt
+from pruread.v_aiu_app_list_airport ),
 
 
 DATA_DAY as
@@ -1669,7 +1691,13 @@ DIM_APT
  ),
 
 LIST_APT as
-(select * from pruprod.v_aiu_app_dim_airport ),
+(select 
+ec_ap_code as arp_code,
+bk_ap_id as arp_id,
+ec_ap_name as arp_name,
+icao2letter,
+flag_top_apt
+from pruread.v_aiu_app_list_airport ),
 
 
 AIRP_FLIGHT as (
@@ -1817,7 +1845,13 @@ DIM_APT
  ),
 
 LIST_APT as
-(select * from pruprod.v_aiu_app_dim_airport ),
+(select 
+ec_ap_code as arp_code,
+bk_ap_id as arp_id,
+ec_ap_name as arp_name,
+icao2letter,
+flag_top_apt
+from pruread.v_aiu_app_list_airport ),
 
 AIRP_FLIGHT as (
 
@@ -1967,7 +2001,13 @@ DIM_APT
  ),
 
 LIST_APT as
-(select * from pruprod.v_aiu_app_dim_airport ),
+(select 
+ec_ap_code as arp_code,
+bk_ap_id as arp_id,
+ec_ap_name as arp_name,
+icao2letter,
+flag_top_apt
+from pruread.v_aiu_app_list_airport ),
 
 
 AIRP_FLIGHT as (
@@ -2081,7 +2121,13 @@ DIM_APT
  ),
 
 LIST_APT as
-(select * from pruprod.v_aiu_app_dim_airport ),
+(select 
+ec_ap_code as arp_code,
+bk_ap_id as arp_id,
+ec_ap_name as arp_name,
+icao2letter,
+flag_top_apt
+from pruread.v_aiu_app_list_airport ),
 
 
 AIRP_FLIGHT as (
@@ -2227,7 +2273,13 @@ DIM_APT
  ),
 
 LIST_APT as
-(select * from pruprod.v_aiu_app_dim_airport ),
+(select 
+ec_ap_code as arp_code,
+bk_ap_id as arp_id,
+ec_ap_name as arp_name,
+icao2letter,
+flag_top_apt
+from pruread.v_aiu_app_list_airport ),
 
 
 AIRP_FLIGHT as (
@@ -2377,7 +2429,13 @@ DIM_APT
  ),
 
 LIST_APT as
-(select * from pruprod.v_aiu_app_dim_airport ),
+(select 
+ec_ap_code as arp_code,
+bk_ap_id as arp_id,
+ec_ap_name as arp_name,
+icao2letter,
+flag_top_apt
+from pruread.v_aiu_app_list_airport ),
 
 
 AIRP_FLIGHT as (
@@ -2501,7 +2559,13 @@ where SK_FLT_TYPE_RULE_ID <> 5
  ),
 
 DIM_APT as
-(select * from pruprod.v_aiu_app_dim_airport )
+(select 
+ec_ap_code as arp_code,
+bk_ap_id as arp_id,
+ec_ap_name as arp_name,
+icao2letter,
+flag_top_apt
+from pruread.v_aiu_app_list_airport )
 
 
 , DATA_SOURCE as (
@@ -2687,8 +2751,13 @@ where SK_FLT_TYPE_RULE_ID <> 5
  ),
 
 DIM_APT as
-(select * from pruprod.v_aiu_app_dim_airport )
-
+(select 
+ec_ap_code as arp_code,
+bk_ap_id as arp_id,
+ec_ap_name as arp_name,
+icao2letter,
+flag_top_apt
+from pruread.v_aiu_app_list_airport )
 
 , DATA_SOURCE as (
 SELECT
@@ -2877,7 +2946,13 @@ where SK_FLT_TYPE_RULE_ID <> 5
  ),
 
 DIM_APT as
-(select * from pruprod.v_aiu_app_dim_airport ),
+(select 
+ec_ap_code as arp_code,
+bk_ap_id as arp_id,
+ec_ap_name as arp_name,
+icao2letter,
+flag_top_apt
+from pruread.v_aiu_app_list_airport ),
 
 
 DATA_SOURCE as (
