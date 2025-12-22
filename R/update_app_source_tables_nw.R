@@ -836,8 +836,8 @@ nw_st_dai <- function(mydate =  current_day) {
 
 
 # execute functions ----
-# wef <- "2024-01-01"  #included in output
-# til <- "2025-09-11"  #included in output
+# wef <- "2025-12-19"  #included in output
+# til <- "2025-12-20"  #included in output
 # current_day <- seq(ymd(til), ymd(wef), by = "-1 day")
 
 nw_delay_cause()

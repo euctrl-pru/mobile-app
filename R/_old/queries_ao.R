@@ -6,7 +6,7 @@ with
 
 AO_LIST AS (
 SELECT *
-FROM pruprod.v_aiu_app_dim_ao_grp
+FROM pruread.v_aiu_app_list_ao_grp
 
  ),
 
@@ -916,7 +916,7 @@ with
 
 LIST_AO AS (
 SELECT *
-FROM pruprod.v_aiu_app_dim_ao_grp
+FROM pruread.v_aiu_app_list_ao_grp
  ),
 
 DIM_COUNTRY as (
@@ -1070,7 +1070,7 @@ with
 
 LIST_AO AS (
 SELECT *
-FROM pruprod.v_aiu_app_dim_ao_grp
+FROM pruread.v_aiu_app_list_ao_grp
  ),
 
 DIM_COUNTRY as (
@@ -1225,7 +1225,7 @@ with
 
 LIST_AO AS (
 SELECT *
-FROM pruprod.v_aiu_app_dim_ao_grp
+FROM pruread.v_aiu_app_list_ao_grp
  ),
 
 DIM_COUNTRY as (
@@ -1357,7 +1357,7 @@ with
 
 LIST_AO AS (
 SELECT *
-FROM pruprod.v_aiu_app_dim_ao_grp
+FROM pruread.v_aiu_app_list_ao_grp
  ),
 
 
@@ -1501,7 +1501,7 @@ with
 
 LIST_AO AS (
 SELECT *
-FROM pruprod.v_aiu_app_dim_ao_grp
+FROM pruread.v_aiu_app_list_ao_grp
  ),
 
 
@@ -1644,7 +1644,7 @@ with
 
 LIST_AO AS (
 SELECT *
-FROM pruprod.v_aiu_app_dim_ao_grp
+FROM pruread.v_aiu_app_list_ao_grp
  ),
 
 
@@ -1768,7 +1768,7 @@ with
 
 LIST_AO AS (
 SELECT *
-FROM pruprod.v_aiu_app_dim_ao_grp
+FROM pruread.v_aiu_app_list_ao_grp
  ),
 
 
@@ -1916,7 +1916,7 @@ with
 
 LIST_AO AS (
 SELECT *
-FROM pruprod.v_aiu_app_dim_ao_grp
+FROM pruread.v_aiu_app_list_ao_grp
  ),
 
 
@@ -2061,7 +2061,7 @@ with
 
 LIST_AO AS (
 SELECT *
-FROM pruprod.v_aiu_app_dim_ao_grp
+FROM pruread.v_aiu_app_list_ao_grp
  ),
 
 
@@ -2223,7 +2223,7 @@ WITH
         (SELECT Ao_code
               , Ao_name
               , Ao_grp_code as Ao_nm_group_code
-           FROM pruprod.v_aiu_app_dim_ao_grp
+           FROM pruread.v_aiu_app_list_ao_grp
                               ),
       Apt_arr_reg AS
         (SELECT DISTINCT
