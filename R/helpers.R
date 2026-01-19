@@ -23,6 +23,7 @@ library(eurocontrol)
 library(tidyverse)
 library(jsonlite)
 
+source(here("..", "mobile-app", "R", "duckdb_functions.R")) 
 
 date_sql_string <- function(date_string) {
   paste0("TO_DATE('", date_string ,"', 'yyyy-mm-dd') + 1")

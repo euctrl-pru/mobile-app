@@ -1,6 +1,7 @@
 library(here)
 library("R.utils")
 library(sendmailR)
+library(dplyr)
 library(stringr)
 library(readxl)
 library(tidyverse)
@@ -21,23 +22,22 @@ network_data_folder_prod <- here(destination_dir, "data", "v5")
 archive_mode <- FALSE
 
 if (archive_mode) {
-  wef <- "2026-01-01"  #included in output
-  til <- "2026-01-12"  #included in output
+  wef <- "2024-01-01"  #included in output
+  til <- "2024-01-01"  #included in output
   data_day_date <- seq(ymd(wef), ymd(til), by = "day")
 } else {
   data_day_date <- lubridate::today(tzone = "") +  days(-1)
 }
 
 if (!archive_mode) {
-  ## update basic tables
-  e <- new.env(parent = .GlobalEnv)
-  source(here("..", "mobile-app", "R", "update_base_tables.R"), local = e)
-  rm(e)
-  
-  ## update app aggregations
-  e <- new.env(parent = .GlobalEnv)
-  source(here("..", "mobile-app", "R", "update_app_source_tables.R"), local = e)
-  rm(e)
+## update basic tables
+source(here("..", "mobile-app", "R", "update_base_tables.R"))
+## create csvs from basic tables
+source(here("..", "mobile-app", "R", "update_app_source_tables_ap.R"))
+source(here("..", "mobile-app", "R", "update_app_source_tables_ao.R"))
+source(here("..", "mobile-app", "R", "update_app_source_tables_st.R"))
+source(here("..", "mobile-app", "R", "update_app_source_tables_nw.R"))
+source(here("..", "mobile-app", "R", "update_app_source_tables_sp.R"))
 }
 
 # set the stakeholders you want to generate when using archive mode
@@ -45,10 +45,10 @@ stakeholders <- if(!archive_mode) {
   c("nw","st","ao","ap", "sp", NULL) # don't touch this line
   } else {c(
     "nw",
-    "st",
-    "ao",
-    "ap",
-    "sp",
+    # "st",
+    # "ao",
+    # "ap",
+    # "sp",
     NULL)
 }
 
@@ -154,6 +154,7 @@ process_app_data <- function(data_day_date) {
   generate_app_data(data_day_date)
   copy_app_data(data_day_date)
 }
+
 
 # generate and copy app files ----
   # get helper functions and common data sets ----

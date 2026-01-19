@@ -287,8 +287,18 @@ dim_ap_query <- "
 "
 
 dim_ap_query_new <- "
-select * from pruread.v_aiu_dim_airport
-
+select 
+      BK_AP_ID,
+	    EC_AP_CODE,
+	    EC_AP_NAME,
+	    CFMU_AP_CODE,
+	    LATITUDE,
+	    LONGITUDE,
+	    iso_ct_code,
+      aiu_iso_ct_code,
+	    VALID_FROM,
+	    VALID_TO
+from pruread.v_aiu_dim_airport
 "
 
 ## list airport new ----

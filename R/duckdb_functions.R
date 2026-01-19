@@ -1,119 +1,181 @@
-# file: R/duckplyr_owned_io.R
-
-# Minimal, deterministic control over DuckDB/duckplyr lifecycle so temp files
-# can be cleaned after you're done manipulating lazy relations.
-
+# File: R/read_selected_years_duck_tbl.R
 suppressPackageStartupMessages({
-  requireNamespace("DBI")
-  requireNamespace("duckdb")
+  library(DBI)
+  library(duckdb)
+  library(dplyr)
+  library(glue)
 })
 
-# Open a user-owned DuckDB connection and set a private spill directory.
-# Why: you control when file handles are released.
-# - spill_dir: directory for DuckDB temp files
-# - dbdir: DuckDB database location (":memory:" by default)
-# Returns: DBI connection with attribute 'spill_dir'
-duck_open <- function(spill_dir = file.path(tempdir(), "duckplyr_spill"),
-                      dbdir = ":memory:") {
-  if (!dir.exists(spill_dir)) dir.create(spill_dir, recursive = TRUE, showWarnings = FALSE)
-  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = dbdir)
-  DBI::dbExecute(con, sprintf(
-    "SET temp_directory='%s'",
-    normalizePath(spill_dir, winslash = "/", mustWork = FALSE)
-  ))
-  attr(con, "spill_dir") <- spill_dir
-  con
+# Read ONLY the requested years from a Hive-partitioned layout:
+# <base_dir>/YEAR=YYYY/data_*.parquet
+read_selected_years_duck_tbl <- function(con = con,
+                                         mydataframe,
+                                         years = 2018:lubridate::year(lubridate::today()),
+                                         subpattern = "YEAR=*/data_*.parquet") {
+  # --- Validate inputs ---
+  if (missing(years) || length(years) == 0L) stop("`years` must be a non-empty numeric vector, e.g. c(2024, 2025).")
+  if (!is.numeric(years)) stop("`years` must be numeric (e.g., c(2024, 2025)).")
+  years <- as.integer(years)
+  
+  base_dir <- here(archive_dir_raw, mydataframe)
+  
+  # --- Build glob & SQL ---
+  glob <- normalizePath(file.path(base_dir, subpattern), winslash = "/", mustWork = FALSE)
+  years_sql <- paste(years, collapse = ", ")
+  sql_txt <- glue("
+    SELECT
+      CAST(YEAR AS INTEGER) AS YEAR,  -- optional: ensure integer
+      * EXCLUDE (YEAR)
+    FROM parquet_scan('{glob}', hive_partitioning=true)
+    WHERE YEAR IN ({years_sql})
+  ")
+  
+  # --- Lazy DuckDB table ---
+  dplyr::tbl(con, dplyr::sql(sql_txt))
 }
 
-# Ingest a Parquet file via DuckDB using the provided connection.
-# - lazy = FALSE (default) materializes eagerly (prudence = "lavish") to mimic
-#   read_parquet_duckdb() convenience and avoid translation issues with %in%.
-# - lazy = TRUE returns a duckplyr lazy relation so you can dplyr-manipulate
-#   and collect later.
-# Returns: duckplyr relation (lazy) or a tibble (eager)
-duck_ingest_parquet <- function(con, parquet_path, lazy = FALSE) {
-  if (!inherits(con, "duckdb_connection")) stop("'con' must be a DuckDB connection from duck_open().")
-  if (!requireNamespace("duckplyr", quietly = TRUE)) stop("Package 'duckplyr' is required.")
-  stopifnot(length(parquet_path) == 1, nzchar(parquet_path))
-  p <- normalizePath(parquet_path, winslash = "/", mustWork = TRUE)
-  sql <- sprintf("SELECT * FROM read_parquet('%s')", p)
-  prudence <- if (isTRUE(lazy)) "stingy" else "lavish"
-  duckplyr::read_sql_duckdb(sql, prudence = prudence, con = con)
-}
+# tbl: lazy DuckDB table that includes a YEAR column (e.g., from hive_partitioning)
+# df: local data.frame/tibble/duckplyr_df containing a YEAR column
+save_partitions_from_local_df <- function(con,
+                                          df,
+                                          mydataframe,
+                                          years,
+                                          filename = "data_0.parquet",
+                                          clean_partition_dir = TRUE) {
+  print(paste(format(now(), "%H:%M:%S")))
+  stopifnot(!is.null(con), inherits(con, "duckdb_connection"))
 
-# Close the connection and optionally clean spill files.
-# - clean: if TRUE, deletes common DuckDB spill file types in spill_dir
-# Returns: TRUE invisibly on success
-duck_close <- function(con, clean = TRUE, recursive = TRUE) {
-  if (!inherits(con, "duckdb_connection")) return(invisible(TRUE))
-  spill_dir <- attr(con, "spill_dir", exact = TRUE)
-  # Disconnect first to release file handles
-  try(DBI::dbDisconnect(con, shutdown = TRUE), silent = TRUE)
-  gc()
-  if (isTRUE(clean) && !is.null(spill_dir)) {
-    duck_clean_spills(spill_dir = spill_dir, recursive = recursive)
+
+  # Normalize base path once
+  base_dir <- here(archive_dir_raw, mydataframe)
+  base_posix <- normalizePath(base_dir, winslash = "/", mustWork = FALSE)
+  
+  # Register local df as a DuckDB relation (zero-copy); use a unique name
+  rel_name <- sprintf("__df_reg_%d__", as.integer(Sys.time()))
+  duckdb::duckdb_register(con, rel_name, as.data.frame(df))
+  on.exit(try(duckdb::duckdb_unregister(con, rel_name), silent = TRUE), add = TRUE)
+  
+  for (yr in years) {
+    part_dir <- file.path(base_posix, paste0("YEAR=", yr))
+    if (!dir.exists(part_dir)) dir.create(part_dir, recursive = TRUE)
+    if (clean_partition_dir) {
+      old <- list.files(part_dir, pattern = "\\.parquet$", full.names = TRUE)
+      if (length(old)) unlink(old, force = TRUE)
+    }
+    out_path <- normalizePath(file.path(part_dir, filename), winslash = "/", mustWork = FALSE)
+    
+    sql_txt <- sprintf(
+      "COPY (SELECT * FROM %s WHERE YEAR = %d)
+       TO '%s' (FORMAT PARQUET, OVERWRITE_OR_IGNORE TRUE);",
+      rel_name, yr, out_path
+    )
+    DBI::dbExecute(con, sql_txt)
   }
+  
+  invisible(TRUE)
+  print(paste(format(now(), "%H:%M:%S")))
+  
+}
+
+# --- Example ---
+# con <- DBI::dbConnect(duckdb::duckdb())
+# save_partitions_from_local_df(con,
+#                               df = df_mod,                    # local duckplyr_df
+#                               base_dir = here::here(archive_dir_raw),
+#                               years = c(2024, 2025))          # or NULL to auto-detect
+# DBI::dbDisconnect(con, shutdown = TRUE)
+
+save_partitions_single_copy <- function(con, df, mydataframe, years, year_col = "YEAR") {
+  message(paste(format(now(), "%H:%M:%S")))
+  
+  stopifnot(is.character(year_col), length(year_col) == 1)
+  if (!(year_col %in% names(df))) {
+    stop(sprintf("Column '%s' not found in `df`.", year_col))
+  }
+  
+  # years <- as.integer(years)
+  if (!length(years)) stop("`years` must be a non-empty numeric vector.")
+  
+  # ---- base output dir ----
+  base_dir <- here::here(archive_dir_raw, mydataframe)
+  fs::dir_create(base_dir, recurse = TRUE)  # ensure it exists
+  base_posix <- normalizePath(base_dir, winslash = "/", mustWork = TRUE)
+  
+  # ---- remove target partitions first (ensures overwrite semantics) ----
+  # DuckDB uses Hive-style partition dirs: <base>/<year_col>=<value>
+  # Coerce years to character to match folder names consistently
+  years_chr <- as.character(years)
+  part_dirs <- file.path(base_posix, paste0(year_col, "=", years_chr))
+
+  # Delete only the partitions we’re about to rewrite
+  for (p in part_dirs) {
+    if (fs::dir_exists(p)) fs::dir_delete(p)
+  }  
+  # Zero-copy registration (fast)
+  rel <- sprintf("__df_reg_%d__", as.integer(Sys.time()))
+  duckdb::duckdb_register(con, rel, as.data.frame(df))
+  on.exit(try(duckdb::duckdb_unregister(con, rel), silent = TRUE), add = TRUE)
+
+  
+  years_sql <- paste(years, collapse = ", ")
+  sql_txt <- glue::glue_sql("
+    COPY (
+      SELECT *
+      FROM {`rel`}
+      WHERE {`year_col`} IN ({years*})
+    )
+    TO {base_posix}
+    (FORMAT PARQUET, PARTITION_BY ({`year_col`}), OVERWRITE_OR_IGNORE TRUE);
+  ", .con = con)
+  
+  DBI::dbExecute(con, sql_txt)
+  message(format(lubridate::now(), "%H:%M:%S"))
   invisible(TRUE)
 }
 
-# Delete spill files under a directory.
-# Matches .tmp/.wal/.duckdb; adjust pattern if needed.
-duck_clean_spills <- function(spill_dir = file.path(tempdir(), "duckplyr_spill"), recursive = TRUE) {
-  if (!dir.exists(spill_dir)) return(invisible(character()))
-  paths <- list.files(
-    spill_dir,
-    pattern = "\\.(tmp|wal|duckdb)$",
-    full.names = TRUE,
-    recursive = recursive
+
+read_partitioned_parquet_duckdb <- function(con,
+                                            mydataframe,
+                                            years = NULL,
+                                            subpattern = NULL,
+                                            collect = FALSE, 
+                                            year_col = "YEAR"
+                                            ) {
+  stopifnot(inherits(con, "duckdb_connection"))
+  stopifnot(is.character(year_col), length(year_col) == 1)
+  
+  # Build the glob (default pattern depends on the chosen partition column)
+  if (is.null(subpattern)) {
+    subpattern <- sprintf("%s=*/data_*.parquet", year_col)
+  }
+  base_dir <- here::here(archive_dir_raw, mydataframe)
+  glob <- normalizePath(file.path(base_dir, subpattern), winslash = "/", mustWork = FALSE)
+  
+
+  # Base scan
+  sql_base <- glue::glue_sql(
+    "SELECT * FROM parquet_scan({glob}, hive_partitioning=true)",
+    .con = con
   )
-  if (length(paths)) unlink(paths, force = TRUE, recursive = FALSE)
-  invisible(paths)
+  
+  # Optional year filter (cast because partition columns may be read as TEXT)
+  if (!is.null(years) && length(years) > 0) {
+    yrs <- as.integer(years)
+    if (!length(yrs)) stop("`years` must be a non-empty numeric vector.")
+    sql_base <- glue::glue_sql(
+      "{sql_base} WHERE CAST({`year_col`} AS INTEGER) IN ({yrs*})",
+      .con = con
+    )
+  }
+  
+  tbl <- dplyr::tbl(con, dplyr::sql(sql_base))
+  if (isTRUE(collect)) dplyr::collect(tbl) else tbl
 }
 
-# Inspect active DuckDB temporary files (when connection is open).
-# Returns empty tibble if the table function isn't available.
-duck_list_active_tempfiles <- function(con) {
-  if (!requireNamespace("duckplyr", quietly = TRUE)) return(tibble::tibble())
-  out <- try(duckplyr::read_sql_duckdb("FROM duckdb_temporary_files()", con = con), silent = TRUE)
-  if (inherits(out, "try-error")) tibble::tibble() else out
-}
+# --- Examples ---
+# Local tibble, only 2024 & 2025:
+# df <- read_partitioned_parquet_duckdb(con, base_dir = here::here(archive_dir_raw), years = c(2024, 2025), collect = TRUE)
+# Lazy table, only 2025:
+# t  <- read_partitioned_parquet_duckdb(con, base_dir = here::here(archive_dir_raw), years = 2025, collect = FALSE)
 
-# ----------------------
-# Example usage pattern:
-# ----------------------
-# library(here)
-# con <- duck_open(spill_dir = file.path(tempdir(), "duckplyr_spill"))
-# df_base <- duck_ingest_parquet(con, here::here(archive_dir_raw, myparquetfile), lazy = TRUE)
-#
-# -- Option A: inline small vectors and then compute to keep working lazily
-# df_alldays <- df_base |>%
-#   dplyr::filter(AO_ID %in% dbplyr::local(list_ao$AO_ID)) |>%
-#   compute(prudence = "lavish")
-#
-# -- Option B: large vector -> copy to DuckDB and semi_join (most robust)
-# ao_ids_tbl <- duck_copy_vec(con, unique(list_ao$AO_ID), name = "ao_ids", col = "AO_ID")
-# df_alldays <- df_base |>% dplyr::semi_join(ao_ids_tbl, by = "AO_ID")
-#
-# df_result <- df_alldays |>%
-#   dplyr::mutate(x = some_col * 2) |>%
-#   dplyr::collect()
-# duck_close(con, clean = TRUE)
-
-# ----------------------
-# Utilities for large vector joins
-# ----------------------
-# Copy an R vector into DuckDB as a temporary table for robust joins.
-# Why: avoids inlining huge IN lists and odd translation issues.
-duck_copy_vec <- function(con, x, name = "vec_tmp", col = "value") {
-  if (!inherits(con, "duckdb_connection")) stop("'con' must be a DuckDB connection from duck_open().")
-  df <- tibble::tibble(!!rlang::sym(col) := x)
-  dplyr::copy_to(con, df, name = name, temporary = TRUE, overwrite = TRUE)
-}
-
-# Convenience: filter 'tbl' where key column is in vector 'x' by creating a temp table + semi_join.
-# Returns a lazy relation.
-duck_filter_in <- function(tbl, con, key = "AO_ID", x, name = "vec_tmp") {
-  vt <- duck_copy_vec(con, x, name = name, col = key)
-  dplyr::semi_join(tbl, vt, by = key)
-}
 

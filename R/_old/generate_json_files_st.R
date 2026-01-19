@@ -15,20 +15,7 @@ library(here)
 library(RODBC)
 
 # functions ----
-source(here("..", "mobile-app", "R", "helpers.R")) 
-
-# Dimensions ----
-if (!exists("dim_iso_country")) {
-  source(here("..", "mobile-app", "R", "dimensions.R")) 
-  # so I don't have to redo all the joins
-}
-
-state_iso <- list_iso_country %>% 
-  select( iso_2letter = ISO_COUNTRY_CODE,
-          state = COUNTRY_NAME)
-
-# queries ----
-source(here("..", "mobile-app", "R", "data_queries.R")) 
+source(here("..", "mobile-app", "R", "helpers.R")) # so it can be launched from the checkupdates script in grounded aircraft
 
 # parameters ----
 # archive mode for past dates
@@ -41,13 +28,25 @@ if (!exists("data_day_date")) {
 data_day_text <- data_day_date %>% format("%Y%m%d")
 data_day_year <- as.numeric(format(data_day_date,'%Y'))
 
-source(here("..", "mobile-app", "R", "params.R")) 
+source(here("..", "mobile-app", "R", "params.R")) # so it can be launched from the checkupdates script in grounded aircraft
+
+# queries ----
+source(here("..", "mobile-app", "R", "queries_nw.R")) 
 
 print(paste("Generating st json files", format(data_day_date, "%Y-%m-%d"), "..."))
 
+# dimensions ----
+source(here("..", "mobile-app", "R", "dimensions.R")) # so it can be launched from the checkupdates script in grounded aircraft
+
+statfor_states <- read_xlsx(
+  here("stakeholder_lists.xlsx"),
+  sheet = "state_lists",
+  range = cell_limits(c(2, 20), c(NA, 21))) %>%
+  as_tibble()
+
 # common data ----
-if (exists("co2_data_raw") == FALSE) {
-  source(here("..", "mobile-app", "R", "get_common_data.R")) 
+if (exists("state_crco") == FALSE) {
+  source(here("..", "mobile-app", "R", "get_common_data.R")) # so it can be launched from the checkupdates script in grounded aircraft
 }
 
 
@@ -79,7 +78,7 @@ st_billing <- st_billed_clean %>%
   group_by(corrected_cz, year, month, billing_period_start_date) %>%
   summarise(total_billing = sum(route_charges), .groups = "drop")
 
-st_billing <- list_state_crco %>%
+st_billing <- state_crco %>%
   left_join(st_billing, by = "corrected_cz", relationship = "many-to-many")
 
 st_billed_for_json <- st_billing %>%
@@ -140,6 +139,28 @@ if (!exists("st_daio_data")) {
     filter(YEAR == data_day_year)
 }
 
+# if (archive_mode & year(data_day_date) < year(today(tzone = "") +  days(-1))) {
+#   myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
+#   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
+# 
+# } else {
+  # dfc <-  read_xlsx(
+  #   path  = fs::path_abs(
+  #     str_glue(st_base_file),
+  #     start = st_base_dir),
+  #   sheet = "state_daio",
+  #   range = cell_limits(c(1, 1), c(NA, NA))) %>%
+  #   as_tibble() %>%
+  #   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+# 
+#   # save pre-processed file in archive for generation of past json files
+#   # only last day of the year
+#   if(format(data_day_date, "%m%d") == "1231") {
+#     myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
+#     write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+#   }
+# }
+
 # process data
 st_daio_data_zone <- st_daio_data %>%
   group_by(FLIGHT_DATE) %>% 
@@ -152,7 +173,7 @@ st_daio_data_zone <- st_daio_data %>%
   ) %>%
   ungroup() %>% 
   mutate(daio_zone_lc = tolower(COUNTRY_NAME)) %>%
-  right_join(rel_iso_country_daio_zone, by = "daio_zone_lc", relationship = "many-to-many") %>%
+  right_join(state_daio, by = "daio_zone_lc", relationship = "many-to-many") %>%
   arrange(iso_2letter, daio_zone_lc, FLIGHT_DATE)
 
 st_daio_last_day <- st_daio_data_zone %>%
@@ -195,55 +216,62 @@ st_daio_for_json <- st_daio_last_day %>%
   arrange(iso_2letter)
 
 #### Traffic DAI data ----
-mydatafile <- paste0("st_dai_day.parquet")
-stakeholder <- substr(mydatafile, 1,2)
+mydataframe <- "st_dai_day_raw"
+stakeholder <- "st"
 
-st_dai_data <- read_parquet(here(archive_dir_raw, stakeholder, mydatafile)) %>% 
-  filter(YEAR == data_day_year) %>% 
-  rename_with(~ sub("DAY_", "DY_", .x, fixed = TRUE), contains("DAY_")) %>% 
-  rename_with(~ sub("RWK_", "WK_", .x, fixed = TRUE), contains("RWK_")) %>% 
-  rename(COUNTRY_ICAO_CODE = STK_CODE, COUNTRY_NAME = STK_NAME)%>%
-  arrange(COUNTRY_NAME, FLIGHT_DATE)
-
+if (!exists("st_dai_data")) {
+  st_dai_data <- read_parquet(here(archive_dir_raw, stakeholder, paste0(mydataframe, ".parquet"))) %>% 
+    filter(YEAR == data_day_year)
+}
 
 # process data
 st_dai_data_zone <- st_dai_data %>%
   group_by(FLIGHT_DATE) %>% 
   ### rank calculation
   mutate(
-    DY_DAI_RANK = min_rank(desc(DY_TFC)),
-    WK_DAI_RANK = min_rank(desc(WK_AVG_TFC)),
-    Y2D_DAI_RANK = min_rank(desc(Y2D_AVG_TFC)),
+    DY_DAI_RANK = min_rank(desc(DAY_TFC)),
+    WK_DAI_RANK = min_rank(desc(AVG_ROLLING_WEEK)),
+    Y2D_DAI_RANK = min_rank(desc(Y2D_TFC_YEAR)),
     # DAI_RANK_TEXT = "*Top rank for highest.",
   ) %>%
   ungroup() %>% 
   mutate(daio_zone_lc = tolower(COUNTRY_NAME)) %>%
-  right_join(rel_iso_country_daio_zone, by = "daio_zone_lc", relationship = "many-to-many") %>%
+  right_join(state_daio, by = "daio_zone_lc", relationship = "many-to-many") %>%
   arrange(iso_2letter, daio_zone_lc, FLIGHT_DATE)
 
 st_dai_last_day <- st_dai_data_zone %>%
   filter(FLIGHT_DATE == data_day_date)
 
 st_dai_for_json <- st_dai_last_day %>%
+  # Iceland exception
+  mutate(
+    DAY_DIFF_PREV_YEAR_PERC =  if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, DAY_DIFF_PREV_YEAR_PERC),
+    DIF_WEEK_PREV_YEAR_PERC =  if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, DIF_WEEK_PREV_YEAR_PERC),
+    Y2D_DIFF_PREV_YEAR_PERC = if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, Y2D_DIFF_PREV_YEAR_PERC),
+
+    DAY_TFC_DIFF_2019_PERC =  if_else(iso_2letter == "IS", NA, DAY_TFC_DIFF_2019_PERC),
+    DIF_ROLLING_WEEK_2019_PERC =  if_else(iso_2letter == "IS", NA, DIF_ROLLING_WEEK_2019_PERC),
+    Y2D_DIFF_2019_PERC = if_else(iso_2letter == "IS", NA, Y2D_DIFF_2019_PERC)
+  ) %>%
   select(
     iso_2letter,
     FLIGHT_DATE,
 
     DY_DAI_RANK,
-    DY_DAI = DY_TFC,
-    DY_DAI_DIF_PREV_YEAR_PERC = DY_TFC_DIF_PREV_YEAR_PERC,
-    DY_DAI_DIF_2019_PERC = DY_TFC_DIF_2019_PERC,
+    DY_DAI = DAY_TFC,
+    DY_DAI_DIF_PREV_YEAR_PERC = DAY_DIFF_PREV_YEAR_PERC,
+    DY_DAI_DIF_2019_PERC = DAY_TFC_DIFF_2019_PERC,
 
     WK_DAI_RANK,
-    WK_DAI_AVG_ROLLING = WK_AVG_TFC,
-    WK_DAI_DIF_PREV_YEAR_PERC = WK_TFC_DIF_PREV_YEAR_PERC,
-    WK_DAI_DIF_2019_PERC = WK_TFC_DIF_2019_PERC,
+    WK_DAI_AVG_ROLLING = AVG_ROLLING_WEEK,
+    WK_DAI_DIF_PREV_YEAR_PERC = DIF_WEEK_PREV_YEAR_PERC,
+    WK_DAI_DIF_2019_PERC = DIF_ROLLING_WEEK_2019_PERC,
 
     Y2D_DAI_RANK,
-    Y2D_DAI = Y2D_TFC,
-    Y2D_DAI_AVG = Y2D_AVG_TFC,
-    Y2D_DAI_DIF_PREV_YEAR_PERC = Y2D_TFC_DIF_PREV_YEAR_PERC,
-    Y2D_DAI_DIF_2019_PERC = Y2D_TFC_DIF_2019_PERC,
+    Y2D_DAI = Y2D_TFC_YEAR,
+    Y2D_DAI_AVG = Y2D_AVG_TFC_YEAR,
+    Y2D_DAI_DIF_PREV_YEAR_PERC = Y2D_DIFF_PREV_YEAR_PERC,
+    Y2D_DAI_DIF_2019_PERC = Y2D_DIFF_2019_PERC,
     # DAI_RANK_TEXT
   ) %>%
   right_join(state_iso, by ="iso_2letter") %>%
@@ -269,24 +297,24 @@ st_dai_data_zone_p <- st_dai_data_zone %>%
          iso_2letter,
          daio_zone,
          flight_type,
-         DAY_TFC = DY_TFC,
-         DAY_TFC_PREV_WEEK = DY_TFC_PREV_WEEK,
-         DAY_TFC_PREV_YEAR = DY_TFC_PREV_YEAR,
-         DAY_TFC_2019 = DY_TFC_2019,
+         DAY_TFC,
+         DAY_TFC_PREV_WEEK,
+         DAY_TFC_PREV_YEAR,
+         DAY_TFC_2019,
 
-         AVG_ROLLING_WEEK = WK_AVG_TFC,
-         AVG_ROLLING_PREV_WEEK = WK_AVG_TFC_PREV_WEEK,
-         AVG_ROLLING_WEEK_PREV_YEAR = WK_AVG_TFC_PREV_YEAR,
-         AVG_ROLLING_WEEK_2020 = WK_AVG_TFC_2020,
-         AVG_ROLLING_WEEK_2019 = WK_AVG_TFC_2019,
+         AVG_ROLLING_WEEK,
+         AVG_ROLLING_PREV_WEEK,
+         AVG_ROLLING_WEEK_PREV_YEAR,
+         AVG_ROLLING_WEEK_2020,
+         AVG_ROLLING_WEEK_2019,
 
-         Y2D_TFC_YEAR = Y2D_TFC,
+         Y2D_TFC_YEAR,
          Y2D_TFC_PREV_YEAR,
          Y2D_TFC_2019,
-         Y2D_AVG_TFC_YEAR = Y2D_AVG_TFC,
+         Y2D_AVG_TFC_YEAR,
          Y2D_AVG_TFC_PREV_YEAR,
          Y2D_AVG_TFC_2019,
-         LAST_DATA_DAY = DATA_DAY
+         LAST_DATA_DAY
   ) %>%
   mutate(across(-c(FLIGHT_DATE, flight_type, iso_2letter, daio_zone, LAST_DATA_DAY), ~ .* -1 ))
 
@@ -408,9 +436,6 @@ st_overflight_for_json <- st_overflight_last_day %>%
   arrange(iso_2letter)
 
 #### Delay data ----
-
-
-
 mydataframe <- "st_delay_day_raw"
 stakeholder <- "st"
 
@@ -419,6 +444,31 @@ if (!exists("st_delay_data")) {
     filter(YEAR == data_day_year)
 }
 
+# mydataframe <- "state_delay_raw"
+# stakeholder <- "st"
+# 
+# if (archive_mode & year(data_day_date) < year(today(tzone = "") +  days(-1))) {
+#   myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
+#   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
+# 
+# } else {
+  # dfc <- read_xlsx(
+  #   path  = fs::path_abs(
+  #     str_glue(st_base_file),
+  #     start = st_base_dir),
+  #   sheet = "state_delay",
+  #   range = cell_limits(c(1, 1), c(NA, NA))) %>%
+  #   as_tibble() %>%
+  #   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+# 
+#   # save pre-processed file in archive for generation of past json files
+#   # only last day of the year
+#   if(format(data_day_date, "%m%d") == "1231") {
+#     myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
+#     write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+#   }
+# }
+
 # process data
 st_delay_last_day <- st_delay_data %>%
   filter(FLIGHT_DATE == min(data_day_date,
@@ -426,7 +476,7 @@ st_delay_last_day <- st_delay_data %>%
                             na.rm = TRUE)
          ) %>%
   mutate(daio_zone_lc = tolower(COUNTRY_NAME)) %>%
-  right_join(rel_iso_country_daio_zone, by = "daio_zone_lc", relationship = "many-to-many")
+  right_join(state_daio, by = "daio_zone_lc", relationship = "many-to-many")
 
 st_delay_for_json  <- st_delay_last_day %>%
   mutate(
@@ -971,7 +1021,7 @@ if (exists("co2_data_raw") == FALSE) {co2_data_raw <- get_co2_data()}
 
 st_co2_data_filtered <- co2_data_raw %>%
   mutate(co2_state = STATE_NAME) %>%
-  right_join(list_state_co2, by = "co2_state") %>%
+  right_join(state_co2, by = "co2_state") %>%
   select(-c(STATE_NAME, STATE_CODE, co2_state) )
 
 st_co2_data <- st_co2_data_filtered %>%
@@ -1086,7 +1136,44 @@ st_co2_for_json <- st_co2_data %>%
   select(-state) %>%
   arrange(iso_2letter)
 
-st_json_app_j <- rel_iso_icao_country %>% select(iso_2letter, icao_code, state) %>% rename(icao_2letter=icao_code) %>% arrange(iso_2letter)
+
+#### Join strings and save  ----
+  ### https://www.lexjansen.com/pharmasug-cn/2021/SR/Pharmasug-China-2021-SR031.pdf
+
+  # st_json_app_j <- state_iso %>% select(iso_2letter, state) %>% arrange(iso_2letter)
+  # st_json_app_j <- st_json_app_j %>% cbind(select(st_daio_for_json, -c(iso_2letter))) %>%
+  #   group_by(iso_2letter, state) %>%
+  #   nest_legacy(.key = "st_daio")
+  #
+  # st_json_app_j <- st_json_app_j %>% cbind(select(st_dai_for_json, -c(iso_2letter))) %>%
+  #   group_by(iso_2letter, state, st_daio) %>%
+  #   nest_legacy(.key = "st_dai")
+  #
+  # st_json_app_j <- st_json_app_j %>% cbind(select(st_overflight_for_json, -c(iso_2letter))) %>%
+  #   group_by(iso_2letter, state, st_daio, st_dai) %>%
+  #   nest_legacy(.key = "st_ovf")
+  #
+  # st_json_app_j <- st_json_app_j %>% cbind(select(st_delay_for_json, -c(iso_2letter))) %>%
+  #   group_by(iso_2letter, state, st_daio, st_dai, st_ovf) %>%
+  #   nest_legacy(.key = "st_delay")
+  #
+  # st_json_app_j <- st_json_app_j %>% cbind(select(st_punct_for_json, -c(iso_2letter))) %>%
+  #   group_by(iso_2letter, state, st_daio, st_dai, st_ovf, st_delay) %>%
+  #   nest_legacy(.key = "st_punct")
+  #
+  # st_json_app_j <- st_json_app_j %>% cbind(select(st_billed_for_json, -c(iso_2letter))) %>%
+  #   group_by(iso_2letter, state, st_daio, st_dai, st_ovf, st_delay, st_punct) %>%
+  #   nest_legacy(.key = "st_billed")
+  #
+  # st_json_app_j <- st_json_app_j %>% cbind(select(st_co2_for_json, -c(iso_2letter))) %>%
+  #   group_by(iso_2letter, state, st_daio, st_dai, st_ovf, st_delay, st_punct, st_billed) %>%
+  #   nest_legacy(.key = "st_co2")
+  #
+  # st_json_app <- st_json_app_j %>%
+  #   toJSON(., pretty = TRUE)
+
+
+st_json_app_j <- state_iso_icao %>% select(iso_2letter, icao_code, state) %>% rename(icao_2letter=icao_code) %>% arrange(iso_2letter)
 st_json_app_j$st_daio <- select(st_daio_for_json, -c(iso_2letter))
 st_json_app_j$st_dai <- select(st_dai_for_json, -c(iso_2letter))
 st_json_app_j$st_ovf <- select(st_overflight_for_json, -c(iso_2letter))
@@ -1117,91 +1204,211 @@ print(paste(format(now(), "%H:%M:%S"), "st_json_app"))
 
 ## TRAFFIC ----
 ### Aircraft operators ----
-mydataframe <-  "st_ao_agg"
+#### day ----
+mydataframe <- "st_ao_data_day_raw"
+myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
-#### day ----
-st_ao_data_day_int <- create_ranking(mydataframe, "DAY", FLIGHT)
+df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
+
+# process data
+st_ao_data_day_int <- assign(mydataframe, df) %>%
+  # filter avoid issues with aos that changed codes
+  select(-AO_GRP_CODE) %>% 
+  mutate(TO_DATE = max(TO_DATE, na.rm = TRUE)) %>%
+  spread(., key = FLAG_DAY, value = FLIGHT_WITHOUT_OVERFLIGHT) %>%
+  arrange(COUNTRY_NAME, R_RANK) %>%
+  mutate(
+    DY_RANK_DIF_PREV_WEEK = case_when(
+      is.na(RANK_PREV_WEEK) ~ RANK,
+      .default = RANK_PREV_WEEK - RANK
+    ),
+    DY_FLT_DIF_PREV_WEEK_PERC =   case_when(
+      DAY_PREV_WEEK == 0 | is.na(DAY_PREV_WEEK) ~ NA,
+      .default = CURRENT_DAY / DAY_PREV_WEEK - 1
+    ),
+    DY_FLT_DIF_PREV_YEAR_PERC = case_when(
+      DAY_PREV_YEAR == 0 | is.na(DAY_PREV_YEAR) ~ NA,
+      .default = CURRENT_DAY / DAY_PREV_YEAR - 1
+    ),
+    ST_RANK = paste0(tolower(COUNTRY_NAME), R_RANK),
+    ST_TFC_AO_GRP_DIF = CURRENT_DAY - DAY_PREV_WEEK
+  ) %>%
+  # filter out bad rows created by Iceland case
+  filter(!is.na(AO_GRP_NAME)) %>% 
+  # restore last ao_grp code
+  left_join(select(dim_ao_group1_last, AO_GRP_CODE, AO_GRP_NAME), by = "AO_GRP_NAME")
 
 st_ao_data_day <- st_ao_data_day_int %>%
-  mutate(
-    ST_RANK = paste0(tolower(STK_NAME), R_RANK)
-  ) %>% 
-  filter(R_RANK <11) %>% 
-  arrange(STK_NAME, R_RANK) %>% 
-  select(
-    ST_RANK,
-    DY_RANK_DIF_PREV_WEEK = RANK_DIF,
-    DY_AO_GRP_NAME = NAME,
+  rename(
+    DY_AO_GRP_NAME = AO_GRP_NAME,
     DY_TO_DATE = TO_DATE,
-    DY_FLT = CURRENT,
-    DY_FLT_DIF_PREV_WEEK_PERC = DIF1_METRIC_PERC,
-    DY_FLT_DIF_PREV_YEAR_PERC = DIF2_METRIC_PERC
-  ) 
-
-#### week ----
-st_ao_data_wk_int <- create_ranking(mydataframe, "WEEK", FLIGHT)
-
-st_ao_data_wk <- st_ao_data_wk_int %>%
-  mutate(
-    ST_RANK = paste0(tolower(STK_NAME), R_RANK)
-  ) %>% 
-  filter(R_RANK <11) %>% 
-  arrange(STK_NAME, R_RANK) %>% 
+    DY_FLT = CURRENT_DAY
+  ) %>%
   select(
     ST_RANK,
-    WK_RANK_DIF_PREV_WEEK = RANK_DIF,
-    WK_AO_GRP_NAME = NAME,
-    WK_FROM_DATE = FROM_DATE,
-    WK_TO_DATE = TO_DATE,
-    WK_FLT_AVG = CURRENT,
-    WK_FLT_DIF_PREV_WEEK_PERC = DIF1_METRIC_PERC,
-    WK_FLT_DIF_PREV_YEAR_PERC = DIF2_METRIC_PERC
-  ) 
-
-#### y2d ----
-st_ao_data_y2d_int <- create_ranking(mydataframe, "Y2D", FLIGHT)
-
-st_ao_data_y2d <- st_ao_data_y2d_int %>%
-  mutate(
-    ST_RANK = paste0(tolower(STK_NAME), R_RANK)
-  ) %>% 
-  filter(R_RANK <11) %>% 
-  arrange(STK_NAME, R_RANK) %>% 
-  select(
-    # STK_NAME,
-    ST_RANK,
-    Y2D_RANK_DIF_PREV_YEAR = RANK_DIF,
-    Y2D_AO_GRP_NAME = NAME,
-    Y2D_TO_DATE = TO_DATE,
-    Y2D_FLT_AVG = CURRENT,
-    Y2D_FLT_DIF_PREV_YEAR_PERC = DIF1_METRIC_PERC,
-    Y2D_FLT_DIF_2019_PERC = DIF2_METRIC_PERC
-  ) 
-
-#### main card ----
-st_ao_main_traffic <- create_main_card (st_ao_data_day_int) %>% 
-  mutate(
-    ST_RANK = paste0(tolower(STK_NAME), R_RANK)
-  ) %>% 
-  arrange(STK_NAME, R_RANK) %>% 
-  select(ST_RANK,
-         MAIN_TFC_AO_GRP_NAME = NAME, 
-         MAIN_TFC_AO_GRP_CODE = CODE, 
-         MAIN_TFC_AO_GRP_FLT = CURRENT)
-
-
-st_ao_main_traffic_dif <- create_main_card_dif (st_ao_data_day_int) %>% 
-  mutate(
-    ST_RANK = paste0(tolower(STK_NAME), R_RANK)
-  ) %>% 
-  arrange(tolower(STK_NAME), R_RANK) %>% 
-  select(ST_RANK,
-         MAIN_TFC_DIF_AO_GRP_NAME = NAME,
-         MAIN_TFC_DIF_AO_GRP_CODE = CODE,
-         MAIN_TFC_DIF_AO_GRP_FLT_DIF = DIF1_METRIC
+    DY_RANK_DIF_PREV_WEEK,
+    DY_AO_GRP_NAME,
+    DY_TO_DATE,
+    DY_FLT,
+    DY_FLT_DIF_PREV_WEEK_PERC,
+    DY_FLT_DIF_PREV_YEAR_PERC
   )
 
+#### week ----
+mydataframe <- "st_ao_data_week_raw"
+myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+stakeholder <- str_sub(mydataframe, 1, 2)
+
+df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
+
+# process data
+st_ao_data_wk <- assign(mydataframe, df) %>%
+  # filter avoid issues with aos that changed codes
+  select(-AO_GRP_CODE) %>% 
+  mutate(FLIGHT_WITHOUT_OVERFLIGHT = FLIGHT_WITHOUT_OVERFLIGHT / 7) %>%
+  spread(., key = FLAG_ROLLING_WEEK, value = FLIGHT_WITHOUT_OVERFLIGHT) %>%
+  arrange(COUNTRY_NAME, R_RANK) %>%
+  mutate(
+    WK_RANK_DIF_PREV_WEEK = case_when(
+      is.na(RANK_PREV_WEEK) ~ RANK,
+      .default = RANK_PREV_WEEK - RANK
+    ),
+    WK_FLT_DIF_PREV_WEEK_PERC =   case_when(
+      PREV_ROLLING_WEEK == 0 | is.na(PREV_ROLLING_WEEK) ~ NA,
+      .default = CURRENT_ROLLING_WEEK / PREV_ROLLING_WEEK - 1
+    ),
+    WK_FLT_DIF_PREV_YEAR_PERC = case_when(
+      ROLLING_WEEK_PREV_YEAR == 0 | is.na(ROLLING_WEEK_PREV_YEAR) ~ NA,
+      .default = CURRENT_ROLLING_WEEK / ROLLING_WEEK_PREV_YEAR - 1
+    ),
+    ST_RANK = paste0(tolower(COUNTRY_NAME), R_RANK)
+  ) %>%
+  rename(
+    WK_AO_GRP_NAME = AO_GRP_NAME,
+    WK_FROM_DATE = FROM_DATE,
+    WK_TO_DATE = TO_DATE,
+    WK_FLT_AVG = CURRENT_ROLLING_WEEK
+  ) %>%
+  select(
+    ST_RANK,
+    WK_RANK_DIF_PREV_WEEK,
+    WK_AO_GRP_NAME,
+    WK_FROM_DATE,
+    WK_TO_DATE,
+    WK_FLT_AVG,
+    WK_FLT_DIF_PREV_WEEK_PERC,
+    WK_FLT_DIF_PREV_YEAR_PERC
+  )%>%
+  # filter out bad rows created by Iceland case
+  filter(!is.na(WK_AO_GRP_NAME))
+
+#### y2d ----
+mydataframe <- "st_ao_data_y2d_raw"
+myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+stakeholder <- str_sub(mydataframe, 1, 2)
+
+df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
+
+# process data
+st_ao_data_y2d <- assign(mydataframe, df) %>%
+  mutate(
+         FROM_DATE = max(FROM_DATE),
+         TO_DATE = max(TO_DATE),
+         PERIOD =   case_when(
+           YEAR == max(YEAR) ~ 'CURRENT_YEAR',
+           YEAR == max(YEAR) - 1 ~ 'PREV_YEAR',
+           .default = paste0('PERIOD_', YEAR)
+           )
+         ) %>%
+  select(-FLIGHT_WITHOUT_OVERFLIGHT, -YEAR, -AO_GRP_CODE) %>%
+  spread(., key = PERIOD, value = AVG_FLT) %>%
+  arrange(COUNTRY_NAME, R_RANK) %>%
+  mutate(
+    Y2D_RANK_DIF_PREV_YEAR = case_when(
+      is.na(RANK_PREV_YEAR) ~ RANK_CURRENT,
+      .default = RANK_PREV_YEAR - RANK_CURRENT
+    ),
+    Y2D_FLT_DIF_PREV_YEAR_PERC =   case_when(
+      PREV_YEAR == 0 | is.na(PREV_YEAR) ~ NA,
+      .default = CURRENT_YEAR / PREV_YEAR - 1
+    ),
+    Y2D_FLT_DIF_2019_PERC  = case_when(
+      PERIOD_2019 == 0 | is.na(PERIOD_2019) ~ NA,
+      .default = CURRENT_YEAR / PERIOD_2019 - 1
+    ),
+    ST_RANK = paste0(tolower(COUNTRY_NAME), R_RANK)
+  ) %>%
+  rename(
+    Y2D_AO_GRP_NAME = AO_GRP_NAME,
+    Y2D_TO_DATE = TO_DATE,
+    Y2D_FLT_AVG = CURRENT_YEAR
+  ) %>%
+  select(
+    ST_RANK,
+    Y2D_RANK_DIF_PREV_YEAR,
+    Y2D_AO_GRP_NAME,
+    Y2D_TO_DATE,
+    Y2D_FLT_AVG,
+    Y2D_FLT_DIF_PREV_YEAR_PERC,
+    Y2D_FLT_DIF_2019_PERC
+  )%>%
+  # filter out bad rows created by Iceland case
+  filter(!is.na(Y2D_AO_GRP_NAME))
+
+#### main card ----
+st_ao_main_traffic <- st_ao_data_day_int %>%
+  mutate(
+    MAIN_TFC_AO_GRP_NAME = if_else(
+      R_RANK <= 4,
+      AO_GRP_NAME,
+      NA
+    ),
+    MAIN_TFC_AO_GRP_CODE = if_else(
+      R_RANK <= 4,
+      AO_GRP_CODE,
+      NA
+    ),
+    MAIN_TFC_AO_GRP_FLT = if_else(
+      R_RANK <= 4,
+      CURRENT_DAY,
+      NA
+    ),
+    ST_RANK = paste0(tolower(COUNTRY_NAME), R_RANK)
+    ) %>%
+  select(ST_RANK, MAIN_TFC_AO_GRP_NAME, MAIN_TFC_AO_GRP_CODE, MAIN_TFC_AO_GRP_FLT)
+
+st_ao_main_traffic_dif <- st_ao_data_day_int %>%
+  arrange(COUNTRY_NAME, desc(abs(ST_TFC_AO_GRP_DIF)), R_RANK) %>%
+  group_by(COUNTRY_NAME) %>%
+  mutate(RANK_DIF_AO_TFC = row_number()) %>%
+  ungroup() %>%
+  arrange(COUNTRY_NAME, R_RANK) %>%
+  mutate(
+    MAIN_TFC_DIF_AO_GRP_NAME = if_else(
+      RANK_DIF_AO_TFC <= 4,
+      AO_GRP_NAME,
+      NA
+    ),
+    MAIN_TFC_DIF_AO_GRP_CODE = if_else(
+      RANK_DIF_AO_TFC <= 4,
+      AO_GRP_CODE,
+      NA
+    ),
+    MAIN_TFC_DIF_AO_GRP_FLT_DIF = if_else(
+      RANK_DIF_AO_TFC <= 4,
+      ST_TFC_AO_GRP_DIF,
+      NA
+    )
+  ) %>%
+  arrange(COUNTRY_NAME, desc(MAIN_TFC_DIF_AO_GRP_FLT_DIF)) %>%
+  group_by(COUNTRY_NAME) %>%
+  mutate(
+    RANK_MAIN_DIF = row_number(),
+    ST_RANK = paste0(tolower(COUNTRY_NAME), RANK_MAIN_DIF)
+         ) %>%
+  ungroup() %>%
+  select(ST_RANK, MAIN_TFC_DIF_AO_GRP_NAME, MAIN_TFC_DIF_AO_GRP_CODE, MAIN_TFC_DIF_AO_GRP_FLT_DIF)
 
 #### join tables ----
 # create list of state/rankings for left join
@@ -1238,94 +1445,202 @@ save_json(st_ao_data_j, "st_ao_ranking_traffic")
 print(paste(format(now(), "%H:%M:%S"), "st_ao_ranking_traffic"))
 
 ### Airports ----
-mydataframe <-  "st_ap_agg"
+#### day ----
+mydataframe <- "st_ap_data_day_raw"
+myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
-#### day ----
-st_ap_data_day_int <- create_ranking(mydataframe, "DAY", DEP_ARR)
+df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
-st_ap_data_day <- st_ap_data_day_int %>%
+# process data
+st_apt_data_day_int <- assign(mydataframe, df) %>%
+  mutate(TO_DATE = max(TO_DATE)) %>%
+  spread(., key = FLAG_DAY, value = DEP_ARR) %>%
+  arrange(COUNTRY_NAME, R_RANK) %>%
   mutate(
-    ST_RANK = paste0(tolower(STK_NAME), R_RANK)
-  ) %>% 
-  filter(R_RANK <11) %>% 
-  arrange(STK_NAME, R_RANK) %>% 
+    DY_RANK_DIF_PREV_WEEK = case_when(
+      is.na(RANK_PREV_WEEK) ~ RANK,
+      .default = RANK_PREV_WEEK - RANK
+    ),
+    DY_FLT_DIF_PREV_WEEK_PERC =   case_when(
+      DAY_PREV_WEEK == 0 | is.na(DAY_PREV_WEEK) ~ NA,
+      .default = CURRENT_DAY / DAY_PREV_WEEK - 1
+    ),
+    DY_FLT_DIF_PREV_YEAR_PERC = case_when(
+      DAY_PREV_YEAR == 0 | is.na(DAY_PREV_YEAR) ~ NA,
+      .default = CURRENT_DAY / DAY_PREV_YEAR - 1
+    ),
+    ST_RANK = paste0(tolower(COUNTRY_NAME), R_RANK),
+    ST_TFC_APT_DIF = CURRENT_DAY - DAY_PREV_WEEK
+  ) %>%
+  # filter out bad rows created by Iceland case
+  filter(!is.na(AIRPORT_NAME))
+
+st_apt_data_day <- st_apt_data_day_int %>%
+  rename(
+    DY_APT_NAME = AIRPORT_NAME,
+    DY_TO_DATE = TO_DATE,
+    DY_FLT = CURRENT_DAY
+  ) %>%
   select(
     ST_RANK,
-    DY_RANK_DIF_PREV_WEEK = RANK_DIF,
-    DY_APT_NAME = NAME,
-    DY_TO_DATE = TO_DATE,
-    DY_FLT = CURRENT,
-    DY_FLT_DIF_PREV_WEEK_PERC = DIF1_METRIC_PERC,
-    DY_FLT_DIF_PREV_YEAR_PERC = DIF2_METRIC_PERC
-  ) 
+    DY_RANK_DIF_PREV_WEEK,
+    DY_APT_NAME,
+    DY_TO_DATE,
+    DY_FLT,
+    DY_FLT_DIF_PREV_WEEK_PERC,
+    DY_FLT_DIF_PREV_YEAR_PERC
+  )
+
 
 #### week ----
-st_ap_data_wk_int <- create_ranking(mydataframe, "WEEK", DEP_ARR)
+mydataframe <- "st_ap_data_week_raw"
+myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+stakeholder <- str_sub(mydataframe, 1, 2)
 
-st_ap_data_wk <- st_ap_data_wk_int %>%
+df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
+
+
+# process data
+st_apt_data_wk <- assign(mydataframe, df) %>%
+  mutate(DEP_ARR = DEP_ARR / 7) %>%
+  spread(., key = FLAG_ROLLING_WEEK, value = DEP_ARR) %>%
+  arrange(COUNTRY_NAME, R_RANK) %>%
   mutate(
-    ST_RANK = paste0(tolower(STK_NAME), R_RANK)
-  ) %>% 
-  filter(R_RANK <11) %>% 
+    WK_RANK_DIF_PREV_WEEK = case_when(
+      is.na(RANK_PREV_WEEK) ~ RANK,
+      .default = RANK_PREV_WEEK - RANK
+    ),
+    WK_FLT_DIF_PREV_WEEK_PERC =   case_when(
+      PREV_ROLLING_WEEK == 0 | is.na(PREV_ROLLING_WEEK) ~ NA,
+      .default = CURRENT_ROLLING_WEEK / PREV_ROLLING_WEEK - 1
+    ),
+    WK_FLT_DIF_PREV_YEAR_PERC = case_when(
+      ROLLING_WEEK_PREV_YEAR == 0 | is.na(ROLLING_WEEK_PREV_YEAR) ~ NA,
+      .default = CURRENT_ROLLING_WEEK / ROLLING_WEEK_PREV_YEAR - 1
+    ),
+    ST_RANK = paste0(tolower(COUNTRY_NAME), R_RANK)
+  ) %>%
   #NOTE!! Temporary fix while the app is corrected
   mutate(
     FROM_DATE = FROM_DATE - days(6),
     TO_DATE = TO_DATE - days(6)
   ) %>% 
-  arrange(STK_NAME, R_RANK) %>% 
-  select(
-    ST_RANK,
-    WK_RANK_DIF_PREV_WEEK = RANK_DIF,
-    WK_APT_NAME = NAME,
+  rename(
+    WK_APT_NAME = AIRPORT_NAME,
     WK_FROM_DATE = FROM_DATE,
     WK_TO_DATE = TO_DATE,
-    WK_FLT_AVG = CURRENT,
-    WK_FLT_DIF_PREV_WEEK_PERC = DIF1_METRIC_PERC,
-    WK_FLT_DIF_PREV_YEAR_PERC = DIF2_METRIC_PERC
-  ) 
-
-#### y2d ----
-st_ap_data_y2d_int <- create_ranking(mydataframe, "Y2D", DEP_ARR)
-
-st_ap_data_y2d <- st_ap_data_y2d_int %>%
-  mutate(
-    ST_RANK = paste0(tolower(STK_NAME), R_RANK)
-  ) %>% 
-  filter(R_RANK <11) %>% 
-  arrange(STK_NAME, R_RANK) %>% 
+    WK_FLT_AVG = CURRENT_ROLLING_WEEK
+  ) %>%
   select(
     ST_RANK,
-    Y2D_RANK_DIF_PREV_YEAR = RANK_DIF,
-    Y2D_APT_NAME = NAME,
+    WK_RANK_DIF_PREV_WEEK,
+    WK_APT_NAME,
+    WK_FROM_DATE,
+    WK_TO_DATE,
+    WK_FLT_AVG,
+    WK_FLT_DIF_PREV_WEEK_PERC,
+    WK_FLT_DIF_PREV_YEAR_PERC
+  ) %>%
+  # filter out bad rows created by Iceland case
+  filter(!is.na(WK_APT_NAME))
+
+#### y2d ----
+mydataframe <- "st_ap_data_y2d_raw"
+myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+stakeholder <- str_sub(mydataframe, 1, 2)
+
+df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
+
+# process data
+st_apt_data_y2d <- assign(mydataframe, df) %>%
+  mutate(
+    FROM_DATE = max(FROM_DATE),
+    TO_DATE = max(TO_DATE),
+    PERIOD =   case_when(
+      YEAR == max(YEAR) ~ 'CURRENT_YEAR',
+      YEAR == max(YEAR) - 1 ~ 'PREV_YEAR',
+      .default = paste0('PERIOD_', YEAR)
+    )
+  ) %>%
+  select(-DEP_ARR, -YEAR) %>%
+  spread(., key = PERIOD, value = AVG_DEP_ARR) %>%
+  arrange(COUNTRY_NAME, R_RANK) %>%
+  mutate(
+    Y2D_RANK_DIF_PREV_YEAR = case_when(
+      is.na(RANK_PREV_YEAR) ~ RANK_CURRENT,
+      .default = RANK_PREV_YEAR - RANK_CURRENT
+    ),
+    Y2D_FLT_DIF_PREV_YEAR_PERC =   case_when(
+      PREV_YEAR == 0 | is.na(PREV_YEAR) ~ NA,
+      .default = CURRENT_YEAR / PREV_YEAR - 1
+    ),
+    Y2D_FLT_DIF_2019_PERC  = case_when(
+      PERIOD_2019 == 0 | is.na(PERIOD_2019) ~ NA,
+      .default = CURRENT_YEAR / PERIOD_2019 - 1
+    ),
+    ST_RANK = paste0(tolower(COUNTRY_NAME), R_RANK)
+  ) %>%
+  rename(
+    Y2D_APT_NAME = AIRPORT_NAME,
     Y2D_TO_DATE = TO_DATE,
-    Y2D_FLT_AVG = CURRENT,
-    Y2D_FLT_DIF_PREV_YEAR_PERC = DIF1_METRIC_PERC,
-    Y2D_FLT_DIF_2019_PERC = DIF2_METRIC_PERC
-  ) 
+    Y2D_FLT_AVG = CURRENT_YEAR
+  ) %>%
+  select(
+    ST_RANK,
+    Y2D_RANK_DIF_PREV_YEAR,
+    Y2D_APT_NAME,
+    Y2D_TO_DATE,
+    Y2D_FLT_AVG,
+    Y2D_FLT_DIF_PREV_YEAR_PERC,
+    Y2D_FLT_DIF_2019_PERC
+  ) %>%
+  # filter out bad rows created by Iceland case
+  filter(!is.na(Y2D_APT_NAME))
 
 #### main card ----
-st_ap_main_traffic <- create_main_card (st_ap_data_day_int) %>% 
+st_apt_main_traffic <- st_apt_data_day_int %>%
   mutate(
-    ST_RANK = paste0(tolower(STK_NAME), R_RANK)
-  ) %>% 
-  arrange(STK_NAME, R_RANK) %>% 
-  select(ST_RANK,
-         MAIN_TFC_APT_NAME = NAME, 
-         MAIN_TFC_APT_CODE = CODE,
-         MAIN_TFC_APT_FLT = CURRENT)
+    MAIN_TFC_APT_NAME = if_else(
+      R_RANK <= 4,
+      AIRPORT_NAME,
+      NA
+    ),
+    MAIN_TFC_APT_FLT = if_else(
+      R_RANK <= 4,
+      CURRENT_DAY,
+      NA
+    ),
+    ST_RANK = paste0(tolower(COUNTRY_NAME), R_RANK)
+  ) %>%
+  select(ST_RANK, MAIN_TFC_APT_NAME, MAIN_TFC_APT_FLT)
 
-
-st_ap_main_traffic_dif <- create_main_card_dif (st_ap_data_day_int) %>% 
+st_apt_main_traffic_dif <- st_apt_data_day_int %>%
+  arrange(COUNTRY_NAME, desc(abs(ST_TFC_APT_DIF)), R_RANK) %>%
+  group_by(COUNTRY_NAME) %>%
+  mutate(RANK_DIF_APT_TFC = row_number()) %>%
+  ungroup() %>%
+  arrange(COUNTRY_NAME, R_RANK) %>%
   mutate(
-    ST_RANK = paste0(tolower(STK_NAME), R_RANK)
-  ) %>% 
-  arrange(tolower(STK_NAME), R_RANK) %>% 
-  select(ST_RANK,
-         MAIN_TFC_DIF_APT_NAME = NAME,
-         # MAIN_TFC_DIF_APT_CODE = CODE,
-         MAIN_TFC_DIF_APT_FLT_DIF = DIF1_METRIC
-  )
+    MAIN_TFC_DIF_APT_NAME = if_else(
+      RANK_DIF_APT_TFC <= 4,
+      AIRPORT_NAME,
+      NA
+    ),
+    MAIN_TFC_DIF_APT_FLT_DIF = if_else(
+      RANK_DIF_APT_TFC <= 4,
+      ST_TFC_APT_DIF,
+      NA
+    )
+  ) %>%
+  arrange(COUNTRY_NAME, desc(MAIN_TFC_DIF_APT_FLT_DIF)) %>%
+  group_by(COUNTRY_NAME) %>%
+  mutate(
+    RANK_MAIN_DIF = row_number(),
+    ST_RANK = paste0(tolower(COUNTRY_NAME), RANK_MAIN_DIF)
+  ) %>%
+  ungroup() %>%
+  select(ST_RANK, MAIN_TFC_DIF_APT_NAME, MAIN_TFC_DIF_APT_FLT_DIF)
 
 #### join tables ----
 # create list of state/rankings for left join
@@ -1346,103 +1661,221 @@ state_iso_ranking <- state_iso_ranking %>%
   )
 
 # join and reorder tables
-st_ap_data <- state_iso_ranking %>%
-  left_join(st_ap_main_traffic, by = "ST_RANK") %>%
-  left_join(st_ap_main_traffic_dif, by = "ST_RANK") %>%
-  left_join(st_ap_data_day, by = "ST_RANK") %>%
-  left_join(st_ap_data_wk, by = "ST_RANK") %>%
-  left_join(st_ap_data_y2d, by = "ST_RANK") %>%
+st_apt_data <- state_iso_ranking %>%
+  left_join(st_apt_main_traffic, by = "ST_RANK") %>%
+  left_join(st_apt_main_traffic_dif, by = "ST_RANK") %>%
+  left_join(st_apt_data_day, by = "ST_RANK") %>%
+  left_join(st_apt_data_wk, by = "ST_RANK") %>%
+  left_join(st_apt_data_y2d, by = "ST_RANK") %>%
   select(-ST_RANK)
 
 # covert to json and save in app data folder and archive
-st_ap_data_j <- st_ap_data %>% toJSON(., pretty = TRUE)
-save_json(st_ap_data_j, "st_apt_ranking_traffic")
+st_apt_data_j <- st_apt_data %>% toJSON(., pretty = TRUE)
+save_json(st_apt_data_j, "st_apt_ranking_traffic")
 print(paste(format(now(), "%H:%M:%S"), "st_apt_ranking_traffic"))
 
-
 ### State pair ----
-mydataframe <-  "st_st_agg"
+#### day ----
+mydataframe <- "st_st_data_day_raw"
+myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
 stakeholder <- str_sub(mydataframe, 1, 2)
 
-#### day ----
-st_st_data_day_int <- create_ranking(mydataframe, "DAY", FLIGHT)
+df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
+
+# process data
+st_st_data_day_int <- assign(mydataframe, df) %>%
+  mutate(TO_DATE = max(TO_DATE)) %>%
+  spread(., key = FLAG_DAY, value = TOT_MVT) %>%
+  arrange(COUNTRY_NAME, R_RANK) %>%
+  mutate(
+    DY_RANK_DIF_PREV_WEEK = case_when(
+      is.na(RANK_PREV_WEEK) ~ RANK,
+      .default = RANK_PREV_WEEK - RANK
+    ),
+    DY_DIF_PREV_WEEK_PERC =   case_when(
+      DAY_PREV_WEEK == 0 | is.na(DAY_PREV_WEEK) ~ NA,
+      .default = CURRENT_DAY / DAY_PREV_WEEK - 1
+    ),
+    DY_DIF_PREV_YEAR_PERC = case_when(
+      DAY_PREV_YEAR == 0 | is.na(DAY_PREV_YEAR) ~ NA,
+      .default = CURRENT_DAY / DAY_PREV_YEAR - 1
+    ),
+    ST_RANK = paste0(tolower(COUNTRY_NAME), R_RANK),
+    ST_TFC_CTRY_DIF = CURRENT_DAY - DAY_PREV_WEEK
+  )  %>%
+  # filter out bad rows created by Iceland case
+  filter(!is.na(FROM_TO_COUNTRY_NAME))
+
 
 st_st_data_day <- st_st_data_day_int %>%
-  mutate(
-    ST_RANK = paste0(tolower(STK_NAME), R_RANK)
-  ) %>% 
-  filter(R_RANK <11) %>% 
-  arrange(STK_NAME, R_RANK) %>% 
+  rename(
+    DY_COUNTRY_NAME = FROM_TO_COUNTRY_NAME,
+    DY_TO_DATE = TO_DATE,
+    DY_CTRY_DAI = CURRENT_DAY
+  ) %>%
   select(
     ST_RANK,
-    DY_RANK_DIF_PREV_WEEK = RANK_DIF,
-    DY_COUNTRY_NAME = NAME,
-    DY_TO_DATE = TO_DATE,
-    DY_CTRY_DAI = CURRENT,
-    DY_DIF_PREV_WEEK_PERC = DIF1_METRIC_PERC,
-    DY_DIF_PREV_YEAR_PERC = DIF2_METRIC_PERC
-  ) 
+    DY_RANK_DIF_PREV_WEEK,
+    DY_COUNTRY_NAME,
+    DY_TO_DATE,
+    DY_CTRY_DAI,
+    DY_DIF_PREV_WEEK_PERC,
+    DY_DIF_PREV_YEAR_PERC
+  )
 
 #### week ----
-st_st_data_wk_int <- create_ranking(mydataframe, "WEEK", FLIGHT)
+mydataframe <- "st_st_data_week_raw"
+myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+stakeholder <- str_sub(mydataframe, 1, 2)
 
-st_st_data_wk <- st_st_data_wk_int %>%
+df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
+
+# process data
+st_st_data_wk <- assign(mydataframe, df) %>%
+  mutate(TOT_MVT = TOT_MVT / 7) %>%
+  spread(., key = FLAG_ROLLING_WEEK, value = TOT_MVT) %>%
+  arrange(COUNTRY_NAME, R_RANK) %>%
   mutate(
-    ST_RANK = paste0(tolower(STK_NAME), R_RANK)
-  ) %>% 
-  filter(R_RANK <11) %>% 
-  arrange(STK_NAME, R_RANK) %>% 
-  select(
-    ST_RANK,
-    WK_RANK_DIF_PREV_WEEK = RANK_DIF,
-    WK_COUNTRY_NAME = NAME,
+    WK_RANK_DIF_PREV_WEEK = case_when(
+      is.na(RANK_PREV_WEEK) ~ RANK,
+      .default = RANK_PREV_WEEK - RANK
+    ),
+    WK_DIF_PREV_WEEK_PERC =   case_when(
+      PREV_ROLLING_WEEK == 0 | is.na(PREV_ROLLING_WEEK) ~ NA,
+      .default = CURRENT_ROLLING_WEEK / PREV_ROLLING_WEEK - 1
+    ),
+    WK_DIF_PREV_YEAR_PERC = case_when(
+      ROLLING_WEEK_PREV_YEAR == 0 | is.na(ROLLING_WEEK_PREV_YEAR) ~ NA,
+      .default = CURRENT_ROLLING_WEEK / ROLLING_WEEK_PREV_YEAR - 1
+    ),
+    ST_RANK = paste0(tolower(COUNTRY_NAME), R_RANK)
+  ) %>%
+  rename(
+    WK_COUNTRY_NAME = FROM_TO_COUNTRY_NAME,
     WK_FROM_DATE = FROM_DATE,
     WK_TO_DATE = TO_DATE,
-    WK_CTRY_DAI = CURRENT,
-    WK_DIF_PREV_WEEK_PERC = DIF1_METRIC_PERC,
-    WK_DIF_PREV_YEAR_PERC = DIF2_METRIC_PERC
-  ) 
-
-#### y2d ----
-st_st_data_y2d_int <- create_ranking(mydataframe, "Y2D", FLIGHT)
-
-st_st_data_y2d <- st_st_data_y2d_int %>%
-  mutate(
-    ST_RANK = paste0(tolower(STK_NAME), R_RANK)
-  ) %>% 
-  filter(R_RANK <11) %>% 
-  arrange(STK_NAME, R_RANK) %>% 
+    WK_CTRY_DAI = CURRENT_ROLLING_WEEK
+  ) %>%
   select(
     ST_RANK,
-    Y2D_RANK_DIF_PREV_YEAR = RANK_DIF,
-    Y2D_COUNTRY_NAME = NAME,
+    WK_RANK_DIF_PREV_WEEK,
+    WK_COUNTRY_NAME,
+    WK_FROM_DATE,
+    WK_TO_DATE,
+    WK_CTRY_DAI,
+    WK_DIF_PREV_WEEK_PERC,
+    WK_DIF_PREV_YEAR_PERC
+  ) %>%
+  # filter out bad rows created by Iceland case
+  filter(!is.na(WK_COUNTRY_NAME))
+
+
+#### y2d ----
+mydataframe <- "st_st_data_y2d_raw"
+myarchivefile <- paste0(data_day_text, "_", mydataframe, ".csv")
+stakeholder <- str_sub(mydataframe, 1, 2)
+
+df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
+
+# process data
+st_st_data_y2d <- assign(mydataframe, df) %>%
+  mutate(
+    FROM_DATE = max(FROM_DATE),
+    TO_DATE = max(TO_DATE),
+    PERIOD =   case_when(
+      YEAR == max(YEAR) ~ 'CURRENT_YEAR',
+      YEAR == max(YEAR) - 1 ~ 'PREV_YEAR',
+      .default = paste0('PERIOD_', YEAR)
+    )
+  ) %>%
+  select(-TOT_MVT, -YEAR) %>%
+  spread(., key = PERIOD, value = AVG_MVT) %>%
+  arrange(COUNTRY_NAME, R_RANK) %>%
+  mutate(
+    Y2D_RANK_DIF_PREV_YEAR = case_when(
+      is.na(RANK_PREV_YEAR) ~ RANK_CURRENT,
+      .default = RANK_PREV_YEAR - RANK_CURRENT
+    ),
+    Y2D_CTRY_DAI_PREV_YEAR_PERC =   case_when(
+      PREV_YEAR == 0 | is.na(PREV_YEAR) ~ NA,
+      .default = CURRENT_YEAR / PREV_YEAR - 1
+    ),
+    Y2D_CTRY_DAI_2019_PERC  = case_when(
+      PERIOD_2019 == 0 | is.na(PERIOD_2019) ~ NA,
+      .default = CURRENT_YEAR / PERIOD_2019 - 1
+    ),
+    ST_RANK = paste0(tolower(COUNTRY_NAME), R_RANK)
+  ) %>%
+  rename(
+    Y2D_COUNTRY_NAME = FROM_TO_COUNTRY_NAME,
     Y2D_TO_DATE = TO_DATE,
-    Y2D_CTRY_DAI = CURRENT,
-    Y2D_CTRY_DAI_PREV_YEAR_PERC = DIF1_METRIC_PERC,
-    Y2D_CTRY_DAI_2019_PERC = DIF2_METRIC_PERC
-  ) 
+    Y2D_CTRY_DAI = CURRENT_YEAR
+  ) %>%
+  select(
+    ST_RANK,
+    Y2D_RANK_DIF_PREV_YEAR,
+    Y2D_COUNTRY_NAME,
+    Y2D_TO_DATE,
+    Y2D_CTRY_DAI,
+    Y2D_CTRY_DAI_PREV_YEAR_PERC,
+    Y2D_CTRY_DAI_2019_PERC
+  ) %>%
+  # filter out bad rows created by Iceland case
+  filter(!is.na(Y2D_COUNTRY_NAME))
 
 #### main card ----
-st_st_main_traffic <- create_main_card (st_st_data_day_int) %>% 
+st_st_main_traffic <- st_st_data_day_int %>%
   mutate(
-    ST_RANK = paste0(tolower(STK_NAME), R_RANK)
-  ) %>% 
-  arrange(STK_NAME, R_RANK) %>% 
-  select(ST_RANK,
-         MAIN_TFC_CTRY_NAME = NAME, 
-         MAIN_TFC_CTRY_CODE = CODE,
-         MAIN_TFC_CTRY_DAI = CURRENT)
+    MAIN_TFC_CTRY_NAME = if_else(
+      R_RANK <= 4,
+      FROM_TO_COUNTRY_NAME,
+      NA
+    ),
+    MAIN_TFC_CTRY_DAI = if_else(
+      R_RANK <= 4,
+      CURRENT_DAY,
+      NA
+    ),
+    ST_RANK = paste0(tolower(COUNTRY_NAME), R_RANK),
+    MAIN_TFC_CTRY_CODE = if_else(
+      R_RANK <= 4,
+      FROM_TO_ISO_CT_CODE,
+      NA
+    ),
+  ) %>%
+  select(ST_RANK, MAIN_TFC_CTRY_NAME, MAIN_TFC_CTRY_DAI, MAIN_TFC_CTRY_CODE)
 
-st_st_main_traffic_dif <- create_main_card_dif (st_st_data_day_int) %>% 
+st_st_main_traffic_dif <- st_st_data_day_int %>%
+  arrange(COUNTRY_NAME, desc(abs(ST_TFC_CTRY_DIF)), R_RANK) %>%
+  group_by(COUNTRY_NAME) %>%
+  mutate(RANK_DIF_CTRY_TFC = row_number()) %>%
+  ungroup() %>%
+  arrange(COUNTRY_NAME, R_RANK) %>%
   mutate(
-    ST_RANK = paste0(tolower(STK_NAME), R_RANK)
-  ) %>% 
-  arrange(tolower(STK_NAME), R_RANK) %>% 
-  select(ST_RANK,
-         MAIN_TFC_DIF_CTRY_NAME = NAME,
-         MAIN_TFC_DIF_CTRY_CODE = CODE,
-         MAIN_TFC_CTRY_DIF = DIF1_METRIC
-  )
+    MAIN_TFC_DIF_CTRY_NAME = if_else(
+      RANK_DIF_CTRY_TFC <= 4,
+      FROM_TO_COUNTRY_NAME,
+      NA
+    ),
+    MAIN_TFC_CTRY_DIF = if_else(
+      RANK_DIF_CTRY_TFC <= 4,
+      ST_TFC_CTRY_DIF,
+      NA
+    ),
+    MAIN_TFC_DIF_CTRY_CODE = if_else(
+      RANK_DIF_CTRY_TFC <= 4,
+      FROM_TO_ISO_CT_CODE,
+      NA
+    )
+  ) %>%
+  arrange(COUNTRY_NAME, desc(MAIN_TFC_CTRY_DIF)) %>%
+  group_by(COUNTRY_NAME) %>%
+  mutate(
+    RANK_MAIN_DIF = row_number(),
+    ST_RANK = paste0(tolower(COUNTRY_NAME), RANK_MAIN_DIF)
+  ) %>%
+  ungroup() %>%
+  select(ST_RANK, MAIN_TFC_DIF_CTRY_NAME, MAIN_TFC_CTRY_DIF, MAIN_TFC_DIF_CTRY_CODE)
 
 #### join tables ----
 # create list of state/rankings for left join
@@ -1492,22 +1925,22 @@ if (max(nw_acc_delay_day_raw$ENTRY_DATE) != data_day_date) {
 
 # process data
 acc_delay_day_sorted <-  nw_acc_delay_day_raw %>%
-  left_join(distinct(list_acc, NAME, ICAO_CODE), by = c("UNIT_CODE" = "ICAO_CODE")) %>%
-  relocate(NAME, .before = everything()) %>% 
-
+  left_join(distinct(acc, Name, ICAO_code), by = c("UNIT_CODE" = "ICAO_code")) %>%
+  relocate(Name, .before = everything()) %>%
+  rename(NAME = Name) %>%
   arrange(desc(DLY_ER), NAME) %>%
   mutate(
     DY_RANK = rank(desc(DLY_ER), ties.method = "max"),
-    ICAO_CODE = UNIT_CODE,
+    ICAO_code = UNIT_CODE,
     DY_ACC_NAME = NAME,
     DY_ACC_ER_DLY = DLY_ER,
     DY_ACC_ER_DLY_FLT = if_else(FLIGHT == 0, 0, DLY_ER / FLIGHT),
     DY_RANK_ER_DLY_FLT = rank(desc(DY_ACC_ER_DLY_FLT), ties.method = "max"),
     DY_TO_DATE = ENTRY_DATE) %>%
-  right_join(list_acc, by = "ICAO_CODE") %>%
+  right_join(acc, by = "ICAO_code") %>%
   mutate( 
     #canarias case
-    iso_2letter = if_else(substr(ICAO_CODE,1,2) == "GC", "IC", ISO_2LETTER)
+    iso_2letter = if_else(substr(ICAO_code,1,2) == "GC", "IC", iso_2letter)
   ) %>% 
   left_join(state_iso, by = "iso_2letter") %>%
   group_by(iso_2letter) %>%
@@ -1517,7 +1950,7 @@ acc_delay_day_sorted <-  nw_acc_delay_day_raw %>%
   ) %>%
   ungroup()
 
-  acc_delay_day <- acc_delay_day_sorted %>%
+acc_delay_day <- acc_delay_day_sorted %>%
   select(
     ST_RANK,
     DY_RANK,
@@ -1538,22 +1971,24 @@ if (max(nw_acc_delay_week_raw$MAX_ENTRY_DATE) != data_day_date) {
   
 # process data
 acc_delay_week <- nw_acc_delay_week_raw %>%
-  left_join(distinct(list_acc, NAME, ICAO_CODE), by = c("UNIT_CODE" = "ICAO_CODE")) %>%
-  relocate(NAME, .before = everything()) %>% 
+  left_join(distinct(acc, Name, ICAO_code), by = c("UNIT_CODE" = "ICAO_code")) %>%
+  relocate(Name, .before = everything()) %>%
+  rename(NAME = Name) %>%
+
   arrange(desc(DAILY_DLY_ER), NAME) %>%
   mutate(
     WK_RANK = rank(desc(DAILY_DLY_ER), ties.method = "max"),
-    ICAO_CODE = UNIT_CODE,
+    ICAO_code = UNIT_CODE,
     WK_ACC_NAME = NAME,
     WK_ACC_ER_DLY = DAILY_DLY_ER,
     WK_ACC_ER_DLY_FLT = if_else(DAILY_FLIGHT == 0, 0, DAILY_DLY_ER / DAILY_FLIGHT),
     WK_FROM_DATE = MIN_ENTRY_DATE,
     WK_TO_DATE = MAX_ENTRY_DATE
     ) %>%
-  right_join(list_acc, by = "ICAO_CODE") %>%
+  right_join(acc, by = "ICAO_code") %>%
   mutate( 
     #canarias case
-    iso_2letter = if_else(substr(ICAO_CODE,1,2) == "GC", "IC", ISO_2LETTER)
+    iso_2letter = if_else(substr(ICAO_code,1,2) == "GC", "IC", iso_2letter)
   ) %>% 
   left_join(state_iso, by = "iso_2letter") %>%
   group_by(iso_2letter) %>%
@@ -1584,22 +2019,23 @@ if (max(nw_acc_delay_y2d_raw$ENTRY_DATE) != data_day_date) {
 # process data
 acc_delay_y2d <- nw_acc_delay_y2d_raw %>%
   rename(Y2D_FROM_DATE = MIN_DATE) %>%
-  left_join(distinct(list_acc, NAME, ICAO_CODE), by = c("UNIT_CODE" = "ICAO_CODE")) %>%
-  relocate(NAME, .before = everything()) %>%
+  left_join(distinct(acc, Name, ICAO_code), by = c("UNIT_CODE" = "ICAO_code")) %>%
+  relocate(Name, .before = everything()) %>%
+  rename(NAME = Name) %>%
 
   arrange(desc(Y2D_AVG_DLY), NAME) %>%
   mutate(
     Y2D_RANK = rank(desc(Y2D_AVG_DLY), ties.method = "max"),
-    ICAO_CODE = UNIT_CODE,
+    ICAO_code = UNIT_CODE,
     Y2D_ACC_NAME = NAME,
     Y2D_ACC_ER_DLY = Y2D_AVG_DLY,
     Y2D_ACC_ER_DLY_FLT = if_else(Y2D_AVG_FLIGHT == 0, 0, Y2D_AVG_DLY / Y2D_AVG_FLIGHT),
     Y2D_TO_DATE = ENTRY_DATE
   ) %>%
-  right_join(list_acc, by = "ICAO_CODE") %>%
+  right_join(acc, by = "ICAO_code") %>%
   mutate( 
     #canarias case
-    iso_2letter = if_else(substr(ICAO_CODE,1,2) == "GC", "IC", ISO_2LETTER)
+    iso_2letter = if_else(substr(ICAO_code,1,2) == "GC", "IC", iso_2letter)
   ) %>% 
   left_join(state_iso, by = "iso_2letter") %>%
   group_by(iso_2letter) %>%
@@ -1676,143 +2112,152 @@ print(paste(format(now(), "%H:%M:%S"), "st_acc_ranking_delay"))
 
 
 ### Airport ----
-if (!exists("nw_ap_traffic_delay_data")) {
-  mydatafile <- paste0("ap_traffic_delay_day.parquet")
-  stakeholder <- substr(mydatafile, 1,2)
-  
-  nw_ap_traffic_delay_data <- read_parquet(here(archive_dir_raw, stakeholder, mydatafile))
-  }
+mydataframe <- "ap_delay_day_raw"
+myarchivefile <- paste0(mydataframe, ".parquet")
+stakeholder <- str_sub(mydataframe, 1, 2)
 
-st_ap_delay_raw <- nw_ap_traffic_delay_data %>% 
-  left_join(list_airport_extended_iso_new, by = c("STK_CODE" = "EC_AP_CODE")) %>% 
-  #canarias case
+if (!exists("nw_ap_delay_raw")) {
+  nw_ap_delay_raw <-  read_parquet(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
+}
+
+st_ap_delay_raw <- nw_ap_delay_raw %>% 
+  rename(
+    ICAO_CODE = APT_ICAO_CODE
+  ) %>%
+  left_join(airport, by = "ICAO_CODE") %>%
   mutate(
-    AIU_ISO_CT_CODE = if_else(substr(STK_CODE,1,2) == "GC", "IC", AIU_ISO_CT_CODE)
+    #canarias case
+    iso_2letter = if_else(substr(ICAO_CODE,1,2) == "GC", "IC", iso_2letter)
   ) %>% 
-  left_join(list_iso_country, by = c("AIU_ISO_CT_CODE" = "ISO_COUNTRY_CODE"))
+  left_join(state_iso, by = "iso_2letter")
 
 #### day ----
-st_ap_delay_day_int <- st_ap_delay_raw %>%
-  select(
-    COUNTRY_NAME,
-    STK_NAME, 
-    FLIGHT_DATE, 
-    DAY_DLY, 
-    DAY_DLY_FLT
-  ) %>% 
-  filter(FLIGHT_DATE == data_day_date) %>%
+st_ap_delay_day_sorted <- st_ap_delay_raw %>%
+  filter(FLIGHT_DATE == data_day_date) %>% 
+  arrange(desc(TDM_ARP_ARR),APT_NAME) %>%
   mutate(
-    RANK = rank(desc(DAY_DLY), ties.method = "max"),
-    RANK_DLY_FLT = rank(desc(DAY_DLY_FLT), ties.method = "max")
-  ) %>% 
-  group_by(COUNTRY_NAME) %>% 
-  arrange(COUNTRY_NAME, desc(DAY_DLY), STK_NAME) %>% 
-  mutate(
-    ST_RANK = paste0(tolower(COUNTRY_NAME), row_number()),
-    DLY_PER_FLT = round(DAY_DLY_FLT, 2)
+    DY_RANK = rank(desc(TDM_ARP_ARR), ties.method = "max"),
+    DY_APT_NAME = APT_NAME,
+    DY_APT_ARR_DLY = TDM_ARP_ARR,
+    DY_APT_ARR_DLY_FLT = ifelse(coalesce(ARR,0) == 0, 0, round(TDM_ARP_ARR / ARR, 2)),
+    DY_RANK_ARR_DLY_FLT = rank(desc(DY_APT_ARR_DLY_FLT), ties.method = "max"),
+    DY_TO_DATE = FLIGHT_DATE
+    ) %>%
+  group_by(iso_2letter) %>%
+  arrange(iso_2letter, desc(DY_APT_ARR_DLY), DY_APT_NAME) %>%
+  mutate (
+    ST_RANK = paste0(tolower(state), row_number()),
   ) %>%
   ungroup()
 
-st_ap_delay_day <- st_ap_delay_day_int %>% 
+st_ap_delay_day <- st_ap_delay_day_sorted %>%
   select(
-    ST_RANK, 
-    DY_RANK = RANK,
-    DY_APT_NAME = STK_NAME, 
-    DY_TO_DATE = FLIGHT_DATE, 
-    DY_APT_ARR_DLY = DAY_DLY, 
-    DY_APT_ARR_DLY_FLT = DLY_PER_FLT
-    ) 
+    ST_RANK,
+    DY_RANK,
+    DY_APT_NAME,
+    DY_TO_DATE,
+    DY_APT_ARR_DLY,
+    DY_APT_ARR_DLY_FLT
+  ) 
 
 #### week ----
-st_ap_delay_week <- st_ap_delay_raw %>%  
-  select(
-    COUNTRY_NAME,
-    STK_NAME, 
-    FLIGHT_DATE, 
-    RWK_AVG_DLY, 
-    RWK_DLY_FLT
+st_ap_delay_week <- st_ap_delay_raw %>%
+  filter(FLIGHT_DATE >= data_day_date - days(6) &
+           FLIGHT_DATE <= data_day_date) %>% 
+  group_by(APT_NAME, iso_2letter, state) %>% 
+  summarise(
+    FROM_DATE = min(min(FLIGHT_DATE, na.rm = TRUE), data_day_date - days(6)),
+    TO_DATE = min(max(FLIGHT_DATE, na.rm = TRUE), data_day_date),
+    TDM_ARP_ARR = sum(TDM_ARP_ARR, na.rm = TRUE),
+    ARR = sum(ARR, na.rm = TRUE),
+    .groups = "drop"
   ) %>% 
-    filter(FLIGHT_DATE == data_day_date) %>%
-    mutate(
-      RANK = rank(desc(RWK_AVG_DLY), ties.method = "max")
-    ) %>% 
-    group_by(COUNTRY_NAME) %>% 
-    arrange(COUNTRY_NAME, desc(RWK_AVG_DLY), STK_NAME) %>% 
-    mutate(
-      ST_RANK = paste0(tolower(COUNTRY_NAME), row_number()),
-      DLY_PER_FLT = round(RWK_DLY_FLT, 2),
-      WK_FROM_DATE = FLIGHT_DATE - days(6)
-    ) %>%
-    ungroup() %>% 
-    select(
-      ST_RANK, 
-      WK_RANK = RANK,
-      WK_APT_NAME = STK_NAME, 
-      WK_FROM_DATE,
-      WK_TO_DATE = FLIGHT_DATE, 
-      WK_APT_ARR_DLY = RWK_AVG_DLY, 
-      WK_APT_ARR_DLY_FLT = DLY_PER_FLT
-    ) 
-
+  arrange(desc(TDM_ARP_ARR),APT_NAME) %>%
+  mutate(
+    WK_RANK = rank(desc(TDM_ARP_ARR), ties.method = "max"),
+    WK_APT_NAME = APT_NAME,
+    WK_APT_ARR_DLY = TDM_ARP_ARR/7,
+    WK_APT_ARR_DLY_FLT = ifelse(coalesce(ARR,0) == 0, 0, round(TDM_ARP_ARR / ARR,2)),
+    WK_FROM_DATE =  FROM_DATE,
+    WK_TO_DATE = TO_DATE
+  ) %>%
+  group_by(iso_2letter) %>%
+  arrange(iso_2letter, desc(WK_APT_ARR_DLY), WK_APT_NAME) %>%
+  mutate (
+    ST_RANK = paste0(tolower(state), row_number()),
+  ) %>%
+  ungroup() %>%
+  select(
+    ST_RANK,
+    WK_RANK,
+    WK_APT_NAME,
+    WK_FROM_DATE,
+    WK_TO_DATE,
+    WK_APT_ARR_DLY,
+    WK_APT_ARR_DLY_FLT
+  )
 
 #### y2d ----
 st_ap_delay_y2d <- st_ap_delay_raw %>%
-  select(
-    COUNTRY_NAME,
-    STK_NAME, 
-    FLIGHT_DATE, 
-    Y2D_AVG_DLY, 
-    Y2D_DLY_FLT
+  filter(FLIGHT_DATE >= ymd(paste0(data_day_year, "0101")) &
+           FLIGHT_DATE <= data_day_date) %>% 
+  group_by(APT_NAME, iso_2letter, state) %>% 
+  summarise(
+    FROM_DATE = ymd(paste0(data_day_year, "0101")),
+    TO_DATE = min(max(FLIGHT_DATE, na.rm = TRUE), data_day_date),
+    TDM_ARP_ARR = sum(TDM_ARP_ARR, na.rm = TRUE),
+    ARR = sum(ARR, na.rm = TRUE),
+    .groups = "drop"
   ) %>% 
-  filter(FLIGHT_DATE == data_day_date) %>%
+  arrange(desc(TDM_ARP_ARR),APT_NAME) %>%
   mutate(
-    RANK = rank(desc(Y2D_AVG_DLY), ties.method = "max")
-  ) %>% 
-  group_by(COUNTRY_NAME) %>% 
-  arrange(COUNTRY_NAME, desc(Y2D_AVG_DLY), STK_NAME) %>% 
-  mutate(
-    ST_RANK = paste0(tolower(COUNTRY_NAME), row_number()),
-    DLY_PER_FLT = round(Y2D_DLY_FLT, 2)
+    Y2D_RANK = rank(desc(TDM_ARP_ARR), ties.method = "max"),
+    Y2D_APT_NAME = APT_NAME,
+    Y2D_APT_ARR_DLY = TDM_ARP_ARR /(as.numeric(TO_DATE - FROM_DATE) +1),
+    Y2D_APT_ARR_DLY_FLT = ifelse(coalesce(ARR,0) == 0, 0, round(TDM_ARP_ARR / ARR, 2)),
+    Y2D_TO_DATE = TO_DATE
   ) %>%
-  ungroup() %>% 
-  select(
-    ST_RANK, 
-    Y2D_RANK = RANK,
-    Y2D_APT_NAME = STK_NAME, 
-    Y2D_TO_DATE = FLIGHT_DATE, 
-    Y2D_APT_ARR_DLY = Y2D_AVG_DLY, 
-    Y2D_APT_ARR_DLY_FLT = DLY_PER_FLT
-  ) 
-
-#### main card ----
-st_ap_main_delay <- st_ap_delay_day_int %>%
-  group_by(COUNTRY_NAME) %>% 
-  filter(row_number() < 6) %>%
-  ungroup() %>%
-  select(
-    ST_RANK,
-    MAIN_DLY_APT_RANK = RANK,
-    MAIN_DLY_APT_NAME = STK_NAME,
-    MAIN_DLY_APT_DLY = DAY_DLY
-  )%>% 
-  arrange(ST_RANK)
-
-st_ap_main_delay_flt <- st_ap_delay_day_int %>%
-  group_by(COUNTRY_NAME) %>%
-  arrange(COUNTRY_NAME, RANK_DLY_FLT, STK_NAME) %>%
+  group_by(iso_2letter) %>%
+  arrange(iso_2letter, desc(Y2D_APT_ARR_DLY), Y2D_APT_NAME) %>%
   mutate (
-    ST_RANK = paste0(tolower(COUNTRY_NAME), row_number()),
-    DAY_DLY_FLT = round(DAY_DLY_FLT,2)
+    ST_RANK = paste0(tolower(state), row_number()),
   ) %>%
-  filter(row_number() < 6) %>%
   ungroup() %>%
   select(
     ST_RANK,
-    MAIN_DLY_FLT_APT_RANK = RANK_DLY_FLT,
-    MAIN_DLY_FLT_APT_NAME = STK_NAME,
-    MAIN_DLY_FLT_APT_DLY_FLT = DAY_DLY_FLT
-  ) %>% 
-  arrange(ST_RANK)
+    Y2D_RANK,
+    Y2D_APT_NAME,
+    Y2D_TO_DATE,
+    Y2D_APT_ARR_DLY,
+    Y2D_APT_ARR_DLY_FLT
+  )
+  
+#### main card ----
+st_ap_main_delay <- st_ap_delay_day_sorted %>%
+  mutate(
+    MAIN_DLY_APT_RANK = DY_RANK,
+    MAIN_DLY_APT_NAME = DY_APT_NAME,
+    MAIN_DLY_APT_DLY = DY_APT_ARR_DLY
+  ) %>%
+  group_by(iso_2letter) %>%
+  filter(row_number(MAIN_DLY_APT_RANK) < 6) %>%
+  ungroup() %>%
+  select(ST_RANK, MAIN_DLY_APT_RANK, MAIN_DLY_APT_NAME, MAIN_DLY_APT_DLY)
+
+st_ap_main_delay_flt <- st_ap_delay_day_sorted %>%
+  group_by(iso_2letter) %>%
+  arrange(iso_2letter, DY_RANK_ARR_DLY_FLT, DY_APT_NAME) %>%
+  mutate (
+    ST_RANK = paste0(tolower(state), row_number()),
+  ) %>%
+  filter(row_number(DY_RANK_ARR_DLY_FLT) < 6) %>%
+  ungroup() %>%
+  mutate(
+    MAIN_DLY_FLT_APT_RANK = DY_RANK_ARR_DLY_FLT,
+    MAIN_DLY_FLT_APT_NAME = DY_APT_NAME,
+    MAIN_DLY_FLT_APT_DLY_FLT = DY_APT_ARR_DLY_FLT
+  ) %>%
+  select(ST_RANK, MAIN_DLY_FLT_APT_RANK, MAIN_DLY_FLT_APT_NAME, MAIN_DLY_FLT_APT_DLY_FLT)
 
 #### join tables ----
 # create list of state/rankings for left join
@@ -2111,22 +2556,27 @@ print(paste(format(now(), "%H:%M:%S"), "st_daio_evo_chart_daily"))
 
 ### 7-day DAI avg ----
 st_dai_evo_app <- st_dai_data_zone %>%
-  mutate(WK_AVG_TFC = if_else(FLIGHT_DATE > min(data_day_date,
-                                                      max(DATA_DAY, na.rm = TRUE),na.rm = TRUE), NA, WK_AVG_TFC)
+  mutate(AVG_ROLLING_WEEK = if_else(FLIGHT_DATE > min(data_day_date,
+                                                      max(LAST_DATA_DAY, na.rm = TRUE),na.rm = TRUE), NA, AVG_ROLLING_WEEK)
+  ) %>%
+  # iceland exception
+  mutate(
+    AVG_ROLLING_WEEK_PREV_YEAR = if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, AVG_ROLLING_WEEK_PREV_YEAR),
+    AVG_ROLLING_WEEK_2020 = if_else(iso_2letter == "IS", NA, AVG_ROLLING_WEEK_2020),
+    AVG_ROLLING_WEEK_2019 = if_else(iso_2letter == "IS", NA, AVG_ROLLING_WEEK_2019)
   ) %>%
   select(
     iso_2letter,
     daio_zone,
     FLIGHT_DATE,
-    WK_AVG_TFC,
-    WK_AVG_TFC_PREV_YEAR,
-    WK_AVG_TFC_2020,
-    WK_AVG_TFC_2019
+    AVG_ROLLING_WEEK,
+    AVG_ROLLING_WEEK_PREV_YEAR,
+    AVG_ROLLING_WEEK_2020,
+    AVG_ROLLING_WEEK_2019
   )
 
 column_names <- c('iso_2letter', 'daio_zone', 'FLIGHT_DATE', data_day_year, data_day_year-1, 2020, 2019)
 colnames(st_dai_evo_app) <- column_names
-
 
 ### nest data
 st_dai_evo_app_long <- st_dai_evo_app %>%
@@ -2239,6 +2689,32 @@ df <-  read_parquet(here(archive_dir_raw, stakeholder, paste0(mydataframe, ".par
   filter(YEAR >= data_day_year-1) %>% 
   arrange(COUNTRY_NAME, FLIGHT_DATE)
 
+
+# mydataframe <- "state_delay_cause_raw"
+# stakeholder <- "st"
+# 
+# if (archive_mode & year(data_day_date) < year(today(tzone = "") +  days(-1))) {
+#   myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
+#   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
+# 
+# } else {
+  # dfc <- read_xlsx(
+  #   path  = fs::path_abs(
+  #     str_glue(st_base_file),
+  #     start = st_base_dir),
+  #   sheet = "state_delay_cause",
+  #   range = cell_limits(c(1, 1), c(NA, NA))) %>%
+  #   as_tibble()  %>%
+  #   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+# 
+#   # save pre-processed file in archive for generation of past json files
+#   # only last day of the year
+#   if(format(data_day_date, "%m%d") == "1231") {
+#     myarchivefile <- paste0(year(data_day_date), "1231_", mydataframe, ".csv")
+#     write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
+#   }
+# }
+
 st_delay_cause_data <- assign(mydataframe, df) %>%
   mutate(
     TDM_G = TDM_ARP_G + TDM_ERT_G,
@@ -2257,7 +2733,7 @@ st_delay_cause_data <- assign(mydataframe, df) %>%
   ) %>%
   filter(YEAR >= data_day_year) %>%
   mutate(daio_zone_lc = tolower(COUNTRY_NAME)) %>%
-  right_join(rel_iso_country_daio_zone, by = "daio_zone_lc", relationship = "many-to-many") %>%
+  right_join(state_daio, by = "daio_zone_lc", relationship = "many-to-many") %>%
   filter(is.na(YEAR) == FALSE)
 
 #### day ----
@@ -2551,7 +3027,7 @@ st_delay_type_data <- st_delay_data %>%
   ungroup() %>%
   filter(YEAR >= data_day_year) %>%
   mutate(daio_zone_lc = tolower(COUNTRY_NAME)) %>%
-  right_join(rel_iso_country_daio_zone, by = "daio_zone_lc", relationship = "many-to-many") %>%
+  right_join(state_daio, by = "daio_zone_lc", relationship = "many-to-many") %>%
   filter(is.na(YEAR) == FALSE) %>%
   arrange(iso_2letter, FLIGHT_DATE)
 
@@ -2951,7 +3427,7 @@ print(paste(format(now(), "%H:%M:%S"), "st_billing_evo"))
 ## CO2 ----
 st_co2_data_filtered <- co2_data_raw %>%
   mutate(co2_state = STATE_NAME) %>%
-  right_join(list_state_co2, by = "co2_state") %>%
+  right_join(state_co2, by = "co2_state") %>%
   left_join(state_iso, by = "iso_2letter") %>%
   select(-c(STATE_NAME, STATE_CODE, co2_state))
 
@@ -3013,7 +3489,7 @@ forecast_max_actual_year <- forecast_raw %>%
   summarise(min(year)) %>% pull()
 
 forecast_graph <- forecast_raw %>% 
-  right_join(list_statfor_states, by = c("tz_name" = "statfor_tz"), relationship = "many-to-many") %>% 
+  right_join(statfor_states, by = c("tz_name" = "statfor_tz"), relationship = "many-to-many") %>% 
   right_join(state_iso, by ="iso_2letter", relationship = "many-to-many") %>%
   # select(-state) %>%
   arrange(iso_2letter) %>% 

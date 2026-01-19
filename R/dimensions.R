@@ -89,6 +89,12 @@ rel_iso_country_daio_zone <- read_xlsx(
   range = cell_limits(c(2, 11), c(NA, 13))) %>%
   as_tibble()
 
+rel_iso_icao_country <- read_xlsx(
+  here("stakeholder_lists.xlsx"),
+  sheet = "state_lists",
+  range = cell_limits(c(2, 24), c(NA, 26))) %>%
+  as_tibble()
+
 ### icao ----
 list_icao_country <- export_query(list_icao_st_query) 
 

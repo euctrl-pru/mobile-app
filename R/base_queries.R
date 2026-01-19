@@ -148,9 +148,6 @@ order by a.FLIGHT_DATE
 "
 )
 
-## nw delay cause new ----
-nw_delay_cause_new_day_base_query <- nw_delay_cause_day_base_query
-
 
 # STATE ----
 ## st_daio ----
@@ -488,7 +485,7 @@ UNION ALL
       order by country_name, flight_date
       "
 
-## st_dai ----
+## st_dai  ----
 st_dai_day_base_query <- paste0("
 WITH
 
@@ -695,9 +692,6 @@ UNION ALL
 SELECT * FROM DATA_SPAIN_TOGETHER
 "
 )
-
-## st_dai new ----
-st_dai_new_day_base_query <- st_dai_day_base_query
 
 ## st_delay ----
 st_delay_day_query <- "
@@ -1593,8 +1587,8 @@ select
  order by country_name, flight_date
 
 "
-## st_ao new ----
-st_ao_new_day_base_query <- paste0("
+## st_ao  ----
+st_ao_day_base_query <- paste0("
 with 
 
 DIM_AO
@@ -1607,11 +1601,20 @@ DIM_AO
  ) ,
  
 DIM_AIRPORT AS (
-SELECT a.*,
-       CASE WHEN SUBSTR(cfmu_ap_code, 1, 2) = 'GC' then 'IC'
-            ELSE aiu_iso_ct_code
-       END iso_ct_code_spain
-FROM pruread.v_aiu_dim_airport a
+SELECT 
+    	BK_AP_ID,
+	    EC_AP_CODE,
+	    EC_AP_NAME,
+	    CFMU_AP_CODE,
+	    LATITUDE,
+	    LONGITUDE,
+      CASE WHEN SUBSTR(cfmu_ap_code, 1, 2) = 'GC' then 'IC'
+          ELSE aiu_iso_ct_code
+      END iso_ct_code_spain,
+      aiu_iso_ct_code,
+	    VALID_FROM,
+	    VALID_TO
+FROM pruread.V_AIU_DIM_AIRPORT
 WHERE cfmu_ap_code IS NOT NULL
 ),
 
@@ -1766,130 +1769,25 @@ ORDER BY iso_ct_code, entry_date desc, flight DESC
 
 ")
 
-## st_ao ----
-st_ao_day_base_query <- paste0("
-WITH
-DIM_AO AS (
-  SELECT DISTINCT ao_id, ao_code, wef, til
-  FROM ldw_acc.AO_GROUPS_ASSOCIATION
-),
-REL_AP_CTRY AS (
-  SELECT DISTINCT
-    cfmu_ap_code,
-    CASE WHEN SUBSTR(cfmu_ap_code, 1, 2) = 'GC' THEN 'IC' ELSE country_code END AS iso_ct_code,
-    region,
-    pru_dashboard_ap_name AS ad_name
-  FROM prudev.v_covid_rel_airport_area
-),
-FLIGHTS AS (
-  SELECT
-    a.flt_uid,
-    TRUNC(a.flt_a_asp_prof_time_entry) AS entry_date,
-    a.flt_dep_ad,
-    a.flt_ctfm_ades,
-    a.ao_icao_id
-  FROM prudev.v_aiu_flt a
-  WHERE a.flt_lobt >= ", query_from, " - 2
-    AND a.flt_lobt <  TRUNC(SYSDATE) + 2
-    AND a.flt_a_asp_prof_time_entry >= ", query_from, "
-    AND a.flt_a_asp_prof_time_entry <  TRUNC(SYSDATE)
-    AND a.flt_state IN ('TE','TA','AA')
-),
-
--- Country for departure & arrival
-AIRPORT_CTRY AS (
-  SELECT
-    f.flt_uid,
-    f.entry_date,
-    cd.iso_ct_code AS dep_ctry,
-    ca.iso_ct_code AS arr_ctry,
-    f.ao_icao_id
-  FROM FLIGHTS f
-  LEFT JOIN REL_AP_CTRY cd ON cd.cfmu_ap_code = f.flt_dep_ad
-  LEFT JOIN REL_AP_CTRY ca ON ca.cfmu_ap_code = f.flt_ctfm_ades
-),
-
--- Pick exactly one AO row per flight by date-validity
-AO_X AS (
-  SELECT
-    f.flt_uid,
-    d.ao_id,
-    d.ao_code,
-    ROW_NUMBER() OVER (
-      PARTITION BY f.flt_uid
-      ORDER BY d.wef DESC NULLS LAST, d.til DESC NULLS LAST
-    ) AS rn
-  FROM AIRPORT_CTRY f
-  LEFT JOIN DIM_AO d
-    ON d.ao_code = f.ao_icao_id
-   AND f.entry_date BETWEEN d.wef AND d.til
-),
-
-AIRP_FLIGHT AS (
-  SELECT
-    a.flt_uid,
-    a.entry_date,
-    a.dep_ctry,
-    a.arr_ctry,
-    NVL(x.ao_id, 99999)     AS ao_id,
-    NVL(x.ao_code, 'ZZZ')   AS ao_code
-  FROM AIRPORT_CTRY a
-  LEFT JOIN AO_X x
-    ON x.flt_uid = a.flt_uid
-   AND x.rn = 1
-),
-
-CTRY_PAIR_FLIGHT AS (
-  SELECT
-    entry_date,
-    CASE WHEN dep_ctry <= arr_ctry THEN dep_ctry ELSE arr_ctry END AS ctry1,
-    CASE WHEN dep_ctry <= arr_ctry THEN arr_ctry ELSE dep_ctry END AS ctry2,
-    ao_id,
-    ao_code,
-    flt_uid
-  FROM AIRP_FLIGHT
-),
-
-CTRY_PAIR_ARP_1 AS (
-  SELECT entry_date, ctry1, ctry2, ao_id, ao_code, flt_uid
-  FROM CTRY_PAIR_FLIGHT
-),
-
-CTRY_PAIR_ARP_2 AS (
-  SELECT entry_date, ctry2 AS ctry1, ctry1 AS ctry2, ao_id, ao_code, flt_uid
-  FROM CTRY_PAIR_ARP_1
-  WHERE ctry1 <> ctry2
-),
-
-CTRY_PAIR_ARP AS (
-  SELECT ctry1 AS iso_ct_code, entry_date, ao_id, ao_code, flt_uid FROM CTRY_PAIR_ARP_1
-  UNION ALL
-  SELECT ctry1 AS iso_ct_code, entry_date, ao_id, ao_code, flt_uid FROM CTRY_PAIR_ARP_2
-)
-
-SELECT
-  entry_date,
-  iso_ct_code,
-  ao_id,
-  ao_code,
-  COUNT(flt_uid) AS flight
-FROM CTRY_PAIR_ARP
-WHERE ao_id <> 99999
-GROUP BY entry_date, iso_ct_code, ao_id, ao_code
-ORDER BY iso_ct_code, flight DESC
-"
-)
-
-## st_ap new----
-st_ap_new_day_base_query <- paste0("
+## st_ap ----
+st_ap_day_base_query <- paste0("
 WITH
 
 DIM_AIRPORT AS (
-SELECT a.*,
-       CASE WHEN SUBSTR(cfmu_ap_code, 1, 2) = 'GC' then 'IC'
-            ELSE aiu_iso_ct_code
-       END iso_ct_code_spain
-FROM pruread.v_aiu_dim_airport a
+SELECT
+    	BK_AP_ID,
+	    EC_AP_CODE,
+	    EC_AP_NAME,
+	    CFMU_AP_CODE,
+	    LATITUDE,
+	    LONGITUDE,
+      CASE WHEN SUBSTR(cfmu_ap_code, 1, 2) = 'GC' then 'IC'
+          ELSE aiu_iso_ct_code
+      END iso_ct_code_spain,
+      aiu_iso_ct_code,
+	    VALID_FROM,
+	    VALID_TO
+FROM pruread.v_aiu_dim_airport
 WHERE cfmu_ap_code IS NOT NULL
 ),
 
@@ -1994,92 +1892,26 @@ ORDER BY 2, 4
 
 ")
 
-## st_ap ----
-st_ap_day_base_query <- paste0("
-WITH
--- Ensure a single airport row per ICAO code
-DIM_APT AS (
-  SELECT p.*
-  FROM (
-    SELECT
-      a.*,
-      ROW_NUMBER() OVER (
-        PARTITION BY a.icao_code
-        ORDER BY a.id -- deterministic pick; adjust if needed
-      ) AS rn
-    FROM prudev.pru_airport a
-  ) p
-  WHERE p.rn = 1
-),
-
-REL_AP_CTRY AS (
-  SELECT DISTINCT
-    v.cfmu_ap_code,
-    CASE WHEN SUBSTR(v.cfmu_ap_code, 1, 2) = 'GC' THEN 'IC' ELSE v.country_code END AS iso_ct_code
-  FROM prudev.v_covid_rel_airport_area v
-),
--- Departures (daily agg source is already aggregated)
-DATA_FLIGHT_DEP AS (
-  SELECT
-    NVL(a.adep_day_all_trf, 0)          AS mvt,
-    COALESCE(p.icao_code, 'ZZZZ')       AS arp_icao_code,
-    COALESCE(p.id, 1618)                AS arp_pru_id,  -- 1618 = unknown
-    'DEP'                               AS airport_flow,
-    TRUNC(a.adep_day_flt_date)          AS flight_date
-  FROM prudev.v_aiu_agg_dep_day a
-  LEFT JOIN DIM_APT p ON a.adep_day_adep = p.icao_code
-  WHERE a.adep_day_flt_date >= ", query_from, "
-    AND a.adep_day_flt_date <  TRUNC(SYSDATE)
-),
--- Arrivals
-DATA_FLIGHT_ARR AS (
-  SELECT
-    NVL(a.ades_day_all_trf, 0)          AS mvt,
-    COALESCE(p.icao_code, 'ZZZZ')       AS arp_icao_code,
-    COALESCE(p.id, 1618)                AS arp_pru_id,  -- 1618 = unknown
-    'ARR'                               AS airport_flow,
-    TRUNC(a.ades_day_flt_date)          AS flight_date
-  FROM prudev.v_aiu_agg_arr_day a
-  LEFT JOIN DIM_APT p ON a.ades_day_ades_ctfm = p.icao_code
-  WHERE a.ades_day_flt_date >= ", query_from, "
-    AND a.ades_day_flt_date <  TRUNC(SYSDATE)
-)
-
-SELECT
-  d.flight_date,
-  d.mvt,
-  d.arp_icao_code,
-  d.arp_pru_id,
-  d.airport_flow,
-  NVL(c.iso_ct_code, '##') AS iso_ct_code
-FROM DATA_FLIGHT_DEP d
-LEFT JOIN REL_AP_CTRY c ON d.arp_icao_code = c.cfmu_ap_code
-UNION ALL
-SELECT
-  a.flight_date,
-  a.mvt,
-  a.arp_icao_code,
-  a.arp_pru_id,
-  a.airport_flow,
-  NVL(c.iso_ct_code, '##') AS iso_ct_code
-FROM DATA_FLIGHT_ARR a
-LEFT JOIN REL_AP_CTRY c ON a.arp_icao_code = c.cfmu_ap_code
-ORDER BY iso_ct_code, mvt DESC
-"
-)
-
-## st_st new ----
-st_st_new_day_base_query <- paste0("
+## st_st ----
+st_st_day_base_query <- paste0("
 WITH
 -- Airport dim (has validity ranges)
 DIM_AIRPORT AS (
   SELECT
-    a.*,
-    CASE WHEN SUBSTR(a.cfmu_ap_code, 1, 2) = 'GC' THEN 'IC'
-         ELSE a.aiu_iso_ct_code
-    END AS iso_ct_code_spain
-  FROM pruread.v_aiu_dim_airport a
-  WHERE a.cfmu_ap_code IS NOT NULL
+    	BK_AP_ID,
+	    EC_AP_CODE,
+	    EC_AP_NAME,
+	    CFMU_AP_CODE,
+	    LATITUDE,
+	    LONGITUDE,
+      CASE WHEN SUBSTR(cfmu_ap_code, 1, 2) = 'GC' then 'IC'
+          ELSE aiu_iso_ct_code
+      END iso_ct_code_spain,
+      aiu_iso_ct_code,
+	    VALID_FROM,
+	    VALID_TO
+	FROM pruread.v_aiu_dim_airport
+  WHERE cfmu_ap_code IS NOT NULL
 ),
 
 -- Pre-filter flights and compute entry date once
@@ -2191,96 +2023,22 @@ ORDER BY entry_date, iso_ct_code, flight DESC
 
 ")
 
-## st_st ----
-st_st_day_base_query <- paste0("
-WITH
-REL_AP_CTRY AS (
-  SELECT DISTINCT
-    v.cfmu_ap_code,
-    CASE
-      WHEN SUBSTR(v.cfmu_ap_code, 1, 2) = 'GC' THEN 'IC'
-      WHEN v.country_code = 'SPAIN'         THEN 'ES'
-      ELSE v.country_code
-    END AS iso_ct_code
-  FROM prudev.v_covid_rel_airport_area v
-),
-
-FLIGHTS AS (
-  SELECT
-    a.flt_uid,
-    a.flt_dep_ad,
-    a.flt_ctfm_ades,
-    TRUNC(a.flt_a_asp_prof_time_entry) AS entry_date
-  FROM prudev.v_aiu_flt a
-  WHERE a.flt_lobt >= ", query_from, " -2
-    AND a.flt_lobt <  TRUNC(SYSDATE) + 2
-    AND a.flt_a_asp_prof_time_entry >= ", query_from, "
-    AND a.flt_a_asp_prof_time_entry <  TRUNC(SYSDATE)
-    AND a.flt_state IN ('TE','TA','AA')
-),
-
-/* Country per flight (keep even if no mapping) */
-AIRP_FLIGHT AS (
-  SELECT
-    f.entry_date,
-    NVL(c_dep.iso_ct_code, '##') AS dep_ctry,
-    NVL(c_arr.iso_ct_code, '##') AS arr_ctry,
-    COUNT(*)                     AS mvt
-  FROM FLIGHTS f
-  LEFT JOIN REL_AP_CTRY c_dep ON c_dep.cfmu_ap_code = f.flt_dep_ad
-  LEFT JOIN REL_AP_CTRY c_arr ON c_arr.cfmu_ap_code = f.flt_ctfm_ades
-  GROUP BY f.entry_date, NVL(c_dep.iso_ct_code, '##'), NVL(c_arr.iso_ct_code, '##')
-),
-
-/* Build undirected country pairs; drop unknowns */
-CTRY_PAIR_FLIGHT AS (
-  SELECT
-    entry_date,
-    CASE WHEN dep_ctry <= arr_ctry THEN dep_ctry ELSE arr_ctry END AS iso_ct_code1,
-    CASE WHEN dep_ctry <= arr_ctry THEN arr_ctry ELSE dep_ctry END AS iso_ct_code2,
-    mvt
-  FROM AIRP_FLIGHT
-  WHERE dep_ctry <> '##' AND arr_ctry <> '##'
-),
-
-/* Aggregate movements per day & pair */
-CTRY_PAIR_ARP_1 AS (
-  SELECT
-    entry_date,
-    iso_ct_code1,
-    iso_ct_code2,
-    SUM(mvt) AS tot_mvt
-  FROM CTRY_PAIR_FLIGHT
-  GROUP BY entry_date, iso_ct_code1, iso_ct_code2
-),
-
-/* Mirror pair for opposite direction (exclude self-pairs) */
-CTRY_PAIR_ARP_2 AS (
-  SELECT
-    entry_date,
-    iso_ct_code2 AS iso_ct_code1,
-    iso_ct_code1 AS iso_ct_code2,
-    tot_mvt
-  FROM CTRY_PAIR_ARP_1
-  WHERE iso_ct_code1 <> iso_ct_code2
-)
-
-SELECT entry_date, iso_ct_code1, iso_ct_code2, tot_mvt
-FROM CTRY_PAIR_ARP_1
-UNION ALL
-SELECT entry_date, iso_ct_code1, iso_ct_code2, tot_mvt
-FROM CTRY_PAIR_ARP_2
-ORDER BY entry_date, iso_ct_code1, tot_mvt DESC
- "
-)
-
 # AIRPORT ----
-## ap_day new-----
-ap_traffic_delay_new_day_base_query <- paste0 (
+## ap_day -----
+ap_traffic_delay_day_base_query <- paste0 (
 "
 WITH
 DIM_AIRPORT AS (
-  SELECT *
+  SELECT 
+      BK_AP_ID,
+	    EC_AP_CODE,
+	    EC_AP_NAME,
+	    CFMU_AP_CODE,
+	    LATITUDE,
+	    LONGITUDE,
+      aiu_iso_ct_code,
+	    VALID_FROM,
+	    VALID_TO
   FROM pruread.v_aiu_dim_airport
   WHERE cfmu_ap_code IS NOT NULL
 ),
@@ -2605,371 +2363,28 @@ WHERE bk_ap_id <> 99999
   AND ap_code <> '99999'
 ")
 
-## ap_day -----
-ap_traffic_delay_day_base_query <- paste0 (
-" WITH 
-
- DIM_AIRPORT AS (
- 	SELECT 
- 	 code as arp_code,
- 	 id AS arp_id
- FROM prudev.PRU_AIRPORT 
-),
-
-  arp_SYN_ARR
-  AS
-  (SELECT 
-    SUM (nvl(f.ades_day_all_trf,0)) AS arr,
-    f.ades_day_ades_ctfm AS arp_code,
-    trunc(f.ades_DAY_FLT_DATE) AS flight_date
-    FROM prudev.v_aiu_agg_arr_day f
-    WHERE trunc(f.ades_DAY_FLT_DATE) >= ", query_from, "
-    GROUP BY
-    f.ades_day_ades_ctfm,
-    trunc(f.ades_DAY_FLT_DATE)
-  ),
-
-  
-  arp_SYN_DEP
-  AS
-  (SELECT 
-    SUM (nvl(f.adep_day_all_trf,0)) AS dep,
-    f.adep_day_adep AS arp_code,
-    trunc(f.adep_DAY_FLT_DATE) AS flight_date
-    FROM prudev.v_aiu_agg_dep_day f
-    WHERE trunc(f.adep_DAY_FLT_DATE) >= ", query_from, "
-    GROUP BY
-    f.adep_day_adep,
-    trunc(f.adep_DAY_FLT_DATE)
-  ),
-  
-  
-  arp_DELAY
-  AS
-  (  SELECT
-    a.ref_loc_id as arp_code,
-    a.agg_flt_a_first_entry_date AS entry_date,
-    
-    SUM (NVL(a.agg_flt_total_delay, 0))
-    tdm_arp,
-    SUM (NVL(agg_flt_delayed_traffic, 0))
-    tdf_arp,
-    SUM (NVL(a.agg_flt_regulated_traffic, 0))
-    trf_arp,
-    
-    SUM (NVL((CASE WHEN a.agg_flt_delay_interval IN  (']15,30]', ']30,60]', '> 60') THEN a.agg_flt_total_delay END),0))
-    tdm_15_arp,
-    SUM (NVL((CASE WHEN a.agg_flt_delay_interval IN  (']15,30]', ']30,60]', '> 60') THEN a.agg_flt_delayed_traffic END),0))
-    tdf_15_arp,
-    SUM (NVL((CASE WHEN a.agg_flt_delay_interval IN  (']15,30]', ']30,60]', '> 60') THEN NVL (a.agg_flt_regulated_traffic, 0) END),0))
-    trf_15_arp,    
-   
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('A')   THEN a.agg_flt_total_delay END),0))
-    tdm_arp_a,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('C')   THEN a.agg_flt_total_delay END),0))
-    tdm_arp_c,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('D')   THEN a.agg_flt_total_delay END),0))
-    tdm_arp_d,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('E')   THEN a.agg_flt_total_delay END),0))
-    tdm_arp_e,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('G')   THEN a.agg_flt_total_delay END),0))
-    tdm_arp_g,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('I')   THEN a.agg_flt_total_delay END),0))
-    tdm_arp_i,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('M')   THEN a.agg_flt_total_delay END),0))
-    tdm_arp_m,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('N')   THEN a.agg_flt_total_delay END),0))
-    tdm_arp_n,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('O')   THEN a.agg_flt_total_delay END),0))
-    tdm_arp_o,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('P')   THEN a.agg_flt_total_delay END),0))
-    tdm_arp_p,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('R')   THEN a.agg_flt_total_delay END),0))
-    tdm_arp_r,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('S')   THEN a.agg_flt_total_delay END),0))
-    tdm_arp_s,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('T')   THEN a.agg_flt_total_delay END),0))
-    tdm_arp_t,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('V')   THEN a.agg_flt_total_delay END),0))
-    tdm_arp_v,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('W')   THEN a.agg_flt_total_delay END),0))
-    tdm_arp_w,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('NA')   THEN a.agg_flt_total_delay END),0))
-    tdm_arp_na,  
-    
-    SUM (NVL((CASE WHEN a.MP_REGU_LOC_CAT = 'Arrival' THEN  a.agg_flt_total_delay END),0))
-    tdm_arp_arr,
-    SUM (NVL((CASE WHEN a.MP_REGU_LOC_CAT = 'Arrival' THEN  a.agg_flt_delayed_traffic END),0))
-    tdf_arp_arr,
-    SUM (NVL((CASE WHEN a.MP_REGU_LOC_CAT = 'Arrival' THEN  NVL (a.agg_flt_regulated_traffic, 0) END),0))
-    trf_arp_arr,
-    
-    SUM (NVL((CASE WHEN a.MP_REGU_LOC_CAT = 'Arrival'  AND a.agg_flt_delay_interval IN (']15,30]', ']30,60]', '> 60') THEN  a.agg_flt_total_delay END),0))
-    tdm_15_arp_arr,
-    SUM (NVL((CASE WHEN a.MP_REGU_LOC_CAT = 'Arrival'  AND a.agg_flt_delay_interval IN (']15,30]', ']30,60]', '> 60')  THEN  a.agg_flt_delayed_traffic END),0))
-    tdf_15_arp_arr,
-    SUM (NVL((CASE WHEN a.MP_REGU_LOC_CAT = 'Arrival'  AND a.agg_flt_delay_interval IN (']15,30]', ']30,60]', '> 60')THEN  NVL (a.agg_flt_regulated_traffic, 0) END),0))
-    trf_15_arp_arr,    
-   
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('A') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
-    tdm_arp_arr_a,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('C') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
-    tdm_arp_arr_c,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('D') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
-    tdm_arp_arr_d,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('E') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
-    tdm_arp_arr_e,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('G') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
-    tdm_arp_arr_g,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('I') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
-    tdm_arp_arr_i,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('M') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
-    tdm_arp_arr_m,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('N') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
-    tdm_arp_arr_n,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('O') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
-    tdm_arp_arr_o,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('P') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
-    tdm_arp_arr_p,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('R') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
-    tdm_arp_arr_r,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('S') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
-    tdm_arp_arr_s,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('T') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
-    tdm_arp_arr_t,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('V') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
-    tdm_arp_arr_v,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('W') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
-    tdm_arp_arr_w,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('NA') AND a.MP_REGU_LOC_CAT = 'Arrival' THEN a.agg_flt_total_delay END),0))
-    tdm_arp_arr_na,    
-  
-    SUM (NVL((CASE WHEN a.MP_REGU_LOC_CAT = 'Departure'  THEN a.agg_flt_total_delay END),0))
-    tdm_arp_dep,
-    SUM (NVL((CASE WHEN a.MP_REGU_LOC_CAT = 'Departure'  THEN a.agg_flt_delayed_traffic END),0))
-    tdf_arp_dep,
-    SUM (NVL((CASE WHEN a.MP_REGU_LOC_CAT = 'Departure'  THEN NVL (a.agg_flt_regulated_traffic, 0) END),0))
-    trf_arp_dep,
-    
-    SUM (NVL((CASE WHEN a.MP_REGU_LOC_CAT = 'Departure' AND a.agg_flt_delay_interval IN (']15,30]', ']30,60]', '> 60') THEN a.agg_flt_total_delay END),0))
-    tdm_15_arp_dep,
-    SUM (NVL((CASE WHEN a.MP_REGU_LOC_CAT = 'Departure' AND a.agg_flt_delay_interval IN (']15,30]', ']30,60]', '> 60') THEN a.agg_flt_delayed_traffic END),0))
-    tdf_15_arp_dep,
-    SUM (NVL((CASE WHEN a.MP_REGU_LOC_CAT = 'Departure' AND a.agg_flt_delay_interval IN (']15,30]', ']30,60]', '> 60') THEN  NVL (a.agg_flt_regulated_traffic, 0) END),0))
-    trf_15_arp_dep,    
-   
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('A') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
-    tdm_arp_dep_a,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('C') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
-    tdm_arp_dep_c,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('D') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
-    tdm_arp_dep_d,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('E') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
-    tdm_arp_dep_e,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('G') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
-    tdm_arp_dep_g,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('I') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
-    tdm_arp_dep_i,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('M') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
-    tdm_arp_dep_m,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('N') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
-    tdm_arp_dep_n,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('O') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
-    tdm_arp_dep_o,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('P') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
-    tdm_arp_dep_p,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('R') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
-    tdm_arp_dep_r,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('S') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
-    tdm_arp_dep_s,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('T') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
-    tdm_arp_dep_t,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('V') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
-    tdm_arp_dep_v,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('W') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
-    tdm_arp_dep_w,
-    SUM (NVL((CASE WHEN agg_flt_regu_reas IN ('NA') AND a.MP_REGU_LOC_CAT = 'Departure' THEN   a.agg_flt_total_delay END),0))
-    tdm_arp_dep_na
-    
-    FROM prudev.v_aiu_agg_flt_flow a
-    WHERE
-    a.agg_flt_a_first_entry_date >= ", query_from, "
-    and a.AGG_FLT_MP_REGU_LOC_TY = 'Airport'
-    GROUP BY
-    a.agg_flt_a_first_entry_date,
-    a.ref_loc_id
-  ),
-  
-  ALL_DAY_DATA as (
-    SELECT
-    coalesce(coalesce(a.arp_code,c.arp_code), b.arp_code) arp_code,
-    coalesce(coalesce(a.flight_date,c.flight_date), b.entry_date) flight_date,
-    coalesce(a.arr, 0) arr,
-    coalesce(c.dep, 0) dep, 
-    coalesce(TDM_ARP,0) as TDM_ARP,
-    coalesce(TDF_ARP,0) as TDF_ARP,
-    coalesce(TRF_ARP,0) as TRF_ARP,
-    coalesce(TDM_15_ARP,0) as TDM_15_ARP,
-    coalesce(TDF_15_ARP,0) as TDF_15_ARP,
-    coalesce(TRF_15_ARP,0) as TRF_15_ARP,
-    coalesce(TDM_ARP_A,0) as TDM_ARP_A,
-    coalesce(TDM_ARP_C,0) as TDM_ARP_C,
-    coalesce(TDM_ARP_D,0) as TDM_ARP_D,
-    coalesce(TDM_ARP_E,0) as TDM_ARP_E,
-    coalesce(TDM_ARP_G,0) as TDM_ARP_G,
-    coalesce(TDM_ARP_I,0) as TDM_ARP_I,
-    coalesce(TDM_ARP_M,0) as TDM_ARP_M,
-    coalesce(TDM_ARP_N,0) as TDM_ARP_N,
-    coalesce(TDM_ARP_O,0) as TDM_ARP_O,
-    coalesce(TDM_ARP_P,0) as TDM_ARP_P,
-    coalesce(TDM_ARP_R,0) as TDM_ARP_R,
-    coalesce(TDM_ARP_S,0) as TDM_ARP_S,
-    coalesce(TDM_ARP_T,0) as TDM_ARP_T,
-    coalesce(TDM_ARP_V,0) as TDM_ARP_V,
-    coalesce(TDM_ARP_W,0) as TDM_ARP_W,
-    coalesce(TDM_ARP_NA,0) as TDM_ARP_NA,
-    coalesce(TDM_ARP_ARR,0) as TDM_ARP_ARR,
-    coalesce(TDF_ARP_ARR,0) as TDF_ARP_ARR,
-    coalesce(TRF_ARP_ARR,0) as TRF_ARP_ARR,
-    coalesce(TDM_15_ARP_ARR,0) as TDM_15_ARP_ARR,
-    coalesce(TDF_15_ARP_ARR,0) as TDF_15_ARP_ARR,
-    coalesce(TRF_15_ARP_ARR,0) as TRF_15_ARP_ARR,
-    coalesce(TDM_ARP_ARR_A,0) as TDM_ARP_ARR_A,
-    coalesce(TDM_ARP_ARR_C,0) as TDM_ARP_ARR_C,
-    coalesce(TDM_ARP_ARR_D,0) as TDM_ARP_ARR_D,
-    coalesce(TDM_ARP_ARR_E,0) as TDM_ARP_ARR_E,
-    coalesce(TDM_ARP_ARR_G,0) as TDM_ARP_ARR_G,
-    coalesce(TDM_ARP_ARR_I,0) as TDM_ARP_ARR_I,
-    coalesce(TDM_ARP_ARR_M,0) as TDM_ARP_ARR_M,
-    coalesce(TDM_ARP_ARR_N,0) as TDM_ARP_ARR_N,
-    coalesce(TDM_ARP_ARR_O,0) as TDM_ARP_ARR_O,
-    coalesce(TDM_ARP_ARR_P,0) as TDM_ARP_ARR_P,
-    coalesce(TDM_ARP_ARR_R,0) as TDM_ARP_ARR_R,
-    coalesce(TDM_ARP_ARR_S,0) as TDM_ARP_ARR_S,
-    coalesce(TDM_ARP_ARR_T,0) as TDM_ARP_ARR_T,
-    coalesce(TDM_ARP_ARR_V,0) as TDM_ARP_ARR_V,
-    coalesce(TDM_ARP_ARR_W,0) as TDM_ARP_ARR_W,
-    coalesce(TDM_ARP_ARR_NA,0) as TDM_ARP_ARR_NA,
-    coalesce(TDM_ARP_DEP,0) as TDM_ARP_DEP,
-    coalesce(TDF_ARP_DEP,0) as TDF_ARP_DEP,
-    coalesce(TRF_ARP_DEP,0) as TRF_ARP_DEP,
-    coalesce(TDM_15_ARP_DEP,0) as TDM_15_ARP_DEP,
-    coalesce(TDF_15_ARP_DEP,0) as TDF_15_ARP_DEP,
-    coalesce(TRF_15_ARP_DEP,0) as TRF_15_ARP_DEP,
-    coalesce(TDM_ARP_DEP_A,0) as TDM_ARP_DEP_A,
-    coalesce(TDM_ARP_DEP_C,0) as TDM_ARP_DEP_C,
-    coalesce(TDM_ARP_DEP_D,0) as TDM_ARP_DEP_D,
-    coalesce(TDM_ARP_DEP_E,0) as TDM_ARP_DEP_E,
-    coalesce(TDM_ARP_DEP_G,0) as TDM_ARP_DEP_G,
-    coalesce(TDM_ARP_DEP_I,0) as TDM_ARP_DEP_I,
-    coalesce(TDM_ARP_DEP_M,0) as TDM_ARP_DEP_M,
-    coalesce(TDM_ARP_DEP_N,0) as TDM_ARP_DEP_N,
-    coalesce(TDM_ARP_DEP_O,0) as TDM_ARP_DEP_O,
-    coalesce(TDM_ARP_DEP_P,0) as TDM_ARP_DEP_P,
-    coalesce(TDM_ARP_DEP_R,0) as TDM_ARP_DEP_R,
-    coalesce(TDM_ARP_DEP_S,0) as TDM_ARP_DEP_S,
-    coalesce(TDM_ARP_DEP_T,0) as TDM_ARP_DEP_T,
-    coalesce(TDM_ARP_DEP_V,0) as TDM_ARP_DEP_V,
-    coalesce(TDM_ARP_DEP_W,0) as TDM_ARP_DEP_W,
-    coalesce(TDM_ARP_DEP_NA,0) as TDM_ARP_DEP_NA    
-    FROM arp_SYN_ARR A
-    FULL OUTER JOIN arp_SYN_dep c on a.arp_code  = c.arp_code  and a.flight_date = c.flight_date
-    FULL OUTER JOIN ARP_DELAY b on a.arp_code  = B.arp_code  and a.flight_date = b.entry_date
-    
-  )
-  
-  SELECT
-  a.arp_code,
-  b.arp_id,
-  flight_date,
-  sum(arr) as arr,
-  sum(dep) as dep,
-  sum(dep) + sum(arr) dep_arr,
-  sum(TDM_ARP) as TDM_ARP,
-  sum(TDF_ARP) as TDF_ARP,
-  sum(TRF_ARP) as TRF_ARP,
-  sum(TDM_15_ARP) as TDM_15_ARP,
-  sum(TDF_15_ARP) as TDF_15_ARP,
-  sum(TRF_15_ARP) as TRF_15_ARP,
-  sum(TDM_ARP_A) as TDM_ARP_A,
-  sum(TDM_ARP_C) as TDM_ARP_C,
-  sum(TDM_ARP_D) as TDM_ARP_D,
-  sum(TDM_ARP_E) as TDM_ARP_E,
-  sum(TDM_ARP_G) as TDM_ARP_G,
-  sum(TDM_ARP_I) as TDM_ARP_I,
-  sum(TDM_ARP_M) as TDM_ARP_M,
-  sum(TDM_ARP_N) as TDM_ARP_N,
-  sum(TDM_ARP_O) as TDM_ARP_O,
-  sum(TDM_ARP_P) as TDM_ARP_P,
-  sum(TDM_ARP_R) as TDM_ARP_R,
-  sum(TDM_ARP_S) as TDM_ARP_S,
-  sum(TDM_ARP_T) as TDM_ARP_T,
-  sum(TDM_ARP_V) as TDM_ARP_V,
-  sum(TDM_ARP_W) as TDM_ARP_W,
-  sum(TDM_ARP_NA) as TDM_ARP_NA,
-  sum(TDM_ARP_ARR) as TDM_ARP_ARR,
-  sum(TDF_ARP_ARR) as TDF_ARP_ARR,
-  sum(TRF_ARP_ARR) as TRF_ARP_ARR,
-  sum(TDM_15_ARP_ARR) as TDM_15_ARP_ARR,
-  sum(TDF_15_ARP_ARR) as TDF_15_ARP_ARR,
-  sum(TRF_15_ARP_ARR) as TRF_15_ARP_ARR,
-  sum(TDM_ARP_ARR_A) as TDM_ARP_ARR_A,
-  sum(TDM_ARP_ARR_C) as TDM_ARP_ARR_C,
-  sum(TDM_ARP_ARR_D) as TDM_ARP_ARR_D,
-  sum(TDM_ARP_ARR_E) as TDM_ARP_ARR_E,
-  sum(TDM_ARP_ARR_G) as TDM_ARP_ARR_G,
-  sum(TDM_ARP_ARR_I) as TDM_ARP_ARR_I,
-  sum(TDM_ARP_ARR_M) as TDM_ARP_ARR_M,
-  sum(TDM_ARP_ARR_N) as TDM_ARP_ARR_N,
-  sum(TDM_ARP_ARR_O) as TDM_ARP_ARR_O,
-  sum(TDM_ARP_ARR_P) as TDM_ARP_ARR_P,
-  sum(TDM_ARP_ARR_R) as TDM_ARP_ARR_R,
-  sum(TDM_ARP_ARR_S) as TDM_ARP_ARR_S,
-  sum(TDM_ARP_ARR_T) as TDM_ARP_ARR_T,
-  sum(TDM_ARP_ARR_V) as TDM_ARP_ARR_V,
-  sum(TDM_ARP_ARR_W) as TDM_ARP_ARR_W,
-  sum(TDM_ARP_ARR_NA) as TDM_ARP_ARR_NA,
-  sum(TDM_ARP_DEP) as TDM_ARP_DEP,
-  sum(TDF_ARP_DEP) as TDF_ARP_DEP,
-  sum(TRF_ARP_DEP) as TRF_ARP_DEP,
-  sum(TDM_15_ARP_DEP) as TDM_15_ARP_DEP,
-  sum(TDF_15_ARP_DEP) as TDF_15_ARP_DEP,
-  sum(TRF_15_ARP_DEP) as TRF_15_ARP_DEP,
-  sum(TDM_ARP_DEP_A) as TDM_ARP_DEP_A,
-  sum(TDM_ARP_DEP_C) as TDM_ARP_DEP_C,
-  sum(TDM_ARP_DEP_D) as TDM_ARP_DEP_D,
-  sum(TDM_ARP_DEP_E) as TDM_ARP_DEP_E,
-  sum(TDM_ARP_DEP_G) as TDM_ARP_DEP_G,
-  sum(TDM_ARP_DEP_I) as TDM_ARP_DEP_I,
-  sum(TDM_ARP_DEP_M) as TDM_ARP_DEP_M,
-  sum(TDM_ARP_DEP_N) as TDM_ARP_DEP_N,
-  sum(TDM_ARP_DEP_O) as TDM_ARP_DEP_O,
-  sum(TDM_ARP_DEP_P) as TDM_ARP_DEP_P,
-  sum(TDM_ARP_DEP_R) as TDM_ARP_DEP_R,
-  sum(TDM_ARP_DEP_S) as TDM_ARP_DEP_S,
-  sum(TDM_ARP_DEP_T) as TDM_ARP_DEP_T,
-  sum(TDM_ARP_DEP_V) as TDM_ARP_DEP_V,
-  sum(TDM_ARP_DEP_W) as TDM_ARP_DEP_W,
-  sum(TDM_ARP_DEP_NA) as TDM_ARP_DEP_NA
-  FROM ALL_DAY_DATA a
-  LEFT JOIN dim_airport b ON a.arp_code = b.arp_code
-  GROUP BY flight_date, a.arp_code, b.arp_id
-  order by arp_code,  flight_date
-  "
-)
-
-## ap_ao new ----
-ap_ao_new_day_base_query <- paste0("
+## ap_ao ----
+ap_ao_day_base_query <- paste0("
 WITH
 DIM_AO AS (
   SELECT DISTINCT ao_id, ao_code, wef, til
   FROM ldw_acc.AO_GROUPS_ASSOCIATION
 ),
 DIM_AIRPORT AS (
-  SELECT *
+  SELECT 
+        BK_AP_ID,
+	    EC_AP_CODE,
+	    EC_AP_NAME,
+	    CFMU_AP_CODE,
+	    LATITUDE,
+	    LONGITUDE,
+      aiu_iso_ct_code,
+	    VALID_FROM,
+	    VALID_TO
   FROM pruread.v_aiu_dim_airport
   WHERE cfmu_ap_code IS NOT NULL
 ),
+
 FLIGHTS AS (
   SELECT
     a.flt_uid,
@@ -3092,130 +2507,22 @@ ORDER BY dep_arr DESC
 "
 )
 
-## ap_ao ----
-ap_ao_day_base_query <- paste0("
-WITH
--- AO validity ranges (may overlap)
-DIM_AO AS (
-  SELECT DISTINCT ao_id, ao_code, wef, til
-  FROM ldw_acc.AO_GROUPS_ASSOCIATION
-),
-
--- Airport master: single row per ICAO (no validity)
-DIM_APT AS (
-  SELECT * FROM prudev.PRU_AIRPORT
-),
-
--- Pre-filter flights and compute entry date once
-FLIGHTS AS (
-  SELECT
-    a.flt_uid,
-    a.flt_dep_ad,
-    a.flt_ctfm_ades,
-    a.ao_icao_id,
-    TRUNC(a.flt_a_asp_prof_time_entry) AS entry_date
-  FROM prudev.v_aiu_flt a
-  WHERE a.flt_lobt >= ", query_from, " - 2
-    AND a.flt_lobt <  TRUNC(SYSDATE) + 2
-    AND a.flt_a_asp_prof_time_entry >= ", query_from, "
-    AND a.flt_a_asp_prof_time_entry <  TRUNC(SYSDATE)
-    AND a.flt_state IN ('TE','TA','AA')
-),
-
--- Map dep/arr PRU airport IDs (no validity join needed)
-APT_MAP AS (
-  SELECT
-    f.flt_uid,
-    d.id AS dep_arp_pru_id,
-    a.id AS arr_arp_pru_id,
-    f.entry_date,
-    f.ao_icao_id
-  FROM FLIGHTS f
-  LEFT JOIN DIM_APT d ON d.icao_code = f.flt_dep_ad
-  LEFT JOIN DIM_APT a ON a.icao_code = f.flt_ctfm_ades
-),
-
--- Resolve AO by date-validity; pick exactly one AO per flight
-AO_X AS (
-  SELECT
-    m.flt_uid,
-    d.ao_id,
-    d.ao_code,
-    ROW_NUMBER() OVER (
-      PARTITION BY m.flt_uid
-      ORDER BY d.wef DESC NULLS LAST, d.til DESC NULLS LAST
-    ) AS rn
-  FROM APT_MAP m
-  LEFT JOIN DIM_AO d
-    ON d.ao_code = m.ao_icao_id
-   AND m.entry_date BETWEEN d.wef AND d.til  -- inclusive ends
-),
-
--- One row per flight with resolved fields
-DATA_DAY AS (
-  SELECT
-    m.dep_arp_pru_id,
-    m.arr_arp_pru_id,
-    NVL(x.ao_id, 99999)   AS ao_id,
-    NVL(x.ao_code, 'ZZZ') AS ao_code,
-    m.entry_date,
-    m.flt_uid
-  FROM APT_MAP m
-  LEFT JOIN AO_X x
-    ON x.flt_uid = m.flt_uid
-   AND x.rn = 1
-),
-
--- Aggregate departures
-DATA_DEP AS (
-  SELECT
-    dep_arp_pru_id AS arp_pru_id,
-    entry_date,
-    ao_code,
-    ao_id,
-    COUNT(flt_uid) AS dep_arr
-  FROM DATA_DAY
-  WHERE ao_id <> 99999
-  GROUP BY dep_arp_pru_id, entry_date, ao_code, ao_id
-),
-
--- Aggregate arrivals
-DATA_ARR AS (
-  SELECT
-    arr_arp_pru_id AS arp_pru_id,
-    entry_date,
-    ao_code,
-    ao_id,
-    COUNT(flt_uid) AS dep_arr
-  FROM DATA_DAY
-  WHERE ao_id <> 99999
-  GROUP BY arr_arp_pru_id, entry_date, ao_code, ao_id
-)
-
--- Final
-SELECT
-  COALESCE(a.entry_date, b.entry_date) AS entry_date,
-  COALESCE(a.arp_pru_id, b.arp_pru_id) AS arp_pru_id,
-  COALESCE(a.ao_id,      b.ao_id)      AS ao_id,
-  COALESCE(a.ao_code,    b.ao_code)    AS ao_code,
-  COALESCE(a.dep_arr, 0) + COALESCE(b.dep_arr, 0) AS dep_arr
-FROM DATA_DEP a
-FULL OUTER JOIN DATA_ARR b
-  ON a.arp_pru_id = b.arp_pru_id
- AND a.entry_date = b.entry_date
- AND a.ao_id      = b.ao_id
- AND a.ao_code    = b.ao_code
-ORDER BY dep_arr DESC  
-"
-)
-
-## ap_st_des new ----
-ap_st_des_new_day_base_query <- paste0("
+## ap_st_des ----
+ap_st_des_day_base_query <- paste0("
 WITH
 DIM_AIRPORT AS (
-  SELECT a.*
-  FROM pruread.v_aiu_dim_airport a
-  WHERE a.cfmu_ap_code IS NOT NULL
+  SELECT 
+          BK_AP_ID,
+	    EC_AP_CODE,
+	    EC_AP_NAME,
+	    CFMU_AP_CODE,
+	    LATITUDE,
+	    LONGITUDE,
+      aiu_iso_ct_code,
+	    VALID_FROM,
+	    VALID_TO
+  FROM pruread.v_aiu_dim_airport
+  WHERE cfmu_ap_code IS NOT NULL
 ),
 
 FLIGHTS AS (
@@ -3290,55 +2597,24 @@ ORDER BY entry_date DESC, dep_bk_ap_id, dep DESC
 "
 )
 
-## ap_st_des ----
-ap_st_des_day_base_query <- paste0("
-with 
-
-DIM_APT as
-(select 
-		a.id,
-		a.icao_code,
-		b.AIU_ISO_COUNTRY_CODE,
-		b.AIU_ISO_COUNTRY_NAME 
-from prudev.pru_airport a
-LEFT JOIN  prudev.pru_country_iso b
-ON a.ISO_COUNTRY_CODE = b.ec_ISO_COUNTRY_CODE
-),       
-
-ARP_FLIGHT as (
-SELECT flt_uid,
-       TRUNC (flt_a_asp_prof_time_entry) AS entry_date, 
-        COALESCE(b.id, 1618) as dep_arp_pru_id, -- 1618 code for unknown
-        COALESCE(c.AIU_ISO_COUNTRY_CODE, '##') as arr_iso_cty_code -- ## code for unknown      
-  FROM prudev.v_aiu_flt a
-     left outer  join DIM_APT b ON  ( A.flt_dep_ad=  b.icao_code)
-     left outer join DIM_APT C  ON  (A.flt_ctfm_ades = C.icao_code)
- WHERE     
-     A.flt_lobt>= ", query_from, "  -2  
-     AND A.flt_lobt < TRUNC (SYSDATE) +2
-     AND a.flt_a_asp_prof_time_entry >= ", query_from, " 
-     AND a.flt_a_asp_prof_time_entry < TRUNC (SYSDATE)
-       AND A.flt_state IN ('TE', 'TA', 'AA')
-     )
-     
-SELECT ENTRY_DATE,
-		dep_arp_pru_id,
-		arr_iso_cty_code,
-       count(flt_uid) AS dep
- FROM  ARP_FLIGHT A 
-GROUP BY ENTRY_DATE, dep_arp_pru_id, arr_iso_cty_code
-ORDER BY A.ENTRY_DATE DESC , A.DEP_ARP_PRU_ID,  dep DESC
-"
-)
-
-## ap_ap_des new----
-ap_ap_des_new_day_base_query <- paste0("
+## ap_ap_des ----
+ap_ap_des_day_base_query <- paste0("
 WITH
 DIM_AIRPORT AS (
-  SELECT a.*
-  FROM pruread.v_aiu_dim_airport a
-  WHERE a.cfmu_ap_code IS NOT NULL
+  SELECT 
+      BK_AP_ID,
+	    EC_AP_CODE,
+	    EC_AP_NAME,
+	    CFMU_AP_CODE,
+	    LATITUDE,
+	    LONGITUDE,
+      aiu_iso_ct_code,
+	    VALID_FROM,
+	    VALID_TO
+  FROM pruread.v_aiu_dim_airport
+  WHERE cfmu_ap_code IS NOT NULL
 ),
+
 FLIGHTS AS (
   SELECT
     a.flt_uid,
@@ -3409,47 +2685,22 @@ ORDER BY entry_date DESC, dep_bk_ap_id, dep DESC
 "
 )
 
-## ap_ap_des ----
-ap_ap_des_day_base_query <- paste0("
-with 
-
-DIM_APT as
-(select * from prudev.pru_airport
-),       
-
-ARP_FLIGHT as (
-SELECT flt_uid,
-       TRUNC (flt_a_asp_prof_time_entry) AS ENTRY_DATE, 
-        COALESCE(b.id, 1618) as dep_arp_pru_id, -- 1618 code for unknown
-        COALESCE(c.id, 1618) as arr_arp_pru_id
-  FROM prudev.v_aiu_flt a
-     left outer  join DIM_APT b ON  ( A.flt_dep_ad=  b.icao_code)
-     left outer join DIM_APT C  ON  (A.flt_ctfm_ades = C.icao_code)
- WHERE      
-     A.flt_lobt>= ", query_from, " -2 
-     	AND A.flt_lobt < TRUNC (SYSDATE) + 2
-     AND a.flt_a_asp_prof_time_entry >= ", query_from, "
-     AND a.flt_a_asp_prof_time_entry < TRUNC (SYSDATE)
-       AND A.flt_state IN ('TE', 'TA', 'AA')
-)
-
-SELECT ENTRY_DATE,
-		dep_arp_pru_id,
-		arr_arp_pru_id,
-       count(flt_uid) AS dep
- FROM  ARP_FLIGHT A 
-GROUP BY ENTRY_DATE, dep_arp_pru_id, arr_arp_pru_id
-ORDER BY A.ENTRY_DATE DESC , A.DEP_ARP_PRU_ID,  dep DESC
-"
-)
-
-## ap_ms new----
-ap_ms_new_day_base_query <- paste0("
+## ap_ms----
+ap_ms_day_base_query <- paste0("
 WITH
 DIM_AIRPORT AS (
-  SELECT a.*
-  FROM pruread.v_aiu_dim_airport a
-  WHERE a.cfmu_ap_code IS NOT NULL
+  SELECT 
+      BK_AP_ID,
+	    EC_AP_CODE,
+	    EC_AP_NAME,
+	    CFMU_AP_CODE,
+	    LATITUDE,
+	    LONGITUDE,
+      aiu_iso_ct_code,
+	    VALID_FROM,
+	    VALID_TO
+  FROM pruread.v_aiu_dim_airport
+  WHERE cfmu_ap_code IS NOT NULL
 ),
 
 /* Prefilter flights; keep ms_id and entry_date once */
@@ -3555,78 +2806,6 @@ FULL OUTER JOIN DATA_ARR b
  AND a.ms_id      = b.ms_id
 ORDER BY entry_date, bk_ap_id, ms_id
 ")
-
-## ap_ms ----
-ap_ms_day_base_query <- paste0("
-WITH
-
-dim_market_segment as 
-(select SK_FLT_TYPE_RULE_ID AS ms_id,  
- 		rule_description as market_segment
- from  SWH_FCT.DIM_FLIGHT_TYPE_RULE
-),
- 
-DIM_APT as
-(select * from prudev.pru_airport)       
-
- 
-, DATA_SOURCE as (
-SELECT  
-        b.id as dep_arp_pru_id,
-        c.id as arr_arp_pru_id,
-        TRUNC(A.flt_a_asp_prof_time_entry) ENTRY_DATE,
-        ms_id,
-        A.flt_uid
-FROM prudev.v_aiu_flt_mark_seg A 
-     left outer  join DIM_APT b ON  ( A.flt_dep_ad=  b.icao_code)
-     left outer join DIM_APT C  ON  (A.flt_ctfm_ades = C.icao_code)
-     left outer join dim_market_segment   d  ON (a.SK_FLT_TYPE_RULE_ID = d.ms_id )
- WHERE  
-         A.flt_lobt>= ", query_from, " -2  
-         	AND A.flt_lobt < TRUNC (SYSDATE) + 2
-			  	AND a.flt_a_asp_prof_time_entry >= ", query_from, "
-			  	AND a.flt_a_asp_prof_time_entry < TRUNC (SYSDATE)
-    AND A.flt_state IN ('TE','TA','AA')
-
-),
-
-
-DATA_DEP AS (
-(SELECT  
-    		dep_arp_pru_id AS arp_pru_id,
-        a.ENTRY_DATE,
-        ms_id,
-        COUNT(a.flt_uid) DEP_ARR
-FROM DATA_SOURCE a   
-GROUP BY  
-        dep_arp_pru_id,
-        ENTRY_DATE,
-        ms_id
-)
-),        
- 
-DATA_ARR AS (
-SELECT  
-    		arr_arp_pru_id AS arp_pru_id,
-        ENTRY_DATE,
-        ms_id,
-        COUNT(a.flt_uid) DEP_ARR
-FROM DATA_SOURCE a  
-GROUP BY  arr_arp_pru_id,
-          ENTRY_DATE,
-        ms_id
-)
-
-
-SELECT  
-          coalesce(a.entry_date, b.entry_date) as entry_date,  
-          coalesce(a.arp_pru_id, b.arp_pru_id) as arp_pru_id, 
-          coalesce(a.ms_id, b.ms_id) as ms_id,
-          coalesce(a.DEP_ARR, 0) + coalesce(b.DEP_ARR, 0)  as DEP_ARR
-FROM DATA_DEP a full outer join DATA_ARR b  on (a.arp_pru_id = b.arp_pru_id  and a.entry_date = b.entry_date and a.ms_id = b.ms_id)
-ORDER BY entry_date, arp_pru_id, ms_id
-"
-)
 
 # AIRLINE ----
 ## ao_day ----
@@ -3763,22 +2942,30 @@ LEFT JOIN DATA_DAY d
 "
 )
 
-## ao_day new ----
-ao_traffic_delay_new_day_base_query <- ao_traffic_delay_day_base_query
-
-## ao_st_des new ----
-ao_st_des_new_day_base_query <- paste0("
+## ao_st_des ----
+ao_st_des_day_base_query <- paste0("
 /* file: sql/arr_iso_by_ao_no_duplicates.sql */
 WITH
 DIM_AO AS (
   SELECT DISTINCT ao_id, ao_code, wef, til
   FROM ldw_acc.AO_GROUPS_ASSOCIATION
 ),
+
 DIM_AIRPORT AS (
-  SELECT *
+  SELECT 
+      BK_AP_ID,
+	    EC_AP_CODE,
+	    EC_AP_NAME,
+	    CFMU_AP_CODE,
+	    LATITUDE,
+	    LONGITUDE,
+      aiu_iso_ct_code,
+	    VALID_FROM,
+	    VALID_TO
   FROM pruread.v_aiu_dim_airport
   WHERE cfmu_ap_code IS NOT NULL
 ),
+
 /* Prefilter flights & compute entry date once */
 FLIGHTS AS (
   SELECT
@@ -3854,113 +3041,30 @@ ORDER BY a.entry_date, a.ao_id, flight DESC
 "
 )
 
-## ao_st_des ----
-ao_st_des_day_base_query <- paste0("
-/* file: sql/arr_country_by_ao_validity_no_dupes.sql */
-WITH
-DIM_AO AS (
-  SELECT DISTINCT ao_id, ao_code, wef, til
-  FROM ldw_acc.AO_GROUPS_ASSOCIATION
-),
-DIM_APT AS (
-  SELECT
-    a.id,
-    a.icao_code,
-    b.AIU_ISO_COUNTRY_CODE,
-    b.AIU_ISO_COUNTRY_NAME
-  FROM prudev.pru_airport a
-  LEFT JOIN prudev.pru_country_iso b
-    ON a.ISO_COUNTRY_CODE = b.ec_ISO_COUNTRY_CODE
-),
-
-/* Prefilter flights & compute entry date once */
-FLIGHTS AS (
-  SELECT
-    A.flt_uid,
-    A.flt_ctfm_ades,
-    A.ao_icao_id,
-    TRUNC(A.flt_a_asp_prof_time_entry) AS entry_date
-  FROM prudev.v_aiu_flt A
-  WHERE A.flt_lobt >= ", query_from, " - 2
-    AND A.flt_lobt <  TRUNC(SYSDATE) + 2
-    AND A.flt_a_asp_prof_time_entry >= ", query_from, "
-    AND A.flt_a_asp_prof_time_entry <  TRUNC(SYSDATE)
-    AND A.flt_state IN ('TE','TA','AA')
-),
-
-/* Arrival country (no validity) */
-ARR_MAP AS (
-  SELECT
-    f.flt_uid,
-    COALESCE(p.AIU_ISO_COUNTRY_CODE, '##') AS arr_iso_cty_code,
-    f.entry_date,
-    f.ao_icao_id
-  FROM FLIGHTS f
-  LEFT JOIN DIM_APT p
-    ON p.icao_code = f.flt_ctfm_ades
-),
-
-/* AO validity: pick exactly one AO row per flight/date */
-AO_X AS (
-  SELECT
-    m.flt_uid,
-    d.ao_id,
-    d.ao_code,
-    ROW_NUMBER() OVER (
-      PARTITION BY m.flt_uid
-      ORDER BY d.wef DESC NULLS LAST, d.til DESC NULLS LAST
-    ) AS rn
-  FROM ARR_MAP m
-  LEFT JOIN DIM_AO d
-    ON d.ao_code = m.ao_icao_id
-   AND m.entry_date BETWEEN d.wef AND d.til  -- inclusive ends
-),
-
-/* One resolved row per flight */
-DATA_DAY AS (
-  SELECT
-    m.entry_date,
-    m.arr_iso_cty_code,
-    NVL(x.ao_id, 99999)   AS ao_id,
-    NVL(x.ao_code, 'ZZZ') AS ao_code,
-    m.flt_uid
-  FROM ARR_MAP m
-  LEFT JOIN AO_X x
-    ON x.flt_uid = m.flt_uid
-   AND x.rn = 1
-)
-
-SELECT
-  a.entry_date,
-  a.ao_id,
-  a.ao_code,
-  a.arr_iso_cty_code,
-  COUNT(a.flt_uid) AS flight
-FROM DATA_DAY a
-WHERE a.ao_id <> 99999
-GROUP BY
-  a.entry_date,
-  a.ao_id,
-  a.ao_code,
-  a.arr_iso_cty_code
-ORDER BY a.entry_date, a.ao_id, flight DESC
-    
-"
-)
-
-## ao_ap_dep_new ----
-ao_ap_dep_new_day_base_query <- paste0("
+## ao_ap_dep ----
+ao_ap_dep_day_base_query <- paste0("
 /* file: sql/dep_airport_bk_by_ao_validity_no_dupes.sql */
 WITH
 DIM_AIRPORT AS (
-  SELECT *
+  SELECT 
+      BK_AP_ID,
+	    EC_AP_CODE,
+	    EC_AP_NAME,
+	    CFMU_AP_CODE,
+	    LATITUDE,
+	    LONGITUDE,
+      aiu_iso_ct_code,
+	    VALID_FROM,
+	    VALID_TO
   FROM pruread.v_aiu_dim_airport
   WHERE cfmu_ap_code IS NOT NULL
 ),
+
 DIM_AO AS (
   SELECT DISTINCT ao_id, ao_code, wef, til
   FROM ldw_acc.AO_GROUPS_ASSOCIATION
 ),
+
 /* Prefilter flights; keep entry_date once */
 FLIGHTS AS (
   SELECT
@@ -3975,6 +3079,7 @@ FLIGHTS AS (
     AND A.flt_a_asp_prof_time_entry <  TRUNC(SYSDATE)
     AND A.flt_state IN ('TE','TA','AA')
 ),
+
 /* One DEP airport mapping per flight by date-validity */
 DEP_X AS (
   SELECT
@@ -3989,6 +3094,7 @@ DEP_X AS (
     ON d.cfmu_ap_code = f.flt_dep_ad
    AND f.entry_date BETWEEN d.valid_from AND d.valid_to
 ),
+
 /* One AO mapping per flight by date-validity */
 AO_X AS (
   SELECT
@@ -4038,107 +3144,30 @@ ORDER BY a.entry_date, a.ao_id, flight DESC
 "
 )
 
-## ao_ap_dep ----
-ao_ap_dep_day_base_query <- paste0("
-/* file: sql/dep_pru_id_by_ao_validity_no_dupes.sql */
-WITH
-DIM_AO AS (
-  SELECT DISTINCT ao_id, ao_code, wef, til
-  FROM ldw_acc.AO_GROUPS_ASSOCIATION
-),
-DIM_APT AS (
-  SELECT
-    a.id,
-    a.icao_code,
-    b.AIU_ISO_COUNTRY_CODE,
-    b.AIU_ISO_COUNTRY_NAME
-  FROM prudev.pru_airport a
-  LEFT JOIN prudev.pru_country_iso b
-    ON a.ISO_COUNTRY_CODE = b.ec_ISO_COUNTRY_CODE
-),
-/* Prefilter flights & compute entry_date once */
-FLIGHTS AS (
-  SELECT
-    A.flt_uid,
-    A.flt_dep_ad,
-    A.ao_icao_id,
-    TRUNC(A.flt_a_asp_prof_time_entry) AS entry_date
-  FROM prudev.v_aiu_flt A
-  WHERE A.flt_lobt >= ", query_from, " - 2
-    AND A.flt_lobt <  TRUNC(SYSDATE) + 2
-    AND A.flt_a_asp_prof_time_entry >= ", query_from, "
-    AND A.flt_a_asp_prof_time_entry <  TRUNC(SYSDATE)
-    AND A.flt_state IN ('TE','TA','AA')
-),
-/* Map dep PRU airport (no validity dates) */
-APT_MAP AS (
-  SELECT
-    f.flt_uid,
-    COALESCE(p.id, 1618) AS dep_arp_pru_id,  -- 1618 = unknown
-    f.entry_date,
-    f.ao_icao_id
-  FROM FLIGHTS f
-  LEFT JOIN DIM_APT p
-    ON p.icao_code = f.flt_dep_ad
-),
-/* AO validity join; choose exactly one match per flight/date */
-AO_X AS (
-  SELECT
-    m.flt_uid,
-    d.ao_id,
-    d.ao_code,
-    ROW_NUMBER() OVER (
-      PARTITION BY m.flt_uid
-      ORDER BY d.wef DESC NULLS LAST, d.til DESC NULLS LAST
-    ) AS rn
-  FROM APT_MAP m
-  LEFT JOIN DIM_AO d
-    ON d.ao_code = m.ao_icao_id
-   AND m.entry_date BETWEEN d.wef AND d.til  -- inclusive ends
-),
-/* Single resolved row per flight */
-DATA_DAY AS (
-  SELECT
-    m.entry_date,
-    m.dep_arp_pru_id,
-    NVL(x.ao_id, 99999)   AS ao_id,
-    NVL(x.ao_code, 'ZZZ') AS ao_code,
-    m.flt_uid
-  FROM APT_MAP m
-  LEFT JOIN AO_X x
-    ON x.flt_uid = m.flt_uid
-   AND x.rn = 1
-)
-SELECT
-  a.entry_date,
-  a.ao_id,
-  a.ao_code,
-  a.dep_arp_pru_id,
-  COUNT(a.flt_uid) AS flight
-FROM DATA_DAY a
-WHERE a.ao_id <> 99999
-GROUP BY
-  a.entry_date,
-  a.ao_id,
-  a.ao_code,
-  a.dep_arp_pru_id
-ORDER BY a.entry_date, a.ao_id, flight DESC
-"
-)
-
-## ao_ap_pair new ----
-ao_ap_pair_new_day_base_query <- paste0("
+## ao_ap_pair ----
+ao_ap_pair_day_base_query <- paste0("
 /* file: sql/airport_pairs_dedup.sql */
 WITH
 DIM_AIRPORT AS (
-  SELECT *
+  SELECT 
+      BK_AP_ID,
+	    EC_AP_CODE,
+	    EC_AP_NAME,
+	    CFMU_AP_CODE,
+	    LATITUDE,
+	    LONGITUDE,
+      aiu_iso_ct_code,
+	    VALID_FROM,
+	    VALID_TO
   FROM pruread.v_aiu_dim_airport
   WHERE cfmu_ap_code IS NOT NULL
 ),
+
 DIM_AO AS (
   SELECT DISTINCT ao_id, ao_code, wef, til
   FROM ldw_acc.AO_GROUPS_ASSOCIATION
 ),
+
 /* Prefilter flights and compute entry_date once */
 FLIGHTS AS (
   SELECT
@@ -4246,114 +3275,30 @@ ORDER BY arp_pair_id, ao_code, entry_date
 "
 )
 
-## ao_ap_pair ----
-ao_ap_pair_day_base_query <- paste0("
-/* file: sql/airport_pru_pairs_by_ao_validity_no_dupes.sql */
-WITH
-DIM_AO AS (
-  SELECT DISTINCT ao_id, ao_code, wef, til
-  FROM ldw_acc.AO_GROUPS_ASSOCIATION
-),
-DIM_APT AS (
-  SELECT
-    a.id,
-    a.icao_code,
-    b.AIU_ISO_COUNTRY_CODE,
-    b.AIU_ISO_COUNTRY_NAME
-  FROM prudev.pru_airport a
-  LEFT JOIN prudev.pru_country_iso b
-    ON a.ISO_COUNTRY_CODE = b.ec_ISO_COUNTRY_CODE
-),
-/* Prefilter flights; keep entry_date once */
-FLIGHTS AS (
-  SELECT
-    A.flt_uid,
-    A.flt_dep_ad,
-    A.flt_ctfm_ades,
-    A.ao_icao_id,
-    TRUNC(A.flt_a_asp_prof_time_entry) AS entry_date
-  FROM prudev.v_aiu_flt A
-  WHERE A.flt_lobt >= ", query_from, " - 2
-    AND A.flt_lobt <  TRUNC(SYSDATE) + 2
-    AND A.flt_a_asp_prof_time_entry >= ", query_from, "
-    AND A.flt_a_asp_prof_time_entry <  TRUNC(SYSDATE)
-    AND A.flt_state IN ('TE','TA','AA')
-),
-/* Map dep/arr PRU airport ids (no validity) */
-APT_MAP AS (
-  SELECT
-    f.flt_uid,
-    COALESCE(d.id, 1618) AS dep_id,  -- 1618 = unknown
-    COALESCE(a.id, 1618) AS arr_id,
-    f.entry_date,
-    f.ao_icao_id
-  FROM FLIGHTS f
-  LEFT JOIN DIM_APT d ON d.icao_code = f.flt_dep_ad
-  LEFT JOIN DIM_APT a ON a.icao_code = f.flt_ctfm_ades
-),
-/* AO validity join; keep exactly one AO per flight/date */
-AO_X AS (
-  SELECT
-    m.flt_uid,
-    o.ao_id,
-    o.ao_code,
-    ROW_NUMBER() OVER (
-      PARTITION BY m.flt_uid
-      ORDER BY o.wef DESC NULLS LAST, o.til DESC NULLS LAST
-    ) AS rn
-  FROM APT_MAP m
-  LEFT JOIN DIM_AO o
-    ON o.ao_code = m.ao_icao_id
-   AND m.entry_date BETWEEN o.wef AND o.til
-),
-/* One resolved row per flight, canonicalize the airport pair */
-DATA_DAY AS (
-  SELECT
-    m.entry_date,
-    NVL(x.ao_id, 99999)   AS ao_id,
-    NVL(x.ao_code, 'ZZZ') AS ao_code,
-    /* order the pair so (larger, smaller) per your original logic */
-    CASE WHEN m.dep_id <= m.arr_id THEN m.arr_id ELSE m.dep_id END AS arp_pru_id_1,
-    CASE WHEN m.dep_id <= m.arr_id THEN m.dep_id ELSE m.arr_id END AS arp_pru_id_2,
-    m.flt_uid
-  FROM APT_MAP m
-  LEFT JOIN AO_X x
-    ON x.flt_uid = m.flt_uid
-   AND x.rn = 1
-)
-SELECT
-  a.entry_date,
-  a.ao_id,
-  a.ao_code,
-  a.arp_pru_id_1,
-  a.arp_pru_id_2,
-  (a.arp_pru_id_1 || '-' || a.arp_pru_id_2) AS arp_pair_id,
-  COUNT(a.flt_uid) AS flight
-FROM DATA_DAY a
-WHERE a.ao_id <> 99999
-GROUP BY
-  a.entry_date,
-  a.ao_id,
-  a.ao_code,
-  a.arp_pru_id_1,
-  a.arp_pru_id_2
-ORDER BY a.entry_date, a.ao_id, flight DESC    
-"
-)
-
-## ao_ap_arr_delay new----
-ao_ap_arr_delay_new_day_base_query <- paste0("
+## ao_ap_arr_delay ----
+ao_ap_arr_delay_day_base_query <- paste0("
 /* file: sql/arrival_delay_grouped_by_bk_and_ao_no_dupes.sql */
 WITH
 DIM_AO AS (
   SELECT DISTINCT ao_id, ao_code, wef, til
   FROM ldw_acc.AO_GROUPS_ASSOCIATION
 ),
+
 DIM_AIRPORT AS (
-  SELECT *
+  SELECT 
+      BK_AP_ID,
+	    EC_AP_CODE,
+	    EC_AP_NAME,
+	    CFMU_AP_CODE,
+	    LATITUDE,
+	    LONGITUDE,
+      aiu_iso_ct_code,
+	    VALID_FROM,
+	    VALID_TO
   FROM pruread.v_aiu_dim_airport
   WHERE cfmu_ap_code IS NOT NULL
 ),
+
 Apt_arr_reg AS (
   SELECT DISTINCT
          Agg_flt_lobt    AS flts_lobt,
@@ -4364,6 +3309,7 @@ Apt_arr_reg AS (
     AND Agg_flt_mp_regu_loc_ty = 'Airport'
     AND agg_flt_lobt >= ", query_from, "
 ),
+
 /* Prefilter flights & compute dates once */
 FLIGHTS AS (
   SELECT
@@ -4382,6 +3328,7 @@ FLIGHTS AS (
     AND A.flt_lobt      <  TRUNC(SYSDATE) + 2
     AND A.flt_state IN ('TE','TA','AA')
 ),
+
 /* AO validity: choose exactly one AO per flight/date */
 AO_X AS (
   SELECT
@@ -4397,6 +3344,7 @@ AO_X AS (
     ON d.ao_code = f.ao_icao_id
    AND f.arr_date BETWEEN d.wef AND d.til  -- inclusive ends
 ),
+
 /* One resolved row per flight */
 DATA_DAY AS (
   SELECT
@@ -4414,6 +3362,7 @@ DATA_DAY AS (
     ON x.flt_uid = f.flt_uid
    AND x.rn = 1
 ),
+
 /* Windowed metrics per (arr_date, ao_code, ades) */
 Apt_arr_delay_ao AS (
   SELECT DISTINCT
@@ -4435,6 +3384,7 @@ Apt_arr_delay_ao AS (
    AND a.flt_ftfm_ades = b.reg_arpt
   WHERE a.ao_id <> 99999
 ),
+
 /* Map BK airport id for (arr_date, ades) with date-validity; pick one */
 ADES_BK_MAP AS (
   SELECT
@@ -4450,6 +3400,7 @@ ADES_BK_MAP AS (
     ON c.cfmu_ap_code = g.flt_ctfm_ades
    AND g.arr_date BETWEEN c.valid_from AND c.valid_to
 ),
+
 /* Final grouped output */
 DATA_GROUP AS (
   SELECT
@@ -4468,6 +3419,7 @@ DATA_GROUP AS (
    AND m.rn = 1
   GROUP BY a.arr_date, a.ao_code, a.ao_id, m.bk_ap_id, a.flt_ctfm_ades
 )
+
 SELECT
   CAST(EXTRACT(YEAR FROM arr_date) AS INTEGER) AS year,
   a.*
@@ -4477,250 +3429,9 @@ ORDER BY ao_id, arr_date DESC, flts DESC, ao_code
 "
 )
 
-## ao_ap_arr_delay ----
-ao_ap_arr_delay_day_base_query <- paste0("
-/* file: sql/arrival_delay_by_pru_airport_and_ao_dedup.sql */
-WITH
-DIM_AO AS (
-  SELECT DISTINCT ao_id, ao_code, wef, til
-  FROM ldw_acc.AO_GROUPS_ASSOCIATION
-),
-/* Defensive: ensure unique icao_code -> id */
-DIM_APT AS (
-  SELECT id, icao_code
-  FROM (
-    SELECT p.*,
-           ROW_NUMBER() OVER (PARTITION BY p.icao_code ORDER BY p.id) AS rn
-    FROM prudev.PRU_AIRPORT p
-  )
-  WHERE rn = 1
-),
-/* Prefilter flights & compute dates once */
-FLIGHTS AS (
-  SELECT
-    A.flt_uid,
-    A.flt_ftfm_ades,
-    A.flt_ctfm_ades,
-    A.flt_most_penal_regu_id,
-    A.atfm_delay,
-    A.ao_icao_id,
-    TRUNC(A.Arvt_3)   AS arr_date,
-    TRUNC(A.flt_lobt) AS flt_lobt_trunc
-  FROM prudev.v_aiu_flt A
-  WHERE TRUNC(A.Arvt_3) >= ", query_from, "
-    AND TRUNC(A.Arvt_3) <  TRUNC(SYSDATE)
-    AND A.flt_lobt      >= ", query_from, " - 2
-    AND A.flt_lobt      <  TRUNC(SYSDATE) + 2
-    AND A.flt_state IN ('TE','TA','AA')
-),
-/* AO validity join: pick exactly one AO per flight */
-AO_X AS (
-  SELECT
-    f.flt_uid,
-    d.ao_id,
-    d.ao_code,
-    ROW_NUMBER() OVER (
-      PARTITION BY f.flt_uid
-      ORDER BY d.wef DESC NULLS LAST, d.til DESC NULLS LAST
-    ) AS rn
-  FROM FLIGHTS f
-  LEFT JOIN DIM_AO d
-    ON d.ao_code = f.ao_icao_id
-   AND f.arr_date BETWEEN d.wef AND d.til   -- inclusive ends
-),
-/* One resolved row per flight */
-DATA_DAY AS (
-  SELECT
-    f.flt_ftfm_ades,
-    f.flt_ctfm_ades,
-    f.flt_most_penal_regu_id,
-    f.atfm_delay,
-    NVL(x.ao_id,   99999) AS ao_id,
-    NVL(x.ao_code, 'ZZZ') AS ao_code,
-    f.arr_date,
-    f.flt_lobt_trunc,
-    f.flt_uid
-  FROM FLIGHTS f
-  LEFT JOIN AO_X x
-    ON x.flt_uid = f.flt_uid AND x.rn = 1
-),
-/* Regulation reference */
-Apt_arr_reg AS (
-  SELECT DISTINCT
-         Agg_flt_lobt    AS flts_lobt,
-         Agg_flt_mp_regu_id,
-         Ref_loc_id      AS reg_arpt
-  FROM Prudev.V_aiu_agg_flt_flow
-  WHERE Mp_regu_loc_cat = 'Arrival'
-    AND Agg_flt_mp_regu_loc_ty = 'Airport'
-    AND agg_flt_lobt >= ", query_from, "
-),
-/* Windowed metrics per (arr_date, ao_code, ades) */
-Apt_arr_delay_ao AS (
-  SELECT DISTINCT
-         a.arr_date,
-         a.ao_id,
-         a.ao_code,
-         a.flt_ctfm_ades,
-         COUNT(*) OVER (
-           PARTITION BY a.arr_date, a.ao_code, a.flt_ctfm_ades
-         ) AS flts,
-         SUM(NVL2(r.Agg_flt_mp_regu_id, DECODE(a.atfm_delay, NULL, 0, 0, 0, 1), 0))
-           OVER (PARTITION BY a.arr_date, a.ao_code, a.flt_ctfm_ades) AS delayed_flts,
-         SUM(NVL2(r.Agg_flt_mp_regu_id, a.atfm_delay, 0))
-           OVER (PARTITION BY a.arr_date, a.ao_code, a.flt_ctfm_ades) AS delay_amnt
-  FROM DATA_DAY a
-  LEFT JOIN Apt_arr_reg r
-    ON a.flt_lobt_trunc = r.flts_lobt
-   AND a.flt_most_penal_regu_id = r.Agg_flt_mp_regu_id
-   AND a.flt_ftfm_ades = r.reg_arpt
-  WHERE a.ao_id <> 99999   -- drop unresolved AO
-),
-/* Collapse to one row per (arr_date, ao_code, ao_id, ades) before final grouping */
-METRICS_DISTINCT AS (
-  SELECT DISTINCT
-         arr_date, ao_code, ao_id, flt_ctfm_ades,
-         flts, delayed_flts, delay_amnt
-  FROM Apt_arr_delay_ao
-)
-SELECT
-  m.arr_date,
-  m.ao_code,
-  m.ao_id,
-  p.id AS arr_arp_pru_id,
-  SUM(m.flts)         AS flts,
-  SUM(m.delayed_flts) AS delayed_flts,
-  SUM(m.delay_amnt)   AS delay_amnt
-FROM METRICS_DISTINCT m
-LEFT JOIN DIM_APT p
-  ON p.icao_code = m.flt_ctfm_ades
-GROUP BY m.arr_date, m.ao_code, m.ao_id, p.id
-ORDER BY m.arr_date DESC, flts DESC, m.ao_code
-
-"
-)
-
 # ANSP ----
 ## sp_day ----
 sp_traffic_delay_day_base_query <- paste0("
-WITH 
-ANSP_DATA AS (
-	SELECT
-		unit_id,
-		entry_date,
-		syn_tdm AS tdm,
-		syn_tdm_ert AS tdm_ert,
-		syn_tdf_ert AS tdf_ert,
-		syn_tdm_15_ert AS tdm_15_ert,
-		syn_tdf_15_ert AS tdf_15_ert,
-		syn_tdm_ert_a AS tdm_ert_a,
-		syn_tdm_ert_c AS tdm_ert_c,
-		syn_tdm_ert_d AS tdm_ert_d,
-		syn_tdm_ert_e AS tdm_ert_e,
-		syn_tdm_ert_g AS tdm_ert_g,
-		syn_tdm_ert_i AS tdm_ert_i,
-		syn_tdm_ert_m AS tdm_ert_m,
-		syn_tdm_ert_n AS tdm_ert_n,
-		syn_tdm_ert_o AS tdm_ert_o,
-		syn_tdm_ert_p AS tdm_ert_p,
-		syn_tdm_ert_r AS tdm_ert_r,
-		syn_tdm_ert_s AS tdm_ert_s,
-		syn_tdm_ert_t AS tdm_ert_t,
-		syn_tdm_ert_v AS tdm_ert_v,
-		syn_tdm_ert_w AS tdm_ert_w,
-		syn_tdm_ert_na AS tdm_ert_na
-	FROM
-		prudev.V_SYN12_FAC_DC_DD_APP
-	WHERE
-		entry_date >= to_date('01-01-2019', 'dd-mm-yyyy')-10
-			AND unit_type = 'ANSP'
-),
-
--- flights
-OP_AUA_DATA as 
-(
-SELECT 
-FLT_MODEL_FLT_UID flight_sk, c.ansp_id,  c.ansp_name,
-ASP_PROF_TIME_ENTRY as asp_time_entry
-FROM prudev.aiu_Asp_Prof_calc a
-inner join prudev.v_aiu_flt b on (a.FLT_MODEL_FLT_UID = b.flt_uid)
-inner join PRUDEV.V_PRU_REL_CFMU_AUA_ANSP C ON (a.ASP_PROF_ID = c.aua_code)
-where a.FLT_MODEL_TY =3 
- and a.flt_model_lobt >= trunc(sysdate)-8 and a.flt_model_lobt < trunc(sysdate)+1 
-   and b.flt_lobt >= trunc(sysdate)-8 and b.flt_lobt < trunc(sysdate)+1
-and a.asp_prof_time_entry >= trunc(sysdate)-8  and a.asp_prof_time_entry < trunc(sysdate)+1   and asp_prof_ty = 'AUA'
-and b.flt_state IN ('TE', 'TA', 'AA') 
-and a.ASP_PROF_ID = c.aua_code and  a.ASP_PROF_TIME_ENTRY >= c.wef and  ASP_PROF_TIME_ENTRY <= c.till
-),
-
- OP_ANSP_DATA as (
-SELECT flight_sk, ansp_id, ansp_name,asp_time_entry as first_entry_time,  
-     row_number() OVER ( PARTITION BY  ansp_id,flight_sk ORDER BY  asp_time_entry) row_num 
-FROM OP_AUA_DATA
- ),
- 
-OP_ANSP_DATA2  as (
-SELECT  ansp_id,  ansp_name
-       , trunc(first_entry_time) as ENTRY_DATE
-       , count(*) as FLT_DAIO 
-FROM  OP_ANSP_DATA
-WHERE 
-       row_num = 1 
-GROUP BY trunc(first_entry_time), ansp_name, ansp_id 
-)
-,
-
-FLT_ANSP_DATA as (
-SELECT ansp_name, ansp_id,
-       entry_date,
-       flt_daio
-FROM op_ansp_data2 
-where entry_date >=trunc(sysdate)-7 and entry_date < trunc(sysdate)
-
-UNION
-SELECT unit_name as ansp_name, unit_id as ansp_id,
-       FLIGHT_DATE as entry_date,
-       TTF_FLT as FLT_DAIO
-FROM  PRUDEV.V_PRU_FAC_TD_DD  
-WHERE  unit_kind = 'ANSP' and
-      flight_date >=to_date('01-01-2019', 'dd-mm-yyyy')-10 and 
-      flight_date < trunc(sysdate)-7
-)  
-
-SELECT
-	COALESCE(b.unit_id, c.ansp_id) AS ansp_id,
-	COALESCE(b.entry_date, c.entry_date) AS entry_date,
-	COALESCE(tdm, 0) AS tdm,
-	COALESCE(tdm_ert, 0) AS tdm_ert,
-	COALESCE(tdf_ert, 0) AS tdf_ert,
-	COALESCE(tdm_15_ert, 0) AS tdm_15_ert,
-	COALESCE(tdf_15_ert, 0) AS tdf_15_ert,
-	COALESCE(tdm_ert_a, 0) AS tdm_ert_a,
-	COALESCE(tdm_ert_c, 0) AS tdm_ert_c,
-	COALESCE(tdm_ert_d, 0) AS tdm_ert_d,
-	COALESCE(tdm_ert_e, 0) AS tdm_ert_e,
-	COALESCE(tdm_ert_g, 0) AS tdm_ert_g,
-	COALESCE(tdm_ert_i, 0) AS tdm_ert_i,
-	COALESCE(tdm_ert_m, 0) AS tdm_ert_m,
-	COALESCE(tdm_ert_n, 0) AS tdm_ert_n,
-	COALESCE(tdm_ert_o, 0) AS tdm_ert_o,
-	COALESCE(tdm_ert_p, 0) AS tdm_ert_p,
-	COALESCE(tdm_ert_r, 0) AS tdm_ert_r,
-	COALESCE(tdm_ert_s, 0) AS tdm_ert_s,
-	COALESCE(tdm_ert_t, 0) AS tdm_ert_t,
-	COALESCE(tdm_ert_v, 0) AS tdm_ert_v,
-	COALESCE(tdm_ert_w, 0) AS tdm_ert_w,
-	COALESCE(tdm_ert_na, 0) AS tdm_ert_na,
-	COALESCE(c.flt_daio, 0) AS flt_daio
-FROM ANSP_DATA b
-FULL outer JOIN FLT_ANSP_DATA c ON b.entry_DATE = c.entry_date AND b.unit_id = c.ansp_id
-ORDER BY ansp_id, entry_date
-"
-)
-
-## sp_day new ----
-# the same with extract year at the end
-sp_traffic_delay_new_day_base_query <- paste0("
 WITH 
 ANSP_DATA AS (
 	SELECT
