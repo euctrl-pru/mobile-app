@@ -119,7 +119,7 @@ copy_app_data <- function(data_day_date) {
                    # ,
                    "enrico.spinielli@eurocontrol.int",
                    # "delia.budulan@eurocontrol.int"
-                   , "nora.cashman@eurocontrol.int"
+                   "nora.cashman@eurocontrol.int"
       )
       control <- list(smtpServer="mailservices.eurocontrol.int")
       
