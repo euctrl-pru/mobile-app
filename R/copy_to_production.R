@@ -29,11 +29,11 @@ if (archive_mode) {
 }
 
 if (!archive_mode) {
-  ## update basic tables
+  # update basic tables
   e <- new.env(parent = .GlobalEnv)
   source(here("..", "mobile-app", "R", "update_base_tables.R"), local = e)
   rm(e)
-  
+
   ## update app aggregations
   e <- new.env(parent = .GlobalEnv)
   source(here("..", "mobile-app", "R", "update_app_source_tables.R"), local = e)
@@ -115,8 +115,7 @@ copy_app_data <- function(data_day_date) {
       msg = paste(.x, "datasets not properly copied to network folder")
       
       from    <- "oscar.alfaro@eurocontrol.int"
-      to      <- c("oscar.alfaro@eurocontrol.int"
-                   # ,
+      to      <- c("oscar.alfaro@eurocontrol.int",
                    "enrico.spinielli@eurocontrol.int",
                    # "delia.budulan@eurocontrol.int"
                    "nora.cashman@eurocontrol.int"
