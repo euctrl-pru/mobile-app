@@ -74,7 +74,7 @@ ap_traffic_delay_data_last_day <- ap_traffic_delay_data %>%
 #### Traffic  ----
 #selecting columns and renaming
 apt_traffic_for_json <- ap_traffic_delay_data_last_day %>%
-  right_join(list_airport_extended_new, by = c("ARP_CODE" = "EC_AP_CODE", "ARP_NAME" = "EC_AP_NAME")) %>%
+  right_join(list_airport_extended, by = c("ARP_CODE" = "EC_AP_CODE", "ARP_NAME" = "EC_AP_NAME")) %>%
   group_by(FLAG_TOP_APT) %>%
   mutate(
     DY_TFC_RANK = if_else(FLAG_TOP_APT == "N", NA, min_rank(desc(DY_TFC))),
@@ -112,7 +112,7 @@ apt_traffic_for_json <- ap_traffic_delay_data_last_day %>%
 #### Delay  ----
 apt_delay_for_json  <- ap_traffic_delay_data_last_day %>%
   ### rank calculation
-  right_join(list_airport_extended_new, by = c("ARP_CODE" = "EC_AP_CODE", "ARP_NAME" = "EC_AP_NAME")) %>%
+  right_join(list_airport_extended, by = c("ARP_CODE" = "EC_AP_CODE", "ARP_NAME" = "EC_AP_NAME")) %>%
   group_by(FLAG_TOP_APT) %>%
   mutate(
     DY_DLY_RANK = if_else(FLAG_TOP_APT == "N", NA, 
@@ -362,7 +362,7 @@ apt_punct_y2d <- apt_punct_raw %>%
 #merging the totals and the year to date data
 apt_punct_for_json <- merge(apt_punct_d_w, apt_punct_y2d, by= c("ARP_CODE", "ARP_NAME")) %>%
   ### rank calculation
-  right_join(list_airport_extended_new, by = c("ARP_CODE" = "EC_AP_CODE", "ARP_NAME" = "EC_AP_NAME")) %>%
+  right_join(list_airport_extended, by = c("ARP_CODE" = "EC_AP_CODE", "ARP_NAME" = "EC_AP_NAME")) %>%
   group_by(FLAG_TOP_APT) %>%
   mutate(
     DY_ARR_PUN_RANK = if_else(FLAG_TOP_APT == "N", NA, min_rank(desc(DY_ARR_PUN))),
@@ -387,7 +387,7 @@ apt_punct_for_json <- merge(apt_punct_d_w, apt_punct_y2d, by= c("ARP_CODE", "ARP
   arrange(ARP_CODE)
 
 #### Join strings and save  ----
-apt_json_app_j <- list_airport_extended_new %>%
+apt_json_app_j <- list_airport_extended %>%
   select (
     -FLAG_TOP_APT, ICAO2LETTER, -BK_AP_ID, -ICAO2LETTER,
     APT_LATITUDE = LATITUDE,
@@ -430,7 +430,7 @@ stakeholder <- str_sub(mydataframe, 1, 2)
 
 #### day ----
 apt_ao_data_day_int <- create_ranking(mydataframe, "DAY", DEP_ARR) %>% 
-  filter(STK_CODE %in% list_airport_new$EC_AP_CODE)
+  filter(STK_CODE %in% list_airport$EC_AP_CODE)
 
 apt_ao_data_day <- apt_ao_data_day_int |>
   select(
@@ -448,7 +448,7 @@ apt_ao_data_day <- apt_ao_data_day_int |>
 
 #### week ----
 apt_ao_data_week_int <- create_ranking(mydataframe, "WEEK", DEP_ARR) %>% 
-  filter(STK_CODE %in% list_airport_new$EC_AP_CODE)
+  filter(STK_CODE %in% list_airport$EC_AP_CODE)
 
 apt_ao_data_week <- apt_ao_data_week_int |>
   select(
@@ -467,7 +467,7 @@ apt_ao_data_week <- apt_ao_data_week_int |>
 
 #### y2d ----
 apt_ao_data_y2d_int <- create_ranking(mydataframe, "Y2D", DEP_ARR) %>% 
-  filter(STK_CODE %in% list_airport_new$EC_AP_CODE)
+  filter(STK_CODE %in% list_airport$EC_AP_CODE)
 
 apt_ao_data_y2d <- apt_ao_data_y2d_int |>
   select(
@@ -527,7 +527,7 @@ stakeholder <- str_sub(mydataframe, 1, 2)
 
 #### day ----
 apt_apt_data_day_int <- create_ranking(mydataframe, "DAY", DEP) %>% 
-  filter(STK_CODE %in% list_airport_new$EC_AP_CODE)
+  filter(STK_CODE %in% list_airport$EC_AP_CODE)
 
 apt_apt_data_day <- apt_apt_data_day_int |>
   select(
@@ -545,7 +545,7 @@ apt_apt_data_day <- apt_apt_data_day_int |>
 
 #### week ----
 apt_apt_data_week_int <- create_ranking(mydataframe, "WEEK", DEP) %>% 
-  filter(STK_CODE %in% list_airport_new$EC_AP_CODE)
+  filter(STK_CODE %in% list_airport$EC_AP_CODE)
 
 apt_apt_data_week <- apt_apt_data_week_int |>
   select(
@@ -564,7 +564,7 @@ apt_apt_data_week <- apt_apt_data_week_int |>
 
 #### y2d ----
 apt_apt_data_y2d_int <- create_ranking(mydataframe, "Y2D", DEP) %>% 
-  filter(STK_CODE %in% list_airport_new$EC_AP_CODE)
+  filter(STK_CODE %in% list_airport$EC_AP_CODE)
 
 apt_apt_data_y2d <- apt_apt_data_y2d_int |>
   select(
@@ -623,7 +623,7 @@ stakeholder <- str_sub(mydataframe, 1, 2)
 
 #### day ----
 apt_st_data_day_int <- create_ranking(mydataframe, "DAY", DEP) %>% 
-  filter(STK_CODE %in% list_airport_new$EC_AP_CODE)
+  filter(STK_CODE %in% list_airport$EC_AP_CODE)
 
 apt_st_data_day <- apt_st_data_day_int |>
   select(
@@ -640,7 +640,7 @@ apt_st_data_day <- apt_st_data_day_int |>
 
 #### week ----
 apt_st_data_week_int <- create_ranking(mydataframe, "WEEK", DEP) %>% 
-  filter(STK_CODE %in% list_airport_new$EC_AP_CODE)
+  filter(STK_CODE %in% list_airport$EC_AP_CODE)
 
 apt_st_data_week <- apt_st_data_week_int |>
   select(
@@ -658,7 +658,7 @@ apt_st_data_week <- apt_st_data_week_int |>
 
 #### y2d ----
 apt_st_data_y2d_int <- create_ranking(mydataframe, "Y2D", DEP) %>% 
-  filter(STK_CODE %in% list_airport_new$EC_AP_CODE)
+  filter(STK_CODE %in% list_airport$EC_AP_CODE)
 
 apt_st_data_y2d <- apt_st_data_y2d_int |>
   select(
@@ -723,13 +723,13 @@ print(paste(format(now(), "%H:%M:%S"), "apt_st_ranking_traffic"))
 mydataframe <- "ap_ms_agg"
 stakeholder <- str_sub(mydataframe, 1, 2)
 
-ms_ap_full <- crossing(list_marktet_segment_app_new, list_airport_new$EC_AP_CODE) %>% 
+ms_ap_full <- crossing(list_marktet_segment_app, list_airport$EC_AP_CODE) %>% 
   select (CODE = MS_ID, NAME = MS_NAME, STK_CODE = contains("EC_AP_CODE")) %>% arrange(STK_CODE, CODE)
 
 
 #### day ----
 apt_ms_data_day_int <- create_ranking(mydataframe, "DAY", DEP_ARR) %>% 
-  filter(STK_CODE %in% list_airport_new$EC_AP_CODE) %>% 
+  filter(STK_CODE %in% list_airport$EC_AP_CODE) %>% 
   group_by(STK_CODE) |>
   mutate(SHARE = ifelse(CURRENT == 0, 0,
                               CURRENT/sum(CURRENT, na.rm = TRUE))) |>
@@ -761,7 +761,7 @@ apt_ms_data_day <- apt_ms_data_day_full |>
 
 #### week ----
 apt_ms_data_week_int <- create_ranking(mydataframe, "WEEK", DEP_ARR) %>% 
-  filter(STK_CODE %in% list_airport_new$EC_AP_CODE) %>% 
+  filter(STK_CODE %in% list_airport$EC_AP_CODE) %>% 
   group_by(STK_CODE) |>
   mutate(SHARE = ifelse(CURRENT == 0, 0,
                               CURRENT/sum(CURRENT, na.rm = TRUE))) |>
@@ -794,7 +794,7 @@ apt_ms_data_week <- apt_ms_data_week_full |>
 
 #### y2d ----
 apt_ms_data_y2d_int <- create_ranking(mydataframe, "Y2D", DEP_ARR) %>% 
-  filter(STK_CODE %in% list_airport_new$EC_AP_CODE) %>% 
+  filter(STK_CODE %in% list_airport$EC_AP_CODE) %>% 
   group_by(STK_CODE) |>
   mutate(SHARE = ifelse(CURRENT == 0, 0,
                         CURRENT/sum(CURRENT, na.rm = TRUE))) |>
@@ -929,7 +929,7 @@ apt_punct_evo <- apt_punct_raw %>%
   ) %>%
   filter(DAY_DATE >= as.Date(paste0("01-01-", data_day_year-1), format = "%d-%m-%Y"),
          DAY_DATE <= last_day_punct) %>%
-  right_join(select(list_airport_extended_new, EC_AP_CODE, EC_AP_NAME), join_by("ARP_CODE"=="EC_AP_CODE")) %>%
+  right_join(select(list_airport_extended, EC_AP_CODE, EC_AP_NAME), join_by("ARP_CODE"=="EC_AP_CODE")) %>%
   select(
     ARP_CODE,
     ARP_NAME,

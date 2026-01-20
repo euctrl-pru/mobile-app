@@ -724,19 +724,6 @@ stakeholder <- str_sub(mydataframe, 1, 2)
 # if (archive_mode) {
   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
-# } else {
-#   df <- read_xlsx(
-#     path  = fs::path_abs(
-#       str_glue(ao_base_file),
-#       start = ao_base_dir),
-#     sheet = "ao_state_des_day",
-#     range = cell_limits(c(1, 1), c(NA, NA))) %>%
-#     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-# 
-#   # save pre-processed file in archive for generation of past json files
-#   write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
-# }
-
 # process data
 ao_st_des_data_day_int <- assign(mydataframe, df) %>%
   mutate(TO_DATE = max(TO_DATE)) %>%
@@ -783,19 +770,6 @@ stakeholder <- str_sub(mydataframe, 1, 2)
 # if (archive_mode) {
   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
 
-# } else {
-#   df <- read_xlsx(
-#     path  = fs::path_abs(
-#       str_glue(ao_base_file),
-#       start = ao_base_dir),
-#     sheet = "ao_state_des_week",
-#     range = cell_limits(c(1, 1), c(NA, NA))) %>%
-#     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-# 
-#   # save pre-processed file in archive for generation of past json files
-#   write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
-# }
-  
 # process data
 ao_st_des_data_wk <- assign(mydataframe, df) %>%
   mutate(FLIGHT = FLIGHT / 7) %>%
@@ -840,19 +814,6 @@ stakeholder <- str_sub(mydataframe, 1, 2)
 
 # if (archive_mode) {
   df <-  read_csv(here(archive_dir_raw, stakeholder, myarchivefile), show_col_types = FALSE)
-
-# } else {
-#   df <- read_xlsx(
-#     path  = fs::path_abs(
-#       str_glue(ao_base_file),
-#       start = ao_base_dir),
-#     sheet = "ao_state_des_y2d",
-#     range = cell_limits(c(1, 1), c(NA, NA))) %>%
-#     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-# 
-#   # save pre-processed file in archive for generation of past json files
-#   write_csv(df, here(archive_dir_raw, stakeholder, myarchivefile))
-# }
 
 # process data
 ao_st_des_data_y2d <- assign(mydataframe, df) %>%

@@ -28,46 +28,43 @@ dim_ao_group1_last <- dim_ao_group1 %>%
   filter(TIL == max(TIL)) %>% 
   ungroup()
 
-list_ao <- export_query(list_ao_query) %>% 
-  left_join(dim_ao_group, by = c("AO_ID", "AO_CODE", "AO_NAME")) %>% 
-  select (AO_ID, AO_CODE, AO_NAME, AO_GRP_CODE, AO_GRP_NAME)
+# list_ao <- export_query(list_ao_query) %>% 
+#   left_join(dim_ao_group, by = c("AO_ID", "AO_CODE", "AO_NAME")) %>% 
+#   select (AO_ID, AO_CODE, AO_NAME, AO_GRP_CODE, AO_GRP_NAME)
 
-list_ao_new <- export_query(list_ao_query_new)
+list_ao <- export_query(list_ao_query)
 
-list_ao_group <- list_ao %>% group_by(AO_GRP_CODE, AO_GRP_NAME) %>% 
-  summarise(AO_GRP_CODE =  max(AO_GRP_CODE), AO_GRP_NAME =  max(AO_GRP_NAME)) %>%
-  arrange(AO_GRP_CODE) %>% ungroup()
+# list_ao_group <- list_ao %>% group_by(AO_GRP_CODE, AO_GRP_NAME) %>% 
+#   summarise(AO_GRP_CODE =  max(AO_GRP_CODE), AO_GRP_NAME =  max(AO_GRP_NAME)) %>%
+#   arrange(AO_GRP_CODE) %>% ungroup()
 
-list_ao_group_new <- export_query(list_ao_grp_query)
+list_ao_group <- export_query(list_ao_grp_query)
 
 
 ## market segment ---- 
-dim_marktet_segment <- export_query(dim_ms_query) 
+# dim_marktet_segment <- export_query(dim_ms_query) 
 
-dim_marktet_segment_new <- export_query(dim_ms_query) %>% rename(MS_NAME = MARKET_SEGMENT)
+dim_marktet_segment <- export_query(dim_ms_query) %>% rename(MS_NAME = MARKET_SEGMENT)
 
-list_marktet_segment_app_new <- dim_marktet_segment_new %>% 
+list_marktet_segment_app <- dim_marktet_segment %>% 
   filter(MS_ID %in% c(2,3,4, 6, 7,8)) %>% 
   add_row(MS_ID = 9, MS_NAME = "Other Types")
   
 
 ## airport ----
-dim_airport <- export_query(dim_ap_query) 
+# dim_airport <- export_query(dim_ap_query) 
 
-dim_airport_new <- export_query(dim_ap_query_new) %>% 
+dim_airport <- export_query(dim_ap_query) %>% 
   filter(!is.na(CFMU_AP_CODE)) %>% 
   filter(VALID_TO >= ymd(20190101)) %>% 
   group_by(BK_AP_ID, EC_AP_CODE, EC_AP_NAME, LATITUDE, LONGITUDE) %>% 
   summarise(VALID_TO = max(VALID_TO, na.rm = TRUE), .groups = "drop") %>% 
   distinct(BK_AP_ID, EC_AP_CODE, EC_AP_NAME, LATITUDE, LONGITUDE, VALID_TO)
 
-# dim_airport_new %>% group_by(BK_AP_ID) %>% summarise(myrows = n()) %>% filter(myrows>1)
-# 
-# dim_airport_new %>% filter(BK_AP_ID == 52)
 
-list_airport_new <- export_query(list_ap_query_new) 
-list_airport_extended_new <- export_query(list_ap_ext_query_new)
-list_airport_extended_iso_new <- export_query(list_ap_ext_iso_query_new)
+list_airport <- export_query(list_ap_query) 
+list_airport_extended <- export_query(list_ap_ext_query)
+list_airport_extended_iso <- export_query(list_ap_ext_iso_query)
 
 ## country ----
 ### iso ----

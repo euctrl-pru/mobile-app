@@ -50,17 +50,17 @@ import_dataframe <- function(dfname) {
   
 
   # register dim tables in the connection so they can be joined
-  exists <- DBI::dbExistsTable(con, "list_ao_new_reg")
-  if (!exists) duckdb::duckdb_register(con, "list_ao_new_reg", as.data.frame(list_ao_new))
+  exists <- DBI::dbExistsTable(con, "list_ao_reg")
+  if (!exists) duckdb::duckdb_register(con, "list_ao_reg", as.data.frame(list_ao))
   
   exists <- DBI::dbExistsTable(con, "dim_ao_group_reg")
   if (!exists) duckdb::duckdb_register(con, "dim_ao_group_reg", as.data.frame(dim_ao_group))
   
-  exists <- DBI::dbExistsTable(con, "list_airport_new_reg")
-  if (!exists) duckdb::duckdb_register(con, "list_airport_new_reg", as.data.frame(list_airport_new))
+  exists <- DBI::dbExistsTable(con, "list_airport_reg")
+  if (!exists) duckdb::duckdb_register(con, "list_airport_reg", as.data.frame(list_airport))
   
-  exists <- DBI::dbExistsTable(con, "list_airport_extended_new_reg")
-  if (!exists) duckdb::duckdb_register(con, "list_airport_extended_new_reg", as.data.frame(list_airport_extended_new))
+  exists <- DBI::dbExistsTable(con, "list_airport_extended_reg")
+  if (!exists) duckdb::duckdb_register(con, "list_airport_extended_reg", as.data.frame(list_airport_extended))
   
   exists <- DBI::dbExistsTable(con, "list_iso_country_reg")
   if (!exists) duckdb::duckdb_register(con, "list_iso_country_reg", as.data.frame(list_iso_country))
@@ -71,19 +71,19 @@ import_dataframe <- function(dfname) {
   exists <- DBI::dbExistsTable(con, "list_icao_country_spain_reg")
   if (!exists) duckdb::duckdb_register(con, "list_icao_country_spain_reg", as.data.frame(list_icao_country_spain))
 
-  exists <- DBI::dbExistsTable(con, "list_marktet_segment_app_new_reg")
-  if (!exists) duckdb::duckdb_register(con, "list_marktet_segment_app_new_reg", as.data.frame(list_marktet_segment_app_new))
+  exists <- DBI::dbExistsTable(con, "list_marktet_segment_app_reg")
+  if (!exists) duckdb::duckdb_register(con, "list_marktet_segment_app_reg", as.data.frame(list_marktet_segment_app))
   
   
   # filter to keep days and stakeholders needed for the app
   if (stakeholder == "ao") {
     df_alldays <- df_base %>% 
-      filter(AO_ID %in% list_ao_new$AO_ID)  
+      filter(AO_ID %in% list_ao$AO_ID)  
     
   } else if (stakeholder == "ap") {
     if ("BK_AP_ID" %in% colnames(df_base)) {
       df_alldays <- df_base %>% 
-        filter(BK_AP_ID %in% list_airport_extended_new$BK_AP_ID)  
+        filter(BK_AP_ID %in% list_airport_extended$BK_AP_ID)  
       if ("ADEP_CODE" %in% colnames(df_base)) {
         df_alldays <- df_alldays %>% 
           rename(AP_CODE = ADEP_CODE)  
@@ -118,7 +118,7 @@ import_dataframe <- function(dfname) {
   if (dfname == "ao_st_des") {
       df_app <- df_alldays %>% 
       filter(ARR_ISO_CT_CODE != "##") %>%  # filter unknown
-      left_join(tbl(con, "list_ao_new_reg"), by = c("AO_ID", "AO_CODE")) %>% 
+      left_join(tbl(con, "list_ao_reg"), by = c("AO_ID", "AO_CODE")) %>% 
       summarise(
         FLIGHT = sum(FLIGHT, na.rm = TRUE),
         .by = c(ENTRY_DATE, AO_GRP_CODE, AO_GRP_NAME, ARR_ISO_CT_CODE)
@@ -127,7 +127,7 @@ import_dataframe <- function(dfname) {
   } else if (dfname == "ao_ap_dep"){
     df_app <- df_alldays %>% 
       filter(BK_AP_ID != -1) %>%  # filter unknown
-      left_join(tbl(con, "list_ao_new_reg"), by = c("AO_ID", "AO_CODE")) %>% 
+      left_join(tbl(con, "list_ao_reg"), by = c("AO_ID", "AO_CODE")) %>% 
       summarise(
         FLIGHT = sum(FLIGHT, na.rm = TRUE),
         .by = c(ENTRY_DATE, AO_GRP_CODE, AO_GRP_NAME, BK_AP_ID)
@@ -136,7 +136,7 @@ import_dataframe <- function(dfname) {
     df_app <- df_alldays %>% 
       filter(BK_AP_ID_1 != -1) %>%  # filter unknown
       filter(BK_AP_ID_2 != -1) %>%  # filter unknown
-      left_join(tbl(con, "list_ao_new_reg"), by = c("AO_ID", "AO_CODE")) %>% 
+      left_join(tbl(con, "list_ao_reg"), by = c("AO_ID", "AO_CODE")) %>% 
       summarise(
         FLIGHT = sum(FLIGHT, na.rm = TRUE),
         .by = c(ENTRY_DATE, AO_GRP_CODE, AO_GRP_NAME, ARP_PAIR_ID)
@@ -144,7 +144,7 @@ import_dataframe <- function(dfname) {
   } else if (dfname == "ao_ap_arr_delay"){
     df_app <- df_alldays %>% 
       filter(BK_AP_ID != -1) %>%  # filter unknown
-      left_join(tbl(con, "list_ao_new_reg"), by = c("AO_ID", "AO_CODE")) %>% 
+      left_join(tbl(con, "list_ao_reg"), by = c("AO_ID", "AO_CODE")) %>% 
       summarise(
         FLIGHT = sum(FLTS, na.rm = TRUE),
         ARR_DELAYED_FLIGHT = sum(DELAYED_FLTS, na.rm = TRUE),
@@ -155,8 +155,8 @@ import_dataframe <- function(dfname) {
   # } else if (dfname == "ao_traffic_delay"){
   #   
   #   df_app <- df_alldays %>% 
-  #     # left_join(tbl(con, "list_ao_new_reg"), by = c("AO_ID", "AO_CODE")) %>% 
-  #     left_join(list_ao_new, by = c("AO_ID", "AO_CODE")) %>%
+  #     # left_join(tbl(con, "list_ao_reg"), by = c("AO_ID", "AO_CODE")) %>% 
+  #     left_join(list_ao, by = c("AO_ID", "AO_CODE")) %>%
   #     summarise(
   #       DAY_TFC = sum(DAY_TFC, na.rm = TRUE),
   #       DAY_DLY = sum(DAY_DLY, na.rm = TRUE),
@@ -173,12 +173,12 @@ import_dataframe <- function(dfname) {
           DEP_ARR = sum(DEP_ARR, na.rm = TRUE),
           .by = c(ENTRY_DATE, BK_AP_ID, AP_CODE, AO_GRP_CODE, AO_GRP_NAME)
         ) %>% 
-        left_join(tbl(con, "list_airport_extended_new_reg"), by = c("BK_AP_ID")) %>% 
+        left_join(tbl(con, "list_airport_extended_reg"), by = c("BK_AP_ID")) %>% 
         rename(AP_NAME = EC_AP_NAME)
       
   } else if (dfname == "ap_st_des" | dfname == "ap_ap_des" | dfname == "ap_ms") {
     df_app <- df_alldays %>% 
-      left_join(tbl(con, "list_airport_extended_new_reg"), by = c("BK_AP_ID")) %>%
+      left_join(tbl(con, "list_airport_extended_reg"), by = c("BK_AP_ID")) %>%
       select(-EC_AP_CODE) %>% 
       rename(AP_NAME = EC_AP_NAME)
     
@@ -372,7 +372,7 @@ stk_daily <- function(df,
   ### group at ao group level for aos
   if (stakeholder == "ao") {
     df_app_sum <- df_app %>% 
-      left_join(list_ao_new, by = c("STK_ID" = "AO_ID"), keep = FALSE) %>% 
+      left_join(list_ao, by = c("STK_ID" = "AO_ID"), keep = FALSE) %>% 
       filter(FLIGHT_DATE >= WEF & FLIGHT_DATE <= TIL) %>% 
       summarise(
         TFC = sum(TFC, na.rm = TRUE),
@@ -409,7 +409,7 @@ stk_daily <- function(df,
     select(FLIGHT_DATE = value) 
   
   #### rename fields in list tables to facilitate joins
-  list_airport_extended_new_f <- list_airport_extended_new %>% 
+  list_airport_extended_f <- list_airport_extended %>% 
     rename(STK_ID = BK_AP_ID, STK_CODE = EC_AP_CODE, STK_NAME = EC_AP_NAME)
   
   list_ao_group_f <- list_ao_group %>% 
@@ -429,7 +429,7 @@ stk_daily <- function(df,
   list_stk <- case_when(
     stakeholder == "nw" ~ "list_nw_f",
     stakeholder == "ao" ~ "list_ao_group_f",
-    stakeholder == "ap" ~ "list_airport_extended_new_f",
+    stakeholder == "ap" ~ "list_airport_extended_f",
     stakeholder == "sp" ~ "list_ansp_f",
     stakeholder == "st" ~ "list_icao_country_f" # only for dai. daio comes processed already
     
@@ -1378,7 +1378,7 @@ stk_aggregate <- function(df,
       mutate(
         .rid  = row_number(),
       ) %>%
-      left_join(dim_airport_new, by = join_by(AGG_ID == BK_AP_ID)) %>% 
+      left_join(dim_airport, by = join_by(AGG_ID == BK_AP_ID)) %>% 
       rename(AGG_NAME = EC_AP_NAME, AGG_CODE = EC_AP_CODE) %>% 
       filter(VALID_TO >= TO_DATE) %>%
       group_by(.rid) %>%
@@ -1399,12 +1399,12 @@ stk_aggregate <- function(df,
       mutate(
         .rid  = row_number(),
       ) %>%
-      left_join(dim_airport_new, by = c("BK_AP_ID_1" = "BK_AP_ID"), keep = FALSE)  %>% 
+      left_join(dim_airport, by = c("BK_AP_ID_1" = "BK_AP_ID"), keep = FALSE)  %>% 
       filter(VALID_TO >= TO_DATE) %>%
       group_by(.rid) %>%
       slice_min(VALID_TO, n = 1, with_ties = FALSE) %>%            
       ungroup() %>% 
-      left_join(dim_airport_new, by = c("BK_AP_ID_2" = "BK_AP_ID"),
+      left_join(dim_airport, by = c("BK_AP_ID_2" = "BK_AP_ID"),
                 suffix = c("_1", "_2"),
                 keep = FALSE)  %>% 
       filter(VALID_TO_2 >= TO_DATE) %>%
@@ -1446,7 +1446,7 @@ stk_aggregate <- function(df,
     
   } else if (agg_stk == 'market_segment') {
     df_joined <- df %>% 
-      left_join(list_marktet_segment_app_new,
+      left_join(list_marktet_segment_app,
                 by = join_by(AGG_ID == MS_ID)) %>% 
       mutate(AGG_CODE = AGG_ID, AGG_NAME = MS_NAME)
     

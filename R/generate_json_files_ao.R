@@ -22,7 +22,7 @@ if (!exists("dim_iso_country")) {
   source(here("..", "mobile-app", "R", "dimensions.R")) 
 }
 
-list_ao_grp_short_new <- list_ao_group_new %>%
+list_ao_grp_short <- list_ao_group %>%
   select('AO_GRP_CODE', 'AO_GRP_NAME')
 
 # Parameters ----
@@ -55,7 +55,7 @@ if (exists("billed_ao_raw") == FALSE) {
 
 ## process billing data
 ao_billed_clean <- billed_ao_raw  %>%
-  right_join(list_ao_grp_short_new, by = c("ao_grp_last_name" = "AO_GRP_NAME")) %>%
+  right_join(list_ao_grp_short, by = c("ao_grp_last_name" = "AO_GRP_NAME")) %>%
   mutate(billing_period_start_date = as.Date(billing_period_start_date, format = "%d-%m-%Y")) %>%
   rename(AO_GRP_NAME = ao_grp_last_name)
 
@@ -126,7 +126,7 @@ ao_traffic_delay_last_day <- ao_traffic_delay_data %>%
   ) %>%
   arrange(AO_GRP_NAME, FLIGHT_DATE) %>%
 ### rank calculation
-  left_join(list_ao_group_new, by = c("AO_GRP_NAME", "AO_GRP_CODE")) %>%
+  left_join(list_ao_group, by = c("AO_GRP_NAME", "AO_GRP_CODE")) %>%
   group_by(FLAG_TOP_AO) %>%
   mutate(
     DY_TFC_RANK = if_else(FLAG_TOP_AO == "N", NA, min_rank(desc(DY_TFC))),
@@ -408,7 +408,7 @@ ao_punct_y2d <- ao_punct_raw %>%
 
 ao_punct_for_json <- merge(ao_punct_d_w, ao_punct_y2d, by= c("AO_GRP_NAME", "AO_GRP_CODE")) %>%
   ### rank calculation
-  left_join(list_ao_group_new, by = c("AO_GRP_NAME", "AO_GRP_CODE")) %>%
+  left_join(list_ao_group, by = c("AO_GRP_NAME", "AO_GRP_CODE")) %>%
   group_by(FLAG_TOP_AO) %>%
   mutate(
     DY_ARR_PUN_RANK = if_else(FLAG_TOP_AO == "N", NA, 
@@ -563,7 +563,7 @@ ao_co2_raw <- export_query(query) %>%
 ao_co2_data <- ao_co2_raw %>%
   select(-AO_GRP_NAME) %>%
   mutate(CO2_QTY = 0) %>%  ## while CO2 figures are not showable
- right_join(list_ao_grp_short_new, by = "AO_GRP_CODE") %>%
+ right_join(list_ao_grp_short, by = "AO_GRP_CODE") %>%
   select(AO_GRP_NAME,
          AO_GRP_CODE,
          FLIGHT_MONTH,
@@ -649,7 +649,7 @@ ao_co2_for_json <- ao_co2_data %>%
   ) %>%
   filter(FLIGHT_MONTH == ao_co2_last_date) %>%
   ### rank calculation
-  right_join(list_ao_group_new, by = c("AO_GRP_NAME", "AO_GRP_CODE")) %>%
+  right_join(list_ao_group, by = c("AO_GRP_NAME", "AO_GRP_CODE")) %>%
   group_by(FLAG_TOP_AO) %>%
   mutate(
     MM_CO2_RANK = if_else(FLAG_TOP_AO == "N", NA, rank(desc(MM_CO2), ties.method = "max")),
@@ -690,7 +690,7 @@ ao_co2_for_json <- ao_co2_data %>%
   )
 
 #### Join strings and save  ----
-ao_json_app_j <- list_ao_grp_short_new %>% arrange(AO_GRP_NAME)
+ao_json_app_j <- list_ao_grp_short %>% arrange(AO_GRP_NAME)
 ao_json_app_j$ao_traffic <- select(arrange(ao_traffic_for_json, AO_GRP_NAME), -c(AO_GRP_CODE, AO_GRP_NAME))
 ao_json_app_j$ao_delay <- select(arrange(ao_delay_for_json, AO_GRP_NAME), -c(AO_GRP_CODE, AO_GRP_NAME))
 ao_json_app_j$ao_punct <- select(arrange(ao_punct_for_json, AO_GRP_NAME), -c(AO_GRP_CODE, AO_GRP_NAME))
@@ -724,7 +724,7 @@ stakeholder <- str_sub(mydataframe, 1, 2)
 
 #### day ----
 ao_st_des_data_day_int <- create_ranking(mydataframe, "DAY", FLIGHT)  %>% 
-  filter(STK_CODE %in% list_ao_grp_short_new$AO_GRP_CODE) 
+  filter(STK_CODE %in% list_ao_grp_short$AO_GRP_CODE) 
 
 ao_st_des_data_day <- ao_st_des_data_day_int %>%
   mutate(
@@ -744,7 +744,7 @@ ao_st_des_data_day <- ao_st_des_data_day_int %>%
 
 #### week ----
 ao_st_des_data_week_int <- create_ranking(mydataframe, "WEEK", FLIGHT)  %>% 
-  filter(STK_CODE %in% list_ao_grp_short_new$AO_GRP_CODE)
+  filter(STK_CODE %in% list_ao_grp_short$AO_GRP_CODE)
 
 ao_st_des_data_wk <- ao_st_des_data_week_int %>% 
   mutate(
@@ -766,7 +766,7 @@ ao_st_des_data_wk <- ao_st_des_data_week_int %>%
 
 #### y2d ----
 ao_st_des_data_y2d_int <- create_ranking(mydataframe, "Y2D", FLIGHT)  %>% 
-  filter(STK_CODE %in% list_ao_grp_short_new$AO_GRP_CODE)
+  filter(STK_CODE %in% list_ao_grp_short$AO_GRP_CODE)
 
 ao_st_des_data_y2d <- ao_st_des_data_y2d_int %>%
   mutate(
@@ -814,7 +814,7 @@ i = 0
 for (i in 1:10) {
   i = i + 1
   ao_grp_icao_ranking <- ao_grp_icao_ranking %>%
-    bind_rows(list_ao_grp_short_new, .)
+    bind_rows(list_ao_grp_short, .)
 }
 
 ao_grp_icao_ranking <- ao_grp_icao_ranking %>%
@@ -849,7 +849,7 @@ stakeholder <- str_sub(mydataframe, 1, 2)
 
 #### day ----
 ao_apt_dep_data_day_int <- create_ranking(mydataframe, "DAY", FLIGHT)  %>% 
-  filter(STK_CODE %in% list_ao_grp_short_new$AO_GRP_CODE)
+  filter(STK_CODE %in% list_ao_grp_short$AO_GRP_CODE)
 
 ao_apt_dep_data_day <- ao_apt_dep_data_day_int %>%
   mutate(
@@ -869,7 +869,7 @@ ao_apt_dep_data_day <- ao_apt_dep_data_day_int %>%
 
 #### week ----
 ao_apt_dep_data_week_int <- create_ranking(mydataframe, "WEEK", FLIGHT)  %>% 
-  filter(STK_CODE %in% list_ao_grp_short_new$AO_GRP_CODE)
+  filter(STK_CODE %in% list_ao_grp_short$AO_GRP_CODE)
 
 ao_apt_dep_data_wk <- ao_apt_dep_data_week_int %>% 
   #NOTE!! Temporary fix while the app is corrected
@@ -895,7 +895,7 @@ ao_apt_dep_data_wk <- ao_apt_dep_data_week_int %>%
 
 #### y2d ----
 ao_apt_dep_data_y2d_int <- create_ranking(mydataframe, "Y2D", FLIGHT)  %>% 
-  filter(STK_CODE %in% list_ao_grp_short_new$AO_GRP_CODE)
+  filter(STK_CODE %in% list_ao_grp_short$AO_GRP_CODE)
 
 ao_apt_dep_data_y2d <- ao_apt_dep_data_y2d_int %>%
   mutate(
@@ -941,7 +941,7 @@ i = 0
 for (i in 1:10) {
   i = i + 1
   ao_grp_icao_ranking <- ao_grp_icao_ranking %>%
-    bind_rows(list_ao_grp_short_new, .)
+    bind_rows(list_ao_grp_short, .)
 }
 
 ao_grp_icao_ranking <- ao_grp_icao_ranking %>%
@@ -975,7 +975,7 @@ stakeholder <- str_sub(mydataframe, 1, 2)
 
 #### day ----
 ao_apt_pair_data_day_int <- create_ranking(mydataframe, "DAY", FLIGHT)  %>% 
-  filter(STK_CODE %in% list_ao_grp_short_new$AO_GRP_CODE)
+  filter(STK_CODE %in% list_ao_grp_short$AO_GRP_CODE)
 
 ao_apt_pair_data_day <- ao_apt_pair_data_day_int %>%
   mutate(
@@ -996,7 +996,7 @@ ao_apt_pair_data_day <- ao_apt_pair_data_day_int %>%
 
 #### week ----
 ao_apt_pair_data_week_int <- create_ranking(mydataframe, "WEEK", FLIGHT)  %>% 
-  filter(STK_CODE %in% list_ao_grp_short_new$AO_GRP_CODE)
+  filter(STK_CODE %in% list_ao_grp_short$AO_GRP_CODE)
 
 ao_apt_pair_data_wk <- ao_apt_pair_data_week_int %>% 
   mutate(
@@ -1017,7 +1017,7 @@ ao_apt_pair_data_wk <- ao_apt_pair_data_week_int %>%
 
 #### y2d ----
 ao_apt_pair_data_y2d_int <- create_ranking(mydataframe, "Y2D", FLIGHT)  %>% 
-  filter(STK_CODE %in% list_ao_grp_short_new$AO_GRP_CODE)
+  filter(STK_CODE %in% list_ao_grp_short$AO_GRP_CODE)
 
 ao_apt_pair_data_y2d <- ao_apt_pair_data_y2d_int %>%
   mutate(
@@ -1066,7 +1066,7 @@ i = 0
 for (i in 1:10) {
   i = i + 1
   ao_grp_icao_ranking <- ao_grp_icao_ranking %>%
-    bind_rows(list_ao_grp_short_new, .)
+    bind_rows(list_ao_grp_short, .)
 }
 
 ao_grp_icao_ranking <- ao_grp_icao_ranking %>%
@@ -1218,7 +1218,7 @@ i = 0
 for (i in 1:10) {
   i = i + 1
   ao_grp_icao_ranking <- ao_grp_icao_ranking %>%
-    bind_rows(list_ao_grp_short_new, .)
+    bind_rows(list_ao_grp_short, .)
 }
 
 ao_grp_icao_ranking <- ao_grp_icao_ranking %>%
@@ -1392,7 +1392,7 @@ ao_punct_evo <- ao_punct_raw %>%
   filter(DAY_DATE >= as.Date(paste0("01-01-", data_day_year-1), format = "%d-%m-%Y"),
          DAY_DATE <= last_day_punct) %>%
   select(-AO_GRP_NAME) %>%
-  right_join(list_ao_grp_short_new, by ="AO_GRP_CODE") %>%
+  right_join(list_ao_grp_short, by ="AO_GRP_CODE") %>%
   select(
     AO_GRP_CODE,
     AO_GRP_NAME,

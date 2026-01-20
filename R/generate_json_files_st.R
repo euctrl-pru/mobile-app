@@ -1684,7 +1684,7 @@ if (!exists("nw_ap_traffic_delay_data")) {
   }
 
 st_ap_delay_raw <- nw_ap_traffic_delay_data %>% 
-  left_join(list_airport_extended_iso_new, by = c("STK_CODE" = "EC_AP_CODE")) %>% 
+  left_join(list_airport_extended_iso, by = c("STK_CODE" = "EC_AP_CODE")) %>% 
   #canarias case
   mutate(
     AIU_ISO_CT_CODE = if_else(substr(STK_CODE,1,2) == "GC", "IC", AIU_ISO_CT_CODE)

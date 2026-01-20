@@ -232,15 +232,15 @@ WITH
 
 
 ## list ao ----
-list_ao_query <-"
-SELECT a.ao_code,
-		a.ao_name
-		, a.ao_id
-FROM pruread.v_aiu_app_list_ao_grp a
-ORDER BY ao_id
-"
+# list_ao_query <-"
+# SELECT a.ao_code,
+# 		a.ao_name
+# 		, a.ao_id
+# FROM pruread.v_aiu_app_list_ao_grp a
+# ORDER BY ao_id
+# "
 
-list_ao_query_new <-"
+list_ao_query <-"
 SELECT 		ao_id,
     ao_code,
 		ao_name,
@@ -273,20 +273,20 @@ from  SWH_FCT.DIM_FLIGHT_TYPE_RULE
 "
 # AIRPORT ----
 ## dim airport ----
-dim_ap_query <- "
-  select
-    id as apt_id,
-    code as apt_icao_code,
-    lat as latitude,
-    lon as longitude,
-    country_id,
-    
-    pru_name as apt_name
-    
-  from prudev.pru_airport
-"
+# dim_ap_query <- "
+#   select
+#     id as apt_id,
+#     code as apt_icao_code,
+#     lat as latitude,
+#     lon as longitude,
+#     country_id,
+#     
+#     pru_name as apt_name
+#     
+#   from prudev.pru_airport
+# "
 
-dim_ap_query_new <- "
+dim_ap_query <- "
 select 
       BK_AP_ID,
 	    EC_AP_CODE,
@@ -301,8 +301,8 @@ select
 from pruread.v_aiu_dim_airport
 "
 
-## list airport new ----
-list_ap_query_new <- "
+## list airport  ----
+list_ap_query <- "
 select a.*,
 	latitude, longitude
 from pruread.v_aiu_app_list_airport a
@@ -313,31 +313,30 @@ GROUP BY 	a.EC_AP_CODE, a.BK_AP_ID, a.EC_AP_NAME, a.icao2letter, a.flag_top_apt,
 
 # NOTE !!! ---- 
 ##remember to kill this list linking to prod when you move to the new scripts
-## list airport ----
-list_ap_query <- "SELECT
-arp_id as apt_id,
-arp_code AS APT_ICAO_CODE,
-arp_name AS apt_name,
-flag_top_apt,
-latitude,
-longitude
-
-FROM pruprod.v_aiu_app_dim_airport a
-INNER JOIN (
-  SELECT ec_ap_code, latitude, longitude
-  FROM (
-    SELECT ec_ap_code, latitude, longitude,
-           ROW_NUMBER() OVER (PARTITION BY ec_ap_code ORDER BY sk_ap_id DESC) AS rn
-    FROM swh_fct.dim_airport
-  ) t
-  WHERE rn = 1
-) b ON a.arp_code = b.ec_ap_code
-"
-
+# list_ap_query <- "SELECT
+# arp_id as apt_id,
+# arp_code AS APT_ICAO_CODE,
+# arp_name AS apt_name,
+# flag_top_apt,
+# latitude,
+# longitude
+# 
+# FROM pruprod.v_aiu_app_dim_airport a
+# INNER JOIN (
+#   SELECT ec_ap_code, latitude, longitude
+#   FROM (
+#     SELECT ec_ap_code, latitude, longitude,
+#            ROW_NUMBER() OVER (PARTITION BY ec_ap_code ORDER BY sk_ap_id DESC) AS rn
+#     FROM swh_fct.dim_airport
+#   ) t
+#   WHERE rn = 1
+# ) b ON a.arp_code = b.ec_ap_code
+# "
 
 
-## list airport extended new ----
-list_ap_ext_query_new <- "
+
+## list airport extended ----
+list_ap_ext_query <- "
 select 
 	a.ec_ap_code,
 	a.bk_ap_id,
@@ -370,8 +369,8 @@ FROM pruread.v_aiu_dim_airport
 	 GROUP BY 	EC_AP_CODE, BK_AP_ID, EC_AP_NAME, SUBSTR (EC_AP_CODE, 1, 2), latitude, longitude
 "
 
-## list airport extended with iso new ----
-list_ap_ext_iso_query_new <- "WITH
+## list airport extended with iso ----
+list_ap_ext_iso_query <- "WITH
 LIST_AP_EXT AS(
 select 
 	a.ec_ap_code,
@@ -426,51 +425,51 @@ LEFT JOIN rel_ap_iso b ON a.BK_AP_ID = b.BK_AP_ID
 ##remember to kill this list linking to prod when you move to the new scripts
 ## list airport extended ----
 
-list_ap_ext_query <- "
-SELECT
-arp_id as apt_id,
-arp_code AS APT_ICAO_CODE,
-arp_name AS apt_name,
-flag_top_apt,
-latitude,
-longitude
-
-FROM pruprod.v_aiu_app_dim_airport a
-INNER JOIN (
-  SELECT ec_ap_code, latitude, longitude
-  FROM (
-    SELECT ec_ap_code, latitude, longitude,
-           ROW_NUMBER() OVER (PARTITION BY ec_ap_code ORDER BY sk_ap_id DESC) AS rn
-    FROM swh_fct.dim_airport
-  ) t
-  WHERE rn = 1
-) b ON a.arp_code = b.ec_ap_code
-
-UNION ALL
-SELECT
-a.id as apt_id,
-a.code AS APT_ICAO_CODE,
-a.DASHBOARD_NAME AS apt_name,
-'N' flag_top_apt,
-latitude,
-longitude
- from prudev.pru_airport a 
-INNER JOIN (
-  SELECT ec_ap_code, latitude, longitude
-  FROM (
-    SELECT ec_ap_code, latitude, longitude,
-           ROW_NUMBER() OVER (PARTITION BY ec_ap_code ORDER BY sk_ap_id DESC) AS rn
-    FROM swh_fct.dim_airport
-  ) t
-  WHERE rn = 1
-) b ON a.code = b.ec_ap_code
- where a.code in (
-  'BIKF','BIRK','EBCI','EBLG','EDDN','EDDP','EDDS','EDDV','EGAA','EGBB','EGGD','EGLC','EGNX','EGPD','EGPF','ENBR','ENVA','ENZV',
-  'EPKK','ESGG','ESSB','GCRR','GCTS','GCXO','LBSF','LEAL','LEBB','LEIB','LEVC','LEZL','LFBD','LFBO','LFLL','LFML','LFPB','LFRS',
-  'LFSB','LGIR','LGTS','LICC','LICJ','LIME','LIML','LIPE','LIPZ','LIRA','LIRN','LPFR','LPPR','LTAC','LTBA','LTBJ','UKBB'
-	)
-	AND a.code NOT IN (SELECT arp_code FROM pruprod.v_aiu_app_dim_airport)
-"
+# list_ap_ext_query <- "
+# SELECT
+# arp_id as apt_id,
+# arp_code AS APT_ICAO_CODE,
+# arp_name AS apt_name,
+# flag_top_apt,
+# latitude,
+# longitude
+# 
+# FROM pruprod.v_aiu_app_dim_airport a
+# INNER JOIN (
+#   SELECT ec_ap_code, latitude, longitude
+#   FROM (
+#     SELECT ec_ap_code, latitude, longitude,
+#            ROW_NUMBER() OVER (PARTITION BY ec_ap_code ORDER BY sk_ap_id DESC) AS rn
+#     FROM swh_fct.dim_airport
+#   ) t
+#   WHERE rn = 1
+# ) b ON a.arp_code = b.ec_ap_code
+# 
+# UNION ALL
+# SELECT
+# a.id as apt_id,
+# a.code AS APT_ICAO_CODE,
+# a.DASHBOARD_NAME AS apt_name,
+# 'N' flag_top_apt,
+# latitude,
+# longitude
+#  from prudev.pru_airport a 
+# INNER JOIN (
+#   SELECT ec_ap_code, latitude, longitude
+#   FROM (
+#     SELECT ec_ap_code, latitude, longitude,
+#            ROW_NUMBER() OVER (PARTITION BY ec_ap_code ORDER BY sk_ap_id DESC) AS rn
+#     FROM swh_fct.dim_airport
+#   ) t
+#   WHERE rn = 1
+# ) b ON a.code = b.ec_ap_code
+#  where a.code in (
+#   'BIKF','BIRK','EBCI','EBLG','EDDN','EDDP','EDDS','EDDV','EGAA','EGBB','EGGD','EGLC','EGNX','EGPD','EGPF','ENBR','ENVA','ENZV',
+#   'EPKK','ESGG','ESSB','GCRR','GCTS','GCXO','LBSF','LEAL','LEBB','LEIB','LEVC','LEZL','LFBD','LFBO','LFLL','LFML','LFPB','LFRS',
+#   'LFSB','LGIR','LGTS','LICC','LICJ','LIME','LIML','LIPE','LIPZ','LIRA','LIRN','LPFR','LPPR','LTAC','LTBA','LTBJ','UKBB'
+# 	)
+# 	AND a.code NOT IN (SELECT arp_code FROM pruprod.v_aiu_app_dim_airport)
+# "
 
 # COUNTRY----
 ##dim iso country ----

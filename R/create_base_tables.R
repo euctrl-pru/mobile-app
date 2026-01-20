@@ -13,7 +13,7 @@ query_from <- "TO_DATE('2018-12-24', 'yyyy-mm-dd')"
 source(here::here("..", "mobile-app", "R", "base_queries.R"))
 
 # update base table ----
-mydataframe <- "sp_traffic_delay_new"
+mydataframe <- "sp_traffic_delay"
 
 myarchivefile <- paste0(mydataframe, "_day_base.parquet")
 query_y2d <- get(paste0(mydataframe, "_day_base_query"))
@@ -21,7 +21,7 @@ query_y2d <- get(paste0(mydataframe, "_day_base_query"))
 # run query
 df <- export_query(query_y2d) 
 
-# df <-  read_parquet(here(archive_dir_raw, "ao_ap_arr_delay_new_day_base.parquet"))
+# df <-  read_parquet(here(archive_dir_raw, "ao_ap_arr_delay_day_base.parquet"))
 
 df <- df %>%
 mutate(YEAR = as.integer(YEAR))
