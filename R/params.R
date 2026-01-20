@@ -24,22 +24,6 @@ ao_local_data_folder <- here::here("..", "mobile-app", "data", ao_status, "ao")
 ap_local_data_folder <- here::here("..", "mobile-app", "data", ap_status, "ap")
 sp_local_data_folder <- here::here("..", "mobile-app", "data", sp_status, "sp")
 
-nw_base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/LastVersion/'
-nw_base_file <- "099_Traffic_Landing_Page_dataset_new.xlsx"
-
-st_base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/LastVersion/'
-st_base_file <- '099a_app_state_dataset.xlsx'
-
-ao_base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/LastVersion/'
-ao_base_file <- '099b_app_ao_dataset.xlsx'
-
-ap_base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/LastVersion/'
-ap_base_file <- '099c_app_apt_dataset.xlsx'
-
-sp_base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/LastVersion/'
-# sp_base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/ToRunDaily/test/'
-sp_base_file <- '099d_app_ansp_dataset.xlsx'
-
 archive_dir <- "//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/app/json/"
 archive_dir_raw <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Project/DDP/AIU app/data_archive'
 archive_dir_raw_backup <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/app/csv'
