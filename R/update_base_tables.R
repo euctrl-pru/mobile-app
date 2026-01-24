@@ -110,6 +110,7 @@ mydataframes <- c(
   "ao_ap_pair",
   "ao_ap_arr_delay",
 
+  "st_daio_delay",
   "st_dai",
   "st_ao",
   "st_st",
@@ -227,3 +228,59 @@ update_base_tables <- function(mydataframe) {
 
 purrr::walk(mydataframes, update_base_tables)
 
+## These are not really a base tables as defined in the app, but it makes sense to have it here than in update_app_source_tables
+
+# st_daio <- function() {
+#   mydataframe <-  "st_daio"
+#   mydataquery <- paste0(mydataframe, "_day_query")
+#   mydatafile <- paste0(mydataframe, "_day_raw.parquet")
+#   stakeholder <- str_sub(mydataframe, 1, 2)
+#   
+#   
+#   df_day <- export_query(get(mydataquery))
+#   df_day %>% write_parquet(here(archive_dir_raw, stakeholder, mydatafile))
+#   
+#   print(paste(format(now(), "%H:%M:%S"), mydataframe))
+#   
+# }
+# 
+# st_daio()
+# 
+# print(paste(format(now(), "%H:%M:%S"), "st_daio", " app table updated")) 
+# 
+# st_delay <- function() {
+#   mydataframe <-  "st_delay"
+#   mydataquery <- paste0(mydataframe, "_day_query")
+#   mydatafile <- paste0(mydataframe, "_day_raw.parquet")
+#   stakeholder <- str_sub(mydataframe, 1, 2)
+#   
+#   
+#   df_day <- export_query(get(mydataquery))
+#   df_day %>% write_parquet(here(archive_dir_raw, stakeholder, mydatafile))
+#   
+#   print(paste(format(now(), "%H:%M:%S"), mydataframe))
+#   
+# }
+# 
+# st_delay()
+# 
+# print(paste(format(now(), "%H:%M:%S"), "st_delay", " app table updated")) 
+
+
+st_delay_cause <- function() {
+  mydataframe <-  "st_delay_cause"
+  mydataquery <- paste0(mydataframe, "_day_query")
+  mydatafile <- paste0(mydataframe, "_day_raw.parquet")
+  stakeholder <- str_sub(mydataframe, 1, 2)
+  
+  
+  df_day <- export_query(get(mydataquery))
+  df_day %>% write_parquet(here(archive_dir_raw, stakeholder, mydatafile))
+  
+  print(paste(format(now(), "%H:%M:%S"), mydataframe))
+  
+}
+
+st_delay_cause()
+
+print(paste(format(now(), "%H:%M:%S"), "st_delay_cause", " app table updated")) 

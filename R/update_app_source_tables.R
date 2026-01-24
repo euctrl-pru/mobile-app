@@ -90,7 +90,7 @@ import_dataframe <- function(dfname) {
       }
     }
   } else if (stakeholder == "st") {
-    if (mydataframe == "st_dai") {
+    if (mydataframe == "st_dai" | mydataframe == "st_daio_delay") {
       df_alldays <- df_base %>%
         filter(COUNTRY_CODE %in% list_icao_country_spain$COUNTRY_CODE)  
       
@@ -242,15 +242,14 @@ stk_daily <- function(df,
                       dly_arp_field = NULL
 ) 
 {
-  # df            = "ao_traffic_delay"
+  # df            = "st_daio_delay"
   # mydate        = current_day
-  # stk_id        = quo(AO_ID)
+  # stk_id        = quo(COUNTRY_CODE)
   # date_field    = quo(FLIGHT_DATE)
   # tfc_field     = quo(DAY_TFC)
   # dly_field     = quo(DAY_DLY)
-  # dlyed_field   = quo(DAY_DELAYED_TFC)
-  # dlyed15_field = quo(DAY_DELAYED_TFC_15)
-
+  # dly_ert_field = quo(DAY_ERT_DLY)
+  # dly_arp_field = quo(DAY_ARP_DLY)
   
   #### define stakeholder
   stakeholder <- str_sub(df, 1, 2)
@@ -270,7 +269,7 @@ stk_daily <- function(df,
         )
     
     
-  } else if (df == "ao_traffic_delay") {
+  } else if (df == "ao_traffic_delay" | df == "st_daio_delay") {
     df_pp <- df_raw %>% 
       # to ensure the structure is the same
       mutate(
@@ -343,7 +342,7 @@ stk_daily <- function(df,
       df_pp <- df_pp %>% mutate(TFC_DLY = ARR)
     } else {
       df_pp <- df_pp %>% mutate(TFC_DLY = {{ tfc_field }})
-      }
+    }
     
     df_app <- df_pp %>%
       mutate(
@@ -1660,13 +1659,29 @@ params_nw_st_dai <- list(
 
 # COUNTRY ----
 ## st dai day ----
-params_st_day <- list(
+params_st_dai_day <- list(
   df            = "st_dai",
   mydate        = current_day,
   stk_id        = quo(COUNTRY_CODE),
   date_field    = quo(FLIGHT_DATE),
   tfc_field     = quo(DAY_TFC)
 )
+
+## st daio day ----
+params_st_daio_day <- list(
+  df            = "st_daio_delay",
+  mydate        = current_day,
+  stk_id        = quo(COUNTRY_CODE),
+  date_field    = quo(FLIGHT_DATE),
+  tfc_field     = quo(DAY_TFC),
+  dly_field     = quo(DAY_DLY),
+  dlyed_field   = quo(DAY_DLYED_TFC),
+  dlyed15_field = NULL,
+  dly_ert_field = quo(DAY_ERT_DLY),
+  dly_arp_field = quo(DAY_ARP_DLY)
+  
+)
+
 
 ## st ao ----
 params_st_ao <- list(
@@ -1874,9 +1889,13 @@ stk_day_save <- function(stk) {
     df_day <- df_day %>% select(-(contains("15")))
     mydatafile <- paste0("nw_traffic_delay_day.parquet")
     
-  } else if (stk == "st") {
+  } else if (stk == "st_dai") {
     df_day <- df_day %>% select(-(contains("DLY")))
     mydatafile <- paste0("st_dai_day.parquet")
+    
+  } else if (stk == "st_daio") {
+    df_day <- df_day %>% select(-(contains("15")))
+    mydatafile <- paste0("st_daio_delay_day.parquet")
     
   } else if (stk == "ap") {
     df_day <- df_day %>% select(-(contains("_ERT")), -(contains("_ARP")))
@@ -1892,7 +1911,7 @@ stk_day_save <- function(stk) {
 
   }
   
-  stakeholder <- stk
+  stakeholder <- substr(stk,1,2)
   
   df_day %>% write_parquet(here(archive_dir_raw, stakeholder, mydatafile))
   print(paste0(mydatafile, " saved"))
@@ -1902,7 +1921,8 @@ stk_day_save <- function(stk) {
 
 stk_day_list <- c(
   "nw",
-  "st",
+  "st_dai",
+  "st_daio",
   "ap",
   "ao",
   "sp",

@@ -150,6 +150,37 @@ order by a.FLIGHT_DATE
 
 
 # STATE ----
+## st_daio_delay ----
+st_daio_delay_day_base_query <- paste0("
+SELECT   
+      agg_asp_entry_date as flight_date,
+      CAST(EXTRACT(YEAR FROM agg_asp_entry_date) AS INTEGER) AS year,
+      agg_asp_id COUNTRY_CODE,
+      agg_asp_ty as TYPE,
+      CASE WHEN agg_asp_id = 'LQ' then 'Bosnia and Herzegovina'
+           WHEN agg_asp_id = 'LY' then 'Serbia/Montenegro'
+           ELSE agg_asp_name
+      END COUNTRY_NAME,
+      SUM (coalesce(a.agg_asp_a_traffic_asp,0)) as DAY_TFC,
+      SUM(coalesce(a.agg_asp_delay_tvs,0)) as DAY_DLY,
+      (SUM (coalesce(a.agg_asp_delay_tvs,0)) - SUM (coalesce(a.agg_asp_delay_airport_tvs,0)))  AS DAY_ERT_DLY,
+      SUM (coalesce(a.agg_asp_delay_airport_tvs,0))  AS DAY_ARP_DLY,
+      SUM (coalesce(a.agg_asp_delay_airport_tvs,0))  AS DAY_DLYED_TFC
+       FROM prudev.v_aiu_agg_asp a
+       WHERE
+             agg_asp_entry_date >= ", query_from, " AND a.AGG_ASP_ENTRY_DATE < trunc(sysdate)
+             and agg_asp_ty = 'COUNTRY_AUA'  AND A.agg_asp_unit_ty <> 'REGION'
+             AND (SUBSTR(a.agg_asp_id,1,1) IN ('E','L')
+         OR SUBSTR(a.agg_asp_id,1,2) IN ('GC','GM','GE','UD','UG','UK','YY','BI'))
+    GROUP BY
+             agg_asp_entry_date,
+             agg_asp_id,
+             agg_asp_ty,
+             agg_asp_name
+
+"
+)
+
 ## st_daio ----
 st_daio_day_query <- "
 WITH

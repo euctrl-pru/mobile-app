@@ -21,8 +21,8 @@ network_data_folder_prod <- here(destination_dir, "data", "v5")
 archive_mode <- FALSE
 
 if (archive_mode) {
-  wef <- "2026-01-01"  #included in output
-  til <- "2026-01-12"  #included in output
+  wef <- "2026-01-23"  #included in output
+  til <- "2026-01-23"  #included in output
   data_day_date <- seq(ymd(wef), ymd(til), by = "day")
 } else {
   data_day_date <- lubridate::today(tzone = "") +  days(-1)
@@ -44,11 +44,11 @@ if (!archive_mode) {
 stakeholders <- if(!archive_mode) {
   c("nw","st","ao","ap", "sp", NULL) # don't touch this line
   } else {c(
-    "nw",
+    # "nw",
     "st",
-    "ao",
-    "ap",
-    "sp",
+    # "ao",
+    # "ap",
+    # "sp",
     NULL)
 }
 
@@ -116,7 +116,7 @@ copy_app_data <- function(data_day_date) {
       
       from    <- "oscar.alfaro@eurocontrol.int"
       to      <- c("oscar.alfaro@eurocontrol.int",
-                   "enrico.spinielli@eurocontrol.int",
+                   # "enrico.spinielli@eurocontrol.int",
                    # "delia.budulan@eurocontrol.int"
                    "nora.cashman@eurocontrol.int"
       )
@@ -174,12 +174,11 @@ sbj = "All app datasets copied successfully to folder"
 msg = "All good, relax!"
 
 from    <- "oscar.alfaro@eurocontrol.int"
-to      <- c("oscar.alfaro@eurocontrol.int"
-             # ,
+to      <- c("oscar.alfaro@eurocontrol.int",
              # "quinten.goens@eurocontrol.int",
              # "enrico.spinielli@eurocontrol.int",
              # "delia.budulan@eurocontrol.int",
-             # , "nora.cashman@eurocontrol.int"
+             "nora.cashman@eurocontrol.int"
 )
 # cc      <- c("enrico.spinielli@eurocontrol.int")
 control <- list(smtpServer="mailservices.eurocontrol.int")
