@@ -1674,11 +1674,11 @@ params_st_daio_day <- list(
   stk_id        = quo(COUNTRY_CODE),
   date_field    = quo(FLIGHT_DATE),
   tfc_field     = quo(DAY_TFC),
-  dly_field     = quo(DAY_DLY),
-  dlyed_field   = quo(DAY_DLYED_TFC),
+  dly_field     = quo(TDM),
+  dlyed_field   = quo(TDF),
   dlyed15_field = NULL,
-  dly_ert_field = quo(DAY_ERT_DLY),
-  dly_arp_field = quo(DAY_ARP_DLY)
+  dly_ert_field = quo(TDM_ERT),
+  dly_arp_field = quo(TDM_ARP)
   
 )
 

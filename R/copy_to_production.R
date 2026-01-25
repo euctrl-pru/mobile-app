@@ -21,8 +21,8 @@ network_data_folder_prod <- here(destination_dir, "data", "v5")
 archive_mode <- FALSE
 
 if (archive_mode) {
-  wef <- "2026-01-23"  #included in output
-  til <- "2026-01-23"  #included in output
+  wef <- "2026-01-24"  #included in output
+  til <- "2026-01-24"  #included in output
   data_day_date <- seq(ymd(wef), ymd(til), by = "day")
 } else {
   data_day_date <- lubridate::today(tzone = "") +  days(-1)

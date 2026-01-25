@@ -150,7 +150,7 @@ st_daio_delay_data_last_day <- st_daio_delay_data %>%
                             na.rm = TRUE)
   ) 
 
-#### Traffic DAIO new ----
+#### Traffic DAIO  ----
 #selecting columns and renaming
 st_daio_for_json <- st_daio_delay_data_last_day %>%
   mutate(
@@ -185,7 +185,7 @@ st_daio_for_json <- st_daio_delay_data_last_day %>%
     select(-state) %>%
     arrange(iso_2letter)
 
-#### Traffic DAI new ----
+#### Traffic DAI  ----
 mydatafile <- paste0("st_dai_day.parquet")
 stakeholder <- substr(mydatafile, 1,2)
 
@@ -244,7 +244,7 @@ st_daio_for_json <- st_daio_for_json %>%
   mutate(DY_DAIO = MODIFIED_DAIO) %>%
   select(-MODIFIED_DAIO)
 
-#### Traffic overflight new ----
+#### Traffic overflight  ----
 st_dai_data_p <- st_dai_data %>%
   mutate(flight_type = 'dai') %>%
   # mutate_all(~replace(., is.na(.), 0)) %>%
@@ -389,7 +389,7 @@ st_overflight_for_json <- st_overflight_last_day %>%
   arrange(iso_2letter)
 
 
-#### Delay new ----
+#### Delay  ----
 st_delay_for_json <- st_daio_delay_data_last_day %>% 
   mutate(
     DY_DLY_ERT_SHARE = if_else(DY_DLY == 0 , 0 , DY_DLY_ERT / DY_DLY),
@@ -1977,66 +1977,50 @@ print(paste(format(now(), "%H:%M:%S"), "st_punct_evo_chart"))
 
 
 ## DELAY ----
-### Delay category ----
-mydataframe <- "st_delay_cause_day_raw"
-stakeholder <- "st"
-
-df <-  read_parquet(here(archive_dir_raw, stakeholder, paste0(mydataframe, ".parquet"))) %>% 
-  filter(YEAR >= data_day_year-1) %>% 
-  arrange(COUNTRY_NAME, FLIGHT_DATE)
-
-st_delay_cause_data <- assign(mydataframe, df) %>%
+st_daio_delay_data_iso <- st_daio_delay_data %>% 
   mutate(
-    TDM_G = TDM_ARP_G + TDM_ERT_G,
-    TDM_CS = TDM_ARP_CS + TDM_ERT_CS,
-    TDM_IT = TDM_ARP_IT + TDM_ERT_IT,
-    TDM_WD = TDM_ARP_WD + TDM_ERT_WD,
-    TDM_NOCSGITWD = TDM - TDM_G - TDM_CS - TDM_IT - TDM_WD,
-  ) %>%                             # create 7day average for y2d graph
-  mutate(
-    RWK_TDM_G = rollsum(TDM_G, 7, fill = NA, align = "right") / 7,
-    RWK_TDM_CS = rollsum(TDM_CS, 7, fill = NA, align = "right") / 7,
-    RWK_TDM_IT = rollsum(TDM_IT, 7, fill = NA, align = "right") / 7,
-    RWK_TDM_WD = rollsum(TDM_WD, 7, fill = NA, align = "right") / 7,
-    RWK_TDM_NOCSGITWD = rollsum(TDM_NOCSGITWD, 7, fill = NA, align = "right") / 7,
-    RWK_TDM_PREV_YEAR = rollsum(TDM_PREV_YEAR, 7, fill = NA, align = "right") / 7
-  ) %>%
-  filter(YEAR >= data_day_year) %>%
-  mutate(daio_zone_lc = tolower(COUNTRY_NAME)) %>%
+    DY_SHARE_DLY_ERT_FLT = if_else(DY_DLY_FLT == 0, 0, DY_DLY_ERT_FLT/DY_DLY_FLT),
+    DY_SHARE_DLY_ARP_FLT = if_else(DY_DLY_FLT == 0, 0, DY_DLY_ARP_FLT/DY_DLY_FLT),
+    
+    WK_SHARE_DLY_ERT_FLT = if_else(WK_DLY_FLT == 0, 0, WK_DLY_ERT_FLT/WK_DLY_FLT),
+    WK_SHARE_DLY_ARP_FLT = if_else(WK_DLY_FLT == 0, 0, WK_DLY_ARP_FLT/WK_DLY_FLT),
+    
+    Y2D_SHARE_DLY_ERT_FLT = if_else(Y2D_DLY_FLT == 0, 0, Y2D_DLY_ERT_FLT/Y2D_DLY_FLT),
+    Y2D_SHARE_DLY_ARP_FLT = if_else(Y2D_DLY_FLT == 0, 0, Y2D_DLY_ARP_FLT/Y2D_DLY_FLT),
+    
+    DY_SHARE_DLY_G = if_else(DY_DLY == 0, 0, DY_DLY_G / DY_DLY),
+    DY_SHARE_DLY_CS = if_else(DY_DLY == 0, 0, DY_DLY_CS / DY_DLY),
+    DY_SHARE_DLY_IT = if_else(DY_DLY == 0, 0, DY_DLY_IT / DY_DLY),
+    DY_SHARE_DLY_WD = if_else(DY_DLY == 0, 0, DY_DLY_WD / DY_DLY),
+    DY_SHARE_DLY_OTHER = if_else(DY_DLY == 0, 0, DY_DLY_OTHER / DY_DLY)
+    
+  ) %>% 
   right_join(rel_iso_country_daio_zone, by = "daio_zone_lc", relationship = "many-to-many") %>%
-  filter(is.na(YEAR) == FALSE)
+  arrange(iso_2letter, FLIGHT_DATE)
 
+### Delay category ----
 #### day ----
-st_delay_cause_day <- st_delay_cause_data %>%
+st_delay_cause_day <- st_daio_delay_data_iso %>%
   filter(FLIGHT_DATE == min(max(FLIGHT_DATE),
                             data_day_date,
                             na.rm = TRUE)
-         )%>%
-  mutate(
-    SHARE_TDM_G = if_else(TDM == 0, 0, TDM_G / TDM),
-    SHARE_TDM_CS = if_else(TDM == 0, 0, TDM_CS / TDM),
-    SHARE_TDM_IT = if_else(TDM == 0, 0, TDM_IT / TDM),
-    SHARE_TDM_WD = if_else(TDM == 0, 0, TDM_WD / TDM),
-    SHARE_TDM_NOCSGITWD = if_else(TDM == 0, 0, TDM_NOCSGITWD / TDM)
-  ) %>%
+  )%>%
   select(iso_2letter,
          daio_zone,
          FLIGHT_DATE,
-         TDM_G,
-         TDM_CS,
-         TDM_IT,
-         TDM_WD,
-         TDM_NOCSGITWD,
-         TDM_PREV_YEAR,
-         SHARE_TDM_G,
-         SHARE_TDM_CS,
-         SHARE_TDM_IT,
-         SHARE_TDM_WD,
-         SHARE_TDM_NOCSGITWD
-  ) %>%   # iceland exception
-  mutate(
-    TDM_PREV_YEAR = if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, TDM_PREV_YEAR)
-  )
+         DY_DLY_G,
+         DY_DLY_CS,
+         DY_DLY_IT,
+         DY_DLY_WD,
+         DY_DLY_OTHER,
+         DY_DLY_PREV_YEAR,
+         DY_SHARE_DLY_G,
+         DY_SHARE_DLY_CS,
+         DY_SHARE_DLY_IT,
+         DY_SHARE_DLY_WD,
+         DY_SHARE_DLY_OTHER
+  ) %>%
+  arrange(iso_2letter)
 
 column_names <- c(
   "iso_2letter",
@@ -2093,55 +2077,36 @@ print(paste(format(now(), "%H:%M:%S"), "st_delay_category_evo_chart_dy"))
 
 
 #### week ----
-st_delay_cause_wk <- st_delay_cause_data %>%
+st_delay_cause_wk <- st_daio_delay_data_iso %>%
   filter(FLIGHT_DATE >= min(max(FLIGHT_DATE), data_day_date, na.rm  = TRUE) + lubridate::days(-6),
          FLIGHT_DATE <= min(max(FLIGHT_DATE), data_day_date, na.rm  = TRUE)
-         ) %>%
-  group_by(iso_2letter) %>%
-  reframe(
+  ) %>%
+  group_by(iso_2letter) %>% 
+  mutate(
+    WK_SHARE_DLY_G = if_else(sum(DY_DLY) == 0, 0, sum(DY_DLY_G) / sum(DY_DLY)),
+    WK_SHARE_DLY_CS = if_else(sum(DY_DLY) == 0, 0, sum(DY_DLY_CS) / sum(DY_DLY)),
+    WK_SHARE_DLY_IT = if_else(sum(DY_DLY) == 0, 0, sum(DY_DLY_IT) / sum(DY_DLY)),
+    WK_SHARE_DLY_WD = if_else(sum(DY_DLY) == 0, 0, sum(DY_DLY_WD) / sum(DY_DLY)),
+    WK_SHARE_DLY_OTHER = if_else(sum(DY_DLY) == 0, 0, sum(DY_DLY_OTHER) / sum(DY_DLY))
+  ) %>%
+  ungroup() %>% 
+  select(
     iso_2letter,
     daio_zone,
     FLIGHT_DATE,
-    TDM_G,
-    TDM_CS,
-    TDM_IT,
-    TDM_WD,
-    TDM_NOCSGITWD,
-    TDM_PREV_YEAR,
-    WK_TDM_G = sum(TDM_G),
-    WK_TDM_CS = sum(TDM_CS),
-    WK_TDM_IT = sum(TDM_IT),
-    WK_TDM_WD = sum(TDM_WD),
-    WK_TDM_NOCSGITWD = sum(TDM_NOCSGITWD),
-    WK_TDM = sum(TDM)
-    ) %>%
-  ungroup() %>%
-  mutate(
-    WK_SHARE_TDM_G = if_else(WK_TDM == 0, 0, WK_TDM_G / WK_TDM),
-    WK_SHARE_TDM_CS = if_else(WK_TDM == 0, 0, WK_TDM_CS / WK_TDM),
-    WK_SHARE_TDM_IT = if_else(WK_TDM == 0, 0, WK_TDM_IT / WK_TDM),
-    WK_SHARE_TDM_WD = if_else(WK_TDM == 0, 0, WK_TDM_WD / WK_TDM),
-    WK_SHARE_TDM_NOCSGITWD = if_else(WK_TDM == 0, 0, WK_TDM_NOCSGITWD / WK_TDM)
-  ) %>%
-  select(iso_2letter,
-         daio_zone,
-         FLIGHT_DATE,
-         TDM_G,
-         TDM_CS,
-         TDM_IT,
-         TDM_WD,
-         TDM_NOCSGITWD,
-         TDM_PREV_YEAR,
-         WK_SHARE_TDM_G,
-         WK_SHARE_TDM_CS,
-         WK_SHARE_TDM_IT,
-         WK_SHARE_TDM_WD,
-         WK_SHARE_TDM_NOCSGITWD
-  ) %>%   # iceland exception
-  mutate(
-    TDM_PREV_YEAR = if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, TDM_PREV_YEAR)
-  )
-
+    DY_DLY_G,
+    DY_DLY_CS,
+    DY_DLY_IT,
+    DY_DLY_WD,
+    DY_DLY_OTHER,
+    DY_DLY_PREV_YEAR,
+    WK_SHARE_DLY_G,
+    WK_SHARE_DLY_CS,
+    WK_SHARE_DLY_IT,
+    WK_SHARE_DLY_WD,
+    WK_SHARE_DLY_OTHER
+  ) %>% 
+  arrange(iso_2letter)
 
 colnames(st_delay_cause_wk) <- column_names
 
@@ -2182,55 +2147,37 @@ print(paste(format(now(), "%H:%M:%S"), "st_delay_category_evo_chart_wk"))
 
 
 #### y2d ----
-st_delay_cause_y2d <- st_delay_cause_data %>%
+st_delay_cause_y2d <- st_daio_delay_data_iso %>%
   filter(FLIGHT_DATE <= data_day_date & YEAR == data_day_year) %>%
-  group_by(iso_2letter) %>%
-  reframe(
+  group_by(iso_2letter) %>% 
+  mutate(
+    SHARE_TDM_G = if_else(sum(DY_DLY) == 0, 0, sum(DY_DLY_G) / sum(DY_DLY)),
+    SHARE_TDM_CS = if_else(sum(DY_DLY) == 0, 0, sum(DY_DLY_CS) / sum(DY_DLY)),
+    SHARE_TDM_IT = if_else(sum(DY_DLY) == 0, 0, sum(DY_DLY_IT) / sum(DY_DLY)),
+    SHARE_TDM_WD = if_else(sum(DY_DLY) == 0, 0, sum(DY_DLY_WD) / sum(DY_DLY)),
+    SHARE_TDM_NOCSGITWD = if_else(sum(DY_DLY) == 0, 0, sum(DY_DLY_OTHER) / sum(DY_DLY))
+  ) %>%
+  ungroup() %>% 
+  select(
     iso_2letter,
     daio_zone,
     FLIGHT_DATE,
-    RWK_TDM_G,
-    RWK_TDM_CS,
-    RWK_TDM_IT,
-    RWK_TDM_WD,
-    RWK_TDM_NOCSGITWD,
-    RWK_TDM_PREV_YEAR,
-    Y2D_TDM_G = sum(TDM_G),
-    Y2D_TDM_CS = sum(TDM_CS),
-    Y2D_TDM_IT = sum(TDM_IT),
-    Y2D_TDM_WD = sum(TDM_WD),
-    Y2D_TDM_NOCSGITWD = sum(TDM_NOCSGITWD),
-    Y2D_TDM = sum(TDM)
-  ) %>%
-  ungroup() %>%
-  mutate(
-    Y2D_SHARE_TDM_G = if_else(Y2D_TDM == 0, 0, Y2D_TDM_G / Y2D_TDM),
-    Y2D_SHARE_TDM_CS = if_else(Y2D_TDM == 0, 0, Y2D_TDM_CS / Y2D_TDM),
-    Y2D_SHARE_TDM_IT = if_else(Y2D_TDM == 0, 0, Y2D_TDM_IT / Y2D_TDM),
-    Y2D_SHARE_TDM_WD = if_else(Y2D_TDM == 0, 0, Y2D_TDM_WD / Y2D_TDM),
-    Y2D_SHARE_TDM_NOCSGITWD = if_else(Y2D_TDM == 0, 0, Y2D_TDM_NOCSGITWD / Y2D_TDM)
-  ) %>%
-  select(iso_2letter,
-         daio_zone,
-         FLIGHT_DATE,
-         RWK_TDM_G,
-         RWK_TDM_CS,
-         RWK_TDM_IT,
-         RWK_TDM_WD,
-         RWK_TDM_NOCSGITWD,
-         RWK_TDM_PREV_YEAR,
-         Y2D_SHARE_TDM_G,
-         Y2D_SHARE_TDM_CS,
-         Y2D_SHARE_TDM_IT,
-         Y2D_SHARE_TDM_WD,
-         Y2D_SHARE_TDM_NOCSGITWD
-  ) %>%   # iceland exception
-  mutate(
-    RWK_TDM_PREV_YEAR = if_else(iso_2letter == "IS" & year(FLIGHT_DATE) < 2025, NA, RWK_TDM_PREV_YEAR)
-  )
-
+         WK_AVG_DLY_G,
+         WK_AVG_DLY_CS,
+         WK_AVG_DLY_IT,
+         WK_AVG_DLY_WD,
+         WK_AVG_DLY_OTHER,
+         WK_AVG_DLY_PREV_YEAR,
+         SHARE_TDM_G,
+         SHARE_TDM_CS,
+         SHARE_TDM_IT,
+         SHARE_TDM_WD,
+         SHARE_TDM_NOCSGITWD
+  ) %>% 
+arrange(iso_2letter)
 
 colnames(st_delay_cause_y2d) <- column_names
+
 
 ### nest data
 st_delay_value_y2d_long <- st_delay_cause_y2d %>%
@@ -2268,20 +2215,6 @@ save_json(st_delay_cause_evo_y2d_j, "st_delay_category_evo_chart_y2d")
 print(paste(format(now(), "%H:%M:%S"), "st_delay_category_evo_chart_y2d"))
 
 ### Delay type ----
-st_daio_delay_data_iso <- st_daio_delay_data %>% 
-  mutate(
-    DY_SHARE_DLY_ERT_FLT = if_else(DY_DLY_FLT == 0, 0, DY_DLY_ERT_FLT/DY_DLY_FLT),
-    DY_SHARE_DLY_ARP_FLT = if_else(DY_DLY_FLT == 0, 0, DY_DLY_ARP_FLT/DY_DLY_FLT),
-    
-    WK_SHARE_DLY_ERT_FLT = if_else(WK_DLY_FLT == 0, 0, WK_DLY_ERT_FLT/WK_DLY_FLT),
-    WK_SHARE_DLY_ARP_FLT = if_else(WK_DLY_FLT == 0, 0, WK_DLY_ARP_FLT/WK_DLY_FLT),
-    
-    Y2D_SHARE_DLY_ERT_FLT = if_else(Y2D_DLY_FLT == 0, 0, Y2D_DLY_ERT_FLT/Y2D_DLY_FLT),
-    Y2D_SHARE_DLY_ARP_FLT = if_else(Y2D_DLY_FLT == 0, 0, Y2D_DLY_ARP_FLT/Y2D_DLY_FLT)
-  ) %>% 
-  right_join(rel_iso_country_daio_zone, by = "daio_zone_lc", relationship = "many-to-many") %>%
-  arrange(iso_2letter, FLIGHT_DATE)
-
 #### day ----
 st_delay_type_day <- st_daio_delay_data_iso %>% 
   filter(FLIGHT_DATE == min(max(FLIGHT_DATE),
