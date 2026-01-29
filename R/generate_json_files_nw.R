@@ -1535,6 +1535,9 @@ nw_ap_delay_data_day <- nw_ap_traffic_delay_data %>%
     R_RANK_DLY_DAY = row_number(),
     DLY_PER_FLT = round(DLY_PER_FLT, 2)
   ) %>%
+  #remove 0 values from list
+  mutate(across(c(-R_RANK_DLY_DAY, -FLIGHT_DATE), ~ ifelse(DLY_ARR == 0, NA, .))
+  ) %>%
   select(
     R_RANK_DLY_DAY, 
     ARP_NAME_DAY, 
@@ -1559,6 +1562,9 @@ nw_ap_delay_data_week <- nw_ap_traffic_delay_data %>%
     WK_DLY_FLT = round(RWK_DLY_FLT, 2),
     WK_FROM_DATE = FLIGHT_DATE - lubridate::days(6),
     WK_TO_DATE = FLIGHT_DATE,
+  ) %>%
+  #remove 0 values from list
+  mutate(across(c(-R_RANK_DLY_DAY, -WK_FROM_DATE, -WK_TO_DATE), ~ ifelse(RWK_AVG_DLY == 0, NA, .))
   ) %>%
   select(
     R_RANK_DLY_DAY, 
@@ -1589,7 +1595,9 @@ nw_ap_delay_data_y2d <- nw_ap_traffic_delay_data %>%
     Y2D_FROM_DATE = ymd(paste0(data_day_year, "0101")),
     Y2D_TO_DATE = FLIGHT_DATE,
   ) %>%
-  select(
+  #remove 0 values from list
+  mutate(across(c(-R_RANK_DLY_DAY, -Y2D_TO_DATE), ~ ifelse(Y2D_AVG_DLY == 0, NA, .))
+  ) %>%  select(
     R_RANK_DLY_DAY, 
     Y2D_RANK,
     ARP_NAME_Y2D, 
@@ -1663,20 +1671,23 @@ nw_acc_delay_day_all <- nw_acc_delay_day_raw %>%
     DY_RANK = row_number(),
     DY_ACC_DLY_PER_FLT = if_else(FLIGHT ==0, 0, DLY_ER / FLIGHT),
   ) %>%
+  #remove 0 values from list
+  mutate(across(c(-DY_RANK, -ENTRY_DATE), ~ ifelse(DLY_ER == 0, NA, .))) %>% 
   select(DY_RANK,
          R_RANK_DLY_DAY,
          DY_ACC_NAME = NAME,
          DY_TO_DATE = ENTRY_DATE,
          DY_ACC_DLY = DLY_ER,
-         DY_ACC_DLY_PER_FLT)
-
+         DY_ACC_DLY_PER_FLT
+         ) 
+  
 nw_acc_delay_day <- nw_acc_delay_day_all %>%
   filter(DY_RANK <= 10)
   
 ### week ----
-df <- export_query(query_nw_acc_delay_week_raw(format(data_day_date, "%Y-%m%-%d")))
+nw_acc_delay_week_raw <- export_query(query_nw_acc_delay_week_raw(format(data_day_date, "%Y-%m%-%d")))
 
-nw_acc_delay_week_all <- assign(mydataframe, df) %>%
+nw_acc_delay_week_all <- nw_acc_delay_week_raw %>%
   left_join(distinct(list_acc, NAME, ICAO_CODE), by = c("UNIT_CODE" = "ICAO_CODE")) %>%
   arrange(desc(DAILY_DLY_ER), NAME) %>%
   mutate(
@@ -1684,6 +1695,8 @@ nw_acc_delay_week_all <- assign(mydataframe, df) %>%
     WK_RANK = DY_RANK,
     WK_ACC_DLY_PER_FLT = if_else(DAILY_FLIGHT ==0, 0, DAILY_DLY_ER / DAILY_FLIGHT)
   ) %>%
+  #remove 0 values from list
+  mutate(across(c(-DY_RANK, -MAX_ENTRY_DATE, -MIN_ENTRY_DATE), ~ ifelse(DAILY_DLY_ER == 0, NA, .))) %>% 
   select(DY_RANK,
          WK_RANK,
          WK_ACC_NAME = NAME,
@@ -1696,9 +1709,9 @@ nw_acc_delay_week <- nw_acc_delay_week_all %>%
   filter(DY_RANK <= 10)
 
 ### y2d ----
-df <- export_query(query_nw_acc_delay_y2d_raw(format(data_day_date, "%Y-%m%-%d")))
+nw_acc_delay_y2d_raw <- export_query(query_nw_acc_delay_y2d_raw(format(data_day_date, "%Y-%m%-%d")))
 
-nw_acc_delay_y2d_all <- assign(mydataframe, df) %>%
+nw_acc_delay_y2d_all <- nw_acc_delay_y2d_raw %>%
   rename(Y2D_FROM_DATE = MIN_DATE) %>%
   left_join(distinct(list_acc, NAME, ICAO_CODE), by = c("UNIT_CODE" = "ICAO_CODE")) %>%
   arrange(desc(Y2D_AVG_DLY_ER), NAME) %>%
@@ -1707,6 +1720,8 @@ nw_acc_delay_y2d_all <- assign(mydataframe, df) %>%
     Y2D_RANK = DY_RANK,
     Y2D_ACC_DLY_PER_FLT = if_else(Y2D_AVG_FLIGHT ==0, 0, Y2D_AVG_DLY_ER / Y2D_AVG_FLIGHT) 
   ) %>%
+  #remove 0 values from list
+  mutate(across(c(-DY_RANK, -ENTRY_DATE), ~ ifelse(Y2D_AVG_FLIGHT == 0, NA, .))) %>% 
   select(DY_RANK,
          Y2D_RANK,
          Y2D_ACC_NAME = NAME,
@@ -1775,9 +1790,9 @@ print(paste(format(now(), "%H:%M:%S"), "nw_acc_ranking_delay"))
 
 ## Country delay ----
 ### day ----
-df <- export_query(query_nw_st_delay_day_raw(format(data_day_date, "%Y-%m%-%d")))
+nw_st_rank_delay_day_raw <- export_query(query_nw_st_delay_day_raw(format(data_day_date, "%Y-%m%-%d")))
 
-nw_st_rank_delay_day <- assign(mydataframe, df) %>%
+nw_st_rank_delay_day <- nw_st_rank_delay_day_raw %>%
   left_join(distinct(list_iso_country, ISO_COUNTRY_CODE, COUNTRY_NAME),
             by = c("DY_CTRY_DLY_NAME" = "COUNTRY_NAME")) %>%
   mutate(DY_CTRY_DLY_CODE = case_when(
@@ -1791,6 +1806,9 @@ nw_st_rank_delay_day <- assign(mydataframe, df) %>%
     DY_RANK = RANK
   ) %>%
   filter(DY_RANK <= 10) %>%
+  #remove 0 values from list
+  mutate(across(c(-DY_RANK, - DY_TO_DATE), ~ ifelse(DY_CTRY_DLY == 0, NA, .))
+         ) %>%
   select(
     RANK,
     DY_RANK,
@@ -1802,9 +1820,9 @@ nw_st_rank_delay_day <- assign(mydataframe, df) %>%
   )
 
 ### week ----
-df <- export_query(query_nw_st_delay_week_raw(format(data_day_date, "%Y-%m%-%d")))
+nw_st_rank_delay_week_raw <- export_query(query_nw_st_delay_week_raw(format(data_day_date, "%Y-%m%-%d")))
 
-nw_st_rank_delay_week <- assign(mydataframe, df) %>%
+nw_st_rank_delay_week <- nw_st_rank_delay_week_raw %>%
   filter(PERIOD_TYPE == "1_ROL_WEEK") %>%
   arrange(desc(AVG_DELAY), COUNTRY_NAME) %>%
   mutate(
@@ -1814,6 +1832,9 @@ nw_st_rank_delay_week <- assign(mydataframe, df) %>%
     WK_CTRY_DLY_PER_FLT = if_else(AVG_FLIGHT == 0, 0,AVG_DELAY/ AVG_FLIGHT)
   ) %>%
   filter(DY_RANK <= 10) %>%
+  #remove 0 values from list
+  mutate(across(c(-DY_RANK, - WK_FROM_DATE, -TO_DATE), ~ ifelse(AVG_DELAY == 0, NA, .))
+  ) %>%
   select(
     DY_RANK,
     WK_RANK,
@@ -1825,9 +1846,9 @@ nw_st_rank_delay_week <- assign(mydataframe, df) %>%
   )
 
 ### y2d ----
-df <- export_query(query_nw_st_delay_y2d_raw(format(data_day_date, "%Y-%m%-%d")))
+nw_st_rank_delay_y2d_raw <- export_query(query_nw_st_delay_y2d_raw(format(data_day_date, "%Y-%m%-%d")))
 
-nw_st_rank_delay_y2d <- assign(mydataframe, df) %>%
+nw_st_rank_delay_y2d <- nw_st_rank_delay_y2d_raw %>%
   filter(YEAR == data_day_year) %>%
   arrange(desc(AVG_DELAY), COUNTRY_NAME) %>%
   mutate(
@@ -1836,6 +1857,9 @@ nw_st_rank_delay_y2d <- assign(mydataframe, df) %>%
     Y2D_CTRY_DLY_PER_FLT = if_else(AVG_FLIGHT == 0, 0,AVG_DELAY/ AVG_FLIGHT)
   ) %>%
   filter(DY_RANK <= 10) %>%
+  #remove 0 values from list
+  mutate(across(c(-DY_RANK, -TO_DATE), ~ ifelse(AVG_DELAY == 0, NA, .))
+  ) %>%
   select(
     DY_RANK,
     Y2D_RANK,
