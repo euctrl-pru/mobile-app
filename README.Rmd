@@ -24,19 +24,24 @@ This repo has scripts to prepare the data for the EUROCONTROL Data mobile app.
 - `copy_to_production`: Main script executing all the other necessary ones to generate the json files needed for the app. It is automated to be run every morning. The set of json files is saved in the network folder below from where  `r `subcontractor` retrieves them and copies them into their database to serve the app:
 `//ihx-vdm05/LIVE_var_www_performance$/briefing`
 
+- `update_base_tables`: Updates all basic tables (daily aggregations per stakeholder). Not app-specific. These tables can be used for other purposes and eventually this script should be moved somewhere else.
+
+- `update_app_source_tables`: Updates daily aggregated tables necessary for the app (day/week/year-to-date for all stakeholder and stakeholder combinations).
+
 - `generate_json_files_nw/ao/st/ap`: Retrieve the raw data, generate the json files and saves them locally in the repo's data folder.
  
 **Support scripts**:
 
+- `base_queries`: contains the SQL queries to create/update the base tables. Necessary for `update_base_tables`.
+- `dimension_queries`: Contains the SQL queries to create the stakeholder dimensions and lists. Necessary for many other scripts.
+- `data_queries`: Contains the SQL queries to create the stakeholder dimensions and lists. Necessary for `generate_json_files_nw/ao/st/ap`.
+
 - `helpers`: contains the functions used in other scripts.
+- `duckdb_functions`: contains new duckdb functions used in other scripts. To be integrated in `helpers`
 - `params`: sets the necessary parameters.
 - `get_common_data`: retrieves some datasets used for other scripts to avoid loading them multiple times, a.o. the dimension tables.
 
-**Generation of archive csvs**:
-
-- `generate_archive_data`: Generates source csv files necessary to generate json files for past dates. Only needs to be run if further dates or new stakeholders are needed.
-- `ao/ap/nw/st_queries`: Contains SQL queries with the date as a parameter used by the previous script to generate past csv files.
-
+There are some other scripts but are not necessary for the daily app update.
 
 # Data sources
 
