@@ -35,15 +35,15 @@ export_query <- function(query, schema = "PRU_DEV") {
     "ORA_SDTZ" = "UTC",
     "NLS_LANG" = ".AL32UTF8"
   ))
-
+  
   con <- withr::local_db_connection(
     eurocontrol::db_connection(schema = schema)
   )
-
+  
   dplyr::tbl(con, dplyr::sql(query)) |>
     collect() |>
     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-
+  
   # data <- DBI::dbSendQuery(con, query)
   # # ~2.5 min for one day
   # DBI::fetch(data, n = -1) |>
@@ -69,21 +69,21 @@ export_query_keep_time <- function(query, schema = "PRU_READ") {
 # save json file
 save_json <- function(df, filename, mydate = data_day_date, archive_file = TRUE) {
   data_day_text_dash <- mydate %>% format("%Y-%m-%d")
-
+  
   # nw_status_test <- list("prod", "dev")
-
+  
   # df <-st_ao_data_j
   # filename <- "st_ao_ranking_traffic"
-
+  
   # save in local data folder
   # stakeholder_prefix <- stringr::str_sub(filename, 1,
   #                                        regexpr("_", substr(filename, 1, nchar(filename)))-1)
-
+  
   stakeholder_prefix <- stringr::str_sub(filename, 1, 2)
-
+  
   target_dir <- get(paste0(stakeholder_prefix, "_","local_data_folder"))
   write(df, here(target_dir, paste0(filename,".json")))
-
+  
   # save in archive
   if (archive_file){
     # check if date folder already exists
@@ -91,7 +91,7 @@ save_json <- function(df, filename, mydate = data_day_date, archive_file = TRUE)
     if (!dir.exists(archive_dir_date)) {
       dir.create(archive_dir_date)
     }
-
+    
     write(df, here(archive_dir_date, paste0(filename,".json")))
   }
 }
@@ -102,14 +102,14 @@ network_billed_latest <- function() {
   driver_string <- "Driver={Microsoft Access Driver (*.mdb, *.accdb)};"
   db_filename <- "G:/HQ/dgof-pru/Data/DataProcessing/Crco - Billing/CRCO_BILL.accdb"
   dbq_string <- paste0("DBQ=", db_filename)
-
+  
   db_connect_string <- paste0(driver_string, dbq_string)
-
+  
   # make sure that the file exists before attempting to connect
   if (!file.exists(db_filename)) {
     stop("DB file does not exist at ", db_filename)
   }
-
+  
   nw_billed_raw <- withr::with_db_connection(
     list(con = DBI::dbConnect(odbc::odbc(), .connection_string = db_connect_string)),
     tbl(con, "V_CRCO_BILL_PER_CZ") |>
@@ -117,16 +117,16 @@ network_billed_latest <- function() {
       janitor::clean_names() |>
       mutate(across(.cols = c("billing_period_start_date", "last_update"), lubridate::as_date))
   )
-
+  
   last_billing_date <- max(nw_billed_raw$billing_period_start_date)
   last_billing_year <- max(nw_billed_raw$year)
-
+  
   nw_billing <- nw_billed_raw |>
     group_by(year, month, billing_period_start_date) |>
     summarise(total_billing = sum(route_charges)) |>
     ungroup()
-
-
+  
+  
   nw_billed_latest <- nw_billing |>
     arrange(year, billing_period_start_date) |>
     mutate(
@@ -165,7 +165,7 @@ network_billed_latest <- function() {
     as.list() |>
     purrr::list_transpose() |>
     magrittr::extract2(1)
-
+  
   nw_billed_latest
 }
 
@@ -186,10 +186,10 @@ network_emissions_latest <- function(today = lubridate::today(tzone = "UTC")) {
       AND FLIGHT_MONTH <= TO_DATE('{first_today}', 'YYYY-MM-DD')
     ORDER BY YEAR, MONTH, STATE_NAME
    ")
-
+  
   co2_data_raw <- export_query(query) |>
     mutate(FLIGHT_MONTH = as_date(FLIGHT_MONTH, tz = "UTC"))
-
+  
   co2_data_evo_nw <- co2_data_raw |>
     group_by(FLIGHT_MONTH) |>
     summarise(MM_TTF = sum(TF) / 1000000, MM_CO2 = sum(CO2_QTY_TONNES) / 1000000) |>
@@ -200,28 +200,28 @@ network_emissions_latest <- function(today = lubridate::today(tzone = "UTC")) {
     ) |>
     arrange(FLIGHT_MONTH) |>
     mutate(FLIGHT_MONTH = ceiling_date(as_date(FLIGHT_MONTH), unit = "month") - 1)
-
+  
   last_of_month <- ceiling_date(today, unit = "month") - days(1)
   year_of_month  <- month(last_of_month)
-
+  
   co2_last_date <- max(co2_data_evo_nw$FLIGHT_MONTH, na.rm = TRUE)
   co2_last_month <- format(co2_last_date, "%B")
   co2_last_month_num <- as.numeric(format(co2_last_date, "%m"))
   co2_last_year <- max(co2_data_evo_nw$YEAR)
-
+  
   # check last month number of flights
   check_flights <- co2_data_evo_nw |>
     filter(YEAR == max(YEAR)) |>
     filter(MONTH == max(MONTH)) |>
     select(MM_TTF) |>
     pull() * 1000000
-
+  
   if (check_flights < 1000) {
     co2_data_raw <- co2_data_raw |> filter(FLIGHT_MONTH < max(FLIGHT_MONTH))
     co2_data_evo_nw <- co2_data_evo_nw |> filter(FLIGHT_MONTH < max(FLIGHT_MONTH))
     co2_last_date <- max(co2_data_evo_nw$FLIGHT_MONTH, na.rm = TRUE)
   }
-
+  
   co2_latest <- co2_data_evo_nw |>
     mutate(
       MONTH_TEXT = format(FLIGHT_MONTH, "%B"),
@@ -283,7 +283,7 @@ network_emissions_latest <- function(today = lubridate::today(tzone = "UTC")) {
     as.list() |>
     purrr::list_transpose() |>
     magrittr::extract2(1)
-
+  
   co2_latest
 }
 
@@ -297,7 +297,7 @@ init_collection <- function(wef, til, app, collection, extractor, token) {
       token = token,
       body = record)
   }
-
+  
 }
 
 
@@ -319,13 +319,13 @@ tasks_status_latest <- function() {
 
 ########## added by Oscar, discuss with Enrico how to merge both billing functions
 get_billing_data <- function() {
-
+  
   ## https://leowong.ca/blog/connect-to-microsoft-access-database-via-r/
   ## Set up driver info and database path
   DRIVERINFO <- "Driver={Microsoft Access Driver (*.mdb, *.accdb)};"
   MDBPATH <- "G:/HQ/dgof-pru/Data/DataProcessing/Crco - Billing/CRCO_BILL.accdb"
   PATH <- paste0(DRIVERINFO, "DBQ=", MDBPATH)
-
+  
   channel <- odbcDriverConnect(PATH)
   query_bill <- "SELECT *,
                   iif(
@@ -337,22 +337,22 @@ get_billing_data <- function() {
     FROM V_CRCO_BILL_PER_CZ
   "
   # iif ([Billing Zone Number] = '10' OR [Billing Zone Number] = '11', 'Spain' ,
-
-
-
+  
+  
+  
   ## Load data into R dataframe
   billed_raw <- sqlQuery(channel,
                          query_bill,
                          stringsAsFactors = FALSE)
-
+  
   ## Close and remove channel
   close(channel)
   rm(channel)
-
+  
   nw_billed_per_cz <- billed_raw %>%
     janitor::clean_names() %>%
     mutate(billing_period_start_date = as.Date(billing_period_start_date, format = "%d-%m-%Y"))
-
+  
   return(nw_billed_per_cz)
 }
 
@@ -363,12 +363,12 @@ get_co2_data <- function() {
           where year >= 2019 and STATE_NAME not in ('LIECHTENSTEIN')
         ORDER BY 2, 3, 4
        ")
-
+  
   check_co2 <- try({
     co2_data_raw <- export_query(query) %>%
       mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
   })
-
+  
   # # Check if an error occurred
   # if (inherits(check_co2, "try-error")) {
   #   co2_data_raw <- read_xlsx(
@@ -388,15 +388,15 @@ get_co2_data <- function() {
   #   co2_data_raw <- export_query(query) %>%
   #     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
   # }
-
+  
   co2_data_raw <- export_query(query) %>%
     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-
+  
   return(co2_data_raw)
 }
 
 get_ao_billing_data <- function() {
-
+  
   # ## https://leowong.ca/blog/connect-to-microsoft-access-database-via-r/
   # ## Set up driver info and database path
   # DRIVERINFO <- "Driver={Microsoft Access Driver (*.mdb, *.accdb)};"
@@ -419,7 +419,7 @@ get_ao_billing_data <- function() {
   # ## Close and remove channel
   # close(channel)
   # rm(channel)
-
+  
   billed_ao_raw <-  read_xlsx(
     path  = fs::path_abs(
       str_glue("billing per cz_ao_app.xlsx"),
@@ -429,7 +429,7 @@ get_ao_billing_data <- function() {
     as_tibble() %>%
     mutate(across(.cols = where(is.instant), ~ as.Date(.x))) |>
     clean_names()
-
+  
   billed_ao_raw <- billed_ao_raw |>
     mutate(month = as.numeric(month)) |>
     rename(route_charges = total)
@@ -437,12 +437,12 @@ get_ao_billing_data <- function() {
 }
 
 get_punct_data_spain <- function() {
-
+  
   temp_data_archive <-'//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Project/DDP/AIU app/data_archive/'
   punct_data_spain_prev <- read_csv(paste0(temp_data_archive, 'punct_data_spain.csv'), show_col_types = FALSE)
-
+  
   max_date_prev <- max(punct_data_spain_prev$DAY_DATE, na.rm = TRUE)
-
+  
   query1 <- paste0("
 select
       a.*,
@@ -466,9 +466,9 @@ where (substr(ADEP, 1,2) in ('GC', 'GE', 'LE') or substr(ADES, 1,2) in ('GC', 'G
         )
 "
   )
-
+  
   punct_data_raw_raw <- export_query_keep_time(query1)
-
+  
   punct_data_raw_calc <- punct_data_raw_raw |>
     # mutate(across(.cols = where(is.instant), ~ as.POSIXct(.x, format="%Y-%m-%d %H:%M:%S")))  |>
     mutate(
@@ -491,48 +491,48 @@ where (substr(ADEP, 1,2) in ('GC', 'GE', 'LE') or substr(ADES, 1,2) in ('GC', 'G
         .default =0
       )
     )
-
-
+  
+  
   punct_data_arr <- punct_data_raw_calc |>
     group_by(ISO_CT_CODE_DES, ARR_DATE) |>
     summarise(ARR_PUNCTUAL_FLIGHTS = sum(ARR_PUNCTUAL_FLIGHTS, na.rm = TRUE),
               ARR_SCHEDULE_FLIGHT = sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE),
               ARR_FLIGHTS = n(),
               .groups = "drop")
-
+  
   punct_data_dep <- punct_data_raw_calc |>
     group_by(ISO_CT_CODE_DEP, DEP_DATE) |>
     summarise(DEP_PUNCTUAL_FLIGHTS = sum(DEP_PUNCTUAL_FLIGHTS, na.rm = TRUE),
               DEP_SCHEDULE_FLIGHT = sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE),
               DEP_FLIGHTS = n(),
               .groups = "drop")
-
+  
   start_date <- min(min(punct_data_arr$ARR_DATE, na.rm = TRUE), min(punct_data_dep$DEP_DATE, na.rm = TRUE)) +days(2)
   end_date <- lubridate::today() + days(-1)
-
+  
   date_seq <- seq(from = start_date, to = end_date, by = "day")
   my_codes <- c('IC', 'ES')
   repeated_dates <- rep(date_seq, times = length(my_codes))
   repeated_values <- rep(my_codes, each = length(date_seq))
   country_day <- data.frame(DAY_DATE = repeated_dates, ISO_2LETTER = repeated_values) |>
     arrange(ISO_2LETTER, DAY_DATE)
-
+  
   punct_data_spain_joined <- country_day |>
     left_join(punct_data_arr, by = c("DAY_DATE" = "ARR_DATE", "ISO_2LETTER" = "ISO_CT_CODE_DES")) |>
     left_join(punct_data_dep, by = c("DAY_DATE" = "DEP_DATE", "ISO_2LETTER" = "ISO_CT_CODE_DEP"))
-
-
+  
+  
   punct_data_spain_raw <- punct_data_spain_prev %>%
     filter(DAY_DATE < start_date) %>%
     rbind(punct_data_spain_joined) %>%
     arrange(DAY_DATE, ISO_2LETTER)
-
+  
   punct_data_spain_raw %>% write_csv(paste0(temp_data_archive, 'punct_data_spain.csv'))
   punct_data_spain_raw %>% write_csv(paste0('G:/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/app/csv/',
                                             format(end_date, "%Y%m%d"), '_punct_data_spain.csv'))
-
+  
   # punct_data_spain_raw_prev %>% write_csv(paste0(temp_data_archive, 'punct_data_spain_prev.csv'))
-
+  
   return(punct_data_spain_raw)
 }
 
@@ -585,12 +585,12 @@ DIM_STATE as (
   left join DIM_STATE c on a.ISO_2LETTER = c.EC_ISO_CT_CODE
 
 "
-
-
+  
+  
   st_punct_raw <- export_query(query) %>%
     as_tibble() %>%
     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-
+  
   return(st_punct_raw)
 }
 
@@ -644,12 +644,12 @@ get_punct_data_apt <- function() {
           where a.arp_code not in ('LTBA', 'UKBB')
           order by a.ARP_CODE, b.\"DATE\"
    "
-
+  
   apt_punct_raw <- export_query(query) %>%
     as_tibble() %>%
     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-
-   return(apt_punct_raw)
+  
+  return(apt_punct_raw)
 }
 
 

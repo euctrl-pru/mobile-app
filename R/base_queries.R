@@ -971,7 +971,7 @@ ORDER BY entry_date, iso_ct_code, flight DESC
 # AIRPORT ----
 ## ap_day -----
 ap_traffic_delay_day_base_query <- paste0 (
-"
+  "
 WITH
 DIM_AIRPORT AS (
   SELECT 
