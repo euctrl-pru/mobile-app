@@ -39,13 +39,13 @@ nw_traffic_latest <- network_traffic_latest()
 # * need to fill holes, i.e. missing days
 # * errors
 
-ph_create_record(
-  app = app_test,
-  api = "/api/collections",
-  collection = collection,
-  token = adm_test$token,
-  body = nw_traffic_latest
-)
+# ph_create_record(
+#   app = app_test,
+#   api = "/api/collections",
+#   collection = collection,
+#   token = adm_test$token,
+#   body = nw_traffic_latest
+# )
 
 ph_create_record(
   app = app_main,
@@ -56,21 +56,22 @@ ph_create_record(
 )
 
 ## ------ Traffic init -----
-# for (d in seq(from = ymd("2024-01-02"), to = ymd("2024-02-01"), by = "1 day")) {
+# for (d in seq(from = ymd("2026-01-21"), to = ymd("2026-03-22"), by = "1 day")) {
 #   nw_traffic_latest <- network_traffic_latest(as_date(d))
-#   ph_create_record(
-#     app = app_test,
-#     api = "/api/collections",
-#     collection = collection,
-#     token = adm_test$token,
-#     body = nw_traffic_latest)
+#   # ph_create_record(
+#   #   app = app_test,
+#   #   api = "/api/collections",
+#   #   collection = collection,
+#   #   token = adm_test$token,
+#   #   body = nw_traffic_latest)
 #
 #   ph_create_record(
 #     app = app_main,
 #     api = "/api/collections",
 #     collection = collection,
 #     token = adm_main$token,
-#     body = nw_traffic_latest)
+#     body = nw_traffic_latest
+#   )
 # }
 
 #---------- Network delay ----
@@ -96,21 +97,23 @@ ph_create_record(
 )
 
 ## ------ Delay init -----
-# for (d in seq(from = ymd("2024-02-03"), to = ymd("2024-02-05"), by = "1 day")) {
+# for (d in seq(from = ymd("2026-01-21"), to = ymd("2026-03-23"), by = "1 day")) {
 #   nw_delay_latest <- network_delay_latest(as_date(d))
-#   ph_create_record(
-#     app = app_test,
-#     api = "/api/collections",
-#     collection = collection,
-#     token = adm_test$token,
-#     body = nw_delay_latest)
+#   # ph_create_record(
+#   #   app = app_test,
+#   #   api = "/api/collections",
+#   #   collection = collection,
+#   #   token = adm_test$token,
+#   #   body = nw_delay_latest
+#   # )
 #
 #   ph_create_record(
 #     app = app_main,
 #     api = "/api/collections",
 #     collection = collection,
 #     token = adm_main$token,
-#     body = nw_delay_latest)
+#     body = nw_delay_latest
+#   )
 # }
 
 #---------- Network billed ----
@@ -140,28 +143,27 @@ if (nw_billed_latest$BILLING_DATE > ll) {
   )
 }
 
-ll <- ph_list_records(
-  app = app_test,
-  api = "/api/collections/",
-  collection = collection,
-  perPage = 1,
-  page = 1,
-  sort = "-BILLING_DATE",
-  skipTotal = 1
-) |>
-  pull("BILLING_DATE") |>
-  as_date()
-
-if (nw_billed_latest$BILLING_DATE > ll) {
-  ph_create_record(
-    app = app_test,
-    api = "/api/collections",
-    collection = collection,
-    token = adm_test$token,
-    body = nw_billed_latest
-  )
-}
-
+# ll <- ph_list_records(
+#   app = app_test,
+#   api = "/api/collections/",
+#   collection = collection,
+#   perPage = 1,
+#   page = 1,
+#   sort = "-BILLING_DATE",
+#   skipTotal = 1
+# ) |>
+#   pull("BILLING_DATE") |>
+#   as_date()
+#
+# if (nw_billed_latest$BILLING_DATE > ll) {
+#   ph_create_record(
+#     app = app_test,
+#     api = "/api/collections",
+#     collection = collection,
+#     token = adm_test$token,
+#     body = nw_billed_latest
+#   )
+# }
 
 #---------- Network punctuality ----
 # NOTE: disable for now
@@ -237,20 +239,24 @@ if (latest != ee) {
 }
 
 # ## ------ Emissions init -----
-# for (d in seq(from = ymd("2020-01-01"), to = ymd("2023-11-01"), by = "1 month")) {
+# for (d in seq(
+#   from = ymd("2024-10-01"),
+#   to = ymd("2025-01-01"),
+#   by = "1 month"
+# )) {
 #   nw_emissions_latest <- network_emissions_latest(as_date(d))
-#   ph_create_record(
-#     app = app_test,
-#     api = "/api/collections",
-#     collection = collection,
-#     token = adm_test$token,
-#     body = nw_emissions_latest)
+#   # ph_create_record(
+#   #   app = app_test,
+#   #   api = "/api/collections",
+#   #   collection = collection,
+#   #   token = adm_test$token,
+#   #   body = nw_emissions_latest)
 #
 #   ph_create_record(
 #     app = app_main,
 #     api = "/api/collections",
 #     collection = collection,
 #     token = adm_main$token,
-#     body = nw_emissions_latest)
+#     body = nw_emissions_latest
+#   )
 # }
-#

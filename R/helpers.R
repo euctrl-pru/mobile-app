@@ -936,3 +936,101 @@ network_traffic_full_latest <- function(today = lubridate::today()) {
 
   nw_traffic_latest
 }
+
+
+network_delay_latest <- function(today = lubridate::today()) {
+  nw_traffic_last_day <- network_traffic_full_latest(today)
+
+  yesterday <- today |> magrittr::subtract(days(1))
+  base_dir <- "//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/"
+  base_file <- str_glue(
+    "099_Traffic_Landing_Page_dataset_new_{yyyymmdd}.xlsx",
+    yyyymmdd = yesterday |> format("%Y%m%d")
+  )
+
+  last_year <- yesterday |> lubridate::year()
+
+  nw_delay_data <- read_xlsx(
+    path = fs::path_abs(base_file, start = base_dir),
+    sheet = "NM_Daily_Delay_All",
+    range = cell_limits(c(2, 1), c(NA, 39))
+  ) |>
+    dplyr::mutate(across(starts_with("FLIGHT_DATE"), lubridate::as_date)) |>
+    as_tibble()
+
+  nw_delay_latest <- nw_delay_data |>
+    filter(FLIGHT_DATE == yesterday) |>
+    mutate(
+      DAY_DLY_FLT = DAY_DLY / nw_traffic_last_day$DAY_TFC,
+      DAY_DLY_FLT_PY = DAY_DLY_PREV_YEAR /
+        nw_traffic_last_day$DAY_TFC_PREV_YEAR,
+      DAY_DLY_FLT_2019 = DAY_DLY_2019 / nw_traffic_last_day$DAY_TFC_2019,
+      DAY_DLY_FLT_DIF_PY_PERC = if_else(
+        DAY_DLY_FLT_PY == 0,
+        NA,
+        DAY_DLY_FLT / DAY_DLY_FLT_PY - 1
+      ),
+      DAY_DLY_FLT_DIF_2019_PERC = if_else(
+        DAY_DLY_FLT_2019 == 0,
+        NA,
+        DAY_DLY_FLT / DAY_DLY_FLT_2019 - 1
+      ),
+      RWEEK_DLY_FLT = TOTAL_ROLLING_WEEK /
+        nw_traffic_last_day$TOTAL_ROLLING_WEEK,
+      RWEEK_DLY_FLT_PY = AVG_ROLLING_WEEK_PREV_YEAR /
+        nw_traffic_last_day$AVG_ROLLING_WEEK_PREV_YEAR,
+      RWEEK_DLY_FLT_2019 = AVG_ROLLING_WEEK_2019 /
+        nw_traffic_last_day$AVG_ROLLING_WEEK_2019,
+      RWEEK_DLY_FLT_DIF_PY_PERC = if_else(
+        RWEEK_DLY_FLT_PY == 0,
+        NA,
+        RWEEK_DLY_FLT / RWEEK_DLY_FLT_PY - 1
+      ),
+      RWEEK_DLY_FLT_DIF_2019_PERC = if_else(
+        RWEEK_DLY_FLT_2019 == 0,
+        NA,
+        RWEEK_DLY_FLT / RWEEK_DLY_FLT_2019 - 1
+      ),
+      Y2D_DLY_FLT = Y2D_DLY_YEAR / nw_traffic_last_day$Y2D_TFC_YEAR,
+      Y2D_DLY_FLT_PY = Y2D_AVG_DLY_PREV_YEAR /
+        nw_traffic_last_day$Y2D_AVG_TFC_PREV_YEAR,
+      Y2D_DLY_FLT_2019 = Y2D_AVG_DLY_2019 /
+        nw_traffic_last_day$Y2D_AVG_TFC_2019,
+      Y2D_DLY_FLT_DIF_PY_PERC = if_else(
+        Y2D_DLY_FLT_PY == 0,
+        NA,
+        Y2D_DLY_FLT / Y2D_DLY_FLT_PY - 1
+      ),
+      Y2D_DLY_FLT_DIF_2019_PERC = if_else(
+        Y2D_DLY_FLT_2019 == 0,
+        NA,
+        Y2D_DLY_FLT / Y2D_DLY_FLT_2019 - 1
+      )
+    ) |>
+    select(
+      FLIGHT_DATE,
+      DAY_DLY,
+      DAY_DIFF_PREV_YEAR_PERC,
+      DAY_DLY_DIFF_2019_PERC,
+      DAY_DLY_FLT,
+      DAY_DLY_FLT_DIF_PY_PERC,
+      DAY_DLY_FLT_DIF_2019_PERC,
+      AVG_ROLLING_WEEK,
+      DIF_WEEK_PREV_YEAR_PERC,
+      DIF_ROLLING_WEEK_2019_PERC,
+      RWEEK_DLY_FLT,
+      RWEEK_DLY_FLT_DIF_PY_PERC,
+      RWEEK_DLY_FLT_DIF_2019_PERC,
+      Y2D_AVG_DLY_YEAR,
+      Y2D_DIFF_PREV_YEAR_PERC,
+      Y2D_DIFF_2019_PERC,
+      Y2D_DLY_FLT,
+      Y2D_DLY_FLT_DIF_PY_PERC,
+      Y2D_DLY_FLT_DIF_2019_PERC
+    ) |>
+    as.list() |>
+    purrr::list_transpose() |>
+    magrittr::extract2(1)
+
+  nw_delay_latest
+}
