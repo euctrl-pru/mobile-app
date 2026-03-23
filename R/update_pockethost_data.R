@@ -14,18 +14,19 @@ app_main <- "eurocontrol-data"
 app_test <- "eurocontrol-data-test"
 
 # authenticate over test app
-adm_test <- ph_authenticate_admin_username_password(
-  app_test,
-  "/api/admins/auth-with-password",
-  username,
-  password)
+# adm_test <- ph_authenticate_admin_username_password(
+#   app_test,
+#   "/api/admins/auth-with-password",
+#   username,
+#   password)
 
 # authenticate over main app
 adm_main <- ph_authenticate_admin_username_password(
   app_main,
   "/api/admins/auth-with-password",
   username,
-  password)
+  password
+)
 
 
 #---------- Network traffic ----
@@ -43,14 +44,16 @@ ph_create_record(
   api = "/api/collections",
   collection = collection,
   token = adm_test$token,
-  body = nw_traffic_latest)
+  body = nw_traffic_latest
+)
 
 ph_create_record(
   app = app_main,
   api = "/api/collections",
   collection = collection,
   token = adm_main$token,
-  body = nw_traffic_latest)
+  body = nw_traffic_latest
+)
 
 ## ------ Traffic init -----
 # for (d in seq(from = ymd("2024-01-02"), to = ymd("2024-02-01"), by = "1 day")) {
@@ -70,10 +73,6 @@ ph_create_record(
 #     body = nw_traffic_latest)
 # }
 
-
-
-
-
 #---------- Network delay ----
 collection <- "nw_delay"
 
@@ -85,14 +84,16 @@ ph_create_record(
   api = "/api/collections",
   collection = collection,
   token = adm_test$token,
-  body = nw_delay_latest)
+  body = nw_delay_latest
+)
 
 ph_create_record(
   app = app_main,
   api = "/api/collections",
   collection = collection,
   token = adm_main$token,
-  body = nw_delay_latest)
+  body = nw_delay_latest
+)
 
 ## ------ Delay init -----
 # for (d in seq(from = ymd("2024-02-03"), to = ymd("2024-02-05"), by = "1 day")) {
@@ -112,7 +113,6 @@ ph_create_record(
 #     body = nw_delay_latest)
 # }
 
-
 #---------- Network billed ----
 collection <- "nw_billed"
 
@@ -125,7 +125,8 @@ ll <- ph_list_records(
   perPage = 1,
   page = 1,
   sort = "-BILLING_DATE",
-  skipTotal = 1) |>
+  skipTotal = 1
+) |>
   pull("BILLING_DATE") |>
   as_date()
 
@@ -135,7 +136,8 @@ if (nw_billed_latest$BILLING_DATE > ll) {
     api = "/api/collections",
     collection = collection,
     token = adm_main$token,
-    body = nw_billed_latest)
+    body = nw_billed_latest
+  )
 }
 
 ll <- ph_list_records(
@@ -145,7 +147,8 @@ ll <- ph_list_records(
   perPage = 1,
   page = 1,
   sort = "-BILLING_DATE",
-  skipTotal = 1) |>
+  skipTotal = 1
+) |>
   pull("BILLING_DATE") |>
   as_date()
 
@@ -155,7 +158,8 @@ if (nw_billed_latest$BILLING_DATE > ll) {
     api = "/api/collections",
     collection = collection,
     token = adm_test$token,
-    body = nw_billed_latest)
+    body = nw_billed_latest
+  )
 }
 
 
@@ -197,7 +201,6 @@ if (nw_billed_latest$BILLING_DATE > ll) {
 #     body = nw_punct_latest)
 # }
 
-
 ##---------- Network Emissions ----------
 collection <- "nw_co2"
 
@@ -207,7 +210,8 @@ latest <- ph_list_records(
   collection = collection,
   perPage = 1,
   sort = "-FLIGHT_MONTH",
-  skipTotal = 1) |>
+  skipTotal = 1
+) |>
   magrittr::extract2("FLIGHT_MONTH") |>
   as_date()
 
@@ -215,20 +219,21 @@ nw_emissions_latest <- network_emissions_latest()
 ee <- nw_emissions_latest$FLIGHT_MONTH |> as_date()
 
 if (latest != ee) {
-
   ph_create_record(
     app = app_test,
     api = "/api/collections",
     collection = collection,
     token = adm_test$token,
-    body = nw_emissions_latest)
+    body = nw_emissions_latest
+  )
 
   ph_create_record(
     app = app_main,
     api = "/api/collections",
     collection = collection,
     token = adm_main$token,
-    body = nw_emissions_latest)
+    body = nw_emissions_latest
+  )
 }
 
 # ## ------ Emissions init -----
@@ -249,4 +254,3 @@ if (latest != ee) {
 #     body = nw_emissions_latest)
 # }
 #
-
