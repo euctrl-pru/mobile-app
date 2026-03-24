@@ -1,4 +1,3 @@
-
 library(here)
 library(withr)
 library(DBI)
@@ -23,10 +22,10 @@ library(eurocontrol)
 library(tidyverse)
 library(jsonlite)
 
-source(here("..", "mobile-app", "R", "duckdb_functions.R")) 
+source(here("..", "mobile-app", "R", "duckdb_functions.R"))
 
 date_sql_string <- function(date_string) {
-  paste0("TO_DATE('", date_string ,"', 'yyyy-mm-dd') + 1")
+  paste0("TO_DATE('", date_string, "', 'yyyy-mm-dd') + 1")
 }
 
 export_query <- function(query, schema = "PRU_DEV") {
@@ -35,15 +34,15 @@ export_query <- function(query, schema = "PRU_DEV") {
     "ORA_SDTZ" = "UTC",
     "NLS_LANG" = ".AL32UTF8"
   ))
-  
+
   con <- withr::local_db_connection(
     eurocontrol::db_connection(schema = schema)
   )
-  
+
   dplyr::tbl(con, dplyr::sql(query)) |>
     collect() |>
     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-  
+
   # data <- DBI::dbSendQuery(con, query)
   # # ~2.5 min for one day
   # DBI::fetch(data, n = -1) |>
@@ -57,42 +56,47 @@ export_query_keep_time <- function(query, schema = "PRU_READ") {
     "ORA_SDTZ" = "UTC",
     "NLS_LANG" = ".AL32UTF8"
   ))
-  
+
   con <- withr::local_db_connection(
     eurocontrol::db_connection(schema = schema)
   )
-  
+
   dplyr::tbl(con, dplyr::sql(query)) |>
-    collect() 
+    collect()
 }
 
 # save json file
-save_json <- function(df, filename, mydate = data_day_date, archive_file = TRUE) {
+save_json <- function(
+  df,
+  filename,
+  mydate = data_day_date,
+  archive_file = TRUE
+) {
   data_day_text_dash <- mydate %>% format("%Y-%m-%d")
-  
+
   # nw_status_test <- list("prod", "dev")
-  
+
   # df <-st_ao_data_j
   # filename <- "st_ao_ranking_traffic"
-  
+
   # save in local data folder
   # stakeholder_prefix <- stringr::str_sub(filename, 1,
   #                                        regexpr("_", substr(filename, 1, nchar(filename)))-1)
-  
+
   stakeholder_prefix <- stringr::str_sub(filename, 1, 2)
-  
-  target_dir <- get(paste0(stakeholder_prefix, "_","local_data_folder"))
-  write(df, here(target_dir, paste0(filename,".json")))
-  
+
+  target_dir <- get(paste0(stakeholder_prefix, "_", "local_data_folder"))
+  write(df, here(target_dir, paste0(filename, ".json")))
+
   # save in archive
-  if (archive_file){
+  if (archive_file) {
     # check if date folder already exists
     archive_dir_date <- here(archive_dir, data_day_text_dash)
     if (!dir.exists(archive_dir_date)) {
       dir.create(archive_dir_date)
     }
-    
-    write(df, here(archive_dir_date, paste0(filename,".json")))
+
+    write(df, here(archive_dir_date, paste0(filename, ".json")))
   }
 }
 
@@ -102,35 +106,40 @@ network_billed_latest <- function() {
   driver_string <- "Driver={Microsoft Access Driver (*.mdb, *.accdb)};"
   db_filename <- "G:/HQ/dgof-pru/Data/DataProcessing/Crco - Billing/CRCO_BILL.accdb"
   dbq_string <- paste0("DBQ=", db_filename)
-  
+
   db_connect_string <- paste0(driver_string, dbq_string)
-  
+
   # make sure that the file exists before attempting to connect
   if (!file.exists(db_filename)) {
     stop("DB file does not exist at ", db_filename)
   }
-  
+
   nw_billed_raw <- withr::with_db_connection(
-    list(con = DBI::dbConnect(odbc::odbc(), .connection_string = db_connect_string)),
+    list(
+      con = DBI::dbConnect(odbc::odbc(), .connection_string = db_connect_string)
+    ),
     tbl(con, "V_CRCO_BILL_PER_CZ") |>
       collect() |>
       janitor::clean_names() |>
-      mutate(across(.cols = c("billing_period_start_date", "last_update"), lubridate::as_date))
+      mutate(across(
+        .cols = c("billing_period_start_date", "last_update"),
+        lubridate::as_date
+      ))
   )
-  
+
   last_billing_date <- max(nw_billed_raw$billing_period_start_date)
   last_billing_year <- max(nw_billed_raw$year)
-  
+
   nw_billing <- nw_billed_raw |>
     group_by(year, month, billing_period_start_date) |>
     summarise(total_billing = sum(route_charges)) |>
     ungroup()
-  
-  
+
   nw_billed_latest <- nw_billing |>
     arrange(year, billing_period_start_date) |>
     mutate(
-      BILLING_DATE = (billing_period_start_date + days(1) + months(1)) + days(-1),
+      BILLING_DATE = (billing_period_start_date + days(1) + months(1)) +
+        days(-1),
       Year = year,
       MONTH_F = format(billing_period_start_date + days(1), "%B"),
       BILL_MONTH_PY = lag(total_billing, 12),
@@ -165,7 +174,7 @@ network_billed_latest <- function() {
     as.list() |>
     purrr::list_transpose() |>
     magrittr::extract2(1)
-  
+
   nw_billed_latest
 }
 
@@ -173,7 +182,8 @@ network_billed_latest <- function() {
 # network emissions for the month of `today` (tipycally 2 months before now)
 network_emissions_latest <- function(today = lubridate::today(tzone = "UTC")) {
   first_today <- floor_date(today |> as_date(tzone = "UTC"), unit = "month")
-  query <- str_glue("
+  query <- str_glue(
+    "
     SELECT
       FLIGHT_MONTH,
       CO2_QTY_TONNES,
@@ -185,43 +195,51 @@ network_emissions_latest <- function(today = lubridate::today(tzone = "UTC")) {
       YEAR >= 2019 and STATE_NAME not in ('LIECHTENSTEIN')
       AND FLIGHT_MONTH <= TO_DATE('{first_today}', 'YYYY-MM-DD')
     ORDER BY YEAR, MONTH, STATE_NAME
-   ")
-  
+   "
+  )
+
   co2_data_raw <- export_query(query) |>
     mutate(FLIGHT_MONTH = as_date(FLIGHT_MONTH, tz = "UTC"))
-  
+
   co2_data_evo_nw <- co2_data_raw |>
     group_by(FLIGHT_MONTH) |>
-    summarise(MM_TTF = sum(TF) / 1000000, MM_CO2 = sum(CO2_QTY_TONNES) / 1000000) |>
+    summarise(
+      MM_TTF = sum(TF) / 1000000,
+      MM_CO2 = sum(CO2_QTY_TONNES) / 1000000
+    ) |>
     mutate(
       YEAR = as.numeric(format(FLIGHT_MONTH, "%Y")),
       MONTH = as.numeric(format(FLIGHT_MONTH, "%m")),
       MM_CO2_DEP = MM_CO2 / MM_TTF
     ) |>
     arrange(FLIGHT_MONTH) |>
-    mutate(FLIGHT_MONTH = ceiling_date(as_date(FLIGHT_MONTH), unit = "month") - 1)
-  
+    mutate(
+      FLIGHT_MONTH = ceiling_date(as_date(FLIGHT_MONTH), unit = "month") - 1
+    )
+
   last_of_month <- ceiling_date(today, unit = "month") - days(1)
-  year_of_month  <- month(last_of_month)
-  
+  year_of_month <- month(last_of_month)
+
   co2_last_date <- max(co2_data_evo_nw$FLIGHT_MONTH, na.rm = TRUE)
   co2_last_month <- format(co2_last_date, "%B")
   co2_last_month_num <- as.numeric(format(co2_last_date, "%m"))
   co2_last_year <- max(co2_data_evo_nw$YEAR)
-  
+
   # check last month number of flights
   check_flights <- co2_data_evo_nw |>
     filter(YEAR == max(YEAR)) |>
     filter(MONTH == max(MONTH)) |>
     select(MM_TTF) |>
-    pull() * 1000000
-  
+    pull() *
+    1000000
+
   if (check_flights < 1000) {
     co2_data_raw <- co2_data_raw |> filter(FLIGHT_MONTH < max(FLIGHT_MONTH))
-    co2_data_evo_nw <- co2_data_evo_nw |> filter(FLIGHT_MONTH < max(FLIGHT_MONTH))
+    co2_data_evo_nw <- co2_data_evo_nw |>
+      filter(FLIGHT_MONTH < max(FLIGHT_MONTH))
     co2_last_date <- max(co2_data_evo_nw$FLIGHT_MONTH, na.rm = TRUE)
   }
-  
+
   co2_latest <- co2_data_evo_nw |>
     mutate(
       MONTH_TEXT = format(FLIGHT_MONTH, "%B"),
@@ -252,7 +270,10 @@ network_emissions_latest <- function(today = lubridate::today(tzone = "UTC")) {
       YTD_TTF_PREV_YEAR = lag(YTD_TTF, 12),
       YTD_CO2_DEP_PREV_YEAR = lag(YTD_CO2_DEP, 12),
       YTD_CO2_2019 = lag(YTD_CO2, (as.numeric(co2_last_year) - 2019) * 12),
-      YTD_CO2_DEP_2019 = lag(YTD_CO2_DEP, (as.numeric(co2_last_year) - 2019) * 12),
+      YTD_CO2_DEP_2019 = lag(
+        YTD_CO2_DEP,
+        (as.numeric(co2_last_year) - 2019) * 12
+      ),
       YTD_TTF_2019 = lag(YTD_TTF, (as.numeric(co2_last_year) - 2019) * 12)
     ) |>
     mutate(
@@ -283,21 +304,25 @@ network_emissions_latest <- function(today = lubridate::today(tzone = "UTC")) {
     as.list() |>
     purrr::list_transpose() |>
     magrittr::extract2(1)
-  
+
   co2_latest
 }
 
 init_collection <- function(wef, til, app, collection, extractor, token) {
-  for (d in seq(from = lubridate::as_date(wef), to = lubridate::as_date(til), by = "1 day")) {
+  for (d in seq(
+    from = lubridate::as_date(wef),
+    to = lubridate::as_date(til),
+    by = "1 day"
+  )) {
     record <- extractor(as_date(d))
     ph_create_record(
       app = app,
       api = "/api/collections",
       collection = collection,
       token = token,
-      body = record)
+      body = record
+    )
   }
-  
 }
 
 
@@ -319,13 +344,12 @@ tasks_status_latest <- function() {
 
 ########## added by Oscar, discuss with Enrico how to merge both billing functions
 get_billing_data <- function() {
-  
   ## https://leowong.ca/blog/connect-to-microsoft-access-database-via-r/
   ## Set up driver info and database path
   DRIVERINFO <- "Driver={Microsoft Access Driver (*.mdb, *.accdb)};"
   MDBPATH <- "G:/HQ/dgof-pru/Data/DataProcessing/Crco - Billing/CRCO_BILL.accdb"
   PATH <- paste0(DRIVERINFO, "DBQ=", MDBPATH)
-  
+
   channel <- odbcDriverConnect(PATH)
   query_bill <- "SELECT *,
                   iif(
@@ -337,38 +361,41 @@ get_billing_data <- function() {
     FROM V_CRCO_BILL_PER_CZ
   "
   # iif ([Billing Zone Number] = '10' OR [Billing Zone Number] = '11', 'Spain' ,
-  
-  
-  
+
   ## Load data into R dataframe
-  billed_raw <- sqlQuery(channel,
-                         query_bill,
-                         stringsAsFactors = FALSE)
-  
+  billed_raw <- sqlQuery(channel, query_bill, stringsAsFactors = FALSE)
+
   ## Close and remove channel
   close(channel)
   rm(channel)
-  
+
   nw_billed_per_cz <- billed_raw %>%
     janitor::clean_names() %>%
-    mutate(billing_period_start_date = as.Date(billing_period_start_date, format = "%d-%m-%Y"))
-  
+    mutate(
+      billing_period_start_date = as.Date(
+        billing_period_start_date,
+        format = "%d-%m-%Y"
+      )
+    )
+
   return(nw_billed_per_cz)
 }
 
 get_co2_data <- function() {
-  query <- str_glue("
+  query <- str_glue(
+    "
         SELECT *
           FROM TABLE (emma_pub.api_aiu_stats.MM_AIU_STATE_DEP ())
           where year >= 2019 and STATE_NAME not in ('LIECHTENSTEIN')
         ORDER BY 2, 3, 4
-       ")
-  
+       "
+  )
+
   check_co2 <- try({
     co2_data_raw <- export_query(query) %>%
       mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
   })
-  
+
   # # Check if an error occurred
   # if (inherits(check_co2, "try-error")) {
   #   co2_data_raw <- read_xlsx(
@@ -388,15 +415,14 @@ get_co2_data <- function() {
   #   co2_data_raw <- export_query(query) %>%
   #     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
   # }
-  
+
   co2_data_raw <- export_query(query) %>%
     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-  
+
   return(co2_data_raw)
 }
 
 get_ao_billing_data <- function() {
-  
   # ## https://leowong.ca/blog/connect-to-microsoft-access-database-via-r/
   # ## Set up driver info and database path
   # DRIVERINFO <- "Driver={Microsoft Access Driver (*.mdb, *.accdb)};"
@@ -419,17 +445,19 @@ get_ao_billing_data <- function() {
   # ## Close and remove channel
   # close(channel)
   # rm(channel)
-  
-  billed_ao_raw <-  read_xlsx(
-    path  = fs::path_abs(
+
+  billed_ao_raw <- read_xlsx(
+    path = fs::path_abs(
       str_glue("billing per cz_ao_app.xlsx"),
-      start = "G:/HQ/dgof-pru/Data/DataProcessing/Covid19/Oscar/Develop"),
+      start = "G:/HQ/dgof-pru/Data/DataProcessing/Covid19/Oscar/Develop"
+    ),
     sheet = "cz",
-    range = cell_limits(c(4, 1), c(NA, NA))) %>%
+    range = cell_limits(c(4, 1), c(NA, NA))
+  ) %>%
     as_tibble() %>%
     mutate(across(.cols = where(is.instant), ~ as.Date(.x))) |>
     clean_names()
-  
+
   billed_ao_raw <- billed_ao_raw |>
     mutate(month = as.numeric(month)) |>
     rename(route_charges = total)
@@ -437,13 +465,16 @@ get_ao_billing_data <- function() {
 }
 
 get_punct_data_spain <- function() {
-  
-  temp_data_archive <-'//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Project/DDP/AIU app/data_archive/'
-  punct_data_spain_prev <- read_csv(paste0(temp_data_archive, 'punct_data_spain.csv'), show_col_types = FALSE)
-  
+  temp_data_archive <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Project/DDP/AIU app/data_archive/'
+  punct_data_spain_prev <- read_csv(
+    paste0(temp_data_archive, 'punct_data_spain.csv'),
+    show_col_types = FALSE
+  )
+
   max_date_prev <- max(punct_data_spain_prev$DAY_DATE, na.rm = TRUE)
-  
-  query1 <- paste0("
+
+  query1 <- paste0(
+    "
 select
       a.*,
       trunc(a.ACTUAL_DEP_TIME - 3 / 24) as dep_date,
@@ -460,79 +491,107 @@ select
 from LDW_VDM.V_DELAY_TRACKER_ARCHIVE_TURN a
 where (substr(ADEP, 1,2) in ('GC', 'GE', 'LE') or substr(ADES, 1,2) in ('GC', 'GE', 'LE'))
    and (
-        trunc(a.ACTUAL_DEP_TIME - 3 / 24) >= TO_DATE('", max_date_prev ,"', 'yyyy-mm-dd') -7
+        trunc(a.ACTUAL_DEP_TIME - 3 / 24) >= TO_DATE('",
+    max_date_prev,
+    "', 'yyyy-mm-dd') -7
         or
-        trunc(a.ACTUAL_ARR_TIME - 3 / 24) >= TO_DATE('", max_date_prev ,"', 'yyyy-mm-dd') -7
+        trunc(a.ACTUAL_ARR_TIME - 3 / 24) >= TO_DATE('",
+    max_date_prev,
+    "', 'yyyy-mm-dd') -7
         )
 "
   )
-  
+
   punct_data_raw_raw <- export_query_keep_time(query1)
-  
+
   punct_data_raw_calc <- punct_data_raw_raw |>
     # mutate(across(.cols = where(is.instant), ~ as.POSIXct(.x, format="%Y-%m-%d %H:%M:%S")))  |>
     mutate(
       ARR_DATE = as.Date(ARR_DATE),
       ARR_PUNCTUAL_FLIGHTS = case_when(
-        is.na(SLOT_TIME_ADES) == FALSE & ACTUAL_ARR_TIME < SLOT_TIME_ADES + lubridate::minutes(16) ~ 1,
+        is.na(SLOT_TIME_ADES) == FALSE &
+          ACTUAL_ARR_TIME < SLOT_TIME_ADES + lubridate::minutes(16) ~
+          1,
         .default = 0
       ),
-      ARR_SCHEDULE_FLIGHT = case_when (
+      ARR_SCHEDULE_FLIGHT = case_when(
         is.na(SLOT_TIME_ADES) == FALSE ~ 1,
-        .default =0
+        .default = 0
       ),
       DEP_DATE = as.Date(DEP_DATE),
       DEP_PUNCTUAL_FLIGHTS = case_when(
-        is.na(SLOT_TIME_ADEP) == FALSE & ACTUAL_DEP_TIME < (SLOT_TIME_ADEP + lubridate::minutes(16)) ~ 1,
+        is.na(SLOT_TIME_ADEP) == FALSE &
+          ACTUAL_DEP_TIME < (SLOT_TIME_ADEP + lubridate::minutes(16)) ~
+          1,
         .default = 0
       ),
-      DEP_SCHEDULE_FLIGHT = case_when (
+      DEP_SCHEDULE_FLIGHT = case_when(
         is.na(SLOT_TIME_ADEP) == FALSE ~ 1,
-        .default =0
+        .default = 0
       )
     )
-  
-  
+
   punct_data_arr <- punct_data_raw_calc |>
     group_by(ISO_CT_CODE_DES, ARR_DATE) |>
-    summarise(ARR_PUNCTUAL_FLIGHTS = sum(ARR_PUNCTUAL_FLIGHTS, na.rm = TRUE),
-              ARR_SCHEDULE_FLIGHT = sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE),
-              ARR_FLIGHTS = n(),
-              .groups = "drop")
-  
+    summarise(
+      ARR_PUNCTUAL_FLIGHTS = sum(ARR_PUNCTUAL_FLIGHTS, na.rm = TRUE),
+      ARR_SCHEDULE_FLIGHT = sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE),
+      ARR_FLIGHTS = n(),
+      .groups = "drop"
+    )
+
   punct_data_dep <- punct_data_raw_calc |>
     group_by(ISO_CT_CODE_DEP, DEP_DATE) |>
-    summarise(DEP_PUNCTUAL_FLIGHTS = sum(DEP_PUNCTUAL_FLIGHTS, na.rm = TRUE),
-              DEP_SCHEDULE_FLIGHT = sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE),
-              DEP_FLIGHTS = n(),
-              .groups = "drop")
-  
-  start_date <- min(min(punct_data_arr$ARR_DATE, na.rm = TRUE), min(punct_data_dep$DEP_DATE, na.rm = TRUE)) +days(2)
+    summarise(
+      DEP_PUNCTUAL_FLIGHTS = sum(DEP_PUNCTUAL_FLIGHTS, na.rm = TRUE),
+      DEP_SCHEDULE_FLIGHT = sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE),
+      DEP_FLIGHTS = n(),
+      .groups = "drop"
+    )
+
+  start_date <- min(
+    min(punct_data_arr$ARR_DATE, na.rm = TRUE),
+    min(punct_data_dep$DEP_DATE, na.rm = TRUE)
+  ) +
+    days(2)
   end_date <- lubridate::today() + days(-1)
-  
+
   date_seq <- seq(from = start_date, to = end_date, by = "day")
   my_codes <- c('IC', 'ES')
   repeated_dates <- rep(date_seq, times = length(my_codes))
   repeated_values <- rep(my_codes, each = length(date_seq))
-  country_day <- data.frame(DAY_DATE = repeated_dates, ISO_2LETTER = repeated_values) |>
+  country_day <- data.frame(
+    DAY_DATE = repeated_dates,
+    ISO_2LETTER = repeated_values
+  ) |>
     arrange(ISO_2LETTER, DAY_DATE)
-  
+
   punct_data_spain_joined <- country_day |>
-    left_join(punct_data_arr, by = c("DAY_DATE" = "ARR_DATE", "ISO_2LETTER" = "ISO_CT_CODE_DES")) |>
-    left_join(punct_data_dep, by = c("DAY_DATE" = "DEP_DATE", "ISO_2LETTER" = "ISO_CT_CODE_DEP"))
-  
-  
+    left_join(
+      punct_data_arr,
+      by = c("DAY_DATE" = "ARR_DATE", "ISO_2LETTER" = "ISO_CT_CODE_DES")
+    ) |>
+    left_join(
+      punct_data_dep,
+      by = c("DAY_DATE" = "DEP_DATE", "ISO_2LETTER" = "ISO_CT_CODE_DEP")
+    )
+
   punct_data_spain_raw <- punct_data_spain_prev %>%
     filter(DAY_DATE < start_date) %>%
     rbind(punct_data_spain_joined) %>%
     arrange(DAY_DATE, ISO_2LETTER)
-  
-  punct_data_spain_raw %>% write_csv(paste0(temp_data_archive, 'punct_data_spain.csv'))
-  punct_data_spain_raw %>% write_csv(paste0('G:/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/app/csv/',
-                                            format(end_date, "%Y%m%d"), '_punct_data_spain.csv'))
-  
+
+  punct_data_spain_raw %>%
+    write_csv(paste0(temp_data_archive, 'punct_data_spain.csv'))
+  punct_data_spain_raw %>%
+    write_csv(paste0(
+      'G:/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/app/csv/',
+      format(end_date, "%Y%m%d"),
+      '_punct_data_spain.csv'
+    ))
+
   # punct_data_spain_raw_prev %>% write_csv(paste0(temp_data_archive, 'punct_data_spain_prev.csv'))
-  
+
   return(punct_data_spain_raw)
 }
 
@@ -585,12 +644,11 @@ DIM_STATE as (
   left join DIM_STATE c on a.ISO_2LETTER = c.EC_ISO_CT_CODE
 
 "
-  
-  
+
   st_punct_raw <- export_query(query) %>%
     as_tibble() %>%
     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-  
+
   return(st_punct_raw)
 }
 
@@ -644,34 +702,34 @@ get_punct_data_apt <- function() {
           where a.arp_code not in ('LTBA', 'UKBB')
           order by a.ARP_CODE, b.\"DATE\"
    "
-  
+
   apt_punct_raw <- export_query(query) %>%
     as_tibble() %>%
     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-  
+
   return(apt_punct_raw)
 }
 
 
-create_ranking <- function(dataframe, 
-                           period_type,
-                           metric) {
+create_ranking <- function(dataframe, period_type, metric) {
   # dataframe <-  "st_ao_new_agg"
   # period_type <- "DAY"
-  
+
   con = DBI::dbConnect(duckdb::duckdb())
-  df <- read_partitioned_parquet_duckdb(con = con,
-                                        mydataframe = dataframe,
-                                        years=data_day_year,
-                                        subpattern = NULL, 
-                                        year_col = "YEAR_DATA") %>% 
-    filter(DATA_DATE == data_day_date) %>% 
+  df <- read_partitioned_parquet_duckdb(
+    con = con,
+    mydataframe = dataframe,
+    years = data_day_year,
+    subpattern = NULL,
+    year_col = "YEAR_DATA"
+  ) %>%
+    filter(DATA_DATE == data_day_date) %>%
     filter(PERIOD_TYPE == period_type) %>%
     collect()
   DBI::dbDisconnect(con, shutdown = TRUE)
-  
+
   if (period_type == "DAY") {
-    df_prep <- df %>% 
+    df_prep <- df %>%
       mutate(
         FLAG_PERIOD = case_when(
           FLAG_PERIOD == 'CURRENT_DAY' ~ 'CURRENT',
@@ -684,7 +742,7 @@ create_ranking <- function(dataframe,
         FROM_DATE = max(FROM_DATE, na.rm = TRUE),
       )
   } else if (period_type == "WEEK") {
-    df_prep <- df %>% 
+    df_prep <- df %>%
       mutate(
         FLAG_PERIOD = case_when(
           FLAG_PERIOD == 'CURRENT_ROLLING_WEEK' ~ 'CURRENT',
@@ -696,9 +754,8 @@ create_ranking <- function(dataframe,
         TO_DATE = max(TO_DATE, na.rm = TRUE),
         FROM_DATE = max(FROM_DATE, na.rm = TRUE),
       )
-    
   } else if (period_type == "Y2D") {
-    df_prep <- df %>% 
+    df_prep <- df %>%
       mutate(
         FLAG_PERIOD = case_when(
           FLAG_PERIOD == 'CURRENT_YEAR' ~ 'CURRENT',
@@ -710,40 +767,49 @@ create_ranking <- function(dataframe,
         TO_DATE = max(TO_DATE, na.rm = TRUE),
         FROM_DATE = max(FROM_DATE, na.rm = TRUE),
       )
-    
-  }  
-  
+  }
+
   # detect the agg stakeholder name and code columns so we can rename it later
-  nm   <- names(df_prep)
-  hits_name <- grep("_NAME", nm, value = TRUE)        
-  hits_name <- setdiff(hits_name, "STK_NAME") 
-  
-  if (length(hits_name) == 0) stop('No column name contains "_NAME".', call. = FALSE)
-  if (length(hits_name) > 1)  stop('More than one column contains "_NAME": ',
-                                   paste(nm[hits_name], collapse = ", "), call. = FALSE)
-  
-  hits_code <- grep("_CODE", nm, value = TRUE)        
-  hits_code <- setdiff(hits_code, "STK_CODE") 
-  
-  if (length(hits_code) == 0) stop('No column name contains "_CODE".', call. = FALSE)
-  if (length(hits_code) > 1)  stop('More than one column contains "_CODE": ',
-                                   paste(nm[hits_code], collapse = ", "), call. = FALSE)
-  
+  nm <- names(df_prep)
+  hits_name <- grep("_NAME", nm, value = TRUE)
+  hits_name <- setdiff(hits_name, "STK_NAME")
+
+  if (length(hits_name) == 0)
+    stop('No column name contains "_NAME".', call. = FALSE)
+  if (length(hits_name) > 1)
+    stop(
+      'More than one column contains "_NAME": ',
+      paste(nm[hits_name], collapse = ", "),
+      call. = FALSE
+    )
+
+  hits_code <- grep("_CODE", nm, value = TRUE)
+  hits_code <- setdiff(hits_code, "STK_CODE")
+
+  if (length(hits_code) == 0)
+    stop('No column name contains "_CODE".', call. = FALSE)
+  if (length(hits_code) > 1)
+    stop(
+      'More than one column contains "_CODE": ',
+      paste(nm[hits_code], collapse = ", "),
+      call. = FALSE
+    )
+
   #capture metric names to create averages and avoid issue when me is null
   m_q <- enquo(metric)
   avg_name <- paste0("AVG_", as_name(m_q))
   avg_m_sym <- sym(avg_name)
-  
-  df_ranking_int <- df_prep %>%   
-    rename("NAME" := all_of(hits_name)) %>% 
-    rename("CODE" := all_of(hits_code)) %>% 
+
+  df_ranking_int <- df_prep %>%
+    rename("NAME" := all_of(hits_name)) %>%
+    rename("CODE" := all_of(hits_code)) %>%
     # ensure we keep only the current code
-    mutate(CODE = if_else(FLAG_PERIOD != "CURRENT", NA, CODE)) %>% 
-    arrange(NAME, CODE) %>% 
-    fill(CODE, .direction = "down") %>% 
-    arrange(STK_CODE, FLAG_PERIOD, R_RANK) %>% 
+    mutate(CODE = if_else(FLAG_PERIOD != "CURRENT", NA, CODE)) %>%
+    arrange(NAME, CODE) %>%
+    fill(CODE, .direction = "down") %>%
+    arrange(STK_CODE, FLAG_PERIOD, R_RANK) %>%
     # filter(STK_NAME == "Zurich")%>% filter(NAME == "CHair Airlines")
-    # select(-YEAR, -NO_DAYS, -FLIGHT) %>% 
+    # select(-YEAR, -NO_DAYS, -FLIGHT) %>%
     select(-YEAR, -NO_DAYS, -{{ metric }}) %>%
     # spread(key = FLAG_PERIOD, value = AVG_FLIGHT)
     spread(key = FLAG_PERIOD, value = !!avg_m_sym) %>%
@@ -753,7 +819,7 @@ create_ranking <- function(dataframe,
         is.na(RANK_PREV) ~ RANK,
         .default = RANK_PREV - RANK
       ),
-      DIF1_METRIC_PERC =   case_when(
+      DIF1_METRIC_PERC = case_when(
         (PREV1 == 0 | is.na(PREV1)) ~ NA,
         .default = CURRENT / PREV1 - 1
       ),
@@ -762,45 +828,50 @@ create_ranking <- function(dataframe,
         .default = CURRENT / PREV2 - 1
       ),
       DIF1_METRIC = CURRENT - PREV1
-    ) %>% 
+    ) %>%
     arrange(STK_CODE, R_RANK)
-  
+
   return(df_ranking_int)
-  
 }
 
-create_main_card <- function(df_day_int, 
-                             rank_field = R_RANK, 
-                             name_field = NAME, 
-                             code_field = CODE, 
-                             metric_field = CURRENT) {
+create_main_card <- function(
+  df_day_int,
+  rank_field = R_RANK,
+  name_field = NAME,
+  code_field = CODE,
+  metric_field = CURRENT
+) {
   df_main <- df_day_int %>%
-    filter({{ rank_field }} < 11) %>% 
-    mutate(across(-c({{ rank_field }}, STK_CODE, STK_NAME), ~ ifelse({{ rank_field }} > 4, NA, .))) %>%
-    select(STK_CODE,
-           STK_NAME,
-           {{ rank_field }},
-           {{ name_field }},
-           {{ code_field }},
-           {{ metric_field }})
+    filter({{ rank_field }} < 11) %>%
+    mutate(across(
+      -c({{ rank_field }}, STK_CODE, STK_NAME),
+      ~ ifelse({{ rank_field }} > 4, NA, .)
+    )) %>%
+    select(
+      STK_CODE,
+      STK_NAME,
+      {{ rank_field }},
+      {{ name_field }},
+      {{ code_field }},
+      {{ metric_field }}
+    )
   return(df_main)
 }
 
 create_main_card_dif <- function(df_day_int) {
   # df_day_int <- apt_ao_data_day_int
   df_main <- df_day_int %>%
-    filter(R_RANK < 40)  %>% 
-    select(STK_CODE,
-           STK_NAME,
-           NAME,
-           CODE,
-           DIF1_METRIC) %>%
-    group_by(STK_CODE) %>% 
+    filter(R_RANK < 40) %>%
+    select(STK_CODE, STK_NAME, NAME, CODE, DIF1_METRIC) %>%
+    group_by(STK_CODE) %>%
     arrange(STK_CODE, desc(abs(DIF1_METRIC)), desc(DIF1_METRIC)) %>%
     mutate(R_RANK = row_number()) %>%
     filter(R_RANK <= 10) %>%
-    ungroup() %>% 
-    mutate(across(-c(R_RANK, STK_NAME, STK_CODE), ~ replace(.x, R_RANK > 4, NA))) %>%
+    ungroup() %>%
+    mutate(across(
+      -c(R_RANK, STK_NAME, STK_CODE),
+      ~ replace(.x, R_RANK > 4, NA)
+    )) %>%
     # arrange(STK_CODE, desc(abs(DIF1_METRIC))) %>%
     # mutate(R_RANK = row_number()) %>%
     select(
@@ -812,4 +883,154 @@ create_main_card_dif <- function(df_day_int) {
       DIF1_METRIC
     )
   return(df_main)
+}
+
+
+network_traffic_latest <- function(today = lubridate::today()) {
+  network_traffic_full_latest(today) |>
+    magrittr::extract(
+      c(
+        "FLIGHT_DATE",
+        "DAY_TFC",
+        "DAY_TFC_PREV_WEEK_PERC",
+        "DAY_DIFF_PREV_YEAR_PERC",
+        "DAY_TFC_DIFF_2019_PERC",
+        "AVG_ROLLING_WEEK",
+        "DIF_PREV_WEEK_PERC",
+        "DIF_WEEK_PREV_YEAR_PERC",
+        "DIF_ROLLING_WEEK_2019_PERC",
+        "Y2D_TFC_YEAR",
+        "Y2D_AVG_TFC_YEAR",
+        "Y2D_DIFF_PREV_YEAR_PERC",
+        "Y2D_DIFF_2019_PERC"
+      )
+    )
+}
+
+# get values for the day before `tdy`
+network_traffic_full_latest <- function(today = lubridate::today()) {
+  yesterday <- today |> magrittr::subtract(days(1))
+  base_dir <- "//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/"
+  base_file <- str_glue(
+    "099_Traffic_Landing_Page_dataset_new_{yyyymmdd}.xlsx",
+    yyyymmdd = yesterday |> format("%Y%m%d")
+  )
+
+  last_year <- yesterday |> lubridate::year()
+
+  nw_traffic_data <- read_xlsx(
+    path = fs::path_abs(base_file, start = base_dir),
+    sheet = "NM_Daily_Traffic_All",
+    range = cell_limits(c(2, 1), c(NA, 39))
+  ) |>
+    dplyr::mutate(across(starts_with("FLIGHT_DATE"), lubridate::as_date)) |>
+    as_tibble()
+
+  nw_traffic_last_day <- nw_traffic_data |>
+    filter(FLIGHT_DATE == yesterday)
+
+  nw_traffic_latest <- nw_traffic_last_day |>
+    as.list() |>
+    purrr::list_transpose() |>
+    magrittr::extract2(1)
+
+  nw_traffic_latest
+}
+
+
+network_delay_latest <- function(today = lubridate::today()) {
+  nw_traffic_last_day <- network_traffic_full_latest(today)
+
+  yesterday <- today |> magrittr::subtract(days(1))
+  base_dir <- "//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/"
+  base_file <- str_glue(
+    "099_Traffic_Landing_Page_dataset_new_{yyyymmdd}.xlsx",
+    yyyymmdd = yesterday |> format("%Y%m%d")
+  )
+
+  last_year <- yesterday |> lubridate::year()
+
+  nw_delay_data <- read_xlsx(
+    path = fs::path_abs(base_file, start = base_dir),
+    sheet = "NM_Daily_Delay_All",
+    range = cell_limits(c(2, 1), c(NA, 39))
+  ) |>
+    dplyr::mutate(across(starts_with("FLIGHT_DATE"), lubridate::as_date)) |>
+    as_tibble()
+
+  nw_delay_latest <- nw_delay_data |>
+    filter(FLIGHT_DATE == yesterday) |>
+    mutate(
+      DAY_DLY_FLT = DAY_DLY / nw_traffic_last_day$DAY_TFC,
+      DAY_DLY_FLT_PY = DAY_DLY_PREV_YEAR /
+        nw_traffic_last_day$DAY_TFC_PREV_YEAR,
+      DAY_DLY_FLT_2019 = DAY_DLY_2019 / nw_traffic_last_day$DAY_TFC_2019,
+      DAY_DLY_FLT_DIF_PY_PERC = if_else(
+        DAY_DLY_FLT_PY == 0,
+        NA,
+        DAY_DLY_FLT / DAY_DLY_FLT_PY - 1
+      ),
+      DAY_DLY_FLT_DIF_2019_PERC = if_else(
+        DAY_DLY_FLT_2019 == 0,
+        NA,
+        DAY_DLY_FLT / DAY_DLY_FLT_2019 - 1
+      ),
+      RWEEK_DLY_FLT = TOTAL_ROLLING_WEEK /
+        nw_traffic_last_day$TOTAL_ROLLING_WEEK,
+      RWEEK_DLY_FLT_PY = AVG_ROLLING_WEEK_PREV_YEAR /
+        nw_traffic_last_day$AVG_ROLLING_WEEK_PREV_YEAR,
+      RWEEK_DLY_FLT_2019 = AVG_ROLLING_WEEK_2019 /
+        nw_traffic_last_day$AVG_ROLLING_WEEK_2019,
+      RWEEK_DLY_FLT_DIF_PY_PERC = if_else(
+        RWEEK_DLY_FLT_PY == 0,
+        NA,
+        RWEEK_DLY_FLT / RWEEK_DLY_FLT_PY - 1
+      ),
+      RWEEK_DLY_FLT_DIF_2019_PERC = if_else(
+        RWEEK_DLY_FLT_2019 == 0,
+        NA,
+        RWEEK_DLY_FLT / RWEEK_DLY_FLT_2019 - 1
+      ),
+      Y2D_DLY_FLT = Y2D_DLY_YEAR / nw_traffic_last_day$Y2D_TFC_YEAR,
+      Y2D_DLY_FLT_PY = Y2D_AVG_DLY_PREV_YEAR /
+        nw_traffic_last_day$Y2D_AVG_TFC_PREV_YEAR,
+      Y2D_DLY_FLT_2019 = Y2D_AVG_DLY_2019 /
+        nw_traffic_last_day$Y2D_AVG_TFC_2019,
+      Y2D_DLY_FLT_DIF_PY_PERC = if_else(
+        Y2D_DLY_FLT_PY == 0,
+        NA,
+        Y2D_DLY_FLT / Y2D_DLY_FLT_PY - 1
+      ),
+      Y2D_DLY_FLT_DIF_2019_PERC = if_else(
+        Y2D_DLY_FLT_2019 == 0,
+        NA,
+        Y2D_DLY_FLT / Y2D_DLY_FLT_2019 - 1
+      )
+    ) |>
+    select(
+      FLIGHT_DATE,
+      DAY_DLY,
+      DAY_DIFF_PREV_YEAR_PERC,
+      DAY_DLY_DIFF_2019_PERC,
+      DAY_DLY_FLT,
+      DAY_DLY_FLT_DIF_PY_PERC,
+      DAY_DLY_FLT_DIF_2019_PERC,
+      AVG_ROLLING_WEEK,
+      DIF_WEEK_PREV_YEAR_PERC,
+      DIF_ROLLING_WEEK_2019_PERC,
+      RWEEK_DLY_FLT,
+      RWEEK_DLY_FLT_DIF_PY_PERC,
+      RWEEK_DLY_FLT_DIF_2019_PERC,
+      Y2D_AVG_DLY_YEAR,
+      Y2D_DIFF_PREV_YEAR_PERC,
+      Y2D_DIFF_2019_PERC,
+      Y2D_DLY_FLT,
+      Y2D_DLY_FLT_DIF_PY_PERC,
+      Y2D_DLY_FLT_DIF_2019_PERC
+    ) |>
+    as.list() |>
+    purrr::list_transpose() |>
+    magrittr::extract2(1)
+
+  nw_delay_latest
 }
