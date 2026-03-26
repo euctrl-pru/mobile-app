@@ -42,6 +42,7 @@ forecast_list <- data.frame(
     3910,
     3950,
     4041,
+    4104,
     NULL
   ),
   name = c(
@@ -50,6 +51,7 @@ forecast_list <- data.frame(
     "October 2024 Forecast",
     "February 2025 Forecast",
     "October 2025 Forecast",
+    "March 2026 Forecast",
     NULL),
   publication_date = c(
     "2023-10-18",
@@ -57,6 +59,7 @@ forecast_list <- data.frame(
     "2024-10-15",
     "2025-02-28",
     "2025-10-17",
+    "2026-03-26",
     NULL
   ),
   name_date = c(
@@ -65,6 +68,7 @@ forecast_list <- data.frame(
     "2024-10-01",
     "2025-02-01",
     "2025-10-01",
+    "2026-03-01",
     NULL
   )
 ) 
