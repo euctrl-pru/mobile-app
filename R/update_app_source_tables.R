@@ -45,8 +45,9 @@ import_dataframe <- function(dfname) {
   myyears <- c(2018:year(current_day))
   
   df_base <- read_partitioned_parquet_duckdb (con = con,
-                                              mydataframe = mydataframe,,
-                                              years = myyears)
+                                              mydataframe = mydataframe,
+                                              years = myyears,
+                                              myfolder = base_tables_dir)
   
 
   # register dim tables in the connection so they can be joined
@@ -1571,7 +1572,8 @@ run_for_date <- function(day_seq) {
         mydataframe = paste0(mydataframe, "_agg"),
         years = as.integer(years_needed),
         subpattern = NULL,
-        year_col = "YEAR_DATA"
+        year_col = "YEAR_DATA",
+        myfolder = app_tables_dir
       ) %>%
         filter(!(DATA_DATE %in% date_seq)) %>%
         collect()
@@ -1913,7 +1915,7 @@ stk_day_save <- function(stk) {
   
   stakeholder <- substr(stk,1,2)
   
-  df_day %>% write_parquet(here(archive_dir_raw, stakeholder, mydatafile))
+  df_day %>% write_parquet(here(app_tables_dir, stakeholder, mydatafile))
   print(paste0(mydatafile, " saved"))
   message(paste(format(now(), "%H:%M:%S")))
   
@@ -1972,7 +1974,8 @@ stk_agg_save <- function(stk_stk) {
                                df = df_agg, 
                                paste0(mydataframe, "_agg"),
                                years = myyears, 
-                               year_col = "YEAR_DATA")
+                               year_col = "YEAR_DATA",
+                               myfolder = app_tables_dir)
 }  
 
 walk(stk_agg_list, stk_agg_save)

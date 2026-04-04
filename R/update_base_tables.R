@@ -19,12 +19,12 @@ source(here::here("..", "mobile-app", "R", "params.R"), local = TRUE)
 source(here::here("..", "mobile-app", "R", "duckdb_functions.R"), local = TRUE)
 
 # check if DAG procedure run successfully today
-  query_log <- "select * from AIU_RUN_LOG"
-  data_log <- export_query(query_log) %>%
-    mutate(LOG_DAY = floor_date(LOG_TIME, "day"))
+query_log <- "select * from AIU_RUN_LOG"
+data_log <- export_query(query_log) %>%
+  mutate(LOG_DAY = floor_date(LOG_TIME, "day"))
   
-  # check if the procedure run today
-  last_run_day <- max(data_log$LOG_DAY)
+# check if the procedure run today
+last_run_day <- max(data_log$LOG_DAY)
   
   # check last successful run
   last_run_time_ok <- data_log %>%
@@ -72,11 +72,11 @@ check_synthesis <- check_day + check_flt + check_log
 if (check_synthesis != 3) {
   from    <- "oscar.alfaro@eurocontrol.int"
   to      <- c("oscar.alfaro@eurocontrol.int"
-               # ,
+               ,
                # "quinten.goens@eurocontrol.int",
                # "enrico.spinielli@eurocontrol.int",
                # "delia.budulan@eurocontrol.int",
-               # "nora.cashman@eurocontrol.int"
+               "nora.cashman@eurocontrol.int"
                # ,  "denis.huet@eurocontrol.int"
   )
   # cc      <- c("enrico.spinielli@eurocontrol.int")
@@ -97,19 +97,19 @@ source(here::here("..", "mobile-app", "R", "base_queries.R"), local = TRUE)
 # update base table ----
 mydataframes <- c(
   "nw_delay_cause",
-
+  
   "ap_traffic_delay",
   "ap_ao",
   "ap_st_des",
   "ap_ap_des",
   "ap_ms",
-
+  
   "ao_traffic_delay",
   "ao_st_des",
   "ao_ap_dep",
   "ao_ap_pair",
   "ao_ap_arr_delay",
-
+  
   "st_daio_delay",
   "st_dai",
   "st_ao",
@@ -122,7 +122,6 @@ mydataframes <- c(
 
 update_base_tables <- function(mydataframe) {
 # mydataframe <-   "sp_traffic_delay_new"
-  myarchivefile <- paste0(mydataframe, "_day_base.parquet")
   mybackupfile <- paste0(mydataframe, "_day_base_backup.parquet")
   query_7d <- get(paste0(mydataframe, "_day_base_query"))
   
@@ -146,7 +145,6 @@ update_base_tables <- function(mydataframe) {
   # myyears <- c(2025)
   
   # import data
-  # df <- read_parquet_duckdb(here(archive_dir_raw, myarchivefile))
 
   # create connection
   con = DBI::dbConnect(duckdb::duckdb())
@@ -155,7 +153,8 @@ update_base_tables <- function(mydataframe) {
   df <- read_selected_years_duck_tbl(con = con,
                                      mydataframe = mydataframe,
                                      years=myyears,
-                                     subpattern = "YEAR=*/data_*.parquet")
+                                     subpattern = "YEAR=*/data_*.parquet",
+                                     myfolder = base_tables_dir)
 # df_mod <- df %>%
 #   compute(prudence = "lavish") %>%
 #   mutate(YEAR = as.integer(year(ENTRY_DATE))) %>%
@@ -204,7 +203,8 @@ update_base_tables <- function(mydataframe) {
   save_partitions_single_copy (con = con, 
                                df = df_updated, 
                                mydataframe,
-                               years = myyears)
+                               years = myyears,
+                               myfolder = base_tables_dir)
   
   # close connection
   DBI::dbDisconnect(con, shutdown = TRUE)

@@ -11,13 +11,14 @@ suppressPackageStartupMessages({
 read_selected_years_duck_tbl <- function(con = con,
                                          mydataframe,
                                          years = 2018:lubridate::year(lubridate::today()),
-                                         subpattern = "YEAR=*/data_*.parquet") {
+                                         subpattern = "YEAR=*/data_*.parquet",
+                                         myfolder) {
   # --- Validate inputs ---
   if (missing(years) || length(years) == 0L) stop("`years` must be a non-empty numeric vector, e.g. c(2024, 2025).")
   if (!is.numeric(years)) stop("`years` must be numeric (e.g., c(2024, 2025)).")
   years <- as.integer(years)
   
-  base_dir <- here(archive_dir_raw, mydataframe)
+  base_dir <- here(myfolder, substr(mydataframe, 1,2),mydataframe)
   
   # --- Build glob & SQL ---
   glob <- normalizePath(file.path(base_dir, subpattern), winslash = "/", mustWork = FALSE)
@@ -41,13 +42,14 @@ save_partitions_from_local_df <- function(con,
                                           mydataframe,
                                           years,
                                           filename = "data_0.parquet",
-                                          clean_partition_dir = TRUE) {
+                                          clean_partition_dir = TRUE,
+                                          myfolder) {
   print(paste(format(now(), "%H:%M:%S")))
   stopifnot(!is.null(con), inherits(con, "duckdb_connection"))
 
 
   # Normalize base path once
-  base_dir <- here(archive_dir_raw, mydataframe)
+  base_dir <- here(myfolder, mydataframe)
   base_posix <- normalizePath(base_dir, winslash = "/", mustWork = FALSE)
   
   # Register local df as a DuckDB relation (zero-copy); use a unique name
@@ -77,15 +79,8 @@ save_partitions_from_local_df <- function(con,
   
 }
 
-# --- Example ---
-# con <- DBI::dbConnect(duckdb::duckdb())
-# save_partitions_from_local_df(con,
-#                               df = df_mod,                    # local duckplyr_df
-#                               base_dir = here::here(archive_dir_raw),
-#                               years = c(2024, 2025))          # or NULL to auto-detect
-# DBI::dbDisconnect(con, shutdown = TRUE)
-
-save_partitions_single_copy <- function(con, df, mydataframe, years, year_col = "YEAR") {
+save_partitions_single_copy <- function(con, df, mydataframe, years, year_col = "YEAR",
+                                        myfolder) {
   message(paste(format(now(), "%H:%M:%S")))
   
   stopifnot(is.character(year_col), length(year_col) == 1)
@@ -97,7 +92,8 @@ save_partitions_single_copy <- function(con, df, mydataframe, years, year_col = 
   if (!length(years)) stop("`years` must be a non-empty numeric vector.")
   
   # ---- base output dir ----
-  base_dir <- here::here(archive_dir_raw, mydataframe)
+  mystakeholder <- substr(mydataframe, 1,2)
+  base_dir <- here::here(myfolder, mystakeholder, mydataframe)
   fs::dir_create(base_dir, recurse = TRUE)  # ensure it exists
   base_posix <- normalizePath(base_dir, winslash = "/", mustWork = TRUE)
   
@@ -139,7 +135,8 @@ read_partitioned_parquet_duckdb <- function(con,
                                             years = NULL,
                                             subpattern = NULL,
                                             collect = FALSE, 
-                                            year_col = "YEAR"
+                                            year_col = "YEAR",
+                                            myfolder
                                             ) {
   stopifnot(inherits(con, "duckdb_connection"))
   stopifnot(is.character(year_col), length(year_col) == 1)
@@ -148,7 +145,8 @@ read_partitioned_parquet_duckdb <- function(con,
   if (is.null(subpattern)) {
     subpattern <- sprintf("%s=*/data_*.parquet", year_col)
   }
-  base_dir <- here::here(archive_dir_raw, mydataframe)
+  mystakeholder <- substr(mydataframe, 1,2)
+  base_dir <- here::here(myfolder, mystakeholder, mydataframe)
   glob <- normalizePath(file.path(base_dir, subpattern), winslash = "/", mustWork = FALSE)
   
 
@@ -171,11 +169,5 @@ read_partitioned_parquet_duckdb <- function(con,
   tbl <- dplyr::tbl(con, dplyr::sql(sql_base))
   if (isTRUE(collect)) dplyr::collect(tbl) else tbl
 }
-
-# --- Examples ---
-# Local tibble, only 2024 & 2025:
-# df <- read_partitioned_parquet_duckdb(con, base_dir = here::here(archive_dir_raw), years = c(2024, 2025), collect = TRUE)
-# Lazy table, only 2025:
-# t  <- read_partitioned_parquet_duckdb(con, base_dir = here::here(archive_dir_raw), years = 2025, collect = FALSE)
 
 
