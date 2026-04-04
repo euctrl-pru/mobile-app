@@ -55,7 +55,7 @@ apt_json_app <-""
 mydatafile <- paste0("ap_traffic_delay_day.parquet")
 stakeholder <- substr(mydatafile, 1,2)
 
-ap_traffic_delay_data <- read_parquet(here(archive_dir_raw, stakeholder, mydatafile)) %>% 
+ap_traffic_delay_data <- read_parquet(here(app_tables_dir, stakeholder, mydatafile)) %>% 
   filter(YEAR == data_day_year) %>% 
   rename_with(~ sub("DAY_", "DY_", .x, fixed = TRUE), contains("DAY_")) %>% 
   rename_with(~ sub("RWK_", "WK_", .x, fixed = TRUE), contains("RWK_")) %>% 

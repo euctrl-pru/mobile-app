@@ -26,11 +26,11 @@ sp_local_data_folder <- here::here("..", "mobile-app", "data", sp_status, "sp")
 
 archive_dir <- "//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/app/json/"
 archive_dir_raw <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Project/DDP/AIU app/data_archive'
-archive_dir_raw_backup <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/app/csv'
+# archive_dir_raw_backup <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/app/csv'
 
 #new folders for relocation
-base_tables_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Project/DDP/AIU app/data_archive/base_tables'
-app_tables_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Project/DDP/AIU app/data_archive/app_tables'
+base_tables_dir <- here::here(archive_dir_raw, "base_tables")
+app_tables_dir <- here::here(archive_dir_raw, "app_tables")
 
 # DB params
 usr <- Sys.getenv("PRU_DEV_USR")

@@ -39,8 +39,7 @@ import_dataframe <- function(dfname) {
     mydataframe <- dfname
   }
     
-  # df_base <- read_parquet_duckdb(here(archive_dir_raw, myparquetfile))
-  
+
   con = DBI::dbConnect(duckdb::duckdb())
   myyears <- c(2018:year(current_day))
   

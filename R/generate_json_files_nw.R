@@ -115,7 +115,7 @@ nw_billed_json <- nw_billed_for_json %>%
 mydatafile <- paste0("nw_traffic_delay_day.parquet")
 stakeholder <- substr(mydatafile, 1,2)
 
-nw_traffic_delay_data <- read_parquet(here(archive_dir_raw, stakeholder, mydatafile))
+nw_traffic_delay_data <- read_parquet(here(app_tables_dir, stakeholder, mydatafile))
 
 # get data for last date
 nw_traffic_delay_last_day <- nw_traffic_delay_data %>%
@@ -1519,7 +1519,7 @@ print(paste(format(now(), "%H:%M:%S"), "nw_ctry_ranking_traffic_DAI"))
 mydatafile <- paste0("ap_traffic_delay_day.parquet")
 stakeholder <- substr(mydatafile, 1,2)
 
-nw_ap_traffic_delay_data <- read_parquet(here(archive_dir_raw, stakeholder, mydatafile))
+nw_ap_traffic_delay_data <- read_parquet(here(app_tables_dir, stakeholder, mydatafile))
 
 ### day ----
 nw_ap_delay_data_day <- nw_ap_traffic_delay_data %>%

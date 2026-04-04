@@ -135,7 +135,7 @@ st_billed_for_json <- st_billing %>%
 mydatafile <- paste0("st_daio_delay_day.parquet")
 stakeholder <- substr(mydatafile, 1,2)
 
-st_daio_delay_data <- read_parquet(here(archive_dir_raw, stakeholder, mydatafile)) %>% 
+st_daio_delay_data <- read_parquet(here(app_tables_dir, stakeholder, mydatafile)) %>% 
   filter(YEAR == data_day_year) %>% 
   rename_with(~ sub("DAY_", "DY_", .x, fixed = TRUE), contains("DAY_")) %>% 
   rename_with(~ sub("RWK_", "WK_", .x, fixed = TRUE), contains("RWK_")) %>% 
@@ -189,7 +189,7 @@ st_daio_for_json <- st_daio_delay_data_last_day %>%
 mydatafile <- paste0("st_dai_day.parquet")
 stakeholder <- substr(mydatafile, 1,2)
 
-st_dai_data <- read_parquet(here(archive_dir_raw, stakeholder, mydatafile)) %>% 
+st_dai_data <- read_parquet(here(app_tables_dir, stakeholder, mydatafile)) %>% 
   filter(YEAR == data_day_year) %>% 
   rename_with(~ sub("DAY_", "DY_", .x, fixed = TRUE), contains("DAY_")) %>% 
   rename_with(~ sub("RWK_", "WK_", .x, fixed = TRUE), contains("RWK_")) %>% 
@@ -1432,7 +1432,7 @@ if (!exists("nw_ap_traffic_delay_data")) {
   mydatafile <- paste0("ap_traffic_delay_day.parquet")
   stakeholder <- substr(mydatafile, 1,2)
   
-  nw_ap_traffic_delay_data <- read_parquet(here(archive_dir_raw, stakeholder, mydatafile))
+  nw_ap_traffic_delay_data <- read_parquet(here(app_tables_dir, stakeholder, mydatafile))
   }
 
 st_ap_delay_raw <- nw_ap_traffic_delay_data %>% 

@@ -122,14 +122,13 @@ mydataframes <- c(
 
 update_base_tables <- function(mydataframe) {
 # mydataframe <-   "sp_traffic_delay_new"
-  mybackupfile <- paste0(mydataframe, "_day_base_backup.parquet")
   query_7d <- get(paste0(mydataframe, "_day_base_query"))
   
   # create backup
-  dest_parent <- here(archive_dir_raw, "backup", mydataframe)
+  dest_parent <- here(archive_dir_raw, "backup")
   if (!dir.exists(dest_parent)) dir.create(dest_parent, recursive = TRUE)
 
-  file.copy(from = here(archive_dir_raw, mydataframe), 
+  file.copy(from = here(base_tables_dir, substr(mydataframe, 1,2), mydataframe), 
             to = dest_parent,
             recursive = TRUE, overwrite = TRUE, copy.mode = TRUE)
   
@@ -220,9 +219,6 @@ update_base_tables <- function(mydataframe) {
 #   # Produces out_dir/YEAR=2019/part-*.parquet etc.
   
   
-  # # write new updated table
-  # df_updated %>% write_parquet(here(archive_dir_raw, mydataframe, "YEAR=2025", "data_0.parquet"))
- 
   print(paste(format(now(), "%H:%M:%S"), mydataframe, "base table updated")) 
 }
 
