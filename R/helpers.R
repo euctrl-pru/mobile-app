@@ -712,8 +712,8 @@ get_punct_data_apt <- function() {
 
 
 create_ranking <- function(dataframe, period_type, metric) {
-  # dataframe <-  "nw_ap_agg"
-  # period_type <- "WEEK"
+  # dataframe <-  "nw_ao_agg"
+  # period_type <- "DAY"
 
   con = DBI::dbConnect(duckdb::duckdb())
   df <- read_partitioned_parquet_duckdb(
