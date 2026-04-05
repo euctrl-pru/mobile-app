@@ -712,8 +712,8 @@ get_punct_data_apt <- function() {
 
 
 create_ranking <- function(dataframe, period_type, metric) {
-  # dataframe <-  "st_ao_new_agg"
-  # period_type <- "DAY"
+  # dataframe <-  "nw_ap_agg"
+  # period_type <- "WEEK"
 
   con = DBI::dbConnect(duckdb::duckdb())
   df <- read_partitioned_parquet_duckdb(
@@ -721,7 +721,8 @@ create_ranking <- function(dataframe, period_type, metric) {
     mydataframe = dataframe,
     years = data_day_year,
     subpattern = NULL,
-    year_col = "YEAR_DATA"
+    year_col = "YEAR_DATA",
+    myfolder = app_tables_dir
   ) %>%
     filter(DATA_DATE == data_day_date) %>%
     filter(PERIOD_TYPE == period_type) %>%
@@ -754,7 +755,7 @@ create_ranking <- function(dataframe, period_type, metric) {
         TO_DATE = max(TO_DATE, na.rm = TRUE),
         FROM_DATE = max(FROM_DATE, na.rm = TRUE),
       )
-  } else if (period_type == "Y2D") {
+  } else if (period_type %in% c("Y2D", "S2D")) {
     df_prep <- df %>%
       mutate(
         FLAG_PERIOD = case_when(
@@ -799,6 +800,22 @@ create_ranking <- function(dataframe, period_type, metric) {
   m_q <- enquo(metric)
   avg_name <- paste0("AVG_", as_name(m_q))
   avg_m_sym <- sym(avg_name)
+  
+  # df_ranking_int <- df_prep %>%
+  #   rename("NAME" := all_of(hits_name)) %>%
+  #   rename("CODE" := all_of(hits_code)) %>%
+  #   # ensure we keep only the current code
+  #   mutate(CODE = if_else(FLAG_PERIOD != "CURRENT", NA, CODE)) %>%
+  #   arrange(NAME, CODE) %>%
+  #   fill(CODE, .direction = "down") %>%
+  #   arrange(STK_CODE, FLAG_PERIOD, R_RANK) %>%
+  #   # filter(STK_NAME == "Zurich")%>% filter(NAME == "CHair Airlines")
+  #   # select(-YEAR, -NO_DAYS, -FLIGHT) %>%
+  #   select(-YEAR, -NO_DAYS, -DEP_ARR) %>%
+  #   # spread(key = FLAG_PERIOD, value = AVG_FLIGHT)
+  #   spread(key = FLAG_PERIOD, value = AVG_DEP_ARR)
+    
+  
 
   df_ranking_int <- df_prep %>%
     rename("NAME" := all_of(hits_name)) %>%

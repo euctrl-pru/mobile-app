@@ -15,6 +15,9 @@ source(here::here("..", "mobile-app", "R", "duckdb_functions.R"), local = TRUE)
 # parameters ----
 if (!exists("data_day_date")) {current_day <- today() - days(1)} else {current_day <- data_day_date}
 
+summer_start <- 0301 
+summer_end <- 0930
+
 # prep data functions ----
 import_dataframe <- function(dfname) {
   # print(paste(format(now(), "%H:%M:%S")))
@@ -242,7 +245,7 @@ stk_daily <- function(df,
                       dly_arp_field = NULL
 ) 
 {
-  # df            = "st_daio_delay"
+  # df            = "nw_delay_cause"
   # mydate        = current_day
   # stk_id        = quo(COUNTRY_CODE)
   # date_field    = quo(FLIGHT_DATE)
@@ -435,7 +438,12 @@ stk_daily <- function(df,
   )
   
   days_stk <- crossing(days_sequence, get(list_stk)) %>% 
-    arrange(STK_ID, FLIGHT_DATE) 
+    arrange(STK_ID, FLIGHT_DATE) %>% 
+    mutate(SUMMER_FLAG = if_else(
+      between(as.integer(format(FLIGHT_DATE, "%m%d")), summer_start, summer_end),
+      1,
+      0
+    ))
   
   
   df_day_year <- days_stk %>%
@@ -504,6 +512,11 @@ stk_daily <- function(df,
       Y2D_AVG_TFC = cumsum(DAY_TFC) / row_number(),
       Y2D_TFC_DLY = cumsum(DAY_TFC_DLY),
       Y2D_AVG_TFC_DLY = cumsum(DAY_TFC_DLY) / row_number(),
+
+      S2D_TFC = cumsum(DAY_TFC * SUMMER_FLAG),
+      S2D_AVG_TFC = if_else(cumsum(SUMMER_FLAG) == 0, 0, S2D_TFC / cumsum(SUMMER_FLAG)),
+      S2D_TFC_DLY = cumsum(DAY_TFC_DLY * SUMMER_FLAG),
+      S2D_AVG_TFC_DLY = if_else(cumsum(SUMMER_FLAG) == 0, 0, S2D_TFC_DLY / cumsum(SUMMER_FLAG)),
       
       # delay
       Y2D_DLY = cumsum(DAY_DLY),
@@ -513,18 +526,36 @@ stk_daily <- function(df,
       Y2D_AVG_DLY_ERT = cumsum(DAY_DLY_ERT) / row_number(),
       Y2D_AVG_DLY_ARP = cumsum(DAY_DLY_ARP) / row_number(),
       
+      S2D_DLY = cumsum(DAY_DLY * SUMMER_FLAG),
+      S2D_DLY_ERT = cumsum(DAY_DLY_ERT * SUMMER_FLAG),
+      S2D_DLY_ARP = cumsum(DAY_DLY_ARP * SUMMER_FLAG),
+      S2D_AVG_DLY = if_else(cumsum(SUMMER_FLAG) == 0, 0, S2D_DLY / cumsum(SUMMER_FLAG)),
+      S2D_AVG_DLY_ERT = if_else(cumsum(SUMMER_FLAG) == 0, 0, S2D_DLY_ERT / cumsum(SUMMER_FLAG)),
+      S2D_AVG_DLY_ARP = if_else(cumsum(SUMMER_FLAG) == 0, 0, S2D_DLY_ARP / cumsum(SUMMER_FLAG)),
+      
       # delay/flight
       Y2D_DLY_FLT = if_else(Y2D_TFC_DLY == 0, 0, Y2D_DLY / Y2D_TFC_DLY),
       Y2D_DLY_ERT_FLT = if_else(Y2D_TFC_DLY == 0, 0, Y2D_DLY_ERT / Y2D_TFC_DLY),
       Y2D_DLY_ARP_FLT = if_else(Y2D_TFC_DLY == 0, 0, Y2D_DLY_ARP / Y2D_TFC_DLY),
+
+      S2D_DLY_FLT = if_else(S2D_TFC_DLY == 0, 0, S2D_DLY / S2D_TFC_DLY),
+      S2D_DLY_ERT_FLT = if_else(S2D_TFC_DLY == 0, 0, S2D_DLY_ERT / S2D_TFC_DLY),
+      S2D_DLY_ARP_FLT = if_else(S2D_TFC_DLY == 0, 0, S2D_DLY_ARP / S2D_TFC_DLY),
       
       # delayed flights
       Y2D_DLYED = cumsum(DAY_DLYED),
       Y2D_DLYED_PERC = if_else(Y2D_TFC_DLY == 0, 0, Y2D_DLYED / Y2D_TFC_DLY),
+
+      S2D_DLYED = cumsum(DAY_DLYED * SUMMER_FLAG),
+      S2D_DLYED_PERC = if_else(S2D_TFC_DLY == 0, 0, S2D_DLYED / S2D_TFC_DLY),
       
-      # delayed flights
+      # delayed flights 15
       Y2D_DLYED_15 = cumsum(DAY_DLYED_15),
-      Y2D_DLYED_15_PERC = if_else(Y2D_TFC_DLY == 0, 0, Y2D_DLYED_15 / Y2D_TFC_DLY)
+      Y2D_DLYED_15_PERC = if_else(Y2D_TFC_DLY == 0, 0, Y2D_DLYED_15 / Y2D_TFC_DLY),
+      
+      S2D_DLYED_15 = cumsum(DAY_DLYED_15 * SUMMER_FLAG),
+      S2D_DLYED_15_PERC = if_else(S2D_TFC_DLY == 0, 0, S2D_DLYED_15 / S2D_TFC_DLY)
+      
       
     )%>% 
     ungroup () 
@@ -538,8 +569,8 @@ stk_daily <- function(df,
       FLIGHT_DATE_2019_SD = FLIGHT_DATE %m-% years(YEAR-2019),
       FLIGHT_DATE_PREV_YEAR_SD = FLIGHT_DATE %m-% years(1) 
     ) %>% 
-    left_join(select(df_day_year, STK_ID, YEAR, FLIGHT_DATE, starts_with(c("Y2D"))), by = c("STK_ID", "FLIGHT_DATE_PREV_YEAR_SD" = "FLIGHT_DATE"), suffix = c("","_PREV_YEAR")) %>% 
-    left_join(select(df_day_year, STK_ID, YEAR, FLIGHT_DATE, starts_with(c("Y2D"))), by = c("STK_ID", "FLIGHT_DATE_2019_SD" = "FLIGHT_DATE"), suffix = c("","_2019")) %>% 
+    left_join(select(df_day_year, STK_ID, YEAR, FLIGHT_DATE, starts_with(c("Y2D", "S2D"))), by = c("STK_ID", "FLIGHT_DATE_PREV_YEAR_SD" = "FLIGHT_DATE"), suffix = c("","_PREV_YEAR")) %>% 
+    left_join(select(df_day_year, STK_ID, YEAR, FLIGHT_DATE, starts_with(c("Y2D", "S2D"))), by = c("STK_ID", "FLIGHT_DATE_2019_SD" = "FLIGHT_DATE"), suffix = c("","_2019")) %>% 
     left_join(select(df_day_year, STK_ID, YEAR, FLIGHT_DATE, starts_with(c("DAY", "RWK"))), by = c("STK_ID", "FLIGHT_DATE_2019" = "FLIGHT_DATE"), suffix = c("","_2019")) %>% 
     left_join(select(df_day_year, STK_ID, YEAR, FLIGHT_DATE, starts_with(c("DAY", "RWK"))), by = c("STK_ID", "FLIGHT_DATE_PREV_YEAR" = "FLIGHT_DATE"), suffix = c("","_PREV_YEAR")) %>%
     left_join(select(df_day_year, STK_ID, YEAR, FLIGHT_DATE, RWK_AVG_TFC), by = c("STK_ID", "FLIGHT_DATE_2020" = "FLIGHT_DATE"), suffix = c("","_2020")) %>% 
@@ -590,76 +621,62 @@ stk_daily <- function(df,
       ##delayed flights 15 min
       DAY_DLYED_15_PERC_DIF_PREV_WEEK = DAY_DLYED_15_PERC - DAY_DLYED_15_PERC_PREV_WEEK,
       RWK_DLYED_15_PERC_DIF_PREV_WEEK = RWK_DLYED_15_PERC - RWK_DLYED_15_PERC_PREV_WEEK,
-      
-      # # prev year
-      # ##date
-      # FLIGHT_DATE_PREV_YEAR = lag(FLIGHT_DATE, 364),
-      # ##traffic
-      # DAY_TFC_PREV_YEAR = lag(DAY_TFC , 364),
-      # RWK_AVG_TFC_PREV_YEAR = lag(RWK_AVG_TFC, 364),
-      # ##delay
-      # DAY_DLY_PREV_YEAR = lag(DAY_DLY, 364),
-      # RWK_AVG_DLY_PREV_YEAR = lag(RWK_AVG_DLY, 364),
-      # ##delay ert
-      # DAY_DLY_ERT_PREV_YEAR = lag(DAY_DLY_ERT, 364),
-      # RWK_AVG_DLY_ERT_PREV_YEAR = lag(RWK_AVG_DLY_ERT, 364),
-      # ##delay arp
-      # DAY_DLY_ARP_PREV_YEAR = lag(DAY_DLY, 364),
-      # RWK_AVG_DLY_ARP_PREV_YEAR = lag(RWK_AVG_DLY_ARP, 364),
-      # ##delay/flight
-      # DAY_DLY_ERT_FLT_PREV_YEAR = lag(DAY_DLY_ERT_FLT, 364),
-      # RWK_DLY_ERT_FLT_PREV_YEAR = lag(RWK_DLY_ERT_FLT, 364),
-      # ##delay/flight ert
-      # DAY_DLY_ARP_FLT_PREV_YEAR = lag(DAY_DLY_ARP_FLT, 364),
-      # RWK_DLY_ARP_FLT_PREV_YEAR = lag(RWK_DLY_ARP_FLT, 364),
-      # ##delay/flight arp
-      # DAY_DLY_FLT_PREV_YEAR = lag(DAY_DLY_FLT, 364),
-      # RWK_DLY_FLT_PREV_YEAR = lag(RWK_DLY_FLT, 364),
-      # ##delayed flights
-      # DAY_DLYED_PERC_PREV_YEAR = lag(DAY_DLYED_PERC, 364),
-      # RWK_DLYED_PERC_PREV_YEAR = lag(RWK_DLYED_PERC, 364),
-      # ##delayed flights 15 min
-      # DAY_DLYED_15_PERC_PREV_YEAR = lag(DAY_DLYED_15_PERC, 364),
-      # RWK_DLYED_15_PERC_PREV_YEAR = lag(RWK_DLYED_15_PERC, 364),
-      
+
       # dif prev year
       ##traffic
       DAY_TFC_DIF_PREV_YEAR = coalesce(DAY_TFC, 0) - coalesce(DAY_TFC_PREV_YEAR, 0),
       DAY_TFC_DIF_PREV_YEAR_PERC = if_else(DAY_TFC_PREV_YEAR == 0, NA, DAY_TFC/ DAY_TFC_PREV_YEAR)-1,
       RWK_TFC_DIF_PREV_YEAR_PERC = if_else(RWK_AVG_TFC_PREV_YEAR == 0, NA, RWK_AVG_TFC/ RWK_AVG_TFC_PREV_YEAR)-1,
       Y2D_TFC_DIF_PREV_YEAR_PERC = if_else(Y2D_AVG_TFC_PREV_YEAR == 0, NA, Y2D_AVG_TFC/ Y2D_AVG_TFC_PREV_YEAR)-1,
+      S2D_TFC_DIF_PREV_YEAR_PERC = if_else(S2D_AVG_TFC_PREV_YEAR == 0, NA, S2D_AVG_TFC/ S2D_AVG_TFC_PREV_YEAR)-1,
+      
       ##delay
       DAY_DLY_DIF_PREV_YEAR_PERC = if_else(DAY_DLY_PREV_YEAR == 0, NA, DAY_DLY/ DAY_DLY_PREV_YEAR)-1,
       RWK_DLY_DIF_PREV_YEAR_PERC = if_else(RWK_AVG_DLY_PREV_YEAR == 0, NA, RWK_AVG_DLY/ RWK_AVG_DLY_PREV_YEAR)-1,
       Y2D_DLY_DIF_PREV_YEAR_PERC = if_else(Y2D_AVG_DLY_PREV_YEAR == 0, NA, Y2D_AVG_DLY/ Y2D_AVG_DLY_PREV_YEAR)-1,
+      S2D_DLY_DIF_PREV_YEAR_PERC = if_else(S2D_AVG_DLY_PREV_YEAR == 0, NA, S2D_AVG_DLY/ S2D_AVG_DLY_PREV_YEAR)-1,
+
       ##delay ert
       DAY_DLY_ERT_DIF_PREV_YEAR_PERC = if_else(DAY_DLY_ERT_PREV_YEAR == 0, NA, DAY_DLY_ERT/ DAY_DLY_ERT_PREV_YEAR)-1,
       RWK_DLY_ERT_DIF_PREV_YEAR_PERC = if_else(RWK_AVG_DLY_ERT_PREV_YEAR == 0, NA, RWK_AVG_DLY_ERT/ RWK_AVG_DLY_ERT_PREV_YEAR)-1,
       Y2D_DLY_ERT_DIF_PREV_YEAR_PERC = if_else(Y2D_AVG_DLY_ERT_PREV_YEAR == 0, NA, Y2D_AVG_DLY_ERT/ Y2D_AVG_DLY_ERT_PREV_YEAR)-1,
+      S2D_DLY_ERT_DIF_PREV_YEAR_PERC = if_else(S2D_AVG_DLY_ERT_PREV_YEAR == 0, NA, S2D_AVG_DLY_ERT/ S2D_AVG_DLY_ERT_PREV_YEAR)-1,
+      
       ##delay arp
       DAY_DLY_ARP_DIF_PREV_YEAR_PERC = if_else(DAY_DLY_ARP_PREV_YEAR == 0, NA, DAY_DLY_ARP/ DAY_DLY_ARP_PREV_YEAR)-1,
       RWK_DLY_ARP_DIF_PREV_YEAR_PERC = if_else(RWK_AVG_DLY_ARP_PREV_YEAR == 0, NA, RWK_AVG_DLY_ARP/ RWK_AVG_DLY_ARP_PREV_YEAR)-1,
       Y2D_DLY_ARP_DIF_PREV_YEAR_PERC = if_else(Y2D_AVG_DLY_ARP_PREV_YEAR == 0, NA, Y2D_AVG_DLY_ARP/ Y2D_AVG_DLY_ARP_PREV_YEAR)-1,
+      S2D_DLY_ARP_DIF_PREV_YEAR_PERC = if_else(S2D_AVG_DLY_ARP_PREV_YEAR == 0, NA, S2D_AVG_DLY_ARP/ S2D_AVG_DLY_ARP_PREV_YEAR)-1,
+      
       ##delay/flight
       DAY_DLY_FLT_DIF_PREV_YEAR_PERC = if_else(DAY_DLY_FLT_PREV_YEAR == 0, NA, DAY_DLY_FLT/ DAY_DLY_FLT_PREV_YEAR)-1,
       RWK_DLY_FLT_DIF_PREV_YEAR_PERC = if_else(RWK_DLY_FLT_PREV_YEAR == 0, NA, RWK_DLY_FLT/ RWK_DLY_FLT_PREV_YEAR)-1,
       Y2D_DLY_FLT_DIF_PREV_YEAR_PERC = if_else(Y2D_DLY_FLT_PREV_YEAR == 0, NA, Y2D_DLY_FLT/ Y2D_DLY_FLT_PREV_YEAR)-1,
+      S2D_DLY_FLT_DIF_PREV_YEAR_PERC = if_else(S2D_DLY_FLT_PREV_YEAR == 0, NA, S2D_DLY_FLT/ S2D_DLY_FLT_PREV_YEAR)-1,
+      
       ##delay/flight ert
       DAY_DLY_ERT_FLT_DIF_PREV_YEAR_PERC = if_else(DAY_DLY_ERT_FLT_PREV_YEAR == 0, NA, DAY_DLY_ERT_FLT/ DAY_DLY_ERT_FLT_PREV_YEAR)-1,
       RWK_DLY_ERT_FLT_DIF_PREV_YEAR_PERC = if_else(RWK_DLY_ERT_FLT_PREV_YEAR == 0, NA, RWK_DLY_ERT_FLT/ RWK_DLY_ERT_FLT_PREV_YEAR)-1,
       Y2D_DLY_ERT_FLT_DIF_PREV_YEAR_PERC = if_else(Y2D_DLY_ERT_FLT_PREV_YEAR == 0, NA, Y2D_DLY_ERT_FLT/ Y2D_DLY_ERT_FLT_PREV_YEAR)-1,
+      S2D_DLY_ERT_FLT_DIF_PREV_YEAR_PERC = if_else(S2D_DLY_ERT_FLT_PREV_YEAR == 0, NA, S2D_DLY_ERT_FLT/ S2D_DLY_ERT_FLT_PREV_YEAR)-1,
+      
       ##delay/flight arp
       DAY_DLY_ARP_FLT_DIF_PREV_YEAR_PERC = if_else(DAY_DLY_ARP_FLT_PREV_YEAR == 0, NA, DAY_DLY_ARP_FLT/ DAY_DLY_ARP_FLT_PREV_YEAR)-1,
       RWK_DLY_ARP_FLT_DIF_PREV_YEAR_PERC = if_else(RWK_DLY_ARP_FLT_PREV_YEAR == 0, NA, RWK_DLY_ARP_FLT/ RWK_DLY_ARP_FLT_PREV_YEAR)-1,
       Y2D_DLY_ARP_FLT_DIF_PREV_YEAR_PERC = if_else(Y2D_DLY_ARP_FLT_PREV_YEAR == 0, NA, Y2D_DLY_ARP_FLT/ Y2D_DLY_ARP_FLT_PREV_YEAR)-1,
+      S2D_DLY_ARP_FLT_DIF_PREV_YEAR_PERC = if_else(S2D_DLY_ARP_FLT_PREV_YEAR == 0, NA, S2D_DLY_ARP_FLT/ S2D_DLY_ARP_FLT_PREV_YEAR)-1,
+      
       ##delayed flights
       DAY_DLYED_PERC_DIF_PREV_YEAR = DAY_DLYED_PERC - DAY_DLYED_PERC_PREV_YEAR,
       RWK_DLYED_PERC_DIF_PREV_YEAR = RWK_DLYED_PERC - RWK_DLYED_PERC_PREV_YEAR,
       Y2D_DLYED_PERC_DIF_PREV_YEAR = Y2D_DLYED_PERC - Y2D_DLYED_PERC_PREV_YEAR,
+      S2D_DLYED_PERC_DIF_PREV_YEAR = S2D_DLYED_PERC - S2D_DLYED_PERC_PREV_YEAR,
+      
       ##delayed flights 15 min
       DAY_DLYED_15_PERC_DIF_PREV_YEAR = DAY_DLYED_15_PERC - DAY_DLYED_15_PERC_PREV_YEAR,
       RWK_DLYED_15_PERC_DIF_PREV_YEAR = RWK_DLYED_15_PERC - RWK_DLYED_15_PERC_PREV_YEAR,
       Y2D_DLYED_15_PERC_DIF_PREV_YEAR = Y2D_DLYED_15_PERC - Y2D_DLYED_15_PERC_PREV_YEAR,
+      S2D_DLYED_15_PERC_DIF_PREV_YEAR = S2D_DLYED_15_PERC - S2D_DLYED_15_PERC_PREV_YEAR,
       
       # dif 2019
       ##traffic
@@ -667,38 +684,54 @@ stk_daily <- function(df,
       DAY_TFC_DIF_2019_PERC = if_else(DAY_TFC_2019 == 0, NA, DAY_TFC/ DAY_TFC_2019)-1,
       RWK_TFC_DIF_2019_PERC = if_else(RWK_AVG_TFC_2019 == 0, NA, RWK_AVG_TFC/ RWK_AVG_TFC_2019)-1,
       Y2D_TFC_DIF_2019_PERC = if_else(Y2D_AVG_TFC_2019 == 0, NA, Y2D_AVG_TFC/ Y2D_AVG_TFC_2019)-1,
+      S2D_TFC_DIF_2019_PERC = if_else(S2D_AVG_TFC_2019 == 0, NA, S2D_AVG_TFC/ S2D_AVG_TFC_2019)-1,
+      
       ##delay
       DAY_DLY_DIF_2019_PERC = if_else(DAY_DLY_2019 == 0, NA, DAY_DLY/ DAY_DLY_2019)-1,
       RWK_DLY_DIF_2019_PERC = if_else(RWK_AVG_DLY_2019 == 0, NA, RWK_AVG_DLY/ RWK_AVG_DLY_2019)-1,
       Y2D_DLY_DIF_2019_PERC = if_else(Y2D_AVG_DLY_2019 == 0, NA, Y2D_AVG_DLY/ Y2D_AVG_DLY_2019)-1,
+      S2D_DLY_DIF_2019_PERC = if_else(S2D_AVG_DLY_2019 == 0, NA, S2D_AVG_DLY/ S2D_AVG_DLY_2019)-1,
+      
       ##delay ert
       DAY_DLY_ERT_DIF_2019_PERC = if_else(DAY_DLY_ERT_2019 == 0, NA, DAY_DLY_ERT/ DAY_DLY_ERT_2019)-1,
       RWK_DLY_ERT_DIF_2019_PERC = if_else(RWK_AVG_DLY_ERT_2019 == 0, NA, RWK_AVG_DLY_ERT/ RWK_AVG_DLY_ERT_2019)-1,
       Y2D_DLY_ERT_DIF_2019_PERC = if_else(Y2D_AVG_DLY_ERT_2019 == 0, NA, Y2D_AVG_DLY_ERT/ Y2D_AVG_DLY_ERT_2019)-1,
+      S2D_DLY_ERT_DIF_2019_PERC = if_else(S2D_AVG_DLY_ERT_2019 == 0, NA, S2D_AVG_DLY_ERT/ S2D_AVG_DLY_ERT_2019)-1,
+      
       ##delay arp
       DAY_DLY_ARP_DIF_2019_PERC = if_else(DAY_DLY_ARP_2019 == 0, NA, DAY_DLY_ARP/ DAY_DLY_ARP_2019)-1,
       RWK_DLY_ARP_DIF_2019_PERC = if_else(RWK_AVG_DLY_ARP_2019 == 0, NA, RWK_AVG_DLY_ARP/ RWK_AVG_DLY_ARP_2019)-1,
       Y2D_DLY_ARP_DIF_2019_PERC = if_else(Y2D_AVG_DLY_ARP_2019 == 0, NA, Y2D_AVG_DLY_ARP/ Y2D_AVG_DLY_ARP_2019)-1,
+      S2D_DLY_ARP_DIF_2019_PERC = if_else(S2D_AVG_DLY_ARP_2019 == 0, NA, S2D_AVG_DLY_ARP/ S2D_AVG_DLY_ARP_2019)-1,
+      
       ##delay/flight
       DAY_DLY_FLT_DIF_2019_PERC = if_else(DAY_DLY_FLT_2019 == 0, NA, DAY_DLY_FLT/ DAY_DLY_FLT_2019)-1,
       RWK_DLY_FLT_DIF_2019_PERC = if_else(RWK_DLY_FLT_2019 == 0, NA, RWK_DLY_FLT/ RWK_DLY_FLT_2019)-1,
       Y2D_DLY_FLT_DIF_2019_PERC = if_else(Y2D_DLY_FLT_2019 == 0, NA, Y2D_DLY_FLT/ Y2D_DLY_FLT_2019)-1,
+      S2D_DLY_FLT_DIF_2019_PERC = if_else(S2D_DLY_FLT_2019 == 0, NA, S2D_DLY_FLT/ S2D_DLY_FLT_2019)-1,
+      
       ##delay/flight ert
       DAY_DLY_ERT_FLT_DIF_2019_PERC = if_else(DAY_DLY_ERT_FLT_2019 == 0, NA, DAY_DLY_ERT_FLT/ DAY_DLY_ERT_FLT_2019)-1,
       RWK_DLY_ERT_FLT_DIF_2019_PERC = if_else(RWK_DLY_ERT_FLT_2019 == 0, NA, RWK_DLY_ERT_FLT/ RWK_DLY_ERT_FLT_2019)-1,
       Y2D_DLY_ERT_FLT_DIF_2019_PERC = if_else(Y2D_DLY_ERT_FLT_2019 == 0, NA, Y2D_DLY_ERT_FLT/ Y2D_DLY_ERT_FLT_2019)-1,
+      S2D_DLY_ERT_FLT_DIF_2019_PERC = if_else(S2D_DLY_ERT_FLT_2019 == 0, NA, S2D_DLY_ERT_FLT/ S2D_DLY_ERT_FLT_2019)-1,
+      
       ##delay/flight arp
       DAY_DLY_ARP_FLT_DIF_2019_PERC = if_else(DAY_DLY_ARP_FLT_2019 == 0, NA, DAY_DLY_ARP_FLT/ DAY_DLY_ARP_FLT_2019)-1,
       RWK_DLY_ARP_FLT_DIF_2019_PERC = if_else(RWK_DLY_ARP_FLT_2019 == 0, NA, RWK_DLY_ARP_FLT/ RWK_DLY_ARP_FLT_2019)-1,
       Y2D_DLY_ARP_FLT_DIF_2019_PERC = if_else(Y2D_DLY_ARP_FLT_2019 == 0, NA, Y2D_DLY_ARP_FLT/ Y2D_DLY_ARP_FLT_2019)-1,
+      S2D_DLY_ARP_FLT_DIF_2019_PERC = if_else(S2D_DLY_ARP_FLT_2019 == 0, NA, S2D_DLY_ARP_FLT/ S2D_DLY_ARP_FLT_2019)-1,
+      
       ##delayed flights
       DAY_DLYED_PERC_DIF_2019 = DAY_DLYED_PERC - DAY_DLYED_PERC_2019,
       RWK_DLYED_PERC_DIF_2019 = RWK_DLYED_PERC - RWK_DLYED_PERC_2019,
       Y2D_DLYED_PERC_DIF_2019 = Y2D_DLYED_PERC - Y2D_DLYED_PERC_2019,
-      ##delayed flights
+      S2D_DLYED_PERC_DIF_2019 = S2D_DLYED_PERC - S2D_DLYED_PERC_2019,
+      ##delayed flights 15
       DAY_DLYED_15_PERC_DIF_2019 = DAY_DLYED_15_PERC - DAY_DLYED_15_PERC_2019,
       RWK_DLYED_15_PERC_DIF_2019 = RWK_DLYED_15_PERC - RWK_DLYED_15_PERC_2019,
       Y2D_DLYED_15_PERC_DIF_2019 = Y2D_DLYED_15_PERC - Y2D_DLYED_15_PERC_2019,
+      S2D_DLYED_15_PERC_DIF_2019 = S2D_DLYED_15_PERC - S2D_DLYED_15_PERC_2019,
       
       DATA_DAY = mydate
       
@@ -743,6 +776,15 @@ stk_daily <- function(df,
       Y2D_TFC_DIF_PREV_YEAR_PERC,
       Y2D_TFC_DIF_2019_PERC,
       
+      S2D_TFC,
+      S2D_AVG_TFC,
+      S2D_TFC_PREV_YEAR,
+      S2D_AVG_TFC_PREV_YEAR,
+      S2D_TFC_2019,
+      S2D_AVG_TFC_2019,
+      S2D_TFC_DIF_PREV_YEAR_PERC,
+      S2D_TFC_DIF_2019_PERC,
+      
       #delay
       DAY_DLY,
       DAY_DLY_PREV_WEEK,
@@ -768,6 +810,15 @@ stk_daily <- function(df,
       Y2D_DLY_DIF_PREV_YEAR_PERC,
       Y2D_DLY_DIF_2019_PERC,
       
+      S2D_DLY,
+      S2D_AVG_DLY,
+      S2D_DLY_PREV_YEAR,
+      S2D_AVG_DLY_PREV_YEAR,
+      S2D_DLY_2019,
+      S2D_AVG_DLY_2019,
+      S2D_DLY_DIF_PREV_YEAR_PERC,
+      S2D_DLY_DIF_2019_PERC,
+      
       #delay ert
       DAY_DLY_ERT,
       DAY_DLY_ERT_PREV_WEEK,
@@ -792,6 +843,15 @@ stk_daily <- function(df,
       Y2D_DLY_ERT_DIF_PREV_YEAR_PERC,
       Y2D_DLY_ERT_DIF_2019_PERC,
       
+      S2D_DLY_ERT,
+      S2D_AVG_DLY_ERT,
+      S2D_DLY_ERT_PREV_YEAR,
+      S2D_AVG_DLY_ERT_PREV_YEAR,
+      S2D_DLY_ERT_2019,
+      S2D_AVG_DLY_ERT_2019,
+      S2D_DLY_ERT_DIF_PREV_YEAR_PERC,
+      S2D_DLY_ERT_DIF_2019_PERC,
+      
       #delay arp
       DAY_DLY_ARP,
       DAY_DLY_ARP_PREV_WEEK,
@@ -815,6 +875,15 @@ stk_daily <- function(df,
       Y2D_AVG_DLY_ARP_2019,
       Y2D_DLY_ARP_DIF_PREV_YEAR_PERC,
       Y2D_DLY_ARP_DIF_2019_PERC,
+      
+      S2D_DLY_ARP,
+      S2D_AVG_DLY_ARP,
+      S2D_DLY_ARP_PREV_YEAR,
+      S2D_AVG_DLY_ARP_PREV_YEAR,
+      S2D_DLY_ARP_2019,
+      S2D_AVG_DLY_ARP_2019,
+      S2D_DLY_ARP_DIF_PREV_YEAR_PERC,
+      S2D_DLY_ARP_DIF_2019_PERC,
       
       # delay cause
       DAY_DLY_G,
@@ -852,6 +921,13 @@ stk_daily <- function(df,
       Y2D_DLY_FLT_DIF_PREV_YEAR_PERC,
       Y2D_DLY_FLT_DIF_2019_PERC,
 
+      S2D_DLY_FLT,
+      S2D_DLY_FLT_PREV_YEAR,
+      S2D_DLY_FLT_PREV_YEAR,
+      S2D_DLY_FLT_2019,
+      S2D_DLY_FLT_DIF_PREV_YEAR_PERC,
+      S2D_DLY_FLT_DIF_2019_PERC,
+      
       #delay/flight ert
       DAY_DLY_ERT_FLT,
       DAY_DLY_ERT_FLT_PREV_WEEK,
@@ -873,7 +949,14 @@ stk_daily <- function(df,
       Y2D_DLY_ERT_FLT_2019,
       Y2D_DLY_ERT_FLT_DIF_PREV_YEAR_PERC,
       Y2D_DLY_ERT_FLT_DIF_2019_PERC,
-
+      
+      S2D_DLY_ERT_FLT,
+      S2D_DLY_ERT_FLT_PREV_YEAR,
+      S2D_DLY_ERT_FLT_PREV_YEAR,
+      S2D_DLY_ERT_FLT_2019,
+      S2D_DLY_ERT_FLT_DIF_PREV_YEAR_PERC,
+      S2D_DLY_ERT_FLT_DIF_2019_PERC,
+      
       #delay/flight arp
       DAY_DLY_ARP_FLT,
       DAY_DLY_ARP_FLT_PREV_WEEK,
@@ -895,6 +978,13 @@ stk_daily <- function(df,
       Y2D_DLY_ARP_FLT_2019,
       Y2D_DLY_ARP_FLT_DIF_PREV_YEAR_PERC,
       Y2D_DLY_ARP_FLT_DIF_2019_PERC,
+      
+      S2D_DLY_ARP_FLT,
+      S2D_DLY_ARP_FLT_PREV_YEAR,
+      S2D_DLY_ARP_FLT_PREV_YEAR,
+      S2D_DLY_ARP_FLT_2019,
+      S2D_DLY_ARP_FLT_DIF_PREV_YEAR_PERC,
+      S2D_DLY_ARP_FLT_DIF_2019_PERC,
       
       #delayed flights
       DAY_DLYED_PERC,
@@ -918,6 +1008,12 @@ stk_daily <- function(df,
       Y2D_DLYED_PERC_DIF_PREV_YEAR,
       Y2D_DLYED_PERC_DIF_2019,
       
+      S2D_DLYED_PERC,
+      S2D_DLYED_PERC_PREV_YEAR,
+      S2D_DLYED_PERC_2019,
+      S2D_DLYED_PERC_DIF_PREV_YEAR,
+      S2D_DLYED_PERC_DIF_2019,
+      
       #delayed flights 15 min
       DAY_DLYED_15_PERC,
       DAY_DLYED_15_PERC_PREV_WEEK,
@@ -939,6 +1035,12 @@ stk_daily <- function(df,
       Y2D_DLYED_15_PERC_2019,
       Y2D_DLYED_15_PERC_DIF_PREV_YEAR,
       Y2D_DLYED_15_PERC_DIF_2019,
+
+      S2D_DLYED_15_PERC,
+      S2D_DLYED_15_PERC_PREV_YEAR,
+      S2D_DLYED_15_PERC_2019,
+      S2D_DLYED_15_PERC_DIF_PREV_YEAR,
+      S2D_DLYED_15_PERC_DIF_2019,
       
       DATA_DAY
       
@@ -956,6 +1058,9 @@ stk_daily <- function(df,
         Y2D_TFC_2019,
         Y2D_AVG_TFC_2019,
         Y2D_TFC_DIF_2019_PERC,
+        S2D_TFC_2019,
+        S2D_AVG_TFC_2019,
+        S2D_TFC_DIF_2019_PERC,
         
         # delay
         DAY_DLY_2019,
@@ -965,6 +1070,9 @@ stk_daily <- function(df,
         Y2D_DLY_2019,
         Y2D_AVG_DLY_2019,
         Y2D_DLY_DIF_2019_PERC,
+        S2D_DLY_2019,
+        S2D_AVG_DLY_2019,
+        S2D_DLY_DIF_2019_PERC,
         
         # delay ert
         DAY_DLY_ERT_2019,
@@ -974,6 +1082,9 @@ stk_daily <- function(df,
         Y2D_DLY_ERT_2019,
         Y2D_AVG_DLY_ERT_2019,
         Y2D_DLY_ERT_DIF_2019_PERC,
+        S2D_DLY_ERT_2019,
+        S2D_AVG_DLY_ERT_2019,
+        S2D_DLY_ERT_DIF_2019_PERC,
         
         # delay arp
         DAY_DLY_ARP_2019,
@@ -983,6 +1094,9 @@ stk_daily <- function(df,
         Y2D_DLY_ARP_2019,
         Y2D_AVG_DLY_ARP_2019,
         Y2D_DLY_ARP_DIF_2019_PERC,
+        S2D_DLY_ARP_2019,
+        S2D_AVG_DLY_ARP_2019,
+        S2D_DLY_ARP_DIF_2019_PERC,
         
         #delay/flight
         DAY_DLY_FLT_2019,
@@ -991,6 +1105,8 @@ stk_daily <- function(df,
         RWK_DLY_FLT_DIF_2019_PERC,
         Y2D_DLY_FLT_2019,
         Y2D_DLY_FLT_DIF_2019_PERC,
+        S2D_DLY_FLT_2019,
+        S2D_DLY_FLT_DIF_2019_PERC,
         
         #delay/flight ert
         DAY_DLY_ERT_FLT_2019,
@@ -999,6 +1115,8 @@ stk_daily <- function(df,
         RWK_DLY_ERT_FLT_DIF_2019_PERC,
         Y2D_DLY_ERT_FLT_2019,
         Y2D_DLY_ERT_FLT_DIF_2019_PERC,
+        S2D_DLY_ERT_FLT_2019,
+        S2D_DLY_ERT_FLT_DIF_2019_PERC,
         
         #delay/flight arp
         DAY_DLY_ARP_FLT_2019,
@@ -1007,6 +1125,8 @@ stk_daily <- function(df,
         RWK_DLY_ARP_FLT_DIF_2019_PERC,
         Y2D_DLY_ARP_FLT_2019,
         Y2D_DLY_ARP_FLT_DIF_2019_PERC,
+        S2D_DLY_ARP_FLT_2019,
+        S2D_DLY_ARP_FLT_DIF_2019_PERC,
         
         #delayed flights
         DAY_DLYED_PERC_2019,
@@ -1015,6 +1135,8 @@ stk_daily <- function(df,
         RWK_DLYED_PERC_DIF_2019,
         Y2D_DLYED_PERC_2019,
         Y2D_DLYED_PERC_DIF_2019,
+        S2D_DLYED_PERC_2019,
+        S2D_DLYED_PERC_DIF_2019,
         
         #delayed flights 15'
         DAY_DLYED_15_PERC_2019,
@@ -1022,7 +1144,9 @@ stk_daily <- function(df,
         RWK_DLYED_15_PERC_2019,
         RWK_DLYED_15_PERC_DIF_2019,
         Y2D_DLYED_15_PERC_2019,
-        Y2D_DLYED_15_PERC_DIF_2019
+        Y2D_DLYED_15_PERC_DIF_2019,
+        S2D_DLYED_15_PERC_2019,
+        S2D_DLYED_15_PERC_DIF_2019
         
       ),
       ~ if_else((STK_CODE == "IS_ANSP" | substr(STK_CODE, 1, 2) == "BI"), NA, .x)
@@ -1040,6 +1164,9 @@ stk_daily <- function(df,
         Y2D_TFC_PREV_YEAR,
         Y2D_AVG_TFC_PREV_YEAR,
         Y2D_TFC_DIF_PREV_YEAR_PERC,
+        S2D_TFC_PREV_YEAR,
+        S2D_AVG_TFC_PREV_YEAR,
+        S2D_TFC_DIF_PREV_YEAR_PERC,
         
         # delay
         DAY_DLY_PREV_YEAR,
@@ -1049,6 +1176,9 @@ stk_daily <- function(df,
         Y2D_DLY_PREV_YEAR,
         Y2D_AVG_DLY_PREV_YEAR,
         Y2D_DLY_DIF_PREV_YEAR_PERC,
+        S2D_DLY_PREV_YEAR,
+        S2D_AVG_DLY_PREV_YEAR,
+        S2D_DLY_DIF_PREV_YEAR_PERC,
         
         # delay ert
         DAY_DLY_ERT_PREV_YEAR,
@@ -1058,6 +1188,9 @@ stk_daily <- function(df,
         Y2D_DLY_ERT_PREV_YEAR,
         Y2D_AVG_DLY_ERT_PREV_YEAR,
         Y2D_DLY_ERT_DIF_PREV_YEAR_PERC,
+        S2D_DLY_ERT_PREV_YEAR,
+        S2D_AVG_DLY_ERT_PREV_YEAR,
+        S2D_DLY_ERT_DIF_PREV_YEAR_PERC,
         
         # delay arp
         DAY_DLY_ARP_PREV_YEAR,
@@ -1067,6 +1200,9 @@ stk_daily <- function(df,
         Y2D_DLY_ARP_PREV_YEAR,
         Y2D_AVG_DLY_ARP_PREV_YEAR,
         Y2D_DLY_ARP_DIF_PREV_YEAR_PERC,
+        S2D_DLY_ARP_PREV_YEAR,
+        S2D_AVG_DLY_ARP_PREV_YEAR,
+        S2D_DLY_ARP_DIF_PREV_YEAR_PERC,
         
         #delay/flight
         DAY_DLY_FLT_PREV_YEAR,
@@ -1075,6 +1211,8 @@ stk_daily <- function(df,
         RWK_DLY_FLT_DIF_PREV_YEAR_PERC,
         Y2D_DLY_FLT_PREV_YEAR,
         Y2D_DLY_FLT_DIF_PREV_YEAR_PERC,
+        S2D_DLY_FLT_PREV_YEAR,
+        S2D_DLY_FLT_DIF_PREV_YEAR_PERC,
         
         #delay/flight ert
         DAY_DLY_ERT_FLT_PREV_YEAR,
@@ -1083,6 +1221,8 @@ stk_daily <- function(df,
         RWK_DLY_ERT_FLT_DIF_PREV_YEAR_PERC,
         Y2D_DLY_ERT_FLT_PREV_YEAR,
         Y2D_DLY_ERT_FLT_DIF_PREV_YEAR_PERC,
+        S2D_DLY_ERT_FLT_PREV_YEAR,
+        S2D_DLY_ERT_FLT_DIF_PREV_YEAR_PERC,
         
         #delay/flight arp
         DAY_DLY_ARP_FLT_PREV_YEAR,
@@ -1091,6 +1231,8 @@ stk_daily <- function(df,
         RWK_DLY_ARP_FLT_DIF_PREV_YEAR_PERC,
         Y2D_DLY_ARP_FLT_PREV_YEAR,
         Y2D_DLY_ARP_FLT_DIF_PREV_YEAR_PERC,
+        S2D_DLY_ARP_FLT_PREV_YEAR,
+        S2D_DLY_ARP_FLT_DIF_PREV_YEAR_PERC,
         
         #delayed flights
         DAY_DLYED_PERC_PREV_YEAR,
@@ -1099,6 +1241,8 @@ stk_daily <- function(df,
         RWK_DLYED_PERC_DIF_PREV_YEAR,
         Y2D_DLYED_PERC_PREV_YEAR,
         Y2D_DLYED_PERC_DIF_PREV_YEAR,
+        S2D_DLYED_PERC_PREV_YEAR,
+        S2D_DLYED_PERC_DIF_PREV_YEAR,
         
         #delayed flights 15'
         DAY_DLYED_15_PERC_PREV_YEAR,
@@ -1106,7 +1250,9 @@ stk_daily <- function(df,
         RWK_DLYED_15_PERC_PREV_YEAR,
         RWK_DLYED_15_PERC_DIF_PREV_YEAR,
         Y2D_DLYED_15_PERC_PREV_YEAR,
-        Y2D_DLYED_15_PERC_DIF_PREV_YEAR
+        Y2D_DLYED_15_PERC_DIF_PREV_YEAR,
+        S2D_DLYED_15_PERC_PREV_YEAR,
+        S2D_DLYED_15_PERC_DIF_PREV_YEAR
         
       ),
       ~ if_else((STK_CODE == "IS_ANSP" | substr(STK_CODE, 1, 2) == "BI") & YEAR < 2025, NA, .x)
@@ -1124,7 +1270,9 @@ stk_daily <- function(df,
         RWK_AVG_TFC_PREV_WEEK,
         Y2D_TFC,
         Y2D_AVG_TFC,
-
+        S2D_TFC,
+        S2D_AVG_TFC,
+        
         # delay
         DAY_DLY,
         DAY_DLY_PREV_WEEK,
@@ -1133,7 +1281,9 @@ stk_daily <- function(df,
         RWK_AVG_DLY_PREV_WEEK,
         Y2D_DLY,
         Y2D_AVG_DLY,
-
+        S2D_DLY,
+        S2D_AVG_DLY,
+        
         # delay ert
         DAY_DLY_ERT,
         DAY_DLY_ERT_PREV_WEEK,
@@ -1141,6 +1291,8 @@ stk_daily <- function(df,
         RWK_AVG_DLY_ERT_PREV_WEEK,
         Y2D_DLY_ERT,
         Y2D_AVG_DLY_ERT,
+        S2D_DLY_ERT,
+        S2D_AVG_DLY_ERT,
         
         # delay arp
         DAY_DLY_ARP,
@@ -1149,6 +1301,8 @@ stk_daily <- function(df,
         RWK_AVG_DLY_ARP_PREV_WEEK,
         Y2D_DLY_ARP,
         Y2D_AVG_DLY_ARP,
+        S2D_DLY_ARP,
+        S2D_AVG_DLY_ARP,
         
         #delay/flight
         DAY_DLY_FLT,
@@ -1157,6 +1311,7 @@ stk_daily <- function(df,
         RWK_DLY_FLT,
         RWK_DLY_FLT_PREV_WEEK,
         Y2D_DLY_FLT,
+        S2D_DLY_FLT,
         
         #delay/flight ert
         DAY_DLY_ERT_FLT,
@@ -1164,6 +1319,7 @@ stk_daily <- function(df,
         RWK_DLY_ERT_FLT,
         RWK_DLY_ERT_FLT_PREV_WEEK,
         Y2D_DLY_ERT_FLT,
+        S2D_DLY_ERT_FLT,
         
         #delay/flight arp
         DAY_DLY_ARP_FLT,
@@ -1171,6 +1327,7 @@ stk_daily <- function(df,
         RWK_DLY_ARP_FLT,
         RWK_DLY_ARP_FLT_PREV_WEEK,
         Y2D_DLY_ARP_FLT,
+        S2D_DLY_ARP_FLT,
         
         #delayed flights
         DAY_DLYED_PERC,
@@ -1179,14 +1336,16 @@ stk_daily <- function(df,
         RWK_DLYED_PERC,
         RWK_DLYED_PERC_PREV_WEEK,
         Y2D_DLYED_PERC,
-
+        S2D_DLYED_PERC,
+        
         #delayed flights 15'
         DAY_DLYED_15_PERC,
         DAY_DLYED_15_PERC_PREV_WEEK,
         DAY_DLYED_15_PERC_DIF_PREV_WEEK,
         RWK_DLYED_15_PERC,
         RWK_DLYED_15_PERC_PREV_WEEK,
-        Y2D_DLYED_15_PERC
+        Y2D_DLYED_15_PERC,
+        S2D_DLYED_15_PERC
         
       ),
       ~ if_else((STK_CODE == "IS_ANSP" | substr(STK_CODE, 1, 2) == "BI") & YEAR < 2024, NA, .x)
@@ -1260,6 +1419,21 @@ stk_aggregate <- function(df,
       filter(format(value, "%m-%d") <= format(mydate, "%m-%d")) %>%
       pull()
     
+  } else if (period_type == 'S') {
+    flag_curr   <- "CURRENT_YEAR"
+    flag_prev_w <- NA
+    flag_prev_y <- "PREV_YEAR"
+    flag_2019   <- "2019"
+    
+    my_dates <- seq.Date(ymd(paste0(2019,"01","01")),
+                         mydate) %>% as_tibble() %>%
+      filter(year(value) %in% c(2019, current_year-1, current_year)) %>%
+      filter(between(as.integer(format(value, "%m%d")), 
+                     summer_start, 
+                     min(as.integer(format(mydate, "%m%d")), summer_end))
+             ) %>% 
+      pull()
+    
   }
   
   #capture metric names to create averages and avoid issue when me is null
@@ -1306,7 +1480,7 @@ stk_aggregate <- function(df,
     filter(DATE_FIELD %in% my_dates) %>% 
     mutate(
       FLAG_PERIOD = case_when(
-        !!(period_type == "Y") ~ case_when(
+        !!(period_type %in% c("Y", "S")) ~ case_when(
           lubridate::year(DATE_FIELD) == !!current_year      ~ "CURRENT_YEAR",
           lubridate::year(DATE_FIELD) == !!(current_year-1)  ~ "PREV_YEAR",
           lubridate::year(DATE_FIELD) == 2019                ~ "2019",
@@ -1347,7 +1521,8 @@ stk_aggregate <- function(df,
       PERIOD_TYPE = case_when(
         period_type == 'D' ~ 'DAY',
         period_type == 'W' ~ 'WEEK',
-        period_type == 'Y' ~ 'Y2D'
+        period_type == 'Y' ~ 'Y2D',
+        period_type == 'S' ~ 'S2D'
       ),
       NO_DAYS = as.numeric(TO_DATE - FROM_DATE) + 1,
       AVG_METRIC1 = METRIC1/NO_DAYS,
@@ -1465,7 +1640,7 @@ stk_aggregate <- function(df,
         .default = NA_integer_
       ),
       RANK_PREV_WEEK = case_when( 
-        FLAG_PERIOD == flag_prev_w  &!!(period_type != "Y") ~ min_rank(desc(METRIC1)),
+        FLAG_PERIOD == flag_prev_w  & !(period_type %in% c("Y", "S")) ~ min_rank(desc(METRIC1)),
         .default = NA_integer_
       ),
       RANK_PREV_YEAR = case_when( 
@@ -1590,7 +1765,8 @@ run_for_date <- function(day_seq) {
       bind_rows(
         stk_aggregate_period("D", day, params),
         stk_aggregate_period("W", day, params),
-        stk_aggregate_period("Y", day, params)
+        stk_aggregate_period("Y", day, params),
+        stk_aggregate_period("S", day, params)
       )
     }
   )
@@ -1941,43 +2117,48 @@ stk_agg_list <- c(
   NULL
 )
 
-# date_seq <- seq.Date(ymd(20260101), current_day)
+# date_seq <- seq.Date(ymd(20260403), current_day)
 date_seq <- seq.Date(current_day, current_day)
 
-  
+
 stk_agg_save <- function(stk_stk) {
   # stk_stk <- "nw_ao"
   mydataframe <- paste0(stk_stk, "")
   # expose globally, but guarantee removal when done
   assign("mydataframe", mydataframe, envir = .GlobalEnv)
   on.exit(rm("mydataframe", envir = .GlobalEnv), add = TRUE)
-  
+
   message(mydataframe)
-  df_app <- import_dataframe(mydataframe) 
+  df_app <- import_dataframe(mydataframe)
 
   # expose globally, but guarantee removal when done
   assign("df_app", df_app, envir = .GlobalEnv)
   on.exit(rm("df_app", envir = .GlobalEnv), add = TRUE)
-  
+
   params <- get(paste0("params_", stk_stk))
   assign("params", params, envir = .GlobalEnv)
   on.exit(rm("params", envir = .GlobalEnv), add = TRUE)
-  
+
   df_agg <- run_for_date(date_seq)
-  
+
   myyears <- distinct(df_agg, YEAR_DATA) %>% pull() %>% as.integer()
-  
+
   con = DBI::dbConnect(duckdb::duckdb())
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
-  save_partitions_single_copy (con = con, 
-                               df = df_agg, 
+  save_partitions_single_copy (con = con,
+                               df = df_agg,
                                paste0(mydataframe, "_agg"),
-                               years = myyears, 
+                               years = myyears,
                                year_col = "YEAR_DATA",
                                myfolder = app_tables_dir)
-}  
+}
 
 walk(stk_agg_list, stk_agg_save)
+
+
+
+###### TEST AREA
+# test <- read_parquet(here(app_tables_dir, "nw", "nw_traffic_delay_day.parquet"))
 
 # stk_agg_save("nw_st_dai")
 
