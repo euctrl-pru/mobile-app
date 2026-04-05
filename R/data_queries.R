@@ -647,7 +647,8 @@ STAT_AUA_DATA_2 as
 }
 
 ## y2d ----
-query_nw_acc_delay_y2d_raw <- function(mydate_string) {
+query_nw_acc_delay_y2d_raw <- function(mydate_string, 
+                                       initial_date = 101) {
   mydate <- date_sql_string(mydate_string)
   paste0("
 WITH stat_aua_list
@@ -772,6 +773,14 @@ STAT_AUA_DAY AS (
 					'mmdd'
 				)
 			)
+			
+			AND TO_NUMBER (
+				TO_CHAR (
+					TRUNC (t.day_date),
+					'mmdd'
+				)
+			) >= ", initial_date, "
+			
 				AND YEAR <= EXTRACT(YEAR FROM (", mydate, " - 1))
 				--order by t.day_date desc
 ) ,    
@@ -1085,7 +1094,8 @@ order by period_type, country_name
 }
 
 ## y2d ----
-query_nw_st_delay_y2d_raw <- function(mydate_string) {
+query_nw_st_delay_y2d_raw <- function(mydate_string, 
+                                      initial_date = 101) {
   mydate <- date_sql_string(mydate_string)
   paste0("
 WITH
@@ -1136,6 +1146,7 @@ WITH
                 LIST_COUNTRY  a
            WHERE
                day_date >= TO_DATE ('01-01-2019', 'dd-mm-yyyy')   AND day_date < ", mydate, "
+               AND TO_NUMBER (TO_CHAR (TRUNC (t.day_date), 'mmdd')) >= ", initial_date, "
                 AND TO_NUMBER (TO_CHAR (t.day_date, 'mmdd')) <=   TO_NUMBER (TO_CHAR (", mydate, "-1, 'mmdd'))
        ),
 
