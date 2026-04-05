@@ -85,6 +85,7 @@ sp_traffic_for_json <- sp_traffic_delay_last_day %>%
     DY_TFC_RANK = min_rank(desc(DY_TFC)),
     WK_TFC_RANK = min_rank(desc(WK_AVG_TFC)),
     Y2D_TFC_RANK = min_rank(desc(Y2D_AVG_TFC)),
+    S2D_TFC_RANK = min_rank(desc(S2D_AVG_TFC)),
     TFC_RANK_TEXT = "*Top rank for highest.",
     
   ) %>%
@@ -107,7 +108,13 @@ sp_traffic_for_json <- sp_traffic_delay_last_day %>%
     Y2D_TFC,
     Y2D_TFC_AVG = Y2D_AVG_TFC,
     Y2D_TFC_DIF_PREV_YEAR_PERC,
-    Y2D_TFC_DIF_2019_PERC
+    Y2D_TFC_DIF_2019_PERC,
+    
+    S2D_TFC_RANK,
+    S2D_TFC,
+    S2D_TFC_AVG = S2D_AVG_TFC,
+    S2D_TFC_DIF_PREV_YEAR_PERC,
+    S2D_TFC_DIF_2019_PERC
   )
 
 #### Delay ----
@@ -130,6 +137,10 @@ sp_delay_for_json <- sp_traffic_delay_last_day %>%
     Y2D_DLY_DIF_PREV_YEAR_PERC,
     Y2D_DLY_DIF_2019_PERC,
 
+    S2D_DLY_AVG = S2D_AVG_DLY,
+    S2D_DLY_DIF_PREV_YEAR_PERC,
+    S2D_DLY_DIF_2019_PERC,
+    
     #delay per flight
     DY_DLY_FLT,
     DY_DLY_FLT_DIF_PREV_YEAR_PERC,
@@ -143,6 +154,10 @@ sp_delay_for_json <- sp_traffic_delay_last_day %>%
     Y2D_DLY_FLT_DIF_PREV_YEAR_PERC,
     Y2D_DLY_FLT_DIF_2019_PERC,
 
+    S2D_DLY_FLT,
+    S2D_DLY_FLT_DIF_PREV_YEAR_PERC,
+    S2D_DLY_FLT_DIF_2019_PERC,
+    
     #% of delayed flights
     DY_DELAYED_TFC_PERC = DY_DLYED_PERC,
     DY_DELAYED_TFC_PERC_DIF_PREV_YEAR = DY_DLYED_PERC_DIF_PREV_YEAR,
@@ -156,6 +171,10 @@ sp_delay_for_json <- sp_traffic_delay_last_day %>%
     Y2D_DELAYED_TFC_PERC_DIF_PREV_YEAR = Y2D_DLYED_PERC_DIF_PREV_YEAR,
     Y2D_DELAYED_TFC_PERC_DIF_2019 = Y2D_DLYED_PERC_DIF_2019,
 
+    S2D_DELAYED_TFC_PERC = S2D_DLYED_PERC,
+    S2D_DELAYED_TFC_PERC_DIF_PREV_YEAR = S2D_DLYED_PERC_DIF_PREV_YEAR,
+    S2D_DELAYED_TFC_PERC_DIF_2019 = S2D_DLYED_PERC_DIF_2019,
+    
     #% of delayed flights >15'
     DY_DELAYED_TFC_15_PERC = DY_DLYED_15_PERC,
     DY_DELAYED_TFC_15_PERC_DIF_PREV_YEAR = DY_DLYED_15_PERC_DIF_PREV_YEAR,
@@ -167,7 +186,12 @@ sp_delay_for_json <- sp_traffic_delay_last_day %>%
     
     Y2D_DELAYED_TFC_15_PERC = Y2D_DLYED_15_PERC,
     Y2D_DELAYED_TFC_15_PERC_DIF_PREV_YEAR = Y2D_DLYED_15_PERC_DIF_PREV_YEAR,
-    Y2D_DELAYED_TFC_15_PERC_DIF_2019 = Y2D_DLYED_15_PERC_DIF_2019
+    Y2D_DELAYED_TFC_15_PERC_DIF_2019 = Y2D_DLYED_15_PERC_DIF_2019,
+    
+    S2D_DELAYED_TFC_15_PERC = S2D_DLYED_15_PERC,
+    S2D_DELAYED_TFC_15_PERC_DIF_PREV_YEAR = S2D_DLYED_15_PERC_DIF_PREV_YEAR,
+    S2D_DELAYED_TFC_15_PERC_DIF_2019 = S2D_DLYED_15_PERC_DIF_2019
+    
   ) %>%  
   ungroup() %>% 
   ### rank calculation
@@ -176,22 +200,26 @@ sp_delay_for_json <- sp_traffic_delay_last_day %>%
     DY_DLY_RANK = rank(desc(DY_DLY), ties.method = "max"),
     WK_DLY_RANK = rank(desc(WK_DLY_AVG_ROLLING), ties.method = "max"),
     Y2D_DLY_RANK = rank(desc(Y2D_DLY_AVG), ties.method = "max"),
-
+    S2D_DLY_RANK = rank(desc(S2D_DLY_AVG), ties.method = "max"),
+    
     ## delay per flight
     DY_DLY_FLT_RANK = rank(desc(DY_DLY_FLT), ties.method = "max"),
     WK_DLY_FLT_RANK = rank(desc(WK_DLY_FLT), ties.method = "max"),
     Y2D_DLY_FLT_RANK = rank(desc(Y2D_DLY_FLT), ties.method = "max"),
-
+    S2D_DLY_FLT_RANK = rank(desc(S2D_DLY_FLT), ties.method = "max"),
+    
     ## % delayed flights
     DY_DELAYED_TFC_PERC_RANK = rank(desc(DY_DELAYED_TFC_PERC), ties.method = "max"),
     WK_DELAYED_TFC_PERC_RANK = rank(desc(WK_DELAYED_TFC_PERC), ties.method = "max"),
     Y2D_DELAYED_TFC_PERC_RANK = rank(desc(Y2D_DELAYED_TFC_PERC), ties.method = "max"),
-
+    S2D_DELAYED_TFC_PERC_RANK = rank(desc(S2D_DELAYED_TFC_PERC), ties.method = "max"),
+    
     ## % delayed flights
     DY_DELAYED_TFC_15_PERC_RANK = rank(desc(DY_DELAYED_TFC_15_PERC), ties.method = "max"),
     WK_DELAYED_TFC_15_PERC_RANK = rank(desc(WK_DELAYED_TFC_15_PERC), ties.method = "max"),
     Y2D_DELAYED_TFC_15_PERC_RANK = rank(desc(Y2D_DELAYED_TFC_15_PERC), ties.method = "max"),
-
+    S2D_DELAYED_TFC_15_PERC_RANK = rank(desc(S2D_DELAYED_TFC_15_PERC), ties.method = "max"),
+    
     DLY_RANK_TEXT = "*Top rank for highest."
   )
 
@@ -672,6 +700,48 @@ sp_acc_traffic_y2d <- sp_acc_traffic_y2d_int %>%
   )%>% 
   arrange(Y2D_FLT_RANK)
 
+#### s2d ----
+if(!exists("nw_acc_delay_s2d_raw")) {
+  nw_acc_delay_s2d_raw <- export_query(query_nw_acc_delay_y2d_raw(format(data_day_date, "%Y-%m%-%d"), initial_date = summer_start)) %>% 
+    rename_with(~ gsub("Y2D", "S2D", .x), .cols = contains("Y2D"))
+}
+
+if (max(nw_acc_delay_s2d_raw$ENTRY_DATE) != data_day_date) {
+  nw_acc_delay_s2d_raw <- export_query(query_nw_acc_delay_y2d_raw(format(data_day_date, "%Y-%m%-%d"), initial_date = summer_start)) %>% 
+    rename_with(~ gsub("Y2D", "S2D", .x), .cols = contains("Y2D"))
+}
+
+# process data
+sp_acc_traffic_s2d_int <- nw_acc_delay_s2d_raw %>% 
+  left_join(unique(select(list_acc, NAME, ICAO_CODE)), by = c("UNIT_CODE" = "ICAO_CODE")) %>% 
+  left_join(rel_ansp_acc, by = c("UNIT_CODE" = "ICAO_CODE")) %>% 
+  mutate(
+    S2D_FLT_RANK = rank(desc(FLIGHT), ties.method = "max"),
+  ) %>% 
+  group_by(ANSP_ID) %>% 
+  arrange(ANSP_ID, ANSP_NAME) %>% 
+  mutate(
+    SP_RANK = paste0(ANSP_CODE, row_number()),
+    S2D_FLT_DIF_PREV_YEAR_PERC = if_else(S2D_AVG_FLIGHT_PY == 0, NA,  S2D_AVG_FLIGHT /  S2D_AVG_FLIGHT_PY-1),
+    S2D_FLT_DIF_2019_PERC = if_else(S2D_AVG_FLIGHT_2019 == 0, NA, S2D_AVG_FLIGHT / S2D_AVG_FLIGHT_2019 -1)
+  ) %>% 
+  arrange(ANSP_ID, SP_RANK) %>% 
+  ungroup()
+
+sp_acc_traffic_s2d <- sp_acc_traffic_s2d_int %>% 
+  select(
+    SP_RANK,
+    S2D_FLT_RANK,
+    S2D_FLT_ACC_NAME = NAME,
+    S2D_FROM_DATE = MIN_DATE,
+    S2D_TO_DATE = ENTRY_DATE,
+    S2D_FLT =  S2D_AVG_FLIGHT,
+    S2D_FLT_DIF_PREV_YEAR_PERC,
+    S2D_FLT_DIF_2019_PERC
+  )%>% 
+  arrange(S2D_FLT_RANK)
+
+
 #### main card ----
 sp_acc_main_traffic <- sp_acc_traffic_day_int %>%
   select(
@@ -726,6 +796,7 @@ sp_acc_data <- ansp_ranking %>%
   left_join(sp_acc_traffic_day, by = "SP_RANK") %>%
   left_join(sp_acc_traffic_week, by = "SP_RANK") %>%
   left_join(sp_acc_traffic_y2d, by = "SP_RANK") %>%
+  left_join(sp_acc_traffic_s2d, by = "SP_RANK") %>%
   ungroup() %>%
   select(-SP_RANK) %>%
   arrange (ANSP_CODE, RANK) %>% 
@@ -898,6 +969,59 @@ sp_acc_delay_flight_y2d <- sp_acc_delay_y2d_int %>%
     Y2D_DLY_FLT_DIF_PREV_YEAR_PERC,
     Y2D_DLY_FLT_DIF_2019_PERC
   )
+
+#### s2d ----
+# process data
+sp_acc_delay_s2d_int <- sp_acc_traffic_s2d_int %>% 
+  mutate(
+    S2D_DLY_RANK = rank(desc(S2D_AVG_DLY), ties.method = "max"),
+  ) %>% 
+  group_by(ANSP_ID) %>% 
+  mutate(
+    SP_RANK = paste0(ANSP_CODE, row_number()),
+    S2D_DLY_DIF_PREV_YEAR_PERC = if_else(S2D_AVG_DLY_PY == 0, NA,  S2D_AVG_DLY /  S2D_AVG_DLY_PY -1),
+    S2D_DLY_DIF_2019_PERC = if_else(S2D_AVG_DLY_2019 == 0, NA,  S2D_AVG_DLY /  S2D_AVG_DLY_2019 -1),
+    
+    S2D_DLY_FLT = S2D_AVG_DLY / S2D_AVG_FLIGHT,
+    S2D_DLY_FLT_PREV_YEAR = S2D_AVG_DLY_PY / S2D_AVG_FLIGHT_PY,
+    S2D_DLY_FLT_2019 = S2D_AVG_DLY_2019 / S2D_AVG_FLIGHT_2019,
+    S2D_DLY_FLT_DIF_PREV_YEAR_PERC = if_else(S2D_DLY_FLT_PREV_YEAR == 0, NA, S2D_DLY_FLT / S2D_DLY_FLT_PREV_YEAR -1),
+    S2D_DLY_FLT_DIF_2019_PERC = if_else(S2D_DLY_FLT_2019 == 0, NA, S2D_DLY_FLT / S2D_DLY_FLT_2019 -1),
+    
+  ) %>% 
+  arrange(ANSP_ID, SP_RANK) %>% 
+  ungroup()
+
+sp_acc_delay_s2d <- sp_acc_delay_s2d_int %>% 
+  select(
+    SP_RANK,
+    S2D_DLY_RANK,
+    S2D_DLY_ACC_NAME = NAME,
+    S2D_TO_DATE = ENTRY_DATE,
+    S2D_DLY = S2D_AVG_DLY,
+    S2D_DLY_DIF_PREV_YEAR_PERC,
+    S2D_DLY_DIF_2019_PERC
+  )
+
+sp_acc_delay_flight_s2d <- sp_acc_delay_s2d_int %>% 
+  mutate(
+    S2D_DLY_FLT_RANK = rank(desc(S2D_DLY_FLT), ties.method = "max"),
+  ) %>% 
+  group_by(ANSP_ID) %>% 
+  mutate(
+    SP_RANK = paste0(ANSP_CODE, row_number()),
+  ) %>% 
+  arrange(ANSP_ID, SP_RANK) %>% 
+  ungroup() %>% 
+  select(
+    SP_RANK,
+    S2D_DLY_FLT_RANK,
+    S2D_DLY_FLT_ACC_NAME = NAME,
+    S2D_DLY_FLT,
+    S2D_DLY_FLT_DIF_PREV_YEAR_PERC,
+    S2D_DLY_FLT_DIF_2019_PERC
+  )
+
 
 
 #### main card ----

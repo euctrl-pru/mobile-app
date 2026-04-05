@@ -1953,11 +1953,11 @@ nw_acc_delay_y2d <- nw_acc_delay_y2d_all %>%
   filter(DY_RANK <= 10)
 
 ### s2d ----
-nw_acc_delay_s2d_raw <- export_query(query_nw_acc_delay_y2d_raw(format(data_day_date, "%Y-%m%-%d"), initial_date = summer_start))
+nw_acc_delay_s2d_raw <- export_query(query_nw_acc_delay_y2d_raw(format(data_day_date, "%Y-%m%-%d"), initial_date = summer_start)) %>% 
+  rename_with(~ gsub("Y2D", "S2D", .x), .cols = contains("Y2D"))
 
 nw_acc_delay_s2d_all <- nw_acc_delay_s2d_raw %>%
   rename(S2D_FROM_DATE = MIN_DATE) %>%
-  rename_with(~ gsub("Y2D", "S2D", .x), .cols = contains("Y2D")) %>% 
   left_join(distinct(list_acc, NAME, ICAO_CODE), by = c("UNIT_CODE" = "ICAO_CODE")) %>%
   arrange(desc(S2D_AVG_DLY_ER), NAME) %>%
   mutate(
