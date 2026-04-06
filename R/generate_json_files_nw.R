@@ -1358,7 +1358,6 @@ nw_ao_data_s2d <- nw_ao_data_s2d_int |>
     S2D_RANK_DIF_PREV_YEAR = RANK_DIF
   )
 
-
 ### main card ----
 nw_ao_main_traffic <- create_main_card (nw_ao_data_day_int) %>% 
   select(-STK_CODE,
@@ -1492,7 +1491,6 @@ nw_ap_data_s2d <- nw_ap_data_s2d_int |>
     S2D_RANK_DIF_PREV_YEAR = RANK_DIF
   )
 
-
 ### main card ----
 nw_ap_main_traffic <- create_main_card (nw_ap_data_day_int) %>% 
   select(-STK_CODE,
@@ -1623,7 +1621,6 @@ nw_st_dai_data_s2d <- nw_st_dai_data_s2d_int %>%
     S2D_CTRY_DAI_2019_PERC = DIF2_METRIC_PERC,
     S2D_RANK_DIF_PREV_YEAR = RANK_DIF
   )
-
 
 ### main card ----
 nw_st_main_traffic <- create_main_card(nw_st_dai_data_day_int) %>% 
@@ -1819,8 +1816,6 @@ nw_ap_delay_data_s2d <- nw_ap_traffic_delay_data %>%
   ) %>%
   filter(R_RANK_DLY_DAY <= 10)
 
-
-  
 ### main card ----
 nw_ap_main_delay <- nw_ap_delay_data_day %>%
   mutate(across(-R_RANK_DLY_DAY, ~ ifelse(R_RANK_DLY_DAY > 4, NA, .))) %>%
@@ -1977,7 +1972,6 @@ nw_acc_delay_s2d_all <- nw_acc_delay_s2d_raw %>%
 
 nw_acc_delay_s2d <- nw_acc_delay_s2d_all %>%
   filter(DY_RANK <= 10)
-
 
 ### main card ----
 nw_acc_main_delay <- nw_acc_delay_day %>%
@@ -2425,7 +2419,6 @@ nw_apt_punct_s2d_bottom <- nw_apt_punct_s2d %>%
     S2D_PUNCT_DIF_2019_PERC_BOTTOM = S2D_PUNCT_DIF_2019_PERC
   )
 
-
 ### main card ----
 nw_apt_main_punct_top <- nw_apt_punct_dy_top %>%
   mutate(across(-RANK, ~ ifelse(RANK > 4, NA, .))) %>%
@@ -2762,7 +2755,6 @@ nw_st_punct_s2d_bottom <- nw_st_punct_s2d %>%
     S2D_PUNCT_DIF_2019_PERC_BOTTOM = S2D_PUNCT_DIF_2019_PERC
   )
 
-
 ### main card ----
 nw_st_main_punct_top <- nw_st_punct_dy_calc_top %>%
   mutate(across(-RANK, ~ ifelse(RANK > 4, NA, .))) %>%
@@ -2859,7 +2851,7 @@ nw_acc_delay_map_dy <- nw_acc_delay_day_all %>%
     DY_ACC_ICAO_CODE = if_else(DY_ACC_NAME == "London TMA",
                             stringr::str_sub(ICAO_CODE,1,5),
                             stringr::str_sub(ICAO_CODE,1,4)),
-    S2D_ACC_ICAO_CODE = if_else(S2D_ACC_NAME == "Marseille TMA",
+    DY_ACC_ICAO_CODE = if_else(DY_ACC_NAME == "Marseille TMA",
                                 stringr::str_sub(ICAO_CODE,1,7),
                                 stringr::str_sub(ICAO_CODE,1,4))
   ) %>% 
@@ -2879,7 +2871,7 @@ nw_acc_delay_map_wk <- nw_acc_delay_week_all %>%
     WK_ACC_ICAO_CODE = if_else(WK_ACC_NAME == "London TMA",
                             stringr::str_sub(ICAO_CODE,1,5),
                             stringr::str_sub(ICAO_CODE,1,4)),
-    S2D_ACC_ICAO_CODE = if_else(S2D_ACC_NAME == "Marseille TMA",
+    WK_ACC_ICAO_CODE = if_else(WK_ACC_NAME == "Marseille TMA",
                                 stringr::str_sub(ICAO_CODE,1,7),
                                 stringr::str_sub(ICAO_CODE,1,4))
   ) %>%  select(
@@ -2899,7 +2891,7 @@ nw_acc_delay_map_y2d <- nw_acc_delay_y2d_all %>%
     Y2D_ACC_ICAO_CODE = if_else(Y2D_ACC_NAME == "London TMA",
                             stringr::str_sub(ICAO_CODE,1,5),
                             stringr::str_sub(ICAO_CODE,1,4)),
-    S2D_ACC_ICAO_CODE = if_else(S2D_ACC_NAME == "Marseille TMA",
+    Y2D_ACC_ICAO_CODE = if_else(Y2D_ACC_NAME == "Marseille TMA",
                                 stringr::str_sub(ICAO_CODE,1,7),
                                 stringr::str_sub(ICAO_CODE,1,4))
   ) %>%  select(
@@ -2929,7 +2921,6 @@ nw_acc_delay_map_s2d <- nw_acc_delay_s2d_all %>%
     S2D_ACC_DLY_PER_FLT
   )%>% 
   unique()
-
 
 ### merge and save ----
 nw_acc_delay_map <- nw_acc_delay_map_dy %>% 
