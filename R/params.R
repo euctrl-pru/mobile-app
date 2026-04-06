@@ -37,6 +37,10 @@ usr <- Sys.getenv("PRU_DEV_USR")
 pwd <- Sys.getenv("PRU_DEV_PWD")
 dbn <- Sys.getenv("PRU_DEV_DBNAME")
 
+# summer dates
+summer_start <- 0301 
+summer_end <- 0930
+
 # STATFOR forecast params
 # list of forecast names and Ids
 forecast_list <- data.frame(

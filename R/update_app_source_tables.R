@@ -15,9 +15,6 @@ source(here::here("..", "mobile-app", "R", "duckdb_functions.R"), local = TRUE)
 # parameters ----
 if (!exists("data_day_date")) {current_day <- today() - days(1)} else {current_day <- data_day_date}
 
-summer_start <- 0301 
-summer_end <- 0930
-
 # prep data functions ----
 import_dataframe <- function(dfname) {
   # print(paste(format(now(), "%H:%M:%S")))
