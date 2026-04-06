@@ -95,11 +95,11 @@ ao_billed_for_json <- ao_billing %>%
     Y2D_BILLED_DIF_2019 = total_billing_y2d / Y2D_BILLED_2019 -1,
     Y2D_BILLED = round(total_billing_y2d / 1000000, 1),
     
-    S2D_BILLED_PY = lag(total_billing_y2d, last_billing_month),
-    S2D_BILLED_2019 = lag(total_billing_y2d, 2 * last_billing_month), # we only load 2019, current year and current year-1
-    S2D_BILLED_DIF_PREV_YEAR = total_billing_y2d / S2D_BILLED_PY -1,
-    S2D_BILLED_DIF_2019 = total_billing_y2d / S2D_BILLED_2019 -1,
-    S2D_BILLED = round(total_billing_y2d / 1000000, 1)
+    S2D_BILLED_PY = lag(total_billing_s2d, last_billing_month),
+    S2D_BILLED_2019 = lag(total_billing_s2d, 2 * last_billing_month), # we only load 2019, current year and current year-1
+    S2D_BILLED_DIF_PREV_YEAR = total_billing_s2d / S2D_BILLED_PY -1,
+    S2D_BILLED_DIF_2019 = total_billing_s2d / S2D_BILLED_2019 -1,
+    S2D_BILLED = round(total_billing_s2d / 1000000, 1)
     
   ) %>%
   filter(billing_period_start_date == last_billing_date) %>%

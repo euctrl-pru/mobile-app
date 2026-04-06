@@ -108,11 +108,11 @@ st_billed_for_json <- st_billing %>%
     Y2D_BILLED_DIF_2019 = total_billing_y2d / Y2D_BILLED_2019 -1,
     Y2D_BILLED = round(total_billing_y2d / 1000000, 1),
     
-    S2D_BILLED_PY = lag(total_billing_y2d, 12),
-    S2D_BILLED_2019 = lag(total_billing_y2d, (last_billing_year - 2019) * 12),
-    S2D_BILLED_DIF_PREV_YEAR = total_billing_y2d / S2D_BILLED_PY -1,
-    S2D_BILLED_DIF_2019 = total_billing_y2d / S2D_BILLED_2019 -1,
-    S2D_BILLED = round(total_billing_y2d / 1000000, 1)
+    S2D_BILLED_PY = lag(total_billing_s2d, 12),
+    S2D_BILLED_2019 = lag(total_billing_s2d, (last_billing_year - 2019) * 12),
+    S2D_BILLED_DIF_PREV_YEAR = total_billing_s2d / S2D_BILLED_PY -1,
+    S2D_BILLED_DIF_2019 = total_billing_s2d / S2D_BILLED_2019 -1,
+    S2D_BILLED = round(total_billing_s2d / 1000000, 1)
     
   ) %>%
   filter(Year == last_billing_year,
