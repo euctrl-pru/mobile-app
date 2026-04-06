@@ -490,7 +490,7 @@ ao_punct_s2d <- ao_punct_raw %>%
 
 
 ao_punct_for_json <- merge(ao_punct_d_w, ao_punct_y2d, by= c("AO_GRP_NAME", "AO_GRP_CODE")) %>%
-  merge(ao_punct_s2d, by= c("AO_GRP_NAME", "AO_GRP_CODE")) %>% 
+  left_join(ao_punct_s2d, by= c("AO_GRP_NAME", "AO_GRP_CODE")) %>% 
   ### rank calculation
   left_join(list_ao_group, by = c("AO_GRP_NAME", "AO_GRP_CODE")) %>%
   group_by(FLAG_TOP_AO) %>%

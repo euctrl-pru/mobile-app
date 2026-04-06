@@ -821,7 +821,7 @@ st_punct_s2d <- st_punct_data_joined %>%
   )
 
 st_punct_for_json <- merge(st_punct_d_w, st_punct_y2d, by="ISO_2LETTER") %>%
-  merge(st_punct_s2d, by="ISO_2LETTER") %>%
+  left_join(st_punct_s2d, by="ISO_2LETTER") %>%
   # Iceland exception
   mutate(
     DY_ARR_PUN_DIF_PREV_YEAR =  if_else(ISO_2LETTER == "IS" & year(FLIGHT_DATE) < 2025, NA, DY_ARR_PUN_DIF_PREV_YEAR),
@@ -2051,10 +2051,10 @@ st_apt_punct_y2d <- st_apt_punct_calc %>%
   arrange(ARP_NAME, YEAR) %>%
   mutate(
     Y2D_APT_ARR_PUNCT_DIF_PREV_YEAR = (Y2D_APT_ARR_PUNCT - lag(Y2D_APT_ARR_PUNCT, 1))
-    , Y2D_APT_ARR_PUNCT_DIF_2019 = (Y2D_APT_ARR_PUNCT - lag(Y2D_APT_ARR_PUNCT, max(YEAR) - 2019))
+    , Y2D_APT_ARR_PUNCT_DIF_2019 = (Y2D_APT_ARR_PUNCT - lag(Y2D_APT_ARR_PUNCT, last_year_punct - 2019))
   )  %>%
   ungroup() %>%
-  filter(YEAR == max(YEAR)) %>%
+  filter(YEAR == last_year_punct) %>%
   mutate(Y2D_RANK = rank(desc(Y2D_APT_ARR_PUNCT), ties.method = "max")) %>%
   mutate(Y2D_APT_NAME = ARP_NAME) %>%
   group_by(state) %>%
@@ -2104,10 +2104,10 @@ st_apt_punct_s2d <- st_apt_punct_calc %>%
   arrange(ARP_NAME, YEAR) %>%
   mutate(
     S2D_APT_ARR_PUNCT_DIF_PREV_YEAR = (S2D_APT_ARR_PUNCT - lag(S2D_APT_ARR_PUNCT, 1))
-    , S2D_APT_ARR_PUNCT_DIF_2019 = (S2D_APT_ARR_PUNCT - lag(S2D_APT_ARR_PUNCT, max(YEAR) - 2019))
+    , S2D_APT_ARR_PUNCT_DIF_2019 = (S2D_APT_ARR_PUNCT - lag(S2D_APT_ARR_PUNCT, last_year_punct - 2019))
   )  %>%
   ungroup() %>%
-  filter(YEAR == max(YEAR)) %>%
+  filter(YEAR == last_year_punct) %>%
   mutate(S2D_RANK = rank(desc(S2D_APT_ARR_PUNCT), ties.method = "max")) %>%
   mutate(S2D_APT_NAME = ARP_NAME) %>%
   group_by(state) %>%

@@ -429,7 +429,7 @@ apt_punct_s2d <- apt_punct_raw %>%
 
 #merging the totals and the year to date data
 apt_punct_for_json <- merge(apt_punct_d_w, apt_punct_y2d, by= c("ARP_CODE", "ARP_NAME")) %>%
-  merge(apt_punct_s2d, by= c("ARP_CODE", "ARP_NAME")) %>%  
+  left_join(apt_punct_s2d, by= c("ARP_CODE", "ARP_NAME")) %>%  
   ### rank calculation
   right_join(list_airport_extended, by = c("ARP_CODE" = "EC_AP_CODE", "ARP_NAME" = "EC_AP_NAME")) %>%
   group_by(FLAG_TOP_APT) %>%

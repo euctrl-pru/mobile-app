@@ -436,7 +436,7 @@ nw_punct_data_s2d <- nw_punct_data_raw %>%
 
 # merge day/week and y2d tables
 nw_punct_for_json <- merge(nw_punct_data_d_w, nw_punct_data_y2d, by = "INDEX") %>%
-  merge(nw_punct_data_s2d, by = "INDEX") %>% 
+  left_join(nw_punct_data_s2d, by = "INDEX") %>% 
   select(-INDEX)
 
 
