@@ -1508,7 +1508,7 @@ acc_delay_day_sorted <-  nw_acc_delay_day_raw %>%
   ) %>%
   ungroup()
 
-  acc_delay_day <- acc_delay_day_sorted %>%
+acc_delay_day <- acc_delay_day_sorted %>%
   select(
     ST_RANK,
     DY_RANK,
