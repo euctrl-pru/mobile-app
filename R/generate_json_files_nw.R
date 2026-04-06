@@ -2334,13 +2334,13 @@ nw_apt_punct_y2d <- nw_apt_punct_calc %>%
   mutate(
     Y2D_RANK_DIF_PREV_YEAR = lag(RANK, 1) - RANK,
     Y2D_PUNCT_DIF_PREV_YEAR_PERC = (Y2D_APT_ARR_PUNCT - lag(Y2D_APT_ARR_PUNCT, 1)),
-    Y2D_PUNCT_DIF_2019_PERC = (Y2D_APT_ARR_PUNCT - lag(Y2D_APT_ARR_PUNCT, max(YEAR) - 2019))
+    Y2D_PUNCT_DIF_2019_PERC = (Y2D_APT_ARR_PUNCT - lag(Y2D_APT_ARR_PUNCT, last_year_punct - 2019))
   ) %>%
   ungroup()
 
 #### top
 nw_apt_punct_y2d_top <- nw_apt_punct_y2d %>%
-  filter(YEAR == max(YEAR), RANK < 11) %>%
+  filter(YEAR == last_year_punct, RANK < 11) %>%
   mutate(Y2D_APT_NAME = ARP_NAME) %>%
   select(
     RANK,
@@ -2353,7 +2353,7 @@ nw_apt_punct_y2d_top <- nw_apt_punct_y2d %>%
 
 #### bottom
 nw_apt_punct_y2d_bottom <- nw_apt_punct_y2d %>%
-  filter(YEAR == max(YEAR)) %>%
+  filter(YEAR == last_year_punct) %>%
   mutate(RANK = max(RANK) + 1 - RANK) %>%
   filter(RANK < 11) %>%
   arrange(RANK) %>%
@@ -2387,13 +2387,13 @@ nw_apt_punct_s2d <- nw_apt_punct_calc %>%
   mutate(
     S2D_RANK_DIF_PREV_YEAR = lag(RANK, 1) - RANK,
     S2D_PUNCT_DIF_PREV_YEAR_PERC = (S2D_APT_ARR_PUNCT - lag(S2D_APT_ARR_PUNCT, 1)),
-    S2D_PUNCT_DIF_2019_PERC = (S2D_APT_ARR_PUNCT - lag(S2D_APT_ARR_PUNCT, max(YEAR) - 2019))
+    S2D_PUNCT_DIF_2019_PERC = (S2D_APT_ARR_PUNCT - lag(S2D_APT_ARR_PUNCT, last_year_punct - 2019))
   ) %>%
   ungroup()
 
 #### top
 nw_apt_punct_s2d_top <- nw_apt_punct_s2d %>%
-  filter(YEAR == max(YEAR), RANK < 11) %>%
+  filter(YEAR == last_year_punct, RANK < 11) %>%
   mutate(S2D_APT_NAME = ARP_NAME) %>%
   select(
     RANK,
@@ -2406,7 +2406,7 @@ nw_apt_punct_s2d_top <- nw_apt_punct_s2d %>%
 
 #### bottom
 nw_apt_punct_s2d_bottom <- nw_apt_punct_s2d %>%
-  filter(YEAR == max(YEAR)) %>%
+  filter(YEAR == last_year_punct) %>%
   mutate(RANK = max(RANK) + 1 - RANK) %>%
   filter(RANK < 11) %>%
   arrange(RANK) %>%
@@ -2664,13 +2664,13 @@ nw_st_punct_y2d <- nw_st_punct_calc %>%
   mutate(
     Y2D_RANK_DIF_PREV_YEAR = lag(RANK, 1) - RANK,
     Y2D_PUNCT_DIF_PREV_YEAR_PERC = (Y2D_CTRY_ARR_PUNCT - lag(Y2D_CTRY_ARR_PUNCT, 1)),
-    Y2D_PUNCT_DIF_2019_PERC = (Y2D_CTRY_ARR_PUNCT - lag(Y2D_CTRY_ARR_PUNCT, max(YEAR) - 2019))
+    Y2D_PUNCT_DIF_2019_PERC = (Y2D_CTRY_ARR_PUNCT - lag(Y2D_CTRY_ARR_PUNCT, last_year_punct - 2019))
   ) %>%
   ungroup()
 
 #### top
 nw_st_punct_y2d_top <- nw_st_punct_y2d %>%
-  filter(YEAR == max(YEAR), RANK < 11) %>%
+  filter(YEAR == last_year_punct, RANK < 11) %>%
   mutate(Y2D_CTRY_NAME = EC_ISO_CT_NAME) %>%
   select(
     RANK,
@@ -2683,7 +2683,7 @@ nw_st_punct_y2d_top <- nw_st_punct_y2d %>%
 
 #### bottom
 nw_st_punct_y2d_bottom <- nw_st_punct_y2d %>%
-  filter(YEAR == max(YEAR),
+  filter(YEAR == last_year_punct,
          RANK > max(RANK) - 11) %>%
   arrange(Y2D_CTRY_ARR_PUNCT, EC_ISO_CT_NAME) %>%
   mutate(
@@ -2720,13 +2720,13 @@ nw_st_punct_s2d <- nw_st_punct_calc %>%
   mutate(
     S2D_RANK_DIF_PREV_YEAR = lag(RANK, 1) - RANK,
     S2D_PUNCT_DIF_PREV_YEAR_PERC = (S2D_CTRY_ARR_PUNCT - lag(S2D_CTRY_ARR_PUNCT, 1)),
-    S2D_PUNCT_DIF_2019_PERC = (S2D_CTRY_ARR_PUNCT - lag(S2D_CTRY_ARR_PUNCT, max(YEAR) - 2019))
+    S2D_PUNCT_DIF_2019_PERC = (S2D_CTRY_ARR_PUNCT - lag(S2D_CTRY_ARR_PUNCT, last_year_punct - 2019))
   ) %>%
   ungroup()
 
 #### top
 nw_st_punct_s2d_top <- nw_st_punct_s2d %>%
-  filter(YEAR == max(YEAR), RANK < 11) %>%
+  filter(YEAR == last_year_punct, RANK < 11) %>%
   mutate(S2D_CTRY_NAME = EC_ISO_CT_NAME) %>%
   select(
     RANK,
@@ -2739,7 +2739,7 @@ nw_st_punct_s2d_top <- nw_st_punct_s2d %>%
 
 #### bottom
 nw_st_punct_s2d_bottom <- nw_st_punct_s2d %>%
-  filter(YEAR == max(YEAR),
+  filter(YEAR == last_year_punct,
          RANK > max(RANK) - 11) %>%
   arrange(S2D_CTRY_ARR_PUNCT, EC_ISO_CT_NAME) %>%
   mutate(
@@ -2905,6 +2905,7 @@ nw_acc_delay_map_y2d <- nw_acc_delay_y2d_all %>%
 
 ### s2d ----
 nw_acc_delay_map_s2d <- nw_acc_delay_s2d_all %>% 
+  mutate(S2D_ACC_NAME = as.character(S2D_ACC_NAME)) %>% 
   left_join(list_acc, by = c("S2D_ACC_NAME" = "NAME")) %>% 
   mutate(
     S2D_ACC_ICAO_CODE = if_else(S2D_ACC_NAME == "London TMA",

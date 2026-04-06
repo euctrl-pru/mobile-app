@@ -962,10 +962,12 @@ apt_ms_data_s2d_int <- create_ranking(mydataframe, "S2D", DEP_ARR) %>%
   filter(STK_CODE %in% list_airport$EC_AP_CODE) %>% 
   group_by(STK_CODE) |>
   mutate(SHARE = ifelse(CURRENT == 0, 0,
-                        CURRENT/sum(CURRENT, na.rm = TRUE))) |>
+                        CURRENT/sum(CURRENT, na.rm = TRUE)),
+         CODE = as.numeric(CODE) 
+           ) |>
   ungroup() 
 
-apt_ms_data_s2d_full <- ms_ap_full %>% 
+apt_ms_data_s2d_full <- ms_ap_full %>%
   left_join(select(apt_ms_data_s2d_int, -NAME), by = c("CODE", "STK_CODE"))  %>% 
   group_by(STK_CODE) %>% 
   arrange(STK_CODE, desc(CURRENT), NAME) %>% 
