@@ -1474,11 +1474,11 @@ print(paste(format(now(), "%H:%M:%S"), "st_ctry_ranking_traffic_DAI"))
 ### ACC  ----
 #### day ----
 if(!exists("nw_acc_delay_day_raw")) {
-  nw_acc_delay_day_raw <- export_query(query_nw_acc_delay_day_raw(format(data_day_date, "%Y-%m%-%d"))) 
+  nw_acc_delay_day_raw <- export_query(query_nw_acc_delay_day_raw(format(data_day_date, "%Y-%m%-%d")), schema = "PRU_READ") 
 }
 
 if (max(nw_acc_delay_day_raw$ENTRY_DATE) != data_day_date) {
-  nw_acc_delay_day_raw <- export_query(query_nw_acc_delay_day_raw(format(data_day_date, "%Y-%m%-%d"))) 
+  nw_acc_delay_day_raw <- export_query(query_nw_acc_delay_day_raw(format(data_day_date, "%Y-%m%-%d")), schema = "PRU_READ") 
 }
 
 # process data
@@ -1520,11 +1520,11 @@ acc_delay_day_sorted <-  nw_acc_delay_day_raw %>%
 
 #### week ----
 if(!exists("nw_acc_delay_week_raw")) {
-  nw_acc_delay_week_raw <- export_query(query_nw_acc_delay_week_raw(format(data_day_date, "%Y-%m%-%d"))) 
+  nw_acc_delay_week_raw <- export_query(query_nw_acc_delay_week_raw(format(data_day_date, "%Y-%m%-%d")), schema = "PRU_READ") 
 }
 
 if (max(nw_acc_delay_week_raw$MAX_ENTRY_DATE) != data_day_date) {
-  nw_acc_delay_week_raw <- export_query(query_nw_acc_delay_week_raw(format(data_day_date, "%Y-%m%-%d"))) 
+  nw_acc_delay_week_raw <- export_query(query_nw_acc_delay_week_raw(format(data_day_date, "%Y-%m%-%d")), schema = "PRU_READ") 
 }
   
 # process data
@@ -1565,11 +1565,11 @@ acc_delay_week <- nw_acc_delay_week_raw %>%
 
 #### y2d ----
 if(!exists("nw_acc_delay_y2d_raw")) {
-  nw_acc_delay_y2d_raw <- export_query(query_nw_acc_delay_y2d_raw(format(data_day_date, "%Y-%m%-%d"))) 
+  nw_acc_delay_y2d_raw <- export_query(query_nw_acc_delay_y2d_raw(format(data_day_date, "%Y-%m%-%d")), schema = "PRU_READ") 
 }
 
 if (max(nw_acc_delay_y2d_raw$ENTRY_DATE) != data_day_date) {
-  nw_acc_delay_y2d_raw <- export_query(query_nw_acc_delay_y2d_raw(format(data_day_date, "%Y-%m%-%d"))) 
+  nw_acc_delay_y2d_raw <- export_query(query_nw_acc_delay_y2d_raw(format(data_day_date, "%Y-%m%-%d")), schema = "PRU_READ") 
 }
 
 # process data
@@ -1611,12 +1611,12 @@ acc_delay_y2d <- nw_acc_delay_y2d_raw %>%
 
 #### s2d ----
 if(!exists("nw_acc_delay_s2d_raw")) {
-  nw_acc_delay_s2d_raw <- export_query(query_nw_acc_delay_y2d_raw(format(data_day_date, "%Y-%m%-%d"), initial_date = summer_start)) %>% 
+  nw_acc_delay_s2d_raw <- export_query(query_nw_acc_delay_y2d_raw(format(data_day_date, "%Y-%m%-%d"), initial_date = summer_start), schema = "PRU_READ") %>% 
     rename_with(~ gsub("Y2D", "S2D", .x), .cols = contains("Y2D"))
 }
 
 if (max(nw_acc_delay_s2d_raw$ENTRY_DATE) != data_day_date) {
-  nw_acc_delay_s2d_raw <- export_query(query_nw_acc_delay_y2d_raw(format(data_day_date, "%Y-%m%-%d"), initial_date = summer_start)) %>% 
+  nw_acc_delay_s2d_raw <- export_query(query_nw_acc_delay_y2d_raw(format(data_day_date, "%Y-%m%-%d"), initial_date = summer_start), schema = "PRU_READ") %>% 
     rename_with(~ gsub("Y2D", "S2D", .x), .cols = contains("Y2D"))
 }
 

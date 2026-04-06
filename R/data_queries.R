@@ -3,87 +3,10 @@
 query_nw_acc_delay_day_raw <- function(mydate_string) {
   mydate <- date_sql_string(mydate_string)
   paste0("
-WITH stat_aua_list
-    AS
-        (SELECT stat_aua_id      AS unit_code,
-                aua_name         AS unit_name,
-                aua_country_code AS unit_country,
-                aua_type         AS unit_type_2
-           FROM aru_syn.stat_aua f
-          WHERE stat_aua_id IN ('EBBUACC',
-                                'EDGGALL',
-                                'EDMMACC',
-                                'EDUUUAC',
-                                'EDWWACC',
-                                'EDYYUAC',
-                                'EETTACC',
-                                'EFINACC',
-                               -- 'EFESACC', -- code change on 22-02-2021
-                                'EGGXOCA',
-                                'EGPXALL',
-                                'EGTTACC',
-                                'EGTTTC',
-                                'EHAAACC',
-                                'EIDWACC',
-                                'EISNACC',
-                                'EKDKACC',
-                                'ENBDACC',
-                                'ENOSACC',
-                                'ENSVACC',
-                                'EPWWACC',
-                                'ESMMACC',
-                                'ESOSACC',
-                                'EVRRACC',
-                                'EYVCACC',
-                                'GCCCACC',
-                                'GMMMACC',
-                                'GMACACC',
-                                'LAAAACC',
-                                'LBSRACC',
-                                'LCCCACC',
-                                'LDZOACC',
-                                'LECBACC',
-                                'LECMALL',
-                                'LECPACC',
-                                'LECSACC',
-                                'LFBBALL',
-                                'LFEEACC',
-                                'LFFFALL',
-                                'LFMMACC',
-                                'LFRRACC',
-                                'LGGGACC',
-                                'LGMDACC',
-                                'LHCCACC',
-                                'LIBBACC',
-                                'LIMMACC',
-                                'LIPPACC',
-                                'LIRRACC',
-                                'LJLAACC',
-                                'LKAAACC',
-                                'LLLLACC',
-                                'LMMMACC',
-                                'LOVVACC',
-                                'LPPCACC',
-                                'LPPOOAC',
-                                'LRBBACC',
-                                'LSAGACC',
-                                'LSAZACC',
-                                'LTAAACC',
-                                'LTBBACC',
-                                'LUUUACC',
-                                'LWSSACC',
-                                'LYBAACC',
-                                'LZBBACC',
-                                'UDDDACC',
-                                'UGGGACC',
-                                'UKBVACC',
-                                'UKDVACC',
-                                'UKLVACC',
-                                'UKOVACC',
-                                'BIRDACC'
-                                ,'LQSBACC')
-
-  ),
+WITH 
+STAT_AUA_LIST AS (
+select * from pruread.V_AIU_APP_LIST_ACC
+),
 
 
 STAT_AUA_DAY AS (
@@ -98,7 +21,7 @@ SELECT a.unit_code,
         t.day_type,
         t.day_of_week_nb AS day_of_week,
         t.year
-FROM stat_aua_list a, pru_time_references t
+FROM stat_aua_list a, prudev.pru_time_references t
 WHERE
  (t.day_date >= ", mydate, "-1  AND t.day_date < ", mydate, ")
   or
@@ -122,7 +45,7 @@ DATA_SOURCE as
       nvl (a.agg_asp_delay_tvs,0)  AS syn_delay,
       nvl (a.agg_asp_delay_tvs,0) - nvl(a.agg_asp_delay_airport_tvs,0)  AS syn_er_delay
 
-  FROM v_aiu_agg_asp a
+  FROM prudev.v_aiu_agg_asp a
   WHERE
  (   (
        a.AGG_ASP_ENTRY_DATE >=  ", mydate, " -  1   AND  a.AGG_ASP_ENTRY_DATE <  ", mydate, "
@@ -311,87 +234,10 @@ STAT_AUA_DATA_2 as
 query_nw_acc_delay_week_raw <- function(mydate_string) {
   mydate <- date_sql_string(mydate_string)
   paste0("
-  WITH stat_aua_list
-    AS
-        (SELECT stat_aua_id      AS unit_code,
-                aua_name         AS unit_name,
-                aua_country_code AS unit_country,
-                aua_type         AS unit_type_2
-           FROM aru_syn.stat_aua f
-          WHERE stat_aua_id IN ('EBBUACC',
-                                'EDGGALL',
-                                'EDMMACC',
-                                'EDUUUAC',
-                                'EDWWACC',
-                                'EDYYUAC',
-                                'EETTACC',
-                                'EFINACC',
-                               -- 'EFESACC', -- code change on 22-02-2021
-                                'EGGXOCA',
-                                'EGPXALL',
-                                'EGTTACC',
-                                'EGTTTC',
-                                'EHAAACC',
-                                'EIDWACC',
-                                'EISNACC',
-                                'EKDKACC',
-                                'ENBDACC',
-                                'ENOSACC',
-                                'ENSVACC',
-                                'EPWWACC',
-                                'ESMMACC',
-                                'ESOSACC',
-                                'EVRRACC',
-                                'EYVCACC',
-                                'GCCCACC',
-                                'GMMMACC',
-                                'GMACACC',
-                                'LAAAACC',
-                                'LBSRACC',
-                                'LCCCACC',
-                                'LDZOACC',
-                                'LECBACC',
-                                'LECMALL',
-                                'LECPACC',
-                                'LECSACC',
-                                'LFBBALL',
-                                'LFEEACC',
-                                'LFFFALL',
-                                'LFMMACC',
-                                'LFRRACC',
-                                'LGGGACC',
-                                'LGMDACC',
-                                'LHCCACC',
-                                'LIBBACC',
-                                'LIMMACC',
-                                'LIPPACC',
-                                'LIRRACC',
-                                'LJLAACC',
-                                'LKAAACC',
-                                'LLLLACC',
-                                'LMMMACC',
-                                'LOVVACC',
-                                'LPPCACC',
-                                'LPPOOAC',
-                                'LRBBACC',
-                                'LSAGACC',
-                                'LSAZACC',
-                                'LTAAACC',
-                                'LTBBACC',
-                                'LUUUACC',
-                                'LWSSACC',
-                                'LYBAACC',
-                                'LZBBACC',
-                                'UDDDACC',
-                                'UGGGACC',
-                                'UKBVACC',
-                                'UKDVACC',
-                                'UKLVACC',
-                                'UKOVACC',
-                                'BIRDACC'
-                                ,'LQSBACC')
-
-  ),
+WITH
+STAT_AUA_LIST AS (
+select * from pruread.V_AIU_APP_LIST_ACC
+),
 
 
 STAT_AUA_DAY AS (
@@ -406,7 +252,7 @@ SELECT a.unit_code,
         t.day_type,
         t.day_of_week_nb AS day_of_week,
         t.year
-FROM stat_aua_list a, pru_time_references t
+FROM stat_aua_list a, prudev.pru_time_references t
 WHERE
  (t.day_date >= ", mydate, "-7  AND t.day_date < ", mydate, ")
   or
@@ -430,7 +276,7 @@ DATA_SOURCE as
       nvl (a.agg_asp_a_traffic_asp,0)  AS syn_traffic,
       nvl (a.agg_asp_delay_tvs,0)  AS syn_delay,
       nvl (a.agg_asp_delay_tvs,0) - nvl(a.agg_asp_delay_airport_tvs,0)  AS syn_er_delay
-  FROM v_aiu_agg_asp a
+  FROM prudev.v_aiu_agg_asp a
   WHERE
  (   (
        a.AGG_ASP_ENTRY_DATE >=  ", mydate, " -  7   AND  a.AGG_ASP_ENTRY_DATE <  ", mydate, "
@@ -651,94 +497,11 @@ query_nw_acc_delay_y2d_raw <- function(mydate_string,
                                        initial_date = 101) {
   mydate <- date_sql_string(mydate_string)
   paste0("
-WITH stat_aua_list
-    AS
-        (
-	SELECT
-		stat_aua_id AS unit_code,
-		aua_name AS unit_name,
-		aua_country_code AS unit_country,
-		aua_type AS unit_type_2
-	FROM
-		aru_syn.stat_aua f
-	WHERE
-		stat_aua_id IN (
-			'EBBUACC',
-                                'EDGGALL',
-                                'EDMMACC',
-                                'EDUUUAC',
-                                'EDWWACC',
-                                'EDYYUAC',
-                                'EETTACC',
-                                'EFINACC',
-			-- 'EFESACC', -- code change on 22-02-2021
-                                'EGGXOCA',
-                                'EGPXALL',
-                                'EGTTACC',
-                                'EGTTTC',
-                                'EHAAACC',
-                                'EIDWACC',
-                                'EISNACC',
-                                'EKDKACC',
-                                'ENBDACC',
-                                'ENOSACC',
-                                'ENSVACC',
-                                'EPWWACC',
-                                'ESMMACC',
-                                'ESOSACC',
-                                'EVRRACC',
-                                'EYVCACC',
-                                'GCCCACC',
-                                'GMMMACC',
-                                'GMACACC',
-                                'LAAAACC',
-                                'LBSRACC',
-                                'LCCCACC',
-                                'LDZOACC',
-                                'LECBACC',
-                                'LECMALL',
-                                'LECPACC',
-                                'LECSACC',
-                                'LFBBALL',
-                                'LFEEACC',
-                                'LFFFALL',
-                                'LFMMACC',
-                                'LFRRACC',
-                                'LGGGACC',
-                                'LGMDACC',
-                                'LHCCACC',
-                                'LIBBACC',
-                                'LIMMACC',
-                                'LIPPACC',
-                                'LIRRACC',
-                                'LJLAACC',
-                                'LKAAACC',
-                                'LLLLACC',
-                                'LMMMACC',
-                                'LOVVACC',
-                                'LPPCACC',
-                                'LPPOOAC',
-                                'LRBBACC',
-                                'LSAGACC',
-                                'LSAZACC',
-                                'LTAAACC',
-                                'LTBBACC',
-                                'LUUUACC',
-                                'LWSSACC',
-                                'LYBAACC',
-                                'LZBBACC',
-                                'UDDDACC',
-                                'UGGGACC',
-                                'UKBVACC',
-                                'UKDVACC',
-                                'UKLVACC',
-                                'UKOVACC',
-                                'BIRDACC'
-                                , 'LQSBACC'
-		)
-)
+WITH 
+STAT_AUA_LIST AS (
+select * from pruread.V_AIU_APP_LIST_ACC
+),
   
-,
 STAT_AUA_DAY AS (
 	SELECT
 		a.unit_code,

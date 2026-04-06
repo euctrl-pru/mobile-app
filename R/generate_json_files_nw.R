@@ -1880,7 +1880,7 @@ save_json(nw_ap_rank_data_j, "nw_apt_ranking_delay")
 print(paste(format(now(), "%H:%M:%S"), "nw_apt_ranking_delay"))
 
 ## ACC delay ----
-nw_acc_delay_day_raw <- export_query(query_nw_acc_delay_day_raw(format(data_day_date, "%Y-%m%-%d")))
+nw_acc_delay_day_raw <- export_query(query_nw_acc_delay_day_raw(format(data_day_date, "%Y-%m%-%d")), schema = "PRU_READ")
 
 ### day ----
 nw_acc_delay_day_all <- nw_acc_delay_day_raw %>%
@@ -1904,7 +1904,7 @@ nw_acc_delay_day <- nw_acc_delay_day_all %>%
   filter(DY_RANK <= 10)
   
 ### week ----
-nw_acc_delay_week_raw <- export_query(query_nw_acc_delay_week_raw(format(data_day_date, "%Y-%m%-%d")))
+nw_acc_delay_week_raw <- export_query(query_nw_acc_delay_week_raw(format(data_day_date, "%Y-%m%-%d")), schema = "PRU_READ")
 
 nw_acc_delay_week_all <- nw_acc_delay_week_raw %>%
   left_join(distinct(list_acc, NAME, ICAO_CODE), by = c("UNIT_CODE" = "ICAO_CODE")) %>%
@@ -1928,7 +1928,7 @@ nw_acc_delay_week <- nw_acc_delay_week_all %>%
   filter(DY_RANK <= 10)
 
 ### y2d ----
-nw_acc_delay_y2d_raw <- export_query(query_nw_acc_delay_y2d_raw(format(data_day_date, "%Y-%m%-%d")))
+nw_acc_delay_y2d_raw <- export_query(query_nw_acc_delay_y2d_raw(format(data_day_date, "%Y-%m%-%d")), schema = "PRU_READ")
 
 nw_acc_delay_y2d_all <- nw_acc_delay_y2d_raw %>%
   rename(Y2D_FROM_DATE = MIN_DATE) %>%
@@ -1953,7 +1953,7 @@ nw_acc_delay_y2d <- nw_acc_delay_y2d_all %>%
   filter(DY_RANK <= 10)
 
 ### s2d ----
-nw_acc_delay_s2d_raw <- export_query(query_nw_acc_delay_y2d_raw(format(data_day_date, "%Y-%m%-%d"), initial_date = summer_start)) %>% 
+nw_acc_delay_s2d_raw <- export_query(query_nw_acc_delay_y2d_raw(format(data_day_date, "%Y-%m%-%d"), initial_date = summer_start), schema = "PRU_READ") %>% 
   rename_with(~ gsub("Y2D", "S2D", .x), .cols = contains("Y2D"))
 
 nw_acc_delay_s2d_all <- nw_acc_delay_s2d_raw %>%
