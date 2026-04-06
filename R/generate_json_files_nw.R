@@ -2856,9 +2856,12 @@ print(paste(format(now(), "%H:%M:%S"), "nw_ctry_ranking_punctuality"))
 nw_acc_delay_map_dy <- nw_acc_delay_day_all %>% 
   left_join(list_acc, by = c("DY_ACC_NAME" = "NAME")) %>% 
   mutate(
-    DY_ACC_ICAO_CODE = if_else(DY_ACC_NAME == "London TMA TC",
+    DY_ACC_ICAO_CODE = if_else(DY_ACC_NAME == "London TMA",
                             stringr::str_sub(ICAO_CODE,1,5),
-                            stringr::str_sub(ICAO_CODE,1,4))
+                            stringr::str_sub(ICAO_CODE,1,4)),
+    S2D_ACC_ICAO_CODE = if_else(S2D_ACC_NAME == "Marseille TMA",
+                                stringr::str_sub(ICAO_CODE,1,7),
+                                stringr::str_sub(ICAO_CODE,1,4))
   ) %>% 
   select(
     DY_RANK,
@@ -2873,9 +2876,12 @@ nw_acc_delay_map_dy <- nw_acc_delay_day_all %>%
 nw_acc_delay_map_wk <- nw_acc_delay_week_all %>% 
   left_join(list_acc, by = c("WK_ACC_NAME" = "NAME")) %>% 
   mutate(
-    WK_ACC_ICAO_CODE = if_else(WK_ACC_NAME == "London TMA TC",
+    WK_ACC_ICAO_CODE = if_else(WK_ACC_NAME == "London TMA",
                             stringr::str_sub(ICAO_CODE,1,5),
-                            stringr::str_sub(ICAO_CODE,1,4))
+                            stringr::str_sub(ICAO_CODE,1,4)),
+    S2D_ACC_ICAO_CODE = if_else(S2D_ACC_NAME == "Marseille TMA",
+                                stringr::str_sub(ICAO_CODE,1,7),
+                                stringr::str_sub(ICAO_CODE,1,4))
   ) %>%  select(
     DY_RANK,
     WK_ACC_ICAO_CODE,
@@ -2890,9 +2896,12 @@ nw_acc_delay_map_wk <- nw_acc_delay_week_all %>%
 nw_acc_delay_map_y2d <- nw_acc_delay_y2d_all %>% 
   left_join(list_acc, by = c("Y2D_ACC_NAME" = "NAME")) %>% 
   mutate(
-    Y2D_ACC_ICAO_CODE = if_else(Y2D_ACC_NAME == "London TMA TC",
+    Y2D_ACC_ICAO_CODE = if_else(Y2D_ACC_NAME == "London TMA",
                             stringr::str_sub(ICAO_CODE,1,5),
-                            stringr::str_sub(ICAO_CODE,1,4))
+                            stringr::str_sub(ICAO_CODE,1,4)),
+    S2D_ACC_ICAO_CODE = if_else(S2D_ACC_NAME == "Marseille TMA",
+                                stringr::str_sub(ICAO_CODE,1,7),
+                                stringr::str_sub(ICAO_CODE,1,4))
   ) %>%  select(
     DY_RANK,
     Y2D_ACC_ICAO_CODE,
@@ -2906,8 +2915,11 @@ nw_acc_delay_map_y2d <- nw_acc_delay_y2d_all %>%
 nw_acc_delay_map_s2d <- nw_acc_delay_s2d_all %>% 
   left_join(list_acc, by = c("S2D_ACC_NAME" = "NAME")) %>% 
   mutate(
-    S2D_ACC_ICAO_CODE = if_else(S2D_ACC_NAME == "London TMA TC",
+    S2D_ACC_ICAO_CODE = if_else(S2D_ACC_NAME == "London TMA",
                                 stringr::str_sub(ICAO_CODE,1,5),
+                                stringr::str_sub(ICAO_CODE,1,4)),
+    S2D_ACC_ICAO_CODE = if_else(S2D_ACC_NAME == "Marseille TMA",
+                                stringr::str_sub(ICAO_CODE,1,7),
                                 stringr::str_sub(ICAO_CODE,1,4))
   ) %>%  select(
     DY_RANK,
