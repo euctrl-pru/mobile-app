@@ -80,13 +80,13 @@ collection <- "nw_delay"
 nw_delay_latest <- network_delay_latest()
 
 
-ph_create_record(
-  app = app_test,
-  api = "/api/collections",
-  collection = collection,
-  token = adm_test$token,
-  body = nw_delay_latest
-)
+# ph_create_record(
+#   app = app_test,
+#   api = "/api/collections",
+#   collection = collection,
+#   token = adm_test$token,
+#   body = nw_delay_latest
+# )
 
 ph_create_record(
   app = app_main,
@@ -221,13 +221,13 @@ nw_emissions_latest <- network_emissions_latest()
 ee <- nw_emissions_latest$FLIGHT_MONTH |> as_date()
 
 if (latest != ee) {
-  ph_create_record(
-    app = app_test,
-    api = "/api/collections",
-    collection = collection,
-    token = adm_test$token,
-    body = nw_emissions_latest
-  )
+  # ph_create_record(
+  #   app = app_test,
+  #   api = "/api/collections",
+  #   collection = collection,
+  #   token = adm_test$token,
+  #   body = nw_emissions_latest
+  # )
 
   ph_create_record(
     app = app_main,
