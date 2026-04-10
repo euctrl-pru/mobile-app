@@ -1,8 +1,10 @@
 # insert latest entries in EUROCONTROL Data APIs
-library(here)
-
-# pak::pkg_install("euctrl-pru/pockethostr")
-library(pockethostr)
+suppressMessages(
+  suppressWarnings({
+    library(here)
+    library(pockethostr)
+  })
+)
 
 source(here::here("R", "helpers.R"))
 
