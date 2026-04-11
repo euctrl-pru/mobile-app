@@ -1,4 +1,4 @@
-# library(duckdb)
+suppressWarnings(suppressPackageStartupMessages({
 library(arrow)
 library(duckplyr)
 library(lubridate)
@@ -13,6 +13,7 @@ library(stringr)
 library(readxl)
 library(tidyverse)
 library(purrr)
+}))
 
 source(here::here("..", "mobile-app", "R", "helpers.R"), local = TRUE)
 source(here::here("..", "mobile-app", "R", "params.R"), local = TRUE)

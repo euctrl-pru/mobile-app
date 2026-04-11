@@ -1,3 +1,4 @@
+suppressWarnings(suppressPackageStartupMessages({
 library(arrow)
 library(duckdb)
 library(duckplyr)
@@ -6,6 +7,7 @@ library(here)
 library(RODBC)
 library(DBI)
 library(tidyverse)
+}))
 
 source(here::here("..", "mobile-app", "R", "helpers.R"), local = TRUE)
 source(here::here("..", "mobile-app", "R", "params.R"), local = TRUE)

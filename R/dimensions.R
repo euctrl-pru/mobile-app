@@ -1,8 +1,10 @@
+suppressWarnings(suppressPackageStartupMessages({
 library(dplyr)
 library(lubridate)
 library(here)
 library(RODBC)
 library(readxl)
+}))
 
 source(here::here("..", "mobile-app", "R", "helpers.R"))
 source(here::here("..", "mobile-app", "R", "params.R"))

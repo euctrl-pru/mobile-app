@@ -1,4 +1,5 @@
 # libraries  ----
+suppressWarnings(suppressPackageStartupMessages({
 library(arrow)
 library(fs)
 library(tibble)
@@ -13,6 +14,7 @@ library(zoo)
 library(jsonlite)
 library(here)
 library(RODBC)
+}))
 
 # functions ----
 source(here("..", "mobile-app", "R", "helpers.R")) 

@@ -1,3 +1,4 @@
+suppressWarnings(suppressPackageStartupMessages({
 library(here)
 library("R.utils")
 library(sendmailR)
@@ -6,6 +7,7 @@ library(readxl)
 library(tidyverse)
 library(lubridate)
 library(purrr)
+}))
 
 ## params
 source(here("..", "mobile-app", "R", "params.R"))
