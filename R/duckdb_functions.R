@@ -46,8 +46,8 @@ save_partitions_from_local_df <- function(con,
                                           myfolder) {
   print(paste(format(now(), "%H:%M:%S")))
   stopifnot(!is.null(con), inherits(con, "duckdb_connection"))
-
-
+  
+  
   # Normalize base path once
   base_dir <- here(myfolder, mydataframe)
   base_posix <- normalizePath(base_dir, winslash = "/", mustWork = FALSE)
@@ -102,7 +102,7 @@ save_partitions_single_copy <- function(con, df, mydataframe, years, year_col = 
   # Coerce years to character to match folder names consistently
   years_chr <- as.character(years)
   part_dirs <- file.path(base_posix, paste0(year_col, "=", years_chr))
-
+  
   # Delete only the partitions we’re about to rewrite
   for (p in part_dirs) {
     if (fs::dir_exists(p)) fs::dir_delete(p)
@@ -111,7 +111,7 @@ save_partitions_single_copy <- function(con, df, mydataframe, years, year_col = 
   rel <- sprintf("__df_reg_%d__", as.integer(Sys.time()))
   duckdb::duckdb_register(con, rel, as.data.frame(df))
   on.exit(try(duckdb::duckdb_unregister(con, rel), silent = TRUE), add = TRUE)
-
+  
   
   years_sql <- paste(years, collapse = ", ")
   sql_txt <- glue::glue_sql("
@@ -137,7 +137,7 @@ read_partitioned_parquet_duckdb <- function(con,
                                             collect = FALSE, 
                                             year_col = "YEAR",
                                             myfolder
-                                            ) {
+) {
   stopifnot(inherits(con, "duckdb_connection"))
   stopifnot(is.character(year_col), length(year_col) == 1)
   
@@ -149,7 +149,7 @@ read_partitioned_parquet_duckdb <- function(con,
   base_dir <- here::here(myfolder, mystakeholder, mydataframe)
   glob <- normalizePath(file.path(base_dir, subpattern), winslash = "/", mustWork = FALSE)
   
-
+  
   # Base scan
   sql_base <- glue::glue_sql(
     "SELECT * FROM parquet_scan({glob}, hive_partitioning=true)",
