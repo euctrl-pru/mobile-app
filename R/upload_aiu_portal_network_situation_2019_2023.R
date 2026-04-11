@@ -9,15 +9,16 @@ library(dplyr)
 library(pockethostr)
 
 
-today <- (lubridate::now() +  days(-1)) |> format("%Y%m%d")
+today <- (lubridate::now() + days(-1)) |> format("%Y%m%d")
 base_dir <- '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Data/DataProcessing/Covid19/Archive/'
 base_file <- str_glue('099_Traffic_Landing_Page_dataset_new_{today}.xlsx')
 
 
 nw_traffic_data <- read_xlsx(
-  path  = fs::path_abs(base_file, start = base_dir),
+  path = fs::path_abs(base_file, start = base_dir),
   sheet = "NM_Daily_Traffic_All",
-  range = cell_limits(c(2, 1), c(NA, 39))) |>
+  range = cell_limits(c(2, 1), c(NA, 39))
+) |>
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
 
 dd_2024 <- nw_traffic_data |>
@@ -33,7 +34,10 @@ dd_2019 <- nw_traffic_data |>
   filter(year(FLIGHT_DATE) == 2019)
 
 dd_2023 <- nw_traffic_data |>
-  select("FLIGHT_DATE" = "FLIGHT_DATE_PREV_YEAR", "DAY_TFC" = "DAY_TFC_PREV_YEAR") |>
+  select(
+    "FLIGHT_DATE" = "FLIGHT_DATE_PREV_YEAR",
+    "DAY_TFC" = "DAY_TFC_PREV_YEAR"
+  ) |>
   filter(year(FLIGHT_DATE) == 2023)
 
 
@@ -48,11 +52,11 @@ body <- nw_traffic_data_main_page |>
     y2d_flights_total = Y2D_TFC_YEAR,
     y2d_flights_daily_average = Y2D_AVG_TFC_YEAR,
     y2d_diff_previous_year_percentage = Y2D_DIFF_PREV_YEAR_PERC,
-    y2d_diff_2019_year_percentage = Y2D_DIFF_2019_PERC) |>
+    y2d_diff_2019_year_percentage = Y2D_DIFF_2019_PERC
+  ) |>
   as.list() |>
   purrr::list_transpose() |>
   magrittr::extract2(1)
-
 
 
 username <- Sys.getenv("PH_AIU_PORTAL_USR")
@@ -68,15 +72,16 @@ adm_test <- ph_authenticate_admin_username_password(
   app_test,
   "/api/admins/auth-with-password",
   username,
-  password)
+  password
+)
 
 # authenticate over main app
 adm_main <- ph_authenticate_admin_username_password(
   app_main,
   "/api/admins/auth-with-password",
   username,
-  password)
-
+  password
+)
 
 
 # TODO: cope with
@@ -84,16 +89,17 @@ adm_main <- ph_authenticate_admin_username_password(
 # * need to fill holes, i.e. missing days
 # * errors
 
-ph_create_record(
-  app = app_test,
-  api = "/api/collections",
-  collection = collection,
-  token = adm_test$token,
-  body = body)
+# ph_create_record(
+#   app = app_test,
+#   api = "/api/collections",
+#   collection = collection,
+#   token = adm_test$token,
+#   body = body)
 
 ph_create_record(
   app = app_main,
   api = "/api/collections",
   collection = collection,
   token = adm_main$token,
-  body = body)
+  body = body
+)
