@@ -18,8 +18,13 @@ source(here("..", "mobile-app", "R", "params.R"))
 use_dwh_on_prisme_live()
 
 
+forecast_type <- "flights"
+
 ############################################# Get the actual data from the latest MTF ####################################
 
+# Flights ----
+
+if(forecast_type == "flights") {
 ##must contact STATFOR team when a new forecast is released to change the 'statfor_id'
 statfor_id <- 4104
 #might be able to find the id here: list_fc_set_table() %>% arrange(desc(id))
@@ -112,3 +117,55 @@ df_final_all <- df_final %>%
 
 # save csv file
 df_final_all |> write_csv(here("..", "mobile-app", "data", forecast_data_file)) 
+
+} else if(forecast_type == "tsus") {
+
+# En route service units ----
+
+##must contact STATFOR team when a new forecast is released to change the 'statfor_id'
+statfor_id_forecast <- 4089
+statfor_id_actual <- 4087
+#might be able to find the id here: list_fc_set_table() %>% arrange(desc(id))
+
+df_tsu_actual <- unpack_fc_pts_to_dataset(find_fc_method_in_fc_set(statfor_id_actual, method=359)) |> as_tibble() |> 
+  filter(sub1 == 1) |> 
+  apply_format(list(geo1 = .fid_tz_s)) %>%
+  mutate(tz_name = as.character(labelled::to_factor(geo1))) %>% 
+  select(-sub1)
+
+df_tsu_forecast <- unpack_fc_pts_to_dataset(find_fc_method_in_fc_set(statfor_id_forecast, method=243)) |> as_tibble() |> 
+  apply_format(list(geo1 = .fid_tz_s)) %>%
+  mutate(tz_name = as.character(labelled::to_factor(geo1)))
+
+##  this duplicates the values for the last actual year, but we need them for the % yoy calculation.
+df_duplicate <- df_tsu_actual |> filter(year(datetime) == max(year(datetime)) ) %>% 
+  mutate(rank = 2)
+
+df_tsu <- df_tsu_actual %>% rbind(df_duplicate) %>%  rbind(df_tsu_forecast)
+
+  # Apply format 
+df_clean <- df_tsu %>% 
+  #dates
+  mutate(
+    year = year(datetime)
+  ) %>% 
+  # clean names
+  mutate(
+    tz_name = str_replace_all(tz_name, "-", " "),
+    tz_name = str_replace_all(tz_name, "SantaMaria", "Santa Maria"),
+  ) %>% 
+  # Add scenario labels.
+  mutate(scenario = case_when(
+    rank == 1 ~ "Actual",
+    rank == 2 ~ "Base",
+    rank == 3 ~ "High",
+    rank == 4 ~ "Low")) %>%
+  select(year, scenario, tz_name, scenario, 
+         tsu = value)
+
+
+# save csv file
+forecast_data_file_tsu <- str_replace(forecast_data_file, "forecast", "forecast_tsu")
+df_clean |> write_csv(here("..", "mobile-app", "data", forecast_data_file_tsu)) 
+
+}
