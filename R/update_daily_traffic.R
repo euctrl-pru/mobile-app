@@ -1,11 +1,14 @@
 # update network traffic data
-
-library(eurocontrol)
-library(dplyr)
-library(lubridate)
-library(stringr)
-library(pockethostr)
-library(yyjsonr)
+suppressMessages(
+  suppressWarnings({
+    library(eurocontrol)
+    library(dplyr)
+    library(lubridate)
+    library(stringr)
+    library(pockethostr)
+    library(yyjsonr)
+  })
+)
 
 # in the Task manager set "Start in" to this repo root
 source(here::here("R", "helpers.R"))
@@ -16,7 +19,8 @@ weeks_back <- 5
 
 retrieve_from_db <- function(wef = today(tzone = "UTC") - dweeks(weeks_back)) {
   from_date <- wef |> lubridate::as_date()
-  query <- str_glue("
+  query <- str_glue(
+    "
     SELECT
       A_FIRST_ENTRY_TIME_DATE FLIGHT_DATE ,
       SUM(NVL(A.ALL_TRAFFIC, 0)) DAY_TFC
@@ -27,7 +31,8 @@ retrieve_from_db <- function(wef = today(tzone = "UTC") - dweeks(weeks_back)) {
       AND A.A_FIRST_ENTRY_TIME_DATE  < TRUNC (SYSDATE)
     GROUP BY
       A.A_FIRST_ENTRY_TIME_DATE
-  ")
+  "
+  )
 
   dd <- export_query(query) |>
     dplyr::mutate(FLIGHT_DATE = as_date(FLIGHT_DATE, tz = "UTC")) |>
@@ -38,9 +43,11 @@ retrieve_from_db <- function(wef = today(tzone = "UTC") - dweeks(weeks_back)) {
 }
 retrieve_from_api <- function(wef) {
   base_url <- "https://aiu-portal.pockethost.io/api/collections/"
-  url <- str_c(base_url,
-               "network_traffic/records",
-               stringr::str_glue("?perPage=200&filter=(date>'{wef}')")) |>
+  url <- str_c(
+    base_url,
+    "network_traffic/records",
+    stringr::str_glue("?perPage=200&filter=(date>'{wef}')")
+  ) |>
     URLencode() |>
     url()
   aa <- yyjsonr::read_json_conn(url) |>
@@ -75,7 +82,8 @@ dd_missing <- dplyr::setdiff(db |> select(date), api |> select(date)) |>
 # dates that are different in the API -> candidates fro update
 dd_update <- dplyr::setdiff(
   db |> dplyr::filter(!date %in% dd_missing),
-  api) |>
+  api
+) |>
   dplyr::pull(date)
 
 # push missing/changed data points
@@ -90,15 +98,15 @@ adm_main <- ph_authenticate_admin_username_password(
   app_main,
   "/api/admins/auth-with-password",
   username,
-  password)
+  password
+)
 
 
 # 2. upload new data points
 bb |>
   dplyr::filter(date %in% dd_missing) |>
   purrr::pwalk(.f = function(date, flights) {
-    body <- list(date    = date,
-                 flights = flights) |>
+    body <- list(date = date, flights = flights) |>
       purrr::list_transpose() |>
       magrittr::extract2(1)
     ph_create_record(
@@ -106,7 +114,8 @@ bb |>
       api = "/api/collections",
       collection = collection,
       token = adm_main$token,
-      body = body)
+      body = body
+    )
   })
 
 
@@ -116,8 +125,7 @@ bb |>
   dplyr::left_join(aa, by = c("date" = "date"), suffix = c("", ".old")) |>
   dplyr::select(id, date, flights) |>
   purrr::pwalk(.f = function(id, date, flights) {
-    body <- list(date    = date,
-                 flights = flights) |>
+    body <- list(date = date, flights = flights) |>
       purrr::list_transpose() |>
       magrittr::extract2(1)
     ph_update_record(
@@ -126,5 +134,6 @@ bb |>
       api = "/api/collections",
       collection = collection,
       token = adm_main$token,
-      body = body)
+      body = body
+    )
   })
