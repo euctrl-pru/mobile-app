@@ -81,13 +81,13 @@ dim_iso_country_spain <- export_query(dim_iso_st_query) %>%
 list_iso_country <- export_query(list_iso_st_query)
 
 rel_iso_country_daio_zone <- read_xlsx(
-  here("stakeholder_lists.xlsx"),
+  here("..", "mobile-app","stakeholder_lists.xlsx"),
   sheet = "state_lists",
   range = cell_limits(c(2, 11), c(NA, 13))) %>%
   as_tibble()
 
 rel_iso_icao_country <- read_xlsx(
-  here("stakeholder_lists.xlsx"),
+  here("..", "mobile-app","stakeholder_lists.xlsx"),
   sheet = "state_lists",
   range = cell_limits(c(2, 24), c(NA, 26))) %>%
   as_tibble()
@@ -100,21 +100,21 @@ list_icao_country_spain <- list_icao_country %>%
 
 ### statfor ----
 list_statfor_states <- read_xlsx(
-  here("stakeholder_lists.xlsx"),
+  here("..", "mobile-app","stakeholder_lists.xlsx"),
   sheet = "state_lists",
   range = cell_limits(c(2, 20), c(NA, 21))) %>%
   as_tibble()
 
 ### crco  ----
 list_state_crco <-  read_xlsx(
-  here("stakeholder_lists.xlsx"),
+  here("..", "mobile-app","stakeholder_lists.xlsx"),
   sheet = "state_lists",
   range = cell_limits(c(2, 6), c(NA, 8))) %>%
   as_tibble()
 
 ### co2 ----
 list_state_co2 <-  read_xlsx(
-  here("stakeholder_lists.xlsx"),
+  here("..", "mobile-app","stakeholder_lists.xlsx"),
   sheet = "state_lists",
   range = cell_limits(c(2, 16), c(NA, 17))) %>%
   as_tibble()
@@ -123,7 +123,7 @@ list_state_co2 <-  read_xlsx(
 dim_ansp <- export_query(dim_ansp_query) 
 
 list_ansp <-  read_xlsx(
-  here("stakeholder_lists.xlsx"),
+  here("..", "mobile-app","stakeholder_lists.xlsx"),
   sheet = "ansp_lists",
   range = cell_limits(c(1, 1), c(NA, 3))) %>%
   select(-ANSP_NAME) %>% 
@@ -133,7 +133,7 @@ list_ansp <-  read_xlsx(
 
 ## ACC ----
 list_acc <-  read_xlsx(
-  here("stakeholder_lists.xlsx"),
+  here("..", "mobile-app","stakeholder_lists.xlsx"),
   sheet = "acc_lists",
   range = cell_limits(c(1, 1), c(NA, NA))) %>%
   as_tibble()
