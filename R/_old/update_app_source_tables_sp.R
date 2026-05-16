@@ -21,7 +21,7 @@ if (!exists("data_day_date")) {current_day <- today() - days(1)} else {current_d
 dim_ansp <- export_query(dim_ansp_query) 
 
 list_ansp <-  read_xlsx(
-  here("stakeholder_lists.xlsx"),
+  here("..", "mobile-app", "stakeholder_lists.xlsx"),
   sheet = "ansp_lists",
   range = cell_limits(c(1, 1), c(NA, 3))) %>%
   select(-ANSP_NAME) %>% 
