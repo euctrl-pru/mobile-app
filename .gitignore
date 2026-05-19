@@ -10,4 +10,9 @@ update_daily_traffic.log
 R/update_pockethost_data.log
 .Rproj.user/
 
+<<<<<<< HEAD
+=======
+R/_old/
+
+>>>>>>> relocate-archive
 .positai

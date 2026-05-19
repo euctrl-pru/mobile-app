@@ -715,8 +715,8 @@ get_punct_data_apt <- function() {
 
 
 create_ranking <- function(dataframe, period_type, metric) {
-  # dataframe <-  "st_ao_new_agg"
-  # period_type <- "DAY"
+  # dataframe <-  "nw_ao_agg"
+  # period_type <- "S2D"
 
   con = DBI::dbConnect(duckdb::duckdb())
   df <- read_partitioned_parquet_duckdb(
@@ -724,115 +724,163 @@ create_ranking <- function(dataframe, period_type, metric) {
     mydataframe = dataframe,
     years = data_day_year,
     subpattern = NULL,
-    year_col = "YEAR_DATA"
+    year_col = "YEAR_DATA",
+    myfolder = app_tables_dir
   ) %>%
     filter(DATA_DATE == data_day_date) %>%
     filter(PERIOD_TYPE == period_type) %>%
     collect()
   DBI::dbDisconnect(con, shutdown = TRUE)
-
-  if (period_type == "DAY") {
-    df_prep <- df %>%
-      mutate(
-        FLAG_PERIOD = case_when(
-          FLAG_PERIOD == 'CURRENT_DAY' ~ 'CURRENT',
-          FLAG_PERIOD == 'DAY_PREV_WEEK' ~ 'PREV1',
-          FLAG_PERIOD == 'DAY_PREV_YEAR' ~ 'PREV2',
-          .default = FLAG_PERIOD
-        ),
-        RANK_PREV = RANK_PREV_WEEK,
-        TO_DATE = max(TO_DATE, na.rm = TRUE),
-        FROM_DATE = max(FROM_DATE, na.rm = TRUE),
+  
+  if(nrow(df) != 0) { #condition added for S2D case when out of summer
+  
+    if (period_type == "DAY") {
+      df_prep <- df %>%
+        mutate(
+          FLAG_PERIOD = case_when(
+            FLAG_PERIOD == 'CURRENT_DAY' ~ 'CURRENT',
+            FLAG_PERIOD == 'DAY_PREV_WEEK' ~ 'PREV1',
+            FLAG_PERIOD == 'DAY_PREV_YEAR' ~ 'PREV2',
+            .default = FLAG_PERIOD
+          ),
+          RANK_PREV = RANK_PREV_WEEK,
+          TO_DATE = max(TO_DATE, na.rm = TRUE),
+          FROM_DATE = max(FROM_DATE, na.rm = TRUE),
+        )
+    } else if (period_type == "WEEK") {
+      df_prep <- df %>%
+        mutate(
+          FLAG_PERIOD = case_when(
+            FLAG_PERIOD == 'CURRENT_ROLLING_WEEK' ~ 'CURRENT',
+            FLAG_PERIOD == 'PREV_ROLLING_WEEK' ~ 'PREV1',
+            FLAG_PERIOD == 'ROLLING_WEEK_PREV_YEAR' ~ 'PREV2',
+            .default = FLAG_PERIOD
+          ),
+          RANK_PREV = RANK_PREV_WEEK,
+          TO_DATE = max(TO_DATE, na.rm = TRUE),
+          FROM_DATE = max(FROM_DATE, na.rm = TRUE),
+        )
+    } else if (period_type %in% c("Y2D", "S2D")) {
+      df_prep <- df %>%
+        mutate(
+          FLAG_PERIOD = case_when(
+            FLAG_PERIOD == 'CURRENT_YEAR' ~ 'CURRENT',
+            FLAG_PERIOD == 'PREV_YEAR' ~ 'PREV1',
+            FLAG_PERIOD == '2019' ~ 'PREV2',
+            .default = FLAG_PERIOD
+          ),
+          RANK_PREV = RANK_PREV_YEAR,
+          TO_DATE = max(TO_DATE, na.rm = TRUE),
+          FROM_DATE = max(FROM_DATE, na.rm = TRUE),
+        )
+    }
+  
+    # detect the agg stakeholder name and code columns so we can rename it later
+    nm <- names(df_prep)
+    hits_name <- grep("_NAME", nm, value = TRUE)
+    hits_name <- setdiff(hits_name, "STK_NAME")
+  
+    if (length(hits_name) == 0)
+      stop('No column name contains "_NAME".', call. = FALSE)
+    if (length(hits_name) > 1)
+      stop(
+        'More than one column contains "_NAME": ',
+        paste(nm[hits_name], collapse = ", "),
+        call. = FALSE
       )
-  } else if (period_type == "WEEK") {
-    df_prep <- df %>%
-      mutate(
-        FLAG_PERIOD = case_when(
-          FLAG_PERIOD == 'CURRENT_ROLLING_WEEK' ~ 'CURRENT',
-          FLAG_PERIOD == 'PREV_ROLLING_WEEK' ~ 'PREV1',
-          FLAG_PERIOD == 'ROLLING_WEEK_PREV_YEAR' ~ 'PREV2',
-          .default = FLAG_PERIOD
-        ),
-        RANK_PREV = RANK_PREV_WEEK,
-        TO_DATE = max(TO_DATE, na.rm = TRUE),
-        FROM_DATE = max(FROM_DATE, na.rm = TRUE),
+  
+    hits_code <- grep("_CODE", nm, value = TRUE)
+    hits_code <- setdiff(hits_code, "STK_CODE")
+  
+    if (length(hits_code) == 0)
+      stop('No column name contains "_CODE".', call. = FALSE)
+    if (length(hits_code) > 1)
+      stop(
+        'More than one column contains "_CODE": ',
+        paste(nm[hits_code], collapse = ", "),
+        call. = FALSE
       )
-  } else if (period_type == "Y2D") {
-    df_prep <- df %>%
+  
+    #capture metric names to create averages and avoid issue when me is null
+    m_q <- enquo(metric)
+    avg_name <- paste0("AVG_", as_name(m_q))
+    avg_m_sym <- sym(avg_name)
+    
+    # df_ranking_int <- df_prep %>%
+    #   rename("NAME" := all_of(hits_name)) %>%
+    #   rename("CODE" := all_of(hits_code)) %>%
+    #   # ensure we keep only the current code
+    #   mutate(CODE = if_else(FLAG_PERIOD != "CURRENT", NA, CODE)) %>%
+    #   arrange(NAME, CODE) %>%
+    #   fill(CODE, .direction = "down") %>%
+    #   arrange(STK_CODE, FLAG_PERIOD, R_RANK) %>%
+    #   # filter(STK_NAME == "Zurich")%>% filter(NAME == "CHair Airlines")
+    #   # select(-YEAR, -NO_DAYS, -FLIGHT) %>%
+    #   select(-YEAR, -NO_DAYS, -DEP_ARR) %>%
+    #   # spread(key = FLAG_PERIOD, value = AVG_FLIGHT)
+    #   spread(key = FLAG_PERIOD, value = AVG_DEP_ARR)
+      
+    
+  
+    df_ranking_int <- df_prep %>%
+      rename("NAME" := all_of(hits_name)) %>%
+      rename("CODE" := all_of(hits_code)) %>%
+      # ensure we keep only the current code
+      mutate(CODE = if_else(FLAG_PERIOD != "CURRENT", NA, CODE)) %>%
+      arrange(NAME, CODE) %>%
+      fill(CODE, .direction = "down") %>%
+      arrange(STK_CODE, FLAG_PERIOD, R_RANK) %>%
+      # filter(STK_NAME == "Zurich")%>% filter(NAME == "CHair Airlines")
+      # select(-YEAR, -NO_DAYS, -FLIGHT) %>%
+      select(-YEAR, -NO_DAYS, -{{ metric }}) %>%
+      # spread(key = FLAG_PERIOD, value = AVG_FLIGHT)
+      spread(key = FLAG_PERIOD, value = !!avg_m_sym) %>%
+      arrange(R_RANK) %>%
       mutate(
-        FLAG_PERIOD = case_when(
-          FLAG_PERIOD == 'CURRENT_YEAR' ~ 'CURRENT',
-          FLAG_PERIOD == 'PREV_YEAR' ~ 'PREV1',
-          FLAG_PERIOD == '2019' ~ 'PREV2',
-          .default = FLAG_PERIOD
+        RANK_DIF = case_when(
+          is.na(RANK_PREV) ~ RANK,
+          .default = RANK_PREV - RANK
         ),
-        RANK_PREV = RANK_PREV_YEAR,
-        TO_DATE = max(TO_DATE, na.rm = TRUE),
-        FROM_DATE = max(FROM_DATE, na.rm = TRUE),
-      )
+        DIF1_METRIC_PERC = case_when(
+          (PREV1 == 0 | is.na(PREV1)) ~ NA,
+          .default = CURRENT / PREV1 - 1
+        ),
+        DIF2_METRIC_PERC = case_when(
+          (PREV2 == 0 | is.na(PREV2)) ~ NA,
+          .default = CURRENT / PREV2 - 1
+        ),
+        DIF1_METRIC = CURRENT - PREV1
+      ) %>%
+      arrange(STK_CODE, R_RANK)
+  } else {
+    
+    df_ranking_int <- tibble(
+      STK_NAME = NA_character_,
+      STK_CODE = NA_character_,
+      PERIOD_TYPE = NA_character_,
+      FROM_DATE = NA_Date_,
+      TO_DATE = NA_Date_,
+      NAME = NA_character_,
+      CODE = NA_character_,
+      R_RANK = 1:10,
+      RANK = NA_integer_,
+      RANK_PREV_WEEK = NA_integer_, 
+      RANK_PREV_YEAR = NA_integer_,
+      RANK_2019 = NA_integer_,
+      DATA_DATE = NA,
+      YEAR_DATA = NA_integer_,
+      RANK_PREV = NA_integer_,  
+      CURRENT = NA_real_,
+      DAY_2019 = NA_Date_,
+      PREV1 = NA_real_,
+      PREV2 = NA_real_,
+      RANK_DIF = NA_real_,
+      DIF1_METRIC_PERC = NA_real_,
+      DIF2_METRIC_PERC = NA_real_,
+      DIF1_METRIC = NA_real_
+    )
+    
   }
-
-  # detect the agg stakeholder name and code columns so we can rename it later
-  nm <- names(df_prep)
-  hits_name <- grep("_NAME", nm, value = TRUE)
-  hits_name <- setdiff(hits_name, "STK_NAME")
-
-  if (length(hits_name) == 0)
-    stop('No column name contains "_NAME".', call. = FALSE)
-  if (length(hits_name) > 1)
-    stop(
-      'More than one column contains "_NAME": ',
-      paste(nm[hits_name], collapse = ", "),
-      call. = FALSE
-    )
-
-  hits_code <- grep("_CODE", nm, value = TRUE)
-  hits_code <- setdiff(hits_code, "STK_CODE")
-
-  if (length(hits_code) == 0)
-    stop('No column name contains "_CODE".', call. = FALSE)
-  if (length(hits_code) > 1)
-    stop(
-      'More than one column contains "_CODE": ',
-      paste(nm[hits_code], collapse = ", "),
-      call. = FALSE
-    )
-
-  #capture metric names to create averages and avoid issue when me is null
-  m_q <- enquo(metric)
-  avg_name <- paste0("AVG_", as_name(m_q))
-  avg_m_sym <- sym(avg_name)
-
-  df_ranking_int <- df_prep %>%
-    rename("NAME" := all_of(hits_name)) %>%
-    rename("CODE" := all_of(hits_code)) %>%
-    # ensure we keep only the current code
-    mutate(CODE = if_else(FLAG_PERIOD != "CURRENT", NA, CODE)) %>%
-    arrange(NAME, CODE) %>%
-    fill(CODE, .direction = "down") %>%
-    arrange(STK_CODE, FLAG_PERIOD, R_RANK) %>%
-    # filter(STK_NAME == "Zurich")%>% filter(NAME == "CHair Airlines")
-    # select(-YEAR, -NO_DAYS, -FLIGHT) %>%
-    select(-YEAR, -NO_DAYS, -{{ metric }}) %>%
-    # spread(key = FLAG_PERIOD, value = AVG_FLIGHT)
-    spread(key = FLAG_PERIOD, value = !!avg_m_sym) %>%
-    arrange(R_RANK) %>%
-    mutate(
-      RANK_DIF = case_when(
-        is.na(RANK_PREV) ~ RANK,
-        .default = RANK_PREV - RANK
-      ),
-      DIF1_METRIC_PERC = case_when(
-        (PREV1 == 0 | is.na(PREV1)) ~ NA,
-        .default = CURRENT / PREV1 - 1
-      ),
-      DIF2_METRIC_PERC = case_when(
-        (PREV2 == 0 | is.na(PREV2)) ~ NA,
-        .default = CURRENT / PREV2 - 1
-      ),
-      DIF1_METRIC = CURRENT - PREV1
-    ) %>%
-    arrange(STK_CODE, R_RANK)
 
   return(df_ranking_int)
 }
