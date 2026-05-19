@@ -9,5 +9,5 @@ copy_to_production.log
 update_daily_traffic.log
 R/update_pockethost_data.log
 .Rproj.user/
-
+R/_old/
 .positai

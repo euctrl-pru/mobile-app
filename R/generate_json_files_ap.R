@@ -1,19 +1,20 @@
 ## libraries
-library(arrow)
-library(fs)
-library(tibble)
-library(dplyr)
-library(tidyr)
-library(stringr)
-library(readxl)
-library(DBI)
-library(ROracle)
-library(lubridate)
-library(zoo)
-library(jsonlite)
-library(here)
-library(RODBC)
-
+suppressWarnings(suppressPackageStartupMessages({
+  library(arrow)
+  library(fs)
+  library(tibble)
+  library(dplyr)
+  library(tidyr)
+  library(stringr)
+  library(readxl)
+  library(DBI)
+  library(ROracle)
+  library(lubridate)
+  library(zoo)
+  library(jsonlite)
+  library(here)
+  library(RODBC)
+}))
 
 # functions ----
 source(here::here("..", "mobile-app", "R", "helpers.R"))
@@ -62,7 +63,7 @@ mydatafile <- paste0("ap_traffic_delay_day.parquet")
 stakeholder <- substr(mydatafile, 1, 2)
 
 ap_traffic_delay_data <- read_parquet(here(
-  archive_dir_raw,
+  app_tables_dir,
   stakeholder,
   mydatafile
 )) %>%
@@ -92,6 +93,7 @@ apt_traffic_for_json <- ap_traffic_delay_data_last_day %>%
     DY_TFC_RANK = if_else(FLAG_TOP_APT == "N", NA, min_rank(desc(DY_TFC))),
     WK_TFC_RANK = if_else(FLAG_TOP_APT == "N", NA, min_rank(desc(WK_AVG_TFC))),
     Y2D_TFC_RANK = if_else(FLAG_TOP_APT == "N", NA, min_rank(desc(Y2D_TFC))),
+    S2D_TFC_RANK = if_else(FLAG_TOP_APT == "N", NA, min_rank(desc(S2D_TFC))),
 
     TFC_RANK_TEXT = "*Rank within top 40 airports\nTop rank for highest."
   ) %>%
@@ -116,6 +118,12 @@ apt_traffic_for_json <- ap_traffic_delay_data_last_day %>%
     Y2D_TFC_AVG = Y2D_AVG_TFC,
     Y2D_TFC_DIF_PREV_YEAR_PERC,
     Y2D_TFC_DIF_2019_PERC,
+    #summer to date
+    S2D_TFC_RANK,
+    S2D_TFC,
+    S2D_TFC_AVG = S2D_AVG_TFC,
+    S2D_TFC_DIF_PREV_YEAR_PERC,
+    S2D_TFC_DIF_2019_PERC,
 
     TFC_RANK_TEXT
   )
@@ -144,6 +152,11 @@ apt_delay_for_json <- ap_traffic_delay_data_last_day %>%
       NA,
       rank(desc(Y2D_DLY), ties.method = "max")
     ),
+    S2D_DLY_RANK = if_else(
+      FLAG_TOP_APT == "N",
+      NA,
+      rank(desc(S2D_DLY), ties.method = "max")
+    ),
 
     DY_DLY_FLT_RANK = if_else(
       FLAG_TOP_APT == "N",
@@ -159,6 +172,11 @@ apt_delay_for_json <- ap_traffic_delay_data_last_day %>%
       FLAG_TOP_APT == "N",
       NA,
       rank(desc(Y2D_DLY_FLT), ties.method = "max")
+    ),
+    S2D_DLY_FLT_RANK = if_else(
+      FLAG_TOP_APT == "N",
+      NA,
+      rank(desc(S2D_DLY_FLT), ties.method = "max")
     ),
 
     DY_DELAYED_TFC_PERC_RANK = if_else(
@@ -176,6 +194,11 @@ apt_delay_for_json <- ap_traffic_delay_data_last_day %>%
       NA,
       rank(desc(Y2D_DLYED_PERC), ties.method = "max")
     ),
+    S2D_DELAYED_TFC_PERC_RANK = if_else(
+      FLAG_TOP_APT == "N",
+      NA,
+      rank(desc(S2D_DLYED_PERC), ties.method = "max")
+    ),
 
     DY_DELAYED_TFC_15_PERC_RANK = if_else(
       FLAG_TOP_APT == "N",
@@ -191,6 +214,11 @@ apt_delay_for_json <- ap_traffic_delay_data_last_day %>%
       FLAG_TOP_APT == "N",
       NA,
       rank(desc(Y2D_DLYED_15_PERC), ties.method = "max")
+    ),
+    S2D_DELAYED_TFC_15_PERC_RANK = if_else(
+      FLAG_TOP_APT == "N",
+      NA,
+      rank(desc(S2D_DLYED_15_PERC), ties.method = "max")
     ),
 
     DLY_RANK_TEXT = "*Rank within top 40 airports.\nTop rank for highest."
@@ -217,6 +245,11 @@ apt_delay_for_json <- ap_traffic_delay_data_last_day %>%
     Y2D_DLY_DIF_PREV_YEAR_PERC,
     Y2D_DLY_DIF_2019_PERC,
 
+    S2D_DLY_RANK,
+    S2D_DLY_AVG = S2D_AVG_DLY,
+    S2D_DLY_DIF_PREV_YEAR_PERC,
+    S2D_DLY_DIF_2019_PERC,
+
     #delay per flight
     DY_DLY_FLT_RANK,
     DY_DLY_FLT,
@@ -232,6 +265,11 @@ apt_delay_for_json <- ap_traffic_delay_data_last_day %>%
     Y2D_DLY_FLT,
     Y2D_DLY_FLT_DIF_PREV_YEAR_PERC,
     Y2D_DLY_FLT_DIF_2019_PERC,
+
+    S2D_DLY_FLT_RANK,
+    S2D_DLY_FLT,
+    S2D_DLY_FLT_DIF_PREV_YEAR_PERC,
+    S2D_DLY_FLT_DIF_2019_PERC,
 
     #% of delayed flights
     DY_DELAYED_TFC_PERC_RANK,
@@ -249,6 +287,11 @@ apt_delay_for_json <- ap_traffic_delay_data_last_day %>%
     Y2D_DELAYED_TFC_PERC_DIF_PREV_YEAR = Y2D_DLYED_PERC_DIF_PREV_YEAR,
     Y2D_DELAYED_TFC_PERC_DIF_2019 = Y2D_DLYED_PERC_DIF_2019,
 
+    S2D_DELAYED_TFC_PERC_RANK,
+    S2D_DELAYED_TFC_PERC = S2D_DLYED_PERC,
+    S2D_DELAYED_TFC_PERC_DIF_PREV_YEAR = S2D_DLYED_PERC_DIF_PREV_YEAR,
+    S2D_DELAYED_TFC_PERC_DIF_2019 = S2D_DLYED_PERC_DIF_2019,
+
     #% of delayed flights >15'
     DY_DELAYED_TFC_15_PERC_RANK,
     DY_DELAYED_TFC_15_PERC = DY_DLYED_15_PERC,
@@ -264,6 +307,11 @@ apt_delay_for_json <- ap_traffic_delay_data_last_day %>%
     Y2D_DELAYED_TFC_15_PERC = Y2D_DLYED_15_PERC,
     Y2D_DELAYED_TFC_15_PERC_DIF_PREV_YEAR = Y2D_DLYED_15_PERC_DIF_PREV_YEAR,
     Y2D_DELAYED_TFC_15_PERC_DIF_2019 = Y2D_DLYED_15_PERC_DIF_2019,
+
+    S2D_DELAYED_TFC_15_PERC_RANK,
+    S2D_DELAYED_TFC_15_PERC = S2D_DLYED_15_PERC,
+    S2D_DELAYED_TFC_15_PERC_DIF_PREV_YEAR = S2D_DLYED_15_PERC_DIF_PREV_YEAR,
+    S2D_DELAYED_TFC_15_PERC_DIF_2019 = S2D_DLYED_15_PERC_DIF_2019,
 
     DLY_RANK_TEXT
   ) %>%
@@ -299,9 +347,6 @@ apt_punct_data <- apt_punct_raw %>%
   arrange(ARP_CODE, DAY_DATE) %>%
   mutate(
     YEAR = lubridate::year(DAY_DATE),
-    #ARR_PUNCTUAL_FLIGHTS = 0,  ## to hide the figures
-    #DEP_PUNCTUAL_FLIGHTS = 0,  ## to hide the figures
-
     DAY_ARR_PUNCT = if_else(
       ARR_SCHEDULE_FLIGHT == 0,
       0,
@@ -419,8 +464,6 @@ apt_punct_y2d <- apt_punct_raw %>%
   arrange(ARP_CODE, DAY_DATE) %>%
   mutate(
     MONTH_DAY = as.numeric(format(DAY_DATE, format = "%m%d"))
-    # , ARR_PUNCTUAL_FLIGHTS = 0,  ## while the figures are not showable
-    # DEP_PUNCTUAL_FLIGHTS = 0,  ## while the figures are not showable
   ) %>%
   filter(MONTH_DAY <= as.numeric(format(last_day_punct, format = "%m%d"))) %>%
   group_by(ARP_CODE, ARP_NAME, YEAR) %>%
@@ -457,6 +500,50 @@ apt_punct_y2d <- apt_punct_raw %>%
     Y2D_DEP_PUN_DIF_2019
   )
 
+##### Summer to Date----
+apt_punct_s2d <- apt_punct_raw %>%
+  arrange(ARP_CODE, DAY_DATE) %>%
+  mutate(
+    MONTH_DAY = as.numeric(format(DAY_DATE, format = "%m%d"))
+  ) %>%
+  filter(
+    MONTH_DAY <= as.numeric(format(last_day_punct, format = "%m%d")),
+    MONTH_DAY >= summer_start
+  ) %>%
+  group_by(ARP_CODE, ARP_NAME, YEAR) %>%
+  summarise(
+    S2D_ARR_PUN = sum(ARR_PUNCTUAL_FLIGHTS, na.rm = TRUE) /
+      sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE) *
+      100,
+    S2D_DEP_PUN = sum(DEP_PUNCTUAL_FLIGHTS, na.rm = TRUE) /
+      sum(DEP_SCHEDULE_FLIGHT, na.rm = TRUE) *
+      100,
+    .groups = "drop"
+  ) %>%
+  group_by(ARP_CODE, ARP_NAME) %>%
+  mutate(
+    S2D_ARR_PUN_PY = lag(S2D_ARR_PUN, 1),
+    S2D_DEP_PUN_PY = lag(S2D_DEP_PUN, 1),
+    S2D_ARR_PUN_2019 = lag(S2D_ARR_PUN, last_year_punct - 2019),
+    S2D_DEP_PUN_2019 = lag(S2D_DEP_PUN, last_year_punct - 2019),
+    S2D_ARR_PUN_DIF_PREV_YEAR = S2D_ARR_PUN - S2D_ARR_PUN_PY,
+    S2D_DEP_PUN_DIF_PREV_YEAR = S2D_DEP_PUN - S2D_DEP_PUN_PY,
+    S2D_ARR_PUN_DIF_2019 = S2D_ARR_PUN - S2D_ARR_PUN_2019,
+    S2D_DEP_PUN_DIF_2019 = S2D_DEP_PUN - S2D_DEP_PUN_2019
+  ) %>%
+  filter(YEAR == last_year_punct) %>%
+  ungroup() %>%
+  select(
+    ARP_CODE,
+    ARP_NAME,
+    S2D_ARR_PUN,
+    S2D_DEP_PUN,
+    S2D_ARR_PUN_DIF_PREV_YEAR,
+    S2D_DEP_PUN_DIF_PREV_YEAR,
+    S2D_ARR_PUN_DIF_2019,
+    S2D_DEP_PUN_DIF_2019
+  )
+
 
 #merging the totals and the year to date data
 apt_punct_for_json <- merge(
@@ -464,6 +551,7 @@ apt_punct_for_json <- merge(
   apt_punct_y2d,
   by = c("ARP_CODE", "ARP_NAME")
 ) %>%
+  left_join(apt_punct_s2d, by = c("ARP_CODE", "ARP_NAME")) %>%
   ### rank calculation
   right_join(
     list_airport_extended,
@@ -486,6 +574,11 @@ apt_punct_for_json <- merge(
       NA,
       min_rank(desc(Y2D_ARR_PUN))
     ),
+    S2D_ARR_PUN_RANK = if_else(
+      FLAG_TOP_APT == "N",
+      NA,
+      min_rank(desc(S2D_ARR_PUN))
+    ),
 
     DY_DEP_PUN_RANK = if_else(
       FLAG_TOP_APT == "N",
@@ -501,6 +594,11 @@ apt_punct_for_json <- merge(
       FLAG_TOP_APT == "N",
       NA,
       min_rank(desc(Y2D_DEP_PUN))
+    ),
+    S2D_DEP_PUN_RANK = if_else(
+      FLAG_TOP_APT == "N",
+      NA,
+      min_rank(desc(S2D_DEP_PUN))
     ),
 
     PUN_RANK_TEXT = "*Rank within top 40 airports.\nTop rank for highest."
@@ -623,6 +721,25 @@ apt_ao_data_y2d <- apt_ao_data_y2d_int |>
   ) %>%
   filter(RANK < 11)
 
+#### s2d ----
+apt_ao_data_s2d_int <- create_ranking(mydataframe, "S2D", DEP_ARR) %>%
+  filter(STK_CODE %in% list_airport$EC_AP_CODE)
+
+apt_ao_data_s2d <- apt_ao_data_s2d_int |>
+  select(
+    APT_CODE = STK_CODE,
+    APT_NAME = STK_NAME,
+    RANK = R_RANK,
+    S2D_RANK_DIF_PREV_YEAR = RANK_DIF,
+    S2D_AO_GRP_NAME = NAME,
+    S2D_TO_DATE = TO_DATE,
+    S2D_FLT_AVG = CURRENT,
+    S2D_FLT_DIF_PREV_YEAR_PERC = DIF1_METRIC_PERC,
+    S2D_FLT_DIF_2019_PERC = DIF2_METRIC_PERC
+  ) %>%
+  filter(RANK < 11)
+
+
 #### main card ----
 apt_ao_main_traffic <- create_main_card(apt_ao_data_day_int) %>%
   select(
@@ -666,11 +783,13 @@ apt_ao_ranking_traffic <- apt_ao_main_traffic |>
     by = c("RANK", "APT_CODE", "APT_NAME"),
     relationship = "many-to-many"
   ) |>
-  # mutate(RANK = as.character(RANK)) |>
-  distinct(APT_CODE, APT_NAME, RANK, .keep_all = TRUE) |>
-  # mutate(RANK = as.integer(RANK)) |>
-  arrange(APT_CODE, APT_NAME, RANK)
-
+  left_join(
+    apt_ao_data_s2d,
+    by = c("RANK", "APT_CODE", "APT_NAME"),
+    relationship = "many-to-many"
+  ) |>
+  arrange(APT_CODE, APT_NAME, RANK) |>
+  distinct(RANK, APT_CODE, APT_NAME, .keep_all = TRUE)
 
 # convert to json and save in app data folder
 apt_ao_ranking_traffic_j <- apt_ao_ranking_traffic |> toJSON(pretty = TRUE)
@@ -742,6 +861,25 @@ apt_apt_data_y2d <- apt_apt_data_y2d_int |>
   ) %>%
   filter(RANK < 11)
 
+#### s2d ----
+apt_apt_data_s2d_int <- create_ranking(mydataframe, "S2D", DEP) %>%
+  filter(STK_CODE %in% list_airport$EC_AP_CODE)
+
+apt_apt_data_s2d <- apt_apt_data_s2d_int |>
+  select(
+    APT_CODE = STK_CODE,
+    APT_NAME = STK_NAME,
+    RANK = R_RANK,
+    S2D_RANK_DIF_PREV_YEAR = RANK_DIF,
+    S2D_APT_NAME = NAME,
+    S2D_TO_DATE = TO_DATE,
+    S2D_FLT_AVG = CURRENT,
+    S2D_FLT_DIF_PREV_YEAR_PERC = DIF1_METRIC_PERC,
+    S2D_FLT_DIF_2019_PERC = DIF2_METRIC_PERC
+  ) %>%
+  filter(RANK < 11)
+
+
 #### main card ----
 apt_apt_main_traffic <- create_main_card(apt_apt_data_day_int) %>%
   select(
@@ -782,6 +920,11 @@ apt_apt_ranking_traffic <- apt_apt_main_traffic |>
   ) |>
   left_join(
     apt_apt_data_y2d,
+    by = c("RANK", "APT_CODE", "APT_NAME"),
+    relationship = "many-to-many"
+  ) |>
+  left_join(
+    apt_apt_data_s2d,
     by = c("RANK", "APT_CODE", "APT_NAME"),
     relationship = "many-to-many"
   ) |>
@@ -855,6 +998,24 @@ apt_st_data_y2d <- apt_st_data_y2d_int |>
     Y2D_FLT_DIF_2019_PERC = DIF2_METRIC_PERC
   )
 
+#### s2d ----
+apt_st_data_s2d_int <- create_ranking(mydataframe, "S2D", DEP) %>%
+  filter(STK_CODE %in% list_airport$EC_AP_CODE)
+
+apt_st_data_s2d <- apt_st_data_s2d_int |>
+  select(
+    APT_CODE = STK_CODE,
+    APT_NAME = STK_NAME,
+    RANK = R_RANK,
+    S2D_RANK_DIF_PREV_WEEK = RANK_DIF,
+    S2D_ST_DES_NAME = NAME,
+    S2D_FROM_DATE = FROM_DATE,
+    S2D_TO_DATE = TO_DATE,
+    S2D_FLT_AVG = CURRENT,
+    S2D_FLT_DIF_PREV_YEAR_PERC = DIF1_METRIC_PERC,
+    S2D_FLT_DIF_2019_PERC = DIF2_METRIC_PERC
+  )
+
 #### main card ----
 apt_st_main_traffic <- create_main_card(apt_st_data_day_int) %>%
   select(
@@ -895,6 +1056,11 @@ apt_st_ranking_traffic <- apt_st_main_traffic |>
   ) |>
   left_join(
     apt_st_data_y2d,
+    by = c("RANK", "APT_CODE", "APT_NAME"),
+    relationship = "many-to-many"
+  ) |>
+  left_join(
+    apt_st_data_s2d,
     by = c("RANK", "APT_CODE", "APT_NAME"),
     relationship = "many-to-many"
   ) |>
@@ -1026,45 +1192,45 @@ apt_ms_data_y2d <- apt_ms_data_y2d_full |>
     Y2D_FLT_DIF_2019_PERC = DIF2_METRIC_PERC
   )
 
-# all.equal(apt_ms_data_y2dxx, apt_ms_data_y2d)
-#
-# for(i in 1:nrow(apt_ms_data_y2dxx)) {
-#   if(coalesce(apt_ms_data_y2dxx$Y2D_MS_NAME[i],"0") != coalesce((apt_ms_data_y2d$Y2D_MS_NAME[i]),"0")) {
-#     print(paste(apt_ms_data_y2dxx$APT_CODE[i], apt_ms_data_y2dxx$Y2D_MS_NAME[i], apt_ms_data_y2dxx$Y2D_MS_NAME[i], apt_ms_data_y2d$Y2D_MS_NAME[i]))
-#   }
-# }
+#### s2d ----
+apt_ms_data_s2d_int <- create_ranking(mydataframe, "S2D", DEP_ARR) %>%
+  filter(STK_CODE %in% list_airport$EC_AP_CODE) %>%
+  group_by(STK_CODE) |>
+  mutate(
+    SHARE = ifelse(CURRENT == 0, 0, CURRENT / sum(CURRENT, na.rm = TRUE)),
+    CODE = as.numeric(CODE)
+  ) |>
+  ungroup()
 
-#
-#
-# col <- "WK_TO_DATE"
-#
-# na_x  <- is.na(apt_ms_data_weekxx[[col]])
-# na_t  <- is.na(apt_ms_data_week[[col]])
-#
-# # 3) Locate rows where NA status differs
-# idx_mismatch <- which(xor(na_x, na_t))
-#
-# cat("Rows with NA status mismatch:", length(idx_mismatch), "\n")
-#
-# # 4) Inspect a small sample of mismatches
-# head_idx <- head(idx_mismatch, 20)
-# print(head_idx)
-#
-# # Optional: bind side-by-side for spot-checking (avoids full prints)
-# mismatch_view <- data.frame(
-#   row = idx_mismatch,
-#   apt = apt_ms_data_weekxx[["APT_NAME"]][idx_mismatch],
-#   date = apt_ms_data_weekxx[["WK_MS_NAME"]][idx_mismatch],
-#   current_val = apt_ms_data_weekxx[[col]][idx_mismatch],
-#   target_val  = apt_ms_data_week[[col]][idx_mismatch],
-#   current_is_na = na_x[idx_mismatch],
-# )
-# print(mismatch_view)
+apt_ms_data_s2d_full <- ms_ap_full %>%
+  left_join(select(apt_ms_data_s2d_int, -NAME), by = c("CODE", "STK_CODE")) %>%
+  group_by(STK_CODE) %>%
+  arrange(STK_CODE, desc(CURRENT), NAME) %>%
+  mutate(RANK = row_number()) |>
+  arrange(STK_CODE, R_RANK) %>%
+  fill(c(STK_NAME, TO_DATE, FROM_DATE), .direction = "down") %>%
+  ungroup()
+
+
+apt_ms_data_s2d <- apt_ms_data_s2d_full |>
+  select(
+    APT_CODE = STK_CODE,
+    APT_NAME = STK_NAME,
+    RANK = R_RANK,
+    S2D_RANK_DIF_PREV_YEAR = RANK_DIF,
+    S2D_MS_NAME = NAME,
+    S2D_MS_SHARE = SHARE,
+    S2D_TO_DATE = TO_DATE,
+    S2D_FLT_AVG = CURRENT,
+    S2D_FLT_DIF_PREV_YEAR_PERC = DIF1_METRIC_PERC,
+    S2D_FLT_DIF_2019_PERC = DIF2_METRIC_PERC
+  )
 
 #### join tables ----
 apt_ms_ranking_traffic <- apt_ms_data_day |>
   left_join(apt_ms_data_week, by = c("RANK", "APT_CODE", "APT_NAME")) |>
   left_join(apt_ms_data_y2d, by = c("RANK", "APT_CODE", "APT_NAME")) |>
+  left_join(apt_ms_data_s2d, by = c("RANK", "APT_CODE", "APT_NAME")) |>
   arrange(APT_CODE, APT_NAME, RANK) |>
   distinct(APT_CODE, APT_NAME, RANK, .keep_all = TRUE)
 

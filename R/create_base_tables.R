@@ -21,13 +21,9 @@ query_y2d <- get(paste0(mydataframe, "_day_base_query"))
 # run query
 df <- export_query(query_y2d) 
 
-# df <-  read_parquet(here(archive_dir_raw, "ao_ap_arr_delay_day_base.parquet"))
-
 df <- df %>%
 mutate(YEAR = as.integer(YEAR))
  
-# df %>%  write_parquet(here(archive_dir_raw, myarchivefile))
-
 con = DBI::dbConnect(duckdb::duckdb())
 myyears <- c(2018:2026)
 

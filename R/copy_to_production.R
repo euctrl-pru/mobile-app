@@ -1,15 +1,13 @@
-suppressMessages(
-  suppressWarnings({
-    library(here)
-    library("R.utils")
-    library(sendmailR)
-    library(stringr)
-    library(readxl)
-    library(tidyverse)
-    library(lubridate)
-    library(purrr)
-  })
-)
+suppressWarnings(suppressPackageStartupMessages({
+  library(here)
+  library("R.utils")
+  library(sendmailR)
+  library(stringr)
+  library(readxl)
+  library(tidyverse)
+  library(lubridate)
+  library(purrr)
+}))
 
 ## params
 source(here("..", "mobile-app", "R", "params.R"))
