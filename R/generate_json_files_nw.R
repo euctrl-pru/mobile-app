@@ -1,49 +1,55 @@
 # libraries  ----
 suppressWarnings(suppressPackageStartupMessages({
-library(arrow)
-library(fs)
-library(tibble)
-library(dplyr)
-library(tidyr)
-library(stringr)
-library(readxl)
-library(DBI)
-library(ROracle)
-library(lubridate)
-library(zoo)
-library(jsonlite)
-library(here)
-library(RODBC)
+  library(arrow)
+  library(fs)
+  library(tibble)
+  library(dplyr)
+  library(tidyr)
+  library(stringr)
+  library(readxl)
+  library(DBI)
+  library(ROracle)
+  library(lubridate)
+  library(zoo)
+  library(jsonlite)
+  library(here)
+  library(RODBC)
 }))
 
 # functions ----
-source(here("..", "mobile-app", "R", "helpers.R")) 
+source(here("..", "mobile-app", "R", "helpers.R"))
 source(here::here("..", "mobile-app", "R", "duckdb_functions.R"))
 
 # queries ----
-source(here("..", "mobile-app", "R", "data_queries.R")) 
+source(here("..", "mobile-app", "R", "data_queries.R"))
 
 # parameters ----
 # archive mode for past dates
 # run this before the params script to set up the forecast params
-if (exists("archive_mode") == FALSE) {archive_mode <- FALSE}
+if (exists("archive_mode") == FALSE) {
+  archive_mode <- FALSE
+}
 if (exists("data_day_date") == FALSE) {
-  data_day_date <- lubridate::today(tzone = "") +  days(-1)
+  data_day_date <- lubridate::today(tzone = "") + days(-1)
 }
 data_day_text <- data_day_date %>% format("%Y%m%d")
-data_day_year <- as.numeric(format(data_day_date,'%Y'))
+data_day_year <- as.numeric(format(data_day_date, '%Y'))
 
-source(here("..", "mobile-app", "R", "params.R")) 
+source(here("..", "mobile-app", "R", "params.R"))
 
 # dimensions ----
 if (!exists("dim_iso_country")) {
-  source(here("..", "mobile-app", "R", "dimensions.R")) 
+  source(here("..", "mobile-app", "R", "dimensions.R"))
 }
 
 # common data ----
-source(here("..", "mobile-app", "R", "get_common_data.R")) 
+source(here("..", "mobile-app", "R", "get_common_data.R"))
 
-print(paste("Generating nw json files", format(data_day_date, "%Y-%m-%d"), "..."))
+print(paste(
+  "Generating nw json files",
+  format(data_day_date, "%Y-%m-%d"),
+  "..."
+))
 
 # MAIN PAGE ----
 nw_json_app <- ""
@@ -52,7 +58,9 @@ nw_json_app <- ""
 #### billing json - we do this first to avoid 'R fatal error'
 
 # so this script is stand alone
-if (exists("nw_billed_per_cz") == FALSE) {nw_billed_per_cz <- get_billing_data()}
+if (exists("nw_billed_per_cz") == FALSE) {
+  nw_billed_per_cz <- get_billing_data()
+}
 
 # calculate network total
 nw_billing <- nw_billed_per_cz %>%
@@ -61,8 +69,10 @@ nw_billing <- nw_billed_per_cz %>%
   ungroup()
 
 # extract date parameters
-last_billing_date <- min(max(nw_billing$billing_period_start_date + days(1)),
-                         floor_date(data_day_date, 'month)') + months(-1))
+last_billing_date <- min(
+  max(nw_billing$billing_period_start_date + days(1)),
+  floor_date(data_day_date, 'month)') + months(-1)
+)
 last_billing_year <- year(last_billing_date)
 last_billing_month <- month(last_billing_date)
 
@@ -73,7 +83,12 @@ nw_billed_for_json <- nw_billing %>%
     BILLING_DATE = (billing_period_start_date + days(1) + months(1)) + days(-1),
     Year = year,
     MONTH_F = format(billing_period_start_date + days(1), "%B"),
-    SUMMER_FLAG = between(as.numeric(format(BILLING_DATE, "%m%d")), summer_start, summer_end) *1,
+    SUMMER_FLAG = between(
+      as.numeric(format(BILLING_DATE, "%m%d")),
+      summer_start,
+      summer_end
+    ) *
+      1,
     BILL_MONTH_PY = lag(total_billing, 12),
     BILL_MONTH_2019 = lag(total_billing, (last_billing_year - 2019) * 12),
     DIF_BILL_MONTH_PY = total_billing / BILL_MONTH_PY - 1,
@@ -92,16 +107,14 @@ nw_billed_for_json <- nw_billing %>%
     DIF_BILL_Y2D_PY = total_billing_y2d / BILL_Y2D_PY - 1,
     DIF_BILL_Y2D_2019 = total_billing_y2d / BILL_Y2D_2019 - 1,
     BILLED_Y2D = round(total_billing_y2d / 1000000, 0),
-    
+
     BILL_S2D_PY = lag(total_billing_s2d, 12),
     BILL_S2D_2019 = lag(total_billing_s2d, (last_billing_year - 2019) * 12),
     DIF_BILL_S2D_PY = total_billing_s2d / BILL_S2D_PY - 1,
     DIF_BILL_S2D_2019 = total_billing_s2d / BILL_S2D_2019 - 1,
     BILLED_S2D = round(total_billing_s2d / 1000000, 0)
-    
   ) %>%
-  filter(Year == last_billing_year,
-         month == last_billing_month) %>%
+  filter(Year == last_billing_year, month == last_billing_month) %>%
   select(
     BILLING_DATE,
     MONTH_TEXT = MONTH_F,
@@ -111,11 +124,10 @@ nw_billed_for_json <- nw_billing %>%
     Y2D_BILLED = BILLED_Y2D,
     Y2D_BILLED_DIF_PREV_YEAR = DIF_BILL_Y2D_PY,
     Y2D_BILLED_DIF_2019 = DIF_BILL_Y2D_2019,
-    
+
     S2D_BILLED = BILLED_S2D,
     S2D_BILLED_DIF_PREV_YEAR = DIF_BILL_S2D_PY,
     S2D_BILLED_DIF_2019 = DIF_BILL_S2D_2019
-    
   )
 
 
@@ -129,14 +141,17 @@ nw_billed_json <- nw_billed_for_json %>%
 ## Network traffic ----
 # traffic data
 mydatafile <- paste0("nw_traffic_delay_day.parquet")
-stakeholder <- substr(mydatafile, 1,2)
+stakeholder <- substr(mydatafile, 1, 2)
 
-nw_traffic_delay_data <- read_parquet(here(app_tables_dir, stakeholder, mydatafile))
+nw_traffic_delay_data <- read_parquet(here(
+  app_tables_dir,
+  stakeholder,
+  mydatafile
+))
 
 # get data for last date
 nw_traffic_delay_last_day <- nw_traffic_delay_data %>%
-  filter(FLIGHT_DATE == min(max(DATA_DAY),
-                            data_day_date))
+  filter(FLIGHT_DATE == min(max(DATA_DAY), data_day_date))
 
 # select relevant fields
 nw_traffic_for_json <- nw_traffic_delay_last_day %>%
@@ -152,12 +167,11 @@ nw_traffic_for_json <- nw_traffic_delay_last_day %>%
     Y2D_TFC_AVG = Y2D_AVG_TFC,
     Y2D_TFC_DIF_PREV_YEAR_PERC,
     Y2D_TFC_DIF_2019_PERC,
-    
+
     S2D_TFC,
     S2D_TFC_AVG = S2D_AVG_TFC,
     S2D_TFC_DIF_PREV_YEAR_PERC,
     S2D_TFC_DIF_2019_PERC
-    
   )
 
 # app json
@@ -168,9 +182,9 @@ nw_traffic_json <- nw_traffic_for_json %>%
 
 ## Network delay ----
 nw_delay_for_json <- nw_traffic_delay_last_day %>%
-  rename_with(~ sub("DAY", "DY", .x, fixed = TRUE), contains("DAY")) %>% 
-  rename_with(~ sub("RWK", "WK", .x, fixed = TRUE), contains("RWK")) %>% 
-  rename_with(~ sub("ARP", "APT", .x, fixed = TRUE), contains("ARP")) %>% 
+  rename_with(~ sub("DAY", "DY", .x, fixed = TRUE), contains("DAY")) %>%
+  rename_with(~ sub("RWK", "WK", .x, fixed = TRUE), contains("RWK")) %>%
+  rename_with(~ sub("ARP", "APT", .x, fixed = TRUE), contains("ARP")) %>%
   mutate(
     DY_DLY_ERT_SHARE = if_else(DY_DLY == 0, 0, DY_DLY_ERT / DY_DLY),
     DY_DLY_APT_SHARE = if_else(DY_DLY == 0, 0, DY_DLY_APT / DY_DLY),
@@ -180,8 +194,7 @@ nw_delay_for_json <- nw_traffic_delay_last_day %>%
     Y2D_DLY_APT_SHARE = if_else(Y2D_DLY == 0, 0, Y2D_DLY_APT / Y2D_DLY),
     S2D_DLY_ERT_SHARE = if_else(S2D_DLY == 0, 0, S2D_DLY_ERT / S2D_DLY),
     S2D_DLY_APT_SHARE = if_else(S2D_DLY == 0, 0, S2D_DLY_APT / S2D_DLY)
-    
-  ) %>% 
+  ) %>%
   select(
     FLIGHT_DATE,
     DY_DLY,
@@ -208,7 +221,7 @@ nw_delay_for_json <- nw_traffic_delay_last_day %>%
     S2D_DLY_FLT,
     S2D_DLY_FLT_DIF_PREV_YEAR_PERC,
     S2D_DLY_FLT_DIF_2019_PERC,
-    
+
     #En-route
     DY_DLY_ERT_SHARE,
     DY_DLY_ERT,
@@ -238,7 +251,7 @@ nw_delay_for_json <- nw_traffic_delay_last_day %>%
     S2D_DLY_ERT_FLT,
     S2D_DLY_ERT_FLT_DIF_PREV_YEAR_PERC,
     S2D_DLY_ERT_FLT_DIF_2019_PERC,
-    
+
     #airport
     DY_DLY_APT_SHARE,
     DY_DLY_APT,
@@ -261,7 +274,7 @@ nw_delay_for_json <- nw_traffic_delay_last_day %>%
     Y2D_DLY_APT_FLT,
     Y2D_DLY_APT_FLT_DIF_PREV_YEAR_PERC,
     Y2D_DLY_APT_FLT_DIF_2019_PERC,
-    
+
     S2D_DLY_APT_SHARE,
     S2D_DLY_APT_AVG = S2D_AVG_DLY_APT,
     S2D_DLY_APT_DIF_PREV_YEAR_PERC,
@@ -269,7 +282,6 @@ nw_delay_for_json <- nw_traffic_delay_last_day %>%
     S2D_DLY_APT_FLT,
     S2D_DLY_APT_FLT_DIF_PREV_YEAR_PERC,
     S2D_DLY_APT_FLT_DIF_2019_PERC
-    
   )
 
 # app json
@@ -282,8 +294,7 @@ nw_delay_json <- nw_delay_for_json %>%
 # punctuality data comes from get_common data
 
 # pull out date parameters
-last_day_punct <- min(max(nw_punct_data_raw$DATE),
-                      data_day_date, na.rm = TRUE)
+last_day_punct <- min(max(nw_punct_data_raw$DATE), data_day_date, na.rm = TRUE)
 last_year_punct <- as.numeric(format(last_day_punct, "%Y"))
 
 # day/week calculations
@@ -324,21 +335,29 @@ nw_punct_data_d_w <- nw_punct_data_raw %>%
   ) %>%
   mutate(
     ARR_PUN_WK = rollsum(ARR_PUNCTUAL_FLIGHTS, 7, fill = NA, align = "right") /
-      rollsum(ARR_SCHEDULE_FLIGHT, 7, fill = NA, align = "right") * 100,
+      rollsum(ARR_SCHEDULE_FLIGHT, 7, fill = NA, align = "right") *
+      100,
     DEP_PUN_WK = rollsum(DEP_PUNCTUAL_FLIGHTS, 7, fill = NA, align = "right") /
-      rollsum(DEP_SCHEDULE_FLIGHT, 7, fill = NA, align = "right") * 100
+      rollsum(DEP_SCHEDULE_FLIGHT, 7, fill = NA, align = "right") *
+      100
   ) %>%
   mutate(
     ARR_PUN_WK_PREV_YEAR = lag(ARR_PUN_WK, 364),
     DEP_PUN_WK_PREV_YEAR = lag(DEP_PUN_WK, 364),
     ARR_PUN_WK_2019 = if_else(
       YEAR_FLIGHT == last_year_punct,
-      lag(ARR_PUN_WK, 364 * (last_year_punct - 2019) + floor((last_year_punct - 2019) / 4) * 7),
+      lag(
+        ARR_PUN_WK,
+        364 * (last_year_punct - 2019) + floor((last_year_punct - 2019) / 4) * 7
+      ),
       1
     ),
     DEP_PUN_WK_2019 = if_else(
       YEAR_FLIGHT == last_year_punct,
-      lag(DEP_PUN_WK, 364 * (last_year_punct - 2019) + floor((last_year_punct - 2019) / 4) * 7),
+      lag(
+        DEP_PUN_WK,
+        364 * (last_year_punct - 2019) + floor((last_year_punct - 2019) / 4) * 7
+      ),
       1
     ),
     WK_ARR_PUN_DIF_PY_PERC = ARR_PUN_WK - ARR_PUN_WK_PREV_YEAR,
@@ -374,8 +393,12 @@ nw_punct_data_y2d <- nw_punct_data_raw %>%
   mutate(YEAR = as.numeric(format(DATE, format = "%Y"))) %>%
   group_by(YEAR) %>%
   summarise(
-    ARR_PUN_Y2D = sum(ARR_PUNCTUAL_FLIGHTS, na.rm = TRUE) / sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE) * 100,
-    DEP_PUN_Y2D = sum(DEP_PUNCTUAL_FLIGHTS, na.rm = TRUE) / sum(DEP_SCHEDULE_FLIGHT, na.rm = TRUE) * 100
+    ARR_PUN_Y2D = sum(ARR_PUNCTUAL_FLIGHTS, na.rm = TRUE) /
+      sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE) *
+      100,
+    DEP_PUN_Y2D = sum(DEP_PUNCTUAL_FLIGHTS, na.rm = TRUE) /
+      sum(DEP_SCHEDULE_FLIGHT, na.rm = TRUE) *
+      100
   ) %>%
   mutate(
     Y2D_ARR_PUN_PREV_YEAR = lag(ARR_PUN_Y2D, 1),
@@ -396,7 +419,7 @@ nw_punct_data_y2d <- nw_punct_data_raw %>%
     Y2D_ARR_PUN_DIF_2019 = Y2D_ARR_PUN_DIF_2019_PERC,
     Y2D_DEP_PUN_DIF_2019 = Y2D_DEP_PUN_DIF_2019_PERC
   ) %>%
-  mutate(INDEX = 1) %>% 
+  mutate(INDEX = 1) %>%
   ungroup()
 
 # s2d calculations
@@ -404,14 +427,19 @@ nw_punct_data_s2d <- nw_punct_data_raw %>%
   arrange(DATE) %>%
   mutate(YEAR_FLIGHT = as.numeric(format(DATE, "%Y"))) %>%
   mutate(MONTH_DAY = as.numeric(format(DATE, format = "%m%d"))) %>%
-  filter(MONTH_DAY <= as.numeric(format(last_day_punct, format = "%m%d")),
-         MONTH_DAY >= summer_start
+  filter(
+    MONTH_DAY <= as.numeric(format(last_day_punct, format = "%m%d")),
+    MONTH_DAY >= summer_start
   ) %>%
   mutate(YEAR = as.numeric(format(DATE, format = "%Y"))) %>%
   group_by(YEAR) %>%
   summarise(
-    ARR_PUN_S2D = sum(ARR_PUNCTUAL_FLIGHTS, na.rm = TRUE) / sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE) * 100,
-    DEP_PUN_S2D = sum(DEP_PUNCTUAL_FLIGHTS, na.rm = TRUE) / sum(DEP_SCHEDULE_FLIGHT, na.rm = TRUE) * 100
+    ARR_PUN_S2D = sum(ARR_PUNCTUAL_FLIGHTS, na.rm = TRUE) /
+      sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE) *
+      100,
+    DEP_PUN_S2D = sum(DEP_PUNCTUAL_FLIGHTS, na.rm = TRUE) /
+      sum(DEP_SCHEDULE_FLIGHT, na.rm = TRUE) *
+      100
   ) %>%
   mutate(
     S2D_ARR_PUN_PREV_YEAR = lag(ARR_PUN_S2D, 1),
@@ -432,13 +460,17 @@ nw_punct_data_s2d <- nw_punct_data_raw %>%
     S2D_ARR_PUN_DIF_2019 = S2D_ARR_PUN_DIF_2019_PERC,
     S2D_DEP_PUN_DIF_2019 = S2D_DEP_PUN_DIF_2019_PERC
   ) %>%
-  mutate(INDEX = 1) %>% 
+  mutate(INDEX = 1) %>%
   ungroup()
 
 
 # merge day/week and y2d tables
-nw_punct_for_json <- merge(nw_punct_data_d_w, nw_punct_data_y2d, by = "INDEX") %>%
-  left_join(nw_punct_data_s2d, by = "INDEX") %>% 
+nw_punct_for_json <- merge(
+  nw_punct_data_d_w,
+  nw_punct_data_y2d,
+  by = "INDEX"
+) %>%
+  left_join(nw_punct_data_s2d, by = "INDEX") %>%
   select(-INDEX)
 
 
@@ -451,7 +483,9 @@ nw_punct_json <- nw_punct_for_json %>%
 
 ##------ Network CO2 emissions ----
 # CO2 data
-if (exists("co2_data_raw") == FALSE) {co2_data_raw <- get_co2_data()}
+if (exists("co2_data_raw") == FALSE) {
+  co2_data_raw <- get_co2_data()
+}
 
 # calcs + format
 co2_data_evo_nw <- co2_data_raw %>%
@@ -463,21 +497,33 @@ co2_data_evo_nw <- co2_data_raw %>%
     MONTH
   ) %>%
   group_by(FLIGHT_MONTH) %>%
-  summarise(MM_TTF = sum(TF) / 1000000, MM_CO2 = sum(CO2_QTY_TONNES) / 1000000) %>%
+  summarise(
+    MM_TTF = sum(TF) / 1000000,
+    MM_CO2 = sum(CO2_QTY_TONNES) / 1000000
+  ) %>%
   mutate(
     YEAR = as.numeric(format(FLIGHT_MONTH, "%Y")),
     MONTH = as.numeric(format(FLIGHT_MONTH, "%m")),
     MM_CO2_DEP = MM_CO2 / MM_TTF,
-    SUMMER_FLAG = between(as.numeric(format(FLIGHT_MONTH, "%m%d")), summer_start, summer_end) *1
+    SUMMER_FLAG = between(
+      as.numeric(format(FLIGHT_MONTH, "%m%d")),
+      summer_start,
+      summer_end
+    ) *
+      1
   ) %>%
   arrange(FLIGHT_MONTH) %>%
-  mutate(FLIGHT_MONTH = ceiling_date(as_date(FLIGHT_MONTH), unit = "month") - 1) %>% 
+  mutate(
+    FLIGHT_MONTH = ceiling_date(as_date(FLIGHT_MONTH), unit = "month") - 1
+  ) %>%
   ungroup()
 
 # pull out date parameters
-co2_last_date <- min(max(co2_data_evo_nw$FLIGHT_MONTH, na.rm = TRUE),
-                     floor_date(data_day_date, 'month') -1,
-                     na.rm = TRUE)
+co2_last_date <- min(
+  max(co2_data_evo_nw$FLIGHT_MONTH, na.rm = TRUE),
+  floor_date(data_day_date, 'month') - 1,
+  na.rm = TRUE
+)
 
 co2_last_month <- format(co2_last_date, "%B")
 co2_last_month_num <- as.numeric(format(co2_last_date, "%m"))
@@ -488,12 +534,14 @@ check_flights <- co2_data_evo_nw %>%
   filter(YEAR == max(YEAR)) %>%
   filter(MONTH == max(MONTH)) %>%
   select(MM_TTF) %>%
-  pull() * 1000000
+  pull() *
+  1000000
 
 # if last month has less than 1000 flights, take the previous
 if (check_flights < 1000) {
   co2_data_raw <- co2_data_raw %>% filter(FLIGHT_MONTH < max(FLIGHT_MONTH))
-  co2_data_evo_nw <- co2_data_evo_nw %>% filter(FLIGHT_MONTH < max(FLIGHT_MONTH))
+  co2_data_evo_nw <- co2_data_evo_nw %>%
+    filter(FLIGHT_MONTH < max(FLIGHT_MONTH))
   co2_last_date <- max(co2_data_evo_nw$FLIGHT_MONTH, na.rm = TRUE)
 }
 
@@ -521,7 +569,7 @@ co2_for_json <- co2_data_evo_nw %>%
     YTD_CO2 = cumsum(MM_CO2),
     YTD_TTF = cumsum(MM_TTF),
     YTD_CO2_DEP = YTD_CO2 / YTD_TTF,
-    
+
     STD_CO2 = cumsum(MM_CO2 * SUMMER_FLAG),
     STD_TTF = cumsum(MM_TTF * SUMMER_FLAG),
     STD_CO2_DEP = STD_CO2 / STD_TTF
@@ -532,16 +580,21 @@ co2_for_json <- co2_data_evo_nw %>%
     YTD_TTF_PREV_YEAR = lag(YTD_TTF, 12),
     YTD_CO2_DEP_PREV_YEAR = lag(YTD_CO2_DEP, 12),
     YTD_CO2_2019 = lag(YTD_CO2, (as.numeric(co2_last_year) - 2019) * 12),
-    YTD_CO2_DEP_2019 = lag(YTD_CO2_DEP, (as.numeric(co2_last_year) - 2019) * 12),
+    YTD_CO2_DEP_2019 = lag(
+      YTD_CO2_DEP,
+      (as.numeric(co2_last_year) - 2019) * 12
+    ),
     YTD_TTF_2019 = lag(YTD_TTF, (as.numeric(co2_last_year) - 2019) * 12),
-    
+
     STD_CO2_PREV_YEAR = lag(STD_CO2, 12),
     STD_TTF_PREV_YEAR = lag(STD_TTF, 12),
     STD_CO2_DEP_PREV_YEAR = lag(STD_CO2_DEP, 12),
     STD_CO2_2019 = lag(STD_CO2, (as.numeric(co2_last_year) - 2019) * 12),
-    STD_CO2_DEP_2019 = lag(STD_CO2_DEP, (as.numeric(co2_last_year) - 2019) * 12),
+    STD_CO2_DEP_2019 = lag(
+      STD_CO2_DEP,
+      (as.numeric(co2_last_year) - 2019) * 12
+    ),
     STD_TTF_2019 = lag(STD_TTF, (as.numeric(co2_last_year) - 2019) * 12)
-    
   ) %>%
   mutate(
     YTD_DIF_CO2_PREV_YEAR = YTD_CO2 / YTD_CO2_PREV_YEAR - 1,
@@ -550,7 +603,7 @@ co2_for_json <- co2_data_evo_nw %>%
     YTD_DIF_CO2_2019 = YTD_CO2 / YTD_CO2_2019 - 1,
     YTD_DIF_CO2_DEP_2019 = YTD_CO2_DEP / YTD_CO2_DEP_2019 - 1,
     YTD_DIF_TTF_2019 = YTD_TTF / YTD_TTF_2019 - 1,
-    
+
     STD_DIF_CO2_PREV_YEAR = STD_CO2 / STD_CO2_PREV_YEAR - 1,
     STD_DIF_TTF_PREV_YEAR = STD_TTF / STD_TTF_PREV_YEAR - 1,
     STD_DIF_CO2_DEP_PREV_YEAR = STD_CO2_DEP / STD_CO2_DEP_PREV_YEAR - 1,
@@ -566,20 +619,19 @@ co2_for_json <- co2_data_evo_nw %>%
     MM_CO2_DIF_2019 = DIF_CO2_MONTH_2019,
     MM_CO2_DEP,
     MM_CO2_DEP_DIF_PREV_YEAR = DIF_CO2_DEP_MONTH_PREV_YEAR,
-    MM_CO2_DEP_DIF_2019 = DIF_CO2_DEP_MONTH_2019
-    , Y2D_CO2 = YTD_CO2
-    , Y2D_CO2_DIF_PREV_YEAR = YTD_DIF_CO2_PREV_YEAR
-    , Y2D_CO2_DIF_2019 = YTD_DIF_CO2_2019
-    , Y2D_CO2_DEP = YTD_CO2_DEP
-    , Y2D_CO2_DEP_DIF_PREV_YEAR = YTD_DIF_CO2_DEP_PREV_YEAR
-    , Y2D_CO2_DEP_DIF_2019 = YTD_DIF_CO2_DEP_2019
-    
-    , S2D_CO2 = STD_CO2
-    , S2D_CO2_DIF_PREV_YEAR = STD_DIF_CO2_PREV_YEAR
-    , S2D_CO2_DIF_2019 = STD_DIF_CO2_2019
-    , S2D_CO2_DEP = STD_CO2_DEP
-    , S2D_CO2_DEP_DIF_PREV_YEAR = STD_DIF_CO2_DEP_PREV_YEAR
-    , S2D_CO2_DEP_DIF_2019 = STD_DIF_CO2_DEP_2019
+    MM_CO2_DEP_DIF_2019 = DIF_CO2_DEP_MONTH_2019,
+    Y2D_CO2 = YTD_CO2,
+    Y2D_CO2_DIF_PREV_YEAR = YTD_DIF_CO2_PREV_YEAR,
+    Y2D_CO2_DIF_2019 = YTD_DIF_CO2_2019,
+    Y2D_CO2_DEP = YTD_CO2_DEP,
+    Y2D_CO2_DEP_DIF_PREV_YEAR = YTD_DIF_CO2_DEP_PREV_YEAR,
+    Y2D_CO2_DEP_DIF_2019 = YTD_DIF_CO2_DEP_2019,
+    S2D_CO2 = STD_CO2,
+    S2D_CO2_DIF_PREV_YEAR = STD_DIF_CO2_PREV_YEAR,
+    S2D_CO2_DIF_2019 = STD_DIF_CO2_2019,
+    S2D_CO2_DEP = STD_CO2_DEP,
+    S2D_CO2_DEP_DIF_PREV_YEAR = STD_DIF_CO2_DEP_PREV_YEAR,
+    S2D_CO2_DEP_DIF_2019 = STD_DIF_CO2_DEP_2019
   ) %>%
   filter(FLIGHT_MONTH == co2_last_date)
 
@@ -605,12 +657,18 @@ update_day_json <- update_day %>%
 # app json
 nw_json_app <- paste0(
   "{",
-  '"nw_traffic":', nw_traffic_json,
-  ', "nw_delay":', nw_delay_json,
-  ', "nw_punct":', nw_punct_json,
-  ', "nw_co2":', nw_co2_json,
-  ', "nw_billed":', nw_billed_json,
-  ', "app_update":', update_day_json,
+  '"nw_traffic":',
+  nw_traffic_json,
+  ', "nw_delay":',
+  nw_delay_json,
+  ', "nw_punct":',
+  nw_punct_json,
+  ', "nw_co2":',
+  nw_co2_json,
+  ', "nw_billed":',
+  nw_billed_json,
+  ', "app_update":',
+  update_day_json,
   "}"
 )
 
@@ -621,13 +679,21 @@ print(paste(format(now(), "%H:%M:%S"), "nw_json_app"))
 # GRAPHS -------
 ## traffic -----
 nw_traffic_evo <- nw_traffic_delay_data %>%
-  filter(YEAR == data_day_year) %>% 
-  mutate(RWK_AVG_TFC = if_else(FLIGHT_DATE > min(data_day_date,
-                                                      max(DATA_DAY, na.rm = TRUE),na.rm = TRUE), NA, RWK_AVG_TFC)
+  filter(YEAR == data_day_year) %>%
+  mutate(
+    RWK_AVG_TFC = if_else(
+      FLIGHT_DATE >
+        min(data_day_date, max(DATA_DAY, na.rm = TRUE), na.rm = TRUE),
+      NA,
+      RWK_AVG_TFC
+    )
   ) %>%
   select(
-    FLIGHT_DATE, RWK_AVG_TFC, RWK_AVG_TFC_PREV_YEAR,
-    RWK_AVG_TFC_2020, RWK_AVG_TFC_2019
+    FLIGHT_DATE,
+    RWK_AVG_TFC,
+    RWK_AVG_TFC_PREV_YEAR,
+    RWK_AVG_TFC_2020,
+    RWK_AVG_TFC_2019
   )
 
 column_names <- c("FLIGHT_DATE", data_day_year, data_day_year - 1, 2020, 2019)
@@ -650,7 +716,7 @@ print(paste(format(now(), "%H:%M:%S"), "nw_traffic_evo_chart_daily"))
 ## delay ----
 ### delay per cause ----
 nw_delay_evo <- nw_traffic_delay_data %>%
-  filter(FLIGHT_DATE <= data_day_date & YEAR == data_day_year) 
+  filter(FLIGHT_DATE <= data_day_date & YEAR == data_day_year)
 
 #### day ----
 nw_delay_cause_day <- nw_delay_evo %>%
@@ -662,18 +728,19 @@ nw_delay_cause_day <- nw_delay_evo %>%
     SHARE_TDM_WD = if_else(DAY_DLY == 0, 0, DAY_DLY_WD / DAY_DLY),
     SHARE_TDM_NOCSGITWD = if_else(DAY_DLY == 0, 0, DAY_DLY_OTHER / DAY_DLY)
   ) %>%
-  select(FLIGHT_DATE,
-         DAY_DLY_G,
-         DAY_DLY_CS,
-         DAY_DLY_IT,
-         DAY_DLY_WD,
-         DAY_DLY_OTHER,
-         DAY_DLY_PREV_YEAR,
-         SHARE_TDM_G,
-         SHARE_TDM_CS,
-         SHARE_TDM_IT,
-         SHARE_TDM_WD,
-         SHARE_TDM_NOCSGITWD
+  select(
+    FLIGHT_DATE,
+    DAY_DLY_G,
+    DAY_DLY_CS,
+    DAY_DLY_IT,
+    DAY_DLY_WD,
+    DAY_DLY_OTHER,
+    DAY_DLY_PREV_YEAR,
+    SHARE_TDM_G,
+    SHARE_TDM_CS,
+    SHARE_TDM_IT,
+    SHARE_TDM_WD,
+    SHARE_TDM_NOCSGITWD
   )
 
 column_names <- c(
@@ -696,30 +763,38 @@ colnames(nw_delay_cause_day) <- column_names
 ### nest data
 #### values
 nw_delay_value_day_long <- nw_delay_cause_day %>%
-  select(-c(share_aerodrome_capacity,
-            share_capacity_staffing_atc,
-            share_disruptions_atc,
-            share_weather,
-            share_other)
+  select(
+    -c(
+      share_aerodrome_capacity,
+      share_capacity_staffing_atc,
+      share_disruptions_atc,
+      share_weather,
+      share_other
+    )
   ) %>%
   pivot_longer(-c(FLIGHT_DATE), names_to = 'metric', values_to = 'value')
 
 #### share
 nw_delay_share_day_long <- nw_delay_cause_day %>%
-  select(-c("Aerodrome capacity",
-            "Capacity/Staffing (ATC)",
-            "Disruptions (ATC)",
-            "Weather",
-            "Other",
-            paste0("Total delay ", data_day_year - 1)
-  )
-  )  %>%
+  select(
+    -c(
+      "Aerodrome capacity",
+      "Capacity/Staffing (ATC)",
+      "Disruptions (ATC)",
+      "Weather",
+      "Other",
+      paste0("Total delay ", data_day_year - 1)
+    )
+  ) %>%
   mutate(share_delay_prev_year = NA) %>%
   pivot_longer(-c(FLIGHT_DATE), names_to = 'name', values_to = 'share') %>%
   select(name, share)
 
 #### join values and share
-nw_delay_cause_day_long <- cbind(nw_delay_value_day_long, nw_delay_share_day_long) %>%
+nw_delay_cause_day_long <- cbind(
+  nw_delay_value_day_long,
+  nw_delay_share_day_long
+) %>%
   select(-name) %>%
   group_by(FLIGHT_DATE) %>%
   nest_legacy(.key = "statistics")
@@ -734,23 +809,40 @@ nw_delay_cause_wk <- nw_delay_evo %>%
   filter(FLIGHT_DATE >= max(FLIGHT_DATE) + lubridate::days(-6)) %>%
   mutate(
     SHARE_TDM_G = if_else(sum(DAY_DLY) == 0, 0, sum(DAY_DLY_G) / sum(DAY_DLY)),
-    SHARE_TDM_CS = if_else(sum(DAY_DLY) == 0, 0, sum(DAY_DLY_CS) / sum(DAY_DLY)),
-    SHARE_TDM_IT = if_else(sum(DAY_DLY) == 0, 0, sum(DAY_DLY_IT) / sum(DAY_DLY)),
-    SHARE_TDM_WD = if_else(sum(DAY_DLY) == 0, 0, sum(DAY_DLY_WD) / sum(DAY_DLY)),
-    SHARE_TDM_NOCSGITWD = if_else(sum(DAY_DLY) == 0, 0, sum(DAY_DLY_OTHER) / sum(DAY_DLY))
+    SHARE_TDM_CS = if_else(
+      sum(DAY_DLY) == 0,
+      0,
+      sum(DAY_DLY_CS) / sum(DAY_DLY)
+    ),
+    SHARE_TDM_IT = if_else(
+      sum(DAY_DLY) == 0,
+      0,
+      sum(DAY_DLY_IT) / sum(DAY_DLY)
+    ),
+    SHARE_TDM_WD = if_else(
+      sum(DAY_DLY) == 0,
+      0,
+      sum(DAY_DLY_WD) / sum(DAY_DLY)
+    ),
+    SHARE_TDM_NOCSGITWD = if_else(
+      sum(DAY_DLY) == 0,
+      0,
+      sum(DAY_DLY_OTHER) / sum(DAY_DLY)
+    )
   ) %>%
-  select(FLIGHT_DATE,
-         DAY_DLY_G,
-         DAY_DLY_CS,
-         DAY_DLY_IT,
-         DAY_DLY_WD,
-         DAY_DLY_OTHER,
-         DAY_DLY_PREV_YEAR,
-         SHARE_TDM_G,
-         SHARE_TDM_CS,
-         SHARE_TDM_IT,
-         SHARE_TDM_WD,
-         SHARE_TDM_NOCSGITWD
+  select(
+    FLIGHT_DATE,
+    DAY_DLY_G,
+    DAY_DLY_CS,
+    DAY_DLY_IT,
+    DAY_DLY_WD,
+    DAY_DLY_OTHER,
+    DAY_DLY_PREV_YEAR,
+    SHARE_TDM_G,
+    SHARE_TDM_CS,
+    SHARE_TDM_IT,
+    SHARE_TDM_WD,
+    SHARE_TDM_NOCSGITWD
   )
 
 colnames(nw_delay_cause_wk) <- column_names
@@ -758,30 +850,38 @@ colnames(nw_delay_cause_wk) <- column_names
 ### nest data
 #### values
 nw_delay_value_wk_long <- nw_delay_cause_wk %>%
-  select(-c(share_aerodrome_capacity,
-            share_capacity_staffing_atc,
-            share_disruptions_atc,
-            share_weather,
-            share_other)
+  select(
+    -c(
+      share_aerodrome_capacity,
+      share_capacity_staffing_atc,
+      share_disruptions_atc,
+      share_weather,
+      share_other
+    )
   ) %>%
   pivot_longer(-c(FLIGHT_DATE), names_to = 'metric', values_to = 'value')
 
 #### share
 nw_delay_share_wk_long <- nw_delay_cause_wk %>%
-  select(-c("Aerodrome capacity",
-            "Capacity/Staffing (ATC)",
-            "Disruptions (ATC)",
-            "Weather",
-            "Other",
-            paste0("Total delay ", data_day_year - 1)
-  )
-  )  %>%
+  select(
+    -c(
+      "Aerodrome capacity",
+      "Capacity/Staffing (ATC)",
+      "Disruptions (ATC)",
+      "Weather",
+      "Other",
+      paste0("Total delay ", data_day_year - 1)
+    )
+  ) %>%
   mutate(share_delay_prev_year = NA) %>%
   pivot_longer(-c(FLIGHT_DATE), names_to = 'name', values_to = 'share') %>%
   select(name, share)
 
 #### join values and share
-nw_delay_cause_wk_long <- cbind(nw_delay_value_wk_long, nw_delay_share_wk_long) %>%
+nw_delay_cause_wk_long <- cbind(
+  nw_delay_value_wk_long,
+  nw_delay_share_wk_long
+) %>%
   select(-name) %>%
   group_by(FLIGHT_DATE) %>%
   nest_legacy(.key = "statistics")
@@ -795,23 +895,40 @@ print(paste(format(now(), "%H:%M:%S"), "nw_delay_category_evo_chart_wk"))
 nw_delay_cause_y2d <- nw_delay_evo %>%
   mutate(
     SHARE_TDM_G = if_else(sum(DAY_DLY) == 0, 0, sum(DAY_DLY_G) / sum(DAY_DLY)),
-    SHARE_TDM_CS = if_else(sum(DAY_DLY) == 0, 0, sum(DAY_DLY_CS) / sum(DAY_DLY)),
-    SHARE_TDM_IT = if_else(sum(DAY_DLY) == 0, 0, sum(DAY_DLY_IT) / sum(DAY_DLY)),
-    SHARE_TDM_WD = if_else(sum(DAY_DLY) == 0, 0, sum(DAY_DLY_WD) / sum(DAY_DLY)),
-    SHARE_TDM_NOCSGITWD = if_else(sum(DAY_DLY) == 0, 0, sum(DAY_DLY_OTHER) / sum(DAY_DLY))
+    SHARE_TDM_CS = if_else(
+      sum(DAY_DLY) == 0,
+      0,
+      sum(DAY_DLY_CS) / sum(DAY_DLY)
+    ),
+    SHARE_TDM_IT = if_else(
+      sum(DAY_DLY) == 0,
+      0,
+      sum(DAY_DLY_IT) / sum(DAY_DLY)
+    ),
+    SHARE_TDM_WD = if_else(
+      sum(DAY_DLY) == 0,
+      0,
+      sum(DAY_DLY_WD) / sum(DAY_DLY)
+    ),
+    SHARE_TDM_NOCSGITWD = if_else(
+      sum(DAY_DLY) == 0,
+      0,
+      sum(DAY_DLY_OTHER) / sum(DAY_DLY)
+    )
   ) %>%
-  select(FLIGHT_DATE,
-         RWK_AVG_DLY_G,
-         RWK_AVG_DLY_CS,
-         RWK_AVG_DLY_IT,
-         RWK_AVG_DLY_WD,
-         RWK_AVG_DLY_OTHER,
-         RWK_AVG_DLY_PREV_YEAR,
-         SHARE_TDM_G,
-         SHARE_TDM_CS,
-         SHARE_TDM_IT,
-         SHARE_TDM_WD,
-         SHARE_TDM_NOCSGITWD
+  select(
+    FLIGHT_DATE,
+    RWK_AVG_DLY_G,
+    RWK_AVG_DLY_CS,
+    RWK_AVG_DLY_IT,
+    RWK_AVG_DLY_WD,
+    RWK_AVG_DLY_OTHER,
+    RWK_AVG_DLY_PREV_YEAR,
+    SHARE_TDM_G,
+    SHARE_TDM_CS,
+    SHARE_TDM_IT,
+    SHARE_TDM_WD,
+    SHARE_TDM_NOCSGITWD
   )
 
 colnames(nw_delay_cause_y2d) <- column_names
@@ -819,30 +936,38 @@ colnames(nw_delay_cause_y2d) <- column_names
 ### nest data
 #### values
 nw_delay_value_y2d_long <- nw_delay_cause_y2d %>%
-  select(-c(share_aerodrome_capacity,
-            share_capacity_staffing_atc,
-            share_disruptions_atc,
-            share_weather,
-            share_other)
+  select(
+    -c(
+      share_aerodrome_capacity,
+      share_capacity_staffing_atc,
+      share_disruptions_atc,
+      share_weather,
+      share_other
+    )
   ) %>%
   pivot_longer(-c(FLIGHT_DATE), names_to = 'metric', values_to = 'value')
 
 #### share
 nw_delay_share_y2d_long <- nw_delay_cause_y2d %>%
-  select(-c("Aerodrome capacity",
-            "Capacity/Staffing (ATC)",
-            "Disruptions (ATC)",
-            "Weather",
-            "Other",
-            paste0("Total delay ", data_day_year - 1)
-  )
-  )  %>%
+  select(
+    -c(
+      "Aerodrome capacity",
+      "Capacity/Staffing (ATC)",
+      "Disruptions (ATC)",
+      "Weather",
+      "Other",
+      paste0("Total delay ", data_day_year - 1)
+    )
+  ) %>%
   mutate(share_delay_prev_year = NA) %>%
   pivot_longer(-c(FLIGHT_DATE), names_to = 'name', values_to = 'share') %>%
   select(name, share)
 
 #### join values and share
-nw_delay_cause_y2d_long <- cbind(nw_delay_value_y2d_long, nw_delay_share_y2d_long) %>%
+nw_delay_cause_y2d_long <- cbind(
+  nw_delay_value_y2d_long,
+  nw_delay_share_y2d_long
+) %>%
   select(-name) %>%
   group_by(FLIGHT_DATE) %>%
   nest_legacy(.key = "statistics")
@@ -874,8 +999,16 @@ nw_delay_flt_evo <- nw_traffic_delay_data %>%
 nw_delay_flt_day <- nw_delay_flt_evo %>%
   filter(FLIGHT_DATE == max(FLIGHT_DATE)) %>%
   mutate(
-    SHARE_DLY_ERT_FLT = if_else(DAY_DLY_FLT == 0, 0, DAY_DLY_ERT_FLT / DAY_DLY_FLT),
-    SHARE_DLY_ARP_FLT = if_else(DAY_DLY_FLT == 0, 0, DAY_DLY_ARP_FLT / DAY_DLY_FLT)
+    SHARE_DLY_ERT_FLT = if_else(
+      DAY_DLY_FLT == 0,
+      0,
+      DAY_DLY_ERT_FLT / DAY_DLY_FLT
+    ),
+    SHARE_DLY_ARP_FLT = if_else(
+      DAY_DLY_FLT == 0,
+      0,
+      DAY_DLY_ARP_FLT / DAY_DLY_FLT
+    )
   ) %>%
   select(
     FLIGHT_DATE,
@@ -900,24 +1033,27 @@ colnames(nw_delay_flt_day) <- column_names
 ### nest data
 #### values
 nw_delay_flt_value_day_long <- nw_delay_flt_day %>%
-  select(-c(share_en_route,
-            share_airport)
-  ) %>%
+  select(-c(share_en_route, share_airport)) %>%
   pivot_longer(-c(FLIGHT_DATE), names_to = 'metric', values_to = 'value')
 
 #### share
 nw_delay_flt_share_day_long <- nw_delay_flt_day %>%
-  select(-c("En-route ATFM delay/flight",
-            "Airport ATFM delay/flight",
-            paste0("Total ATFM delay/flight ", data_day_year - 1),
-  )
-  )  %>%
+  select(
+    -c(
+      "En-route ATFM delay/flight",
+      "Airport ATFM delay/flight",
+      paste0("Total ATFM delay/flight ", data_day_year - 1),
+    )
+  ) %>%
   mutate(share_delay_prev_year = NA) %>%
   pivot_longer(-c(FLIGHT_DATE), names_to = 'name', values_to = 'share') %>%
   select(name, share)
 
 #### join values and share
-nw_delay_flt_day_long <- cbind(nw_delay_flt_value_day_long, nw_delay_flt_share_day_long) %>%
+nw_delay_flt_day_long <- cbind(
+  nw_delay_flt_value_day_long,
+  nw_delay_flt_share_day_long
+) %>%
   select(-name) %>%
   group_by(FLIGHT_DATE) %>%
   nest_legacy(.key = "statistics")
@@ -931,8 +1067,16 @@ print(paste(format(now(), "%H:%M:%S"), "nw_delay_flt_type_evo_chart_dy"))
 nw_delay_flt_wk <- nw_delay_flt_evo %>%
   filter(FLIGHT_DATE >= max(FLIGHT_DATE) + lubridate::days(-6)) %>%
   mutate(
-    SHARE_DLY_ERT_FLT = if_else(sum(DAY_DLY_FLT) == 0, 0, sum(DAY_DLY_ERT_FLT) / sum(DAY_DLY_FLT)),
-    SHARE_DLY_ARP_FLT = if_else(sum(DAY_DLY_FLT) == 0, 0, sum(DAY_DLY_ARP_FLT) / sum(DAY_DLY_FLT))
+    SHARE_DLY_ERT_FLT = if_else(
+      sum(DAY_DLY_FLT) == 0,
+      0,
+      sum(DAY_DLY_ERT_FLT) / sum(DAY_DLY_FLT)
+    ),
+    SHARE_DLY_ARP_FLT = if_else(
+      sum(DAY_DLY_FLT) == 0,
+      0,
+      sum(DAY_DLY_ARP_FLT) / sum(DAY_DLY_FLT)
+    )
   ) %>%
   select(
     FLIGHT_DATE,
@@ -948,24 +1092,27 @@ colnames(nw_delay_flt_wk) <- column_names
 ### nest data
 #### values
 nw_delay_flt_value_wk_long <- nw_delay_flt_wk %>%
-  select(-c(share_en_route,
-            share_airport)
-  ) %>%
+  select(-c(share_en_route, share_airport)) %>%
   pivot_longer(-c(FLIGHT_DATE), names_to = 'metric', values_to = 'value')
 
 #### share
 nw_delay_flt_share_wk_long <- nw_delay_flt_wk %>%
-  select(-c("En-route ATFM delay/flight",
-            "Airport ATFM delay/flight",
-            paste0("Total ATFM delay/flight ", data_day_year - 1),
-  )
-  )  %>%
+  select(
+    -c(
+      "En-route ATFM delay/flight",
+      "Airport ATFM delay/flight",
+      paste0("Total ATFM delay/flight ", data_day_year - 1),
+    )
+  ) %>%
   mutate(share_delay_prev_year = NA) %>%
   pivot_longer(-c(FLIGHT_DATE), names_to = 'name', values_to = 'share') %>%
   select(name, share)
 
 #### join values and share
-nw_delay_flt_wk_long <- cbind(nw_delay_flt_value_wk_long, nw_delay_flt_share_wk_long) %>%
+nw_delay_flt_wk_long <- cbind(
+  nw_delay_flt_value_wk_long,
+  nw_delay_flt_share_wk_long
+) %>%
   select(-name) %>%
   group_by(FLIGHT_DATE) %>%
   nest_legacy(.key = "statistics")
@@ -978,8 +1125,16 @@ print(paste(format(now(), "%H:%M:%S"), "nw_delay_flt_type_evo_chart_wk"))
 #### y2d ----
 nw_delay_flt_y2d <- nw_delay_flt_evo %>%
   mutate(
-    SHARE_DLY_ERT_FLT = if_else(sum(DAY_DLY_FLT) == 0, 0, sum(DAY_DLY_ERT_FLT) / sum(DAY_DLY_FLT)),
-    SHARE_DLY_ARP_FLT = if_else(sum(DAY_DLY_FLT) == 0, 0, sum(DAY_DLY_ARP_FLT) / sum(DAY_DLY_FLT))
+    SHARE_DLY_ERT_FLT = if_else(
+      sum(DAY_DLY_FLT) == 0,
+      0,
+      sum(DAY_DLY_ERT_FLT) / sum(DAY_DLY_FLT)
+    ),
+    SHARE_DLY_ARP_FLT = if_else(
+      sum(DAY_DLY_FLT) == 0,
+      0,
+      sum(DAY_DLY_ARP_FLT) / sum(DAY_DLY_FLT)
+    )
   ) %>%
   select(
     FLIGHT_DATE,
@@ -995,24 +1150,27 @@ colnames(nw_delay_flt_y2d) <- column_names
 ### nest data
 #### values
 nw_delay_flt_value_y2d_long <- nw_delay_flt_y2d %>%
-  select(-c(share_en_route,
-            share_airport)
-  ) %>%
+  select(-c(share_en_route, share_airport)) %>%
   pivot_longer(-c(FLIGHT_DATE), names_to = 'metric', values_to = 'value')
 
 #### share
 nw_delay_flt_share_y2d_long <- nw_delay_flt_y2d %>%
-  select(-c("En-route ATFM delay/flight",
-            "Airport ATFM delay/flight",
-            paste0("Total ATFM delay/flight ", data_day_year - 1),
-  )
-  )  %>%
+  select(
+    -c(
+      "En-route ATFM delay/flight",
+      "Airport ATFM delay/flight",
+      paste0("Total ATFM delay/flight ", data_day_year - 1),
+    )
+  ) %>%
   mutate(share_delay_prev_year = NA) %>%
   pivot_longer(-c(FLIGHT_DATE), names_to = 'name', values_to = 'share') %>%
   select(name, share)
 
 #### join values and share
-nw_delay_flt_y2d_long <- cbind(nw_delay_flt_value_y2d_long, nw_delay_flt_share_y2d_long) %>%
+nw_delay_flt_y2d_long <- cbind(
+  nw_delay_flt_value_y2d_long,
+  nw_delay_flt_share_y2d_long
+) %>%
   select(-name) %>%
   group_by(FLIGHT_DATE) %>%
   nest_legacy(.key = "statistics")
@@ -1034,14 +1192,24 @@ nw_delay_flt_ERT_evo <- nw_traffic_delay_data %>%
 
 
 y2d_delay_ERT_flt <- nw_traffic_delay_last_day %>%
-  select(Y2D_DLY_ERT_FLT,
-         Y2D_DLY_ERT_FLT_PREV_YEAR
-  )
+  select(Y2D_DLY_ERT_FLT, Y2D_DLY_ERT_FLT_PREV_YEAR)
 
 column_names <- c(
   "FLIGHT_DATE",
-  paste0("En-route ATFM delay/flight ", data_day_year, " (", format(round(y2d_delay_ERT_flt$Y2D_DLY_ERT_FLT,2), nsmall=2),"')"),
-  paste0("En-route ATFM delay/flight ", data_day_year - 1, " (", format(round(y2d_delay_ERT_flt$Y2D_DLY_ERT_FLT_PREV_YEAR,2), nsmall=2),"')")
+  paste0(
+    "En-route ATFM delay/flight ",
+    data_day_year,
+    " (",
+    format(round(y2d_delay_ERT_flt$Y2D_DLY_ERT_FLT, 2), nsmall = 2),
+    "')"
+  ),
+  paste0(
+    "En-route ATFM delay/flight ",
+    data_day_year - 1,
+    " (",
+    format(round(y2d_delay_ERT_flt$Y2D_DLY_ERT_FLT_PREV_YEAR, 2), nsmall = 2),
+    "')"
+  )
 )
 
 colnames(nw_delay_flt_ERT_evo) <- column_names
@@ -1054,8 +1222,12 @@ nw_delay_ERT_flt_value_day_long <- nw_delay_flt_ERT_evo %>%
   nest_legacy(.key = "statistics")
 
 #### convert to json and save in data folder and archive
-nw_delay_ERT_flt_value_day_long_j <- nw_delay_ERT_flt_value_day_long %>% toJSON(., pretty = TRUE)
-save_json(nw_delay_ERT_flt_value_day_long_j, "nw_delay_ert_per_flight_evo_chart")
+nw_delay_ERT_flt_value_day_long_j <- nw_delay_ERT_flt_value_day_long %>%
+  toJSON(., pretty = TRUE)
+save_json(
+  nw_delay_ERT_flt_value_day_long_j,
+  "nw_delay_ert_per_flight_evo_chart"
+)
 print(paste(format(now(), "%H:%M:%S"), "nw_delay_ert_per_flight_evo_chart"))
 
 
@@ -1070,14 +1242,24 @@ nw_delay_flt_APT_evo <- nw_traffic_delay_data %>%
 
 
 y2d_delay_APT_flt <- nw_traffic_delay_last_day %>%
-  select(Y2D_DLY_ARP_FLT,
-         Y2D_DLY_ARP_FLT_PREV_YEAR
-  )
+  select(Y2D_DLY_ARP_FLT, Y2D_DLY_ARP_FLT_PREV_YEAR)
 
 column_names <- c(
   "FLIGHT_DATE",
-  paste0("Airport ATFM delay/flight ", data_day_year, " (", format(round(y2d_delay_APT_flt$Y2D_DLY_ARP_FLT,2), nsmall=2),"')"),
-  paste0("Airport ATFM delay/flight ", data_day_year - 1, " (", format(round(y2d_delay_APT_flt$Y2D_DLY_ARP_FLT_PREV_YEAR,2), nsmall=2),"')")
+  paste0(
+    "Airport ATFM delay/flight ",
+    data_day_year,
+    " (",
+    format(round(y2d_delay_APT_flt$Y2D_DLY_ARP_FLT, 2), nsmall = 2),
+    "')"
+  ),
+  paste0(
+    "Airport ATFM delay/flight ",
+    data_day_year - 1,
+    " (",
+    format(round(y2d_delay_APT_flt$Y2D_DLY_ARP_FLT_PREV_YEAR, 2), nsmall = 2),
+    "')"
+  )
 )
 
 colnames(nw_delay_flt_APT_evo) <- column_names
@@ -1090,25 +1272,48 @@ nw_delay_APT_flt_value_day_long <- nw_delay_flt_APT_evo %>%
   nest_legacy(.key = "statistics")
 
 #### convert to json and save in data folder and archive
-nw_delay_APT_flt_value_day_long_j <- nw_delay_APT_flt_value_day_long %>% toJSON(., pretty = TRUE)
-save_json(nw_delay_APT_flt_value_day_long_j, "nw_delay_apt_per_flight_evo_chart")
+nw_delay_APT_flt_value_day_long_j <- nw_delay_APT_flt_value_day_long %>%
+  toJSON(., pretty = TRUE)
+save_json(
+  nw_delay_APT_flt_value_day_long_j,
+  "nw_delay_apt_per_flight_evo_chart"
+)
 print(paste(format(now(), "%H:%M:%S"), "nw_delay_apt_per_flight_evo_chart"))
-
 
 
 ## punctuality ----
 nw_punct_evo_app <- nw_punct_data_raw %>%
-  filter(DATE >= as.Date(paste0("01-01-", data_day_year - 2), format = "%d-%m-%Y")) %>%
+  filter(
+    DATE >= as.Date(paste0("01-01-", data_day_year - 2), format = "%d-%m-%Y")
+  ) %>%
   arrange(DATE) %>%
-  mutate(DEP_PUN = DEP_PUNCTUALITY_PERCENTAGE, ARR_PUN = ARR_PUNCTUALITY_PERCENTAGE, OPERATED = 100 - MISSING_SCHEDULES_PERCENTAGE) %>%
   mutate(
-    DEP_PUN_WK = rollsum(DEP_PUNCTUAL_FLIGHTS, 7, fill = NA, align = "right") / rollsum(DEP_SCHEDULE_FLIGHT, 7, fill = NA, align = "right") * 100,
-    ARR_PUN_WK = rollsum(ARR_PUNCTUAL_FLIGHTS, 7, fill = NA, align = "right") / rollsum(ARR_SCHEDULE_FLIGHT, 7, fill = NA, align = "right") * 100,
-    OP_FLT_WK = 100 - rollsum(MISSING_SCHED_FLIGHTS, 7, fill = NA, align = "right") / rollsum((MISSING_SCHED_FLIGHTS + DEP_FLIGHTS_NO_OVERFLIGHTS), 7, fill = NA, align = "right") * 100
+    DEP_PUN = DEP_PUNCTUALITY_PERCENTAGE,
+    ARR_PUN = ARR_PUNCTUALITY_PERCENTAGE,
+    OPERATED = 100 - MISSING_SCHEDULES_PERCENTAGE
+  ) %>%
+  mutate(
+    DEP_PUN_WK = rollsum(DEP_PUNCTUAL_FLIGHTS, 7, fill = NA, align = "right") /
+      rollsum(DEP_SCHEDULE_FLIGHT, 7, fill = NA, align = "right") *
+      100,
+    ARR_PUN_WK = rollsum(ARR_PUNCTUAL_FLIGHTS, 7, fill = NA, align = "right") /
+      rollsum(ARR_SCHEDULE_FLIGHT, 7, fill = NA, align = "right") *
+      100,
+    OP_FLT_WK = 100 -
+      rollsum(MISSING_SCHED_FLIGHTS, 7, fill = NA, align = "right") /
+        rollsum(
+          (MISSING_SCHED_FLIGHTS + DEP_FLIGHTS_NO_OVERFLIGHTS),
+          7,
+          fill = NA,
+          align = "right"
+        ) *
+        100
   ) %>%
   select(DATE, DEP_PUN_WK, ARR_PUN_WK, OP_FLT_WK) %>%
-  filter(DATE >= as.Date(paste0("01-01-", data_day_year - 1), format = "%d-%m-%Y"),
-         DATE <= last_day_punct)
+  filter(
+    DATE >= as.Date(paste0("01-01-", data_day_year - 1), format = "%d-%m-%Y"),
+    DATE <= last_day_punct
+  )
 
 column_names <- c(
   "FLIGHT_DATE",
@@ -1145,8 +1350,7 @@ nw_billing_evo <- nw_billing %>%
     total_billing_y2d_py = lag(total_billing_y2d, 12),
     total_billing_dif_y2d_perc = total_billing_y2d / total_billing_y2d_py - 1
   ) %>%
-  filter(year == last_billing_year,
-         month <= last_billing_month) %>%
+  filter(year == last_billing_year, month <= last_billing_month) %>%
   select(
     month,
     total_billing,
@@ -1185,10 +1389,7 @@ print(paste(format(now(), "%H:%M:%S"), "nw_billing_evo_chart"))
 
 ## co2 emissions ----
 nw_co2_evo <- co2_data_raw %>%
-  filter(YEAR >= 2019,
-         YEAR <= co2_last_year,
-         MONTH <= co2_last_month_num
-  ) %>%
+  filter(YEAR >= 2019, YEAR <= co2_last_year, MONTH <= co2_last_month_num) %>%
   select(
     FLIGHT_MONTH,
     CO2_QTY_TONNES,
@@ -1212,7 +1413,7 @@ nw_co2_evo <- co2_data_raw %>%
     FLIGHT_MONTH,
     CO2_IDX,
     DEP_IDX
-  ) %>% 
+  ) %>%
   ungroup()
 
 column_names <- c(
@@ -1236,59 +1437,76 @@ print(paste(format(now(), "%H:%M:%S"), "nw_co2_evo_chart"))
 ## traffic forecast ----
 ### input data
 if (!exists("forecast_raw")) {
-  forecast_raw <-  read_csv(here("..", "mobile-app", "data", forecast_file_name), show_col_types = FALSE)
+  forecast_raw <- read_csv(
+    here("..", "mobile-app", "data", forecast_file_name),
+    show_col_types = FALSE
+  )
 }
 
 ### process data
-forecast_max_actual_year <- forecast_raw %>% 
-  filter(scenario == "High") %>% 
-  summarise(min(year)) %>% pull()
+forecast_max_actual_year <- forecast_raw %>%
+  filter(scenario == "High") %>%
+  summarise(min(year)) %>%
+  pull()
 
-nw_forecast_graph <- forecast_raw %>% 
-  filter(tz_name == "NM Area") %>% 
+nw_forecast_graph <- forecast_raw %>%
+  filter(tz_name == "NM Area") %>%
   mutate(
     forecast_name = forecast_name_value
     # , forecast_date = forecast_name_date
-  ) 
+  )
 
-nw_forecast_graph_daio <- nw_forecast_graph %>% 
-  filter(daio == "T") %>% 
-  group_by(scenario) %>% 
-  arrange(scenario, year) %>% 
+nw_forecast_graph_daio <- nw_forecast_graph %>%
+  filter(daio == "T") %>%
+  group_by(scenario) %>%
+  arrange(scenario, year) %>%
   mutate(
-    FLIGHT_DATE = lubridate::ymd(paste0(year,'01','01')), #represents the year - requested by ewasoft for mapping
-    yoy = flights / lag(flights,1) -1,
-    label_flights = if_else(year == forecast_max_actual_year & scenario != "Actual", 
-                            NA_character_, 
-                            paste0(round(flights/10^6, 1), "M")),
-    label_yoy = if_else(year == forecast_max_actual_year & scenario != "Actual", 
-                        NA_character_,
-                        paste0(if_else(yoy >= 0, "+", ""),round(yoy*100, 1), "%")),
-    
-    label_tooltip = if_else(year == forecast_max_actual_year & scenario != "Actual", 
-                            NA_character_,
-                            paste0(label_flights, " (", label_yoy, ")")),
-    label_flights = if_else(scenario == "High" | scenario == "Low", 
-                            NA_character_, 
-                            label_flights),
-    label_yoy = if_else(scenario == "High" | scenario == "Low",
-                        NA_character_, 
-                        label_yoy),
-    
-  )%>% 
-  select(-yoy, -daio) %>% 
-  filter(year >= forecast_min_year_graph) %>% 
-  filter((year <= forecast_max_actual_year & scenario == "Actual") | year >= forecast_max_actual_year) %>% 
-  select(-year) %>% 
+    FLIGHT_DATE = lubridate::ymd(paste0(year, '01', '01')), #represents the year - requested by ewasoft for mapping
+    yoy = flights / lag(flights, 1) - 1,
+    label_flights = if_else(
+      year == forecast_max_actual_year & scenario != "Actual",
+      NA_character_,
+      paste0(round(flights / 10^6, 1), "M")
+    ),
+    label_yoy = if_else(
+      year == forecast_max_actual_year & scenario != "Actual",
+      NA_character_,
+      paste0(if_else(yoy >= 0, "+", ""), round(yoy * 100, 1), "%")
+    ),
+
+    label_tooltip = if_else(
+      year == forecast_max_actual_year & scenario != "Actual",
+      NA_character_,
+      paste0(label_flights, " (", label_yoy, ")")
+    ),
+    label_flights = if_else(
+      scenario == "High" | scenario == "Low",
+      NA_character_,
+      label_flights
+    ),
+    label_yoy = if_else(
+      scenario == "High" | scenario == "Low",
+      NA_character_,
+      label_yoy
+    ),
+  ) %>%
+  select(-yoy, -daio) %>%
+  filter(year >= forecast_min_year_graph) %>%
+  filter(
+    (year <= forecast_max_actual_year & scenario == "Actual") |
+      year >= forecast_max_actual_year
+  ) %>%
+  select(-year) %>%
   ungroup()
 
 
 ### nest and save data
 nw_forecast_graph_daio_nest <- nw_forecast_graph_daio %>%
-  group_by(forecast_name, tz_name, FLIGHT_DATE) %>% 
+  group_by(forecast_name, tz_name, FLIGHT_DATE) %>%
   nest_legacy(.key = "statistics")
 
-nw_forecast_graph_daio_nest_j <- nw_forecast_graph_daio_nest %>% toJSON(., pretty = TRUE)
+nw_forecast_graph_daio_nest_j <- nw_forecast_graph_daio_nest %>%
+  toJSON(., pretty = TRUE)
 
 save_json(nw_forecast_graph_daio_nest_j, "nw_traffic_forecast_chart")
 print(paste(format(now(), "%H:%M:%S"), "nw_traffic_forecast_chart"))
@@ -1296,14 +1514,14 @@ print(paste(format(now(), "%H:%M:%S"), "nw_traffic_forecast_chart"))
 
 # RANKING TABLES ----
 ## Airline traffic ----
-mydataframe <-  "nw_ao_agg"
+mydataframe <- "nw_ao_agg"
 stakeholder <- str_sub(mydataframe, 1, 2)
 
 ### day ----
 nw_ao_data_day_int <- create_ranking(mydataframe, "DAY", FLIGHT)
 
-nw_ao_data_day <- nw_ao_data_day_int %>% 
-  filter(R_RANK < 11) %>% 
+nw_ao_data_day <- nw_ao_data_day_int %>%
+  filter(R_RANK < 11) %>%
   select(
     WK_R_RANK_BY_DAY = R_RANK,
     DY_AO_GRP_NAME = NAME,
@@ -1319,7 +1537,7 @@ nw_ao_data_day <- nw_ao_data_day_int %>%
 nw_ao_data_week_int <- create_ranking(mydataframe, "WEEK", FLIGHT)
 
 nw_ao_data_week <- nw_ao_data_week_int |>
-  filter(R_RANK < 11) %>% 
+  filter(R_RANK < 11) %>%
   select(
     WK_R_RANK_BY_DAY = R_RANK,
     WK_AO_GRP_NAME = NAME,
@@ -1334,7 +1552,7 @@ nw_ao_data_week <- nw_ao_data_week_int |>
 nw_ao_data_y2d_int <- create_ranking(mydataframe, "Y2D", FLIGHT)
 
 nw_ao_data_y2d <- nw_ao_data_y2d_int |>
-  filter(R_RANK < 11) %>% 
+  filter(R_RANK < 11) %>%
   select(
     WK_R_RANK_BY_DAY = R_RANK,
     Y2D_AO_GRP_NAME = NAME,
@@ -1343,13 +1561,13 @@ nw_ao_data_y2d <- nw_ao_data_y2d_int |>
     Y2D_DIF_PREV_YEAR_PERC = DIF1_METRIC_PERC,
     Y2D_DIF_2019_PERC = DIF2_METRIC_PERC,
     Y2D_RANK_DIF_PREV_YEAR = RANK_DIF
-    )
+  )
 
 ### s2d ----
 nw_ao_data_s2d_int <- create_ranking(mydataframe, "S2D", FLIGHT)
 
 nw_ao_data_s2d <- nw_ao_data_s2d_int |>
-  filter(R_RANK < 11) %>% 
+  filter(R_RANK < 11) %>%
   select(
     WK_R_RANK_BY_DAY = R_RANK,
     S2D_AO_GRP_NAME = NAME,
@@ -1361,15 +1579,17 @@ nw_ao_data_s2d <- nw_ao_data_s2d_int |>
   )
 
 ### main card ----
-nw_ao_main_traffic <- create_main_card (nw_ao_data_day_int) %>% 
-  select(-STK_CODE,
-         -STK_NAME,
-         WK_R_RANK_BY_DAY = R_RANK,
-         MAIN_TFC_AO_GRP_NAME = NAME,
-         MAIN_TFC_AO_GRP_CODE = CODE,
-         MAIN_TFC_AO_GRP_FLIGHT = CURRENT)
-  
-nw_ao_main_traffic_dif <- create_main_card_dif (nw_ao_data_day_int) %>% 
+nw_ao_main_traffic <- create_main_card(nw_ao_data_day_int) %>%
+  select(
+    -STK_CODE,
+    -STK_NAME,
+    WK_R_RANK_BY_DAY = R_RANK,
+    MAIN_TFC_AO_GRP_NAME = NAME,
+    MAIN_TFC_AO_GRP_CODE = CODE,
+    MAIN_TFC_AO_GRP_FLIGHT = CURRENT
+  )
+
+nw_ao_main_traffic_dif <- create_main_card_dif(nw_ao_data_day_int) %>%
   select(
     -STK_CODE,
     -STK_NAME,
@@ -1380,10 +1600,22 @@ nw_ao_main_traffic_dif <- create_main_card_dif (nw_ao_data_day_int) %>%
   )
 
 ### merge and reorder tables ----
-nw_ao_data <- merge(x = nw_ao_data_week, y = nw_ao_data_day, by = "WK_R_RANK_BY_DAY")
+nw_ao_data <- merge(
+  x = nw_ao_data_week,
+  y = nw_ao_data_day,
+  by = "WK_R_RANK_BY_DAY"
+)
 nw_ao_data <- merge(x = nw_ao_data, y = nw_ao_data_y2d, by = "WK_R_RANK_BY_DAY")
-nw_ao_data <- merge(x = nw_ao_data, y = nw_ao_main_traffic, by = "WK_R_RANK_BY_DAY")
-nw_ao_data <- merge(x = nw_ao_data, y = nw_ao_main_traffic_dif, by = "WK_R_RANK_BY_DAY")
+nw_ao_data <- merge(
+  x = nw_ao_data,
+  y = nw_ao_main_traffic,
+  by = "WK_R_RANK_BY_DAY"
+)
+nw_ao_data <- merge(
+  x = nw_ao_data,
+  y = nw_ao_main_traffic_dif,
+  by = "WK_R_RANK_BY_DAY"
+)
 nw_ao_data <- merge(x = nw_ao_data, y = nw_ao_data_s2d, by = "WK_R_RANK_BY_DAY")
 
 nw_ao_data <- nw_ao_data %>%
@@ -1433,13 +1665,13 @@ print(paste(format(now(), "%H:%M:%S"), "nw_ao_ranking_traffic"))
 
 ## Airport traffic ----
 ### day ----
-mydataframe <-  "nw_ap_agg"
+mydataframe <- "nw_ap_agg"
 stakeholder <- str_sub(mydataframe, 1, 2)
 
 nw_ap_data_day_int <- create_ranking(mydataframe, "DAY", DEP_ARR)
 
-nw_ap_data_day <- nw_ap_data_day_int %>% 
-  filter(R_RANK < 11) %>% 
+nw_ap_data_day <- nw_ap_data_day_int %>%
+  filter(R_RANK < 11) %>%
   select(
     DY_R_RANK_BY_DAY = R_RANK,
     DY_AIRPORT_NAME = NAME,
@@ -1448,7 +1680,7 @@ nw_ap_data_day <- nw_ap_data_day_int %>%
     DY_DIF_PREV_WEEK_PERC = DIF1_METRIC_PERC,
     DY_DIF_PREV_YEAR_PERC = DIF2_METRIC_PERC,
     DY_RANK_DIF_PREV_WEEK = RANK_DIF
-    )
+  )
 
 
 ### week ----
@@ -1494,14 +1726,16 @@ nw_ap_data_s2d <- nw_ap_data_s2d_int |>
   )
 
 ### main card ----
-nw_ap_main_traffic <- create_main_card (nw_ap_data_day_int) %>% 
-  select(-STK_CODE,
-         -STK_NAME,
-         DY_R_RANK_BY_DAY = R_RANK,
-         MAIN_TFC_AIRPORT_NAME = NAME,
-         MAIN_TFC_AIRPORT_DEP_ARR = CURRENT)
+nw_ap_main_traffic <- create_main_card(nw_ap_data_day_int) %>%
+  select(
+    -STK_CODE,
+    -STK_NAME,
+    DY_R_RANK_BY_DAY = R_RANK,
+    MAIN_TFC_AIRPORT_NAME = NAME,
+    MAIN_TFC_AIRPORT_DEP_ARR = CURRENT
+  )
 
-nw_ap_main_traffic_dif <- create_main_card_dif (nw_ap_data_day_int) %>% 
+nw_ap_main_traffic_dif <- create_main_card_dif(nw_ap_data_day_int) %>%
   select(
     -STK_CODE,
     -STK_NAME,
@@ -1511,10 +1745,22 @@ nw_ap_main_traffic_dif <- create_main_card_dif (nw_ap_data_day_int) %>%
   )
 
 ### merge and reorder tables ----
-nw_ap_data <- merge(x = nw_ap_data_day, y = nw_ap_data_week, by = "DY_R_RANK_BY_DAY")
+nw_ap_data <- merge(
+  x = nw_ap_data_day,
+  y = nw_ap_data_week,
+  by = "DY_R_RANK_BY_DAY"
+)
 nw_ap_data <- merge(x = nw_ap_data, y = nw_ap_data_y2d, by = "DY_R_RANK_BY_DAY")
-nw_ap_data <- merge(x = nw_ap_data, y = nw_ap_main_traffic, by = "DY_R_RANK_BY_DAY")
-nw_ap_data <- merge(x = nw_ap_data, y = nw_ap_main_traffic_dif, by = "DY_R_RANK_BY_DAY")
+nw_ap_data <- merge(
+  x = nw_ap_data,
+  y = nw_ap_main_traffic,
+  by = "DY_R_RANK_BY_DAY"
+)
+nw_ap_data <- merge(
+  x = nw_ap_data,
+  y = nw_ap_main_traffic_dif,
+  by = "DY_R_RANK_BY_DAY"
+)
 nw_ap_data <- merge(x = nw_ap_data, y = nw_ap_data_s2d, by = "DY_R_RANK_BY_DAY")
 
 nw_ap_data <- nw_ap_data %>%
@@ -1548,7 +1794,7 @@ nw_ap_data <- nw_ap_data %>%
     S2D_TO_DATE,
     S2D_DEP_ARR,
     S2D_DIF_PREV_YEAR_PERC,
-    S2D_DIF_2019_PERC    
+    S2D_DIF_2019_PERC
   )
 
 ### covert to json and save in app data folder and archive ----
@@ -1558,12 +1804,12 @@ print(paste(format(now(), "%H:%M:%S"), "nw_apt_ranking_traffic"))
 
 ## Country traffic DAI ----
 ### day ----
-mydataframe <-  "nw_st_dai_agg"
+mydataframe <- "nw_st_dai_agg"
 stakeholder <- str_sub(mydataframe, 1, 2)
 nw_st_dai_data_day_int <- create_ranking(mydataframe, "DAY", DAY_TFC)
 
-nw_st_dai_data_day <- nw_st_dai_data_day_int %>% 
-  filter(R_RANK < 11) %>% 
+nw_st_dai_data_day <- nw_st_dai_data_day_int %>%
+  filter(R_RANK < 11) %>%
   select(
     DY_R_RANK_BY_DAY = R_RANK,
     DY_COUNTRY_NAME = NAME,
@@ -1578,8 +1824,8 @@ nw_st_dai_data_day <- nw_st_dai_data_day_int %>%
 ### week ----
 nw_st_dai_data_week_int <- create_ranking(mydataframe, "WEEK", DAY_TFC)
 
-nw_st_dai_data_week <- nw_st_dai_data_week_int %>% 
-  filter(R_RANK < 11) %>% 
+nw_st_dai_data_week <- nw_st_dai_data_week_int %>%
+  filter(R_RANK < 11) %>%
   select(
     DY_R_RANK_BY_DAY = R_RANK,
     WK_COUNTRY_NAME = NAME,
@@ -1595,8 +1841,8 @@ nw_st_dai_data_week <- nw_st_dai_data_week_int %>%
 ### y2d ----
 nw_st_dai_data_y2d_int <- create_ranking(mydataframe, "Y2D", DAY_TFC)
 
-nw_st_dai_data_y2d <- nw_st_dai_data_y2d_int %>% 
-  filter(R_RANK < 11) %>% 
+nw_st_dai_data_y2d <- nw_st_dai_data_y2d_int %>%
+  filter(R_RANK < 11) %>%
   select(
     DY_R_RANK_BY_DAY = R_RANK,
     Y2D_COUNTRY_NAME = NAME,
@@ -1611,8 +1857,8 @@ nw_st_dai_data_y2d <- nw_st_dai_data_y2d_int %>%
 ### s2d ----
 nw_st_dai_data_s2d_int <- create_ranking(mydataframe, "S2D", DAY_TFC)
 
-nw_st_dai_data_s2d <- nw_st_dai_data_s2d_int %>% 
-  filter(R_RANK < 11) %>% 
+nw_st_dai_data_s2d <- nw_st_dai_data_s2d_int %>%
+  filter(R_RANK < 11) %>%
   select(
     DY_R_RANK_BY_DAY = R_RANK,
     S2D_COUNTRY_NAME = NAME,
@@ -1625,15 +1871,17 @@ nw_st_dai_data_s2d <- nw_st_dai_data_s2d_int %>%
   )
 
 ### main card ----
-nw_st_main_traffic <- create_main_card(nw_st_dai_data_day_int) %>% 
-  select(-STK_CODE,
-         -STK_NAME,
-         DY_R_RANK_BY_DAY = R_RANK,
-         MAIN_TFC_CTRY_NAME = NAME,
-         MAIN_TFC_CTRY_DAI = CURRENT,
-         MAIN_TFC_CTRY_CODE = CODE)
+nw_st_main_traffic <- create_main_card(nw_st_dai_data_day_int) %>%
+  select(
+    -STK_CODE,
+    -STK_NAME,
+    DY_R_RANK_BY_DAY = R_RANK,
+    MAIN_TFC_CTRY_NAME = NAME,
+    MAIN_TFC_CTRY_DAI = CURRENT,
+    MAIN_TFC_CTRY_CODE = CODE
+  )
 
-nw_st_main_traffic_dif <- create_main_card_dif(nw_st_dai_data_day_int) %>% 
+nw_st_main_traffic_dif <- create_main_card_dif(nw_st_dai_data_day_int) %>%
   select(
     -STK_CODE,
     -STK_NAME,
@@ -1644,11 +1892,31 @@ nw_st_main_traffic_dif <- create_main_card_dif(nw_st_dai_data_day_int) %>%
   )
 
 ### merge and reorder tables ----
-nw_st_dai_data <- merge(x = nw_st_dai_data_day, y = nw_st_dai_data_week, by = "DY_R_RANK_BY_DAY")
-nw_st_dai_data <- merge(x = nw_st_dai_data, y = nw_st_dai_data_y2d, by = "DY_R_RANK_BY_DAY")
-nw_st_dai_data <- merge(x = nw_st_dai_data, y = nw_st_main_traffic, by = "DY_R_RANK_BY_DAY")
-nw_st_dai_data <- merge(x = nw_st_dai_data, y = nw_st_main_traffic_dif, by = "DY_R_RANK_BY_DAY")
-nw_st_dai_data <- merge(x = nw_st_dai_data, y = nw_st_dai_data_s2d, by = "DY_R_RANK_BY_DAY")
+nw_st_dai_data <- merge(
+  x = nw_st_dai_data_day,
+  y = nw_st_dai_data_week,
+  by = "DY_R_RANK_BY_DAY"
+)
+nw_st_dai_data <- merge(
+  x = nw_st_dai_data,
+  y = nw_st_dai_data_y2d,
+  by = "DY_R_RANK_BY_DAY"
+)
+nw_st_dai_data <- merge(
+  x = nw_st_dai_data,
+  y = nw_st_main_traffic,
+  by = "DY_R_RANK_BY_DAY"
+)
+nw_st_dai_data <- merge(
+  x = nw_st_dai_data,
+  y = nw_st_main_traffic_dif,
+  by = "DY_R_RANK_BY_DAY"
+)
+nw_st_dai_data <- merge(
+  x = nw_st_dai_data,
+  y = nw_st_dai_data_s2d,
+  by = "DY_R_RANK_BY_DAY"
+)
 
 nw_st_dai_data <- nw_st_dai_data %>%
   relocate(c(
@@ -1679,7 +1947,7 @@ nw_st_dai_data <- nw_st_dai_data %>%
     Y2D_CTRY_DAI_PREV_YEAR_PERC,
     Y2D_CTRY_DAI_2019_PERC,
     Y2D_RANK_DIF_PREV_YEAR,
-    
+
     S2D_RANK_DIF_PREV_YEAR,
     S2D_COUNTRY_NAME,
     S2D_TO_DATE,
@@ -1697,45 +1965,52 @@ print(paste(format(now(), "%H:%M:%S"), "nw_ctry_ranking_traffic_DAI"))
 
 ## Airport delay -----
 mydatafile <- paste0("ap_traffic_delay_day.parquet")
-stakeholder <- substr(mydatafile, 1,2)
+stakeholder <- substr(mydatafile, 1, 2)
 
-nw_ap_traffic_delay_data <- read_parquet(here(app_tables_dir, stakeholder, mydatafile))
+nw_ap_traffic_delay_data <- read_parquet(here(
+  app_tables_dir,
+  stakeholder,
+  mydatafile
+))
 
 ### day ----
 nw_ap_delay_data_day <- nw_ap_traffic_delay_data %>%
   select(
-    ARP_NAME_DAY = STK_NAME, 
-    FLIGHT_DATE, 
-    DLY_ARR = DAY_DLY, 
+    ARP_NAME_DAY = STK_NAME,
+    FLIGHT_DATE,
+    DLY_ARR = DAY_DLY,
     DLY_PER_FLT = DAY_DLY_FLT
-    ) %>% 
+  ) %>%
   filter(FLIGHT_DATE == data_day_date) %>%
-  arrange(desc(DLY_ARR), ARP_NAME_DAY) %>% 
+  arrange(desc(DLY_ARR), ARP_NAME_DAY) %>%
   mutate(
     R_RANK_DLY_DAY = row_number(),
     DLY_PER_FLT = round(DLY_PER_FLT, 2)
   ) %>%
   #remove 0 values from list
-  mutate(across(c(-R_RANK_DLY_DAY, -FLIGHT_DATE), ~ ifelse(DLY_ARR == 0, NA, .))
-  ) %>%
+  mutate(across(
+    c(-R_RANK_DLY_DAY, -FLIGHT_DATE),
+    ~ ifelse(DLY_ARR == 0, NA, .)
+  )) %>%
   select(
-    R_RANK_DLY_DAY, 
-    ARP_NAME_DAY, 
-    FLIGHT_DATE, 
-    DLY_ARR, 
-    DLY_PER_FLT) %>%
+    R_RANK_DLY_DAY,
+    ARP_NAME_DAY,
+    FLIGHT_DATE,
+    DLY_ARR,
+    DLY_PER_FLT
+  ) %>%
   filter(R_RANK_DLY_DAY <= 10)
 
 ### week ----
 nw_ap_delay_data_week <- nw_ap_traffic_delay_data %>%
   select(
-    ARP_NAME_WK = STK_NAME, 
-    FLIGHT_DATE, 
-    RWK_AVG_DLY, 
+    ARP_NAME_WK = STK_NAME,
+    FLIGHT_DATE,
+    RWK_AVG_DLY,
     RWK_DLY_FLT
-  ) %>% 
+  ) %>%
   filter(FLIGHT_DATE == data_day_date) %>%
-  arrange(desc(RWK_AVG_DLY), ARP_NAME_WK) %>% 
+  arrange(desc(RWK_AVG_DLY), ARP_NAME_WK) %>%
   mutate(
     R_RANK_DLY_DAY = row_number(),
     WK_RANK = R_RANK_DLY_DAY,
@@ -1744,30 +2019,32 @@ nw_ap_delay_data_week <- nw_ap_traffic_delay_data %>%
     WK_TO_DATE = FLIGHT_DATE,
   ) %>%
   #remove 0 values from list
-  mutate(across(c(-R_RANK_DLY_DAY, -WK_FROM_DATE, -WK_TO_DATE), ~ ifelse(RWK_AVG_DLY == 0, NA, .))
-  ) %>%
+  mutate(across(
+    c(-R_RANK_DLY_DAY, -WK_FROM_DATE, -WK_TO_DATE),
+    ~ ifelse(RWK_AVG_DLY == 0, NA, .)
+  )) %>%
   select(
-    R_RANK_DLY_DAY, 
+    R_RANK_DLY_DAY,
     WK_RANK,
-    ARP_NAME_WK, 
-    WK_FROM_DATE, 
+    ARP_NAME_WK,
+    WK_FROM_DATE,
     WK_TO_DATE,
-    ROLL_WEEK_DLY_ARR = RWK_AVG_DLY, 
+    ROLL_WEEK_DLY_ARR = RWK_AVG_DLY,
     DLY_PER_FLT_WEEK = WK_DLY_FLT
-    ) %>%
+  ) %>%
   filter(R_RANK_DLY_DAY <= 10)
 
 
 ### y2d ----
 nw_ap_delay_data_y2d <- nw_ap_traffic_delay_data %>%
   select(
-    ARP_NAME_Y2D = STK_NAME, 
-    FLIGHT_DATE, 
-    Y2D_AVG_DLY, 
+    ARP_NAME_Y2D = STK_NAME,
+    FLIGHT_DATE,
+    Y2D_AVG_DLY,
     Y2D_DLY_FLT
-  ) %>% 
+  ) %>%
   filter(FLIGHT_DATE == data_day_date) %>%
-  arrange(desc(Y2D_AVG_DLY), ARP_NAME_Y2D) %>% 
+  arrange(desc(Y2D_AVG_DLY), ARP_NAME_Y2D) %>%
   mutate(
     R_RANK_DLY_DAY = row_number(),
     Y2D_RANK = R_RANK_DLY_DAY,
@@ -1776,14 +2053,17 @@ nw_ap_delay_data_y2d <- nw_ap_traffic_delay_data %>%
     Y2D_TO_DATE = FLIGHT_DATE,
   ) %>%
   #remove 0 values from list
-  mutate(across(c(-R_RANK_DLY_DAY, -Y2D_TO_DATE), ~ ifelse(Y2D_AVG_DLY == 0, NA, .))
-  ) %>%  select(
-    R_RANK_DLY_DAY, 
+  mutate(across(
+    c(-R_RANK_DLY_DAY, -Y2D_TO_DATE),
+    ~ ifelse(Y2D_AVG_DLY == 0, NA, .)
+  )) %>%
+  select(
+    R_RANK_DLY_DAY,
     Y2D_RANK,
-    ARP_NAME_Y2D, 
-    Y2D_FROM_DATE, 
+    ARP_NAME_Y2D,
+    Y2D_FROM_DATE,
     Y2D_TO_DATE,
-    Y2D_AVG_DLY_ARR = Y2D_AVG_DLY, 
+    Y2D_AVG_DLY_ARR = Y2D_AVG_DLY,
     DLY_PER_FLT_Y2D = Y2D_DLY_FLT
   ) %>%
   filter(R_RANK_DLY_DAY <= 10)
@@ -1791,13 +2071,13 @@ nw_ap_delay_data_y2d <- nw_ap_traffic_delay_data %>%
 ### s2d ----
 nw_ap_delay_data_s2d <- nw_ap_traffic_delay_data %>%
   select(
-    ARP_NAME_S2D = STK_NAME, 
-    FLIGHT_DATE, 
-    S2D_AVG_DLY, 
+    ARP_NAME_S2D = STK_NAME,
+    FLIGHT_DATE,
+    S2D_AVG_DLY,
     S2D_DLY_FLT
-  ) %>% 
+  ) %>%
   filter(FLIGHT_DATE == data_day_date) %>%
-  arrange(desc(S2D_AVG_DLY), ARP_NAME_S2D) %>% 
+  arrange(desc(S2D_AVG_DLY), ARP_NAME_S2D) %>%
   mutate(
     R_RANK_DLY_DAY = row_number(),
     S2D_RANK = R_RANK_DLY_DAY,
@@ -1806,14 +2086,17 @@ nw_ap_delay_data_s2d <- nw_ap_traffic_delay_data %>%
     S2D_TO_DATE = FLIGHT_DATE,
   ) %>%
   #remove 0 values from list
-  mutate(across(c(-R_RANK_DLY_DAY, -S2D_TO_DATE), ~ ifelse(S2D_AVG_DLY == 0, NA, .))
-  ) %>%  select(
-    R_RANK_DLY_DAY, 
+  mutate(across(
+    c(-R_RANK_DLY_DAY, -S2D_TO_DATE),
+    ~ ifelse(S2D_AVG_DLY == 0, NA, .)
+  )) %>%
+  select(
+    R_RANK_DLY_DAY,
     S2D_RANK,
-    ARP_NAME_S2D, 
-    S2D_FROM_DATE, 
+    ARP_NAME_S2D,
+    S2D_FROM_DATE,
     S2D_TO_DATE,
-    S2D_AVG_DLY_ARR = S2D_AVG_DLY, 
+    S2D_AVG_DLY_ARR = S2D_AVG_DLY,
     DLY_PER_FLT_S2D = S2D_DLY_FLT
   ) %>%
   filter(R_RANK_DLY_DAY <= 10)
@@ -1821,25 +2104,50 @@ nw_ap_delay_data_s2d <- nw_ap_traffic_delay_data %>%
 ### main card ----
 nw_ap_main_delay <- nw_ap_delay_data_day %>%
   mutate(across(-R_RANK_DLY_DAY, ~ ifelse(R_RANK_DLY_DAY > 4, NA, .))) %>%
-  select(R_RANK_DLY_DAY,
-         MAIN_DLY_APT_NAME = ARP_NAME_DAY,
-         MAIN_DLY_APT_DLY = DLY_ARR)
+  select(
+    R_RANK_DLY_DAY,
+    MAIN_DLY_APT_NAME = ARP_NAME_DAY,
+    MAIN_DLY_APT_DLY = DLY_ARR
+  )
 
 nw_ap_main_delay_flt <- nw_ap_delay_data_day %>%
   arrange(desc(DLY_PER_FLT), ARP_NAME_DAY) %>%
-  mutate(R_RANK_DLY_DAY = row_number(),
-         across(-R_RANK_DLY_DAY,
-                ~ ifelse(R_RANK_DLY_DAY > 4, NA, .))) %>%
-  select(R_RANK_DLY_DAY,
-         MAIN_DLY_FLT_APT_NAME = ARP_NAME_DAY,
-         MAIN_DLY_FLT_APT_DLY_FLT = DLY_PER_FLT)
+  mutate(
+    R_RANK_DLY_DAY = row_number(),
+    across(-R_RANK_DLY_DAY, ~ ifelse(R_RANK_DLY_DAY > 4, NA, .))
+  ) %>%
+  select(
+    R_RANK_DLY_DAY,
+    MAIN_DLY_FLT_APT_NAME = ARP_NAME_DAY,
+    MAIN_DLY_FLT_APT_DLY_FLT = DLY_PER_FLT
+  )
 
 ### merge and reorder tables ----
-nw_ap_rank_data <- merge(x = nw_ap_delay_data_day, y = nw_ap_delay_data_week, by = "R_RANK_DLY_DAY")
-nw_ap_rank_data <- merge(x = nw_ap_rank_data, y = nw_ap_delay_data_y2d, by = "R_RANK_DLY_DAY")
-nw_ap_rank_data <- merge(x = nw_ap_rank_data, y = nw_ap_main_delay, by = "R_RANK_DLY_DAY")
-nw_ap_rank_data <- merge(x = nw_ap_rank_data, y = nw_ap_main_delay_flt, by = "R_RANK_DLY_DAY")
-nw_ap_rank_data <- merge(x = nw_ap_rank_data, y = nw_ap_delay_data_s2d, by = "R_RANK_DLY_DAY")
+nw_ap_rank_data <- merge(
+  x = nw_ap_delay_data_day,
+  y = nw_ap_delay_data_week,
+  by = "R_RANK_DLY_DAY"
+)
+nw_ap_rank_data <- merge(
+  x = nw_ap_rank_data,
+  y = nw_ap_delay_data_y2d,
+  by = "R_RANK_DLY_DAY"
+)
+nw_ap_rank_data <- merge(
+  x = nw_ap_rank_data,
+  y = nw_ap_main_delay,
+  by = "R_RANK_DLY_DAY"
+)
+nw_ap_rank_data <- merge(
+  x = nw_ap_rank_data,
+  y = nw_ap_main_delay_flt,
+  by = "R_RANK_DLY_DAY"
+)
+nw_ap_rank_data <- merge(
+  x = nw_ap_rank_data,
+  y = nw_ap_delay_data_s2d,
+  by = "R_RANK_DLY_DAY"
+)
 
 nw_ap_rank_data <- nw_ap_rank_data %>%
   select(
@@ -1877,100 +2185,153 @@ save_json(nw_ap_rank_data_j, "nw_apt_ranking_delay")
 print(paste(format(now(), "%H:%M:%S"), "nw_apt_ranking_delay"))
 
 ## ACC delay ----
-nw_acc_delay_day_raw <- export_query(query_nw_acc_delay_day_raw(format(data_day_date, "%Y-%m%-%d")), schema = "PRU_READ")
+nw_acc_delay_day_raw <- export_query(
+  query_nw_acc_delay_day_raw(format(data_day_date, "%Y-%m%-%d")),
+  schema = "PRU_READ"
+)
 
 ### day ----
 nw_acc_delay_day_all <- nw_acc_delay_day_raw %>%
-  left_join(distinct(list_acc, NAME, ICAO_CODE), by = c("UNIT_CODE" = "ICAO_CODE")) %>%
+  left_join(
+    distinct(list_acc, NAME, ICAO_CODE),
+    by = c("UNIT_CODE" = "ICAO_CODE")
+  ) %>%
   arrange(desc(DLY_ER), NAME) %>%
   mutate(
     DY_RANK = row_number(),
-    DY_ACC_DLY_PER_FLT = if_else(FLIGHT ==0, 0, DLY_ER / FLIGHT),
+    DY_ACC_DLY_PER_FLT = if_else(FLIGHT == 0, 0, DLY_ER / FLIGHT),
   ) %>%
   #remove 0 values from list
-  mutate(across(c(-DY_RANK, -ENTRY_DATE), ~ ifelse(DLY_ER == 0, NA, .))) %>% 
-  select(DY_RANK,
-         R_RANK_DLY_DAY,
-         DY_ACC_NAME = NAME,
-         DY_TO_DATE = ENTRY_DATE,
-         DY_ACC_DLY = DLY_ER,
-         DY_ACC_DLY_PER_FLT
-         ) 
-  
+  mutate(across(c(-DY_RANK, -ENTRY_DATE), ~ ifelse(DLY_ER == 0, NA, .))) %>%
+  select(
+    DY_RANK,
+    R_RANK_DLY_DAY,
+    DY_ACC_NAME = NAME,
+    DY_TO_DATE = ENTRY_DATE,
+    DY_ACC_DLY = DLY_ER,
+    DY_ACC_DLY_PER_FLT
+  )
+
 nw_acc_delay_day <- nw_acc_delay_day_all %>%
   filter(DY_RANK <= 10)
-  
+
 ### week ----
-nw_acc_delay_week_raw <- export_query(query_nw_acc_delay_week_raw(format(data_day_date, "%Y-%m%-%d")), schema = "PRU_READ")
+nw_acc_delay_week_raw <- export_query(
+  query_nw_acc_delay_week_raw(format(data_day_date, "%Y-%m%-%d")),
+  schema = "PRU_READ"
+)
 
 nw_acc_delay_week_all <- nw_acc_delay_week_raw %>%
-  left_join(distinct(list_acc, NAME, ICAO_CODE), by = c("UNIT_CODE" = "ICAO_CODE")) %>%
+  left_join(
+    distinct(list_acc, NAME, ICAO_CODE),
+    by = c("UNIT_CODE" = "ICAO_CODE")
+  ) %>%
   arrange(desc(DAILY_DLY_ER), NAME) %>%
   mutate(
     DY_RANK = row_number(),
     WK_RANK = DY_RANK,
-    WK_ACC_DLY_PER_FLT = if_else(DAILY_FLIGHT ==0, 0, DAILY_DLY_ER / DAILY_FLIGHT)
+    WK_ACC_DLY_PER_FLT = if_else(
+      DAILY_FLIGHT == 0,
+      0,
+      DAILY_DLY_ER / DAILY_FLIGHT
+    )
   ) %>%
   #remove 0 values from list
-  mutate(across(c(-DY_RANK, -MAX_ENTRY_DATE, -MIN_ENTRY_DATE), ~ ifelse(DAILY_DLY_ER == 0, NA, .))) %>% 
-  select(DY_RANK,
-         WK_RANK,
-         WK_ACC_NAME = NAME,
-         WK_FROM_DATE = MIN_ENTRY_DATE,
-         WK_TO_DATE = MAX_ENTRY_DATE,
-         WK_ACC_DLY = DAILY_DLY_ER,
-         WK_ACC_DLY_PER_FLT) 
+  mutate(across(
+    c(-DY_RANK, -MAX_ENTRY_DATE, -MIN_ENTRY_DATE),
+    ~ ifelse(DAILY_DLY_ER == 0, NA, .)
+  )) %>%
+  select(
+    DY_RANK,
+    WK_RANK,
+    WK_ACC_NAME = NAME,
+    WK_FROM_DATE = MIN_ENTRY_DATE,
+    WK_TO_DATE = MAX_ENTRY_DATE,
+    WK_ACC_DLY = DAILY_DLY_ER,
+    WK_ACC_DLY_PER_FLT
+  )
 
-nw_acc_delay_week <- nw_acc_delay_week_all %>% 
+nw_acc_delay_week <- nw_acc_delay_week_all %>%
   filter(DY_RANK <= 10)
 
 ### y2d ----
-nw_acc_delay_y2d_raw <- export_query(query_nw_acc_delay_y2d_raw(format(data_day_date, "%Y-%m%-%d")), schema = "PRU_READ")
+nw_acc_delay_y2d_raw <- export_query(
+  query_nw_acc_delay_y2d_raw(format(data_day_date, "%Y-%m%-%d")),
+  schema = "PRU_READ"
+)
 
 nw_acc_delay_y2d_all <- nw_acc_delay_y2d_raw %>%
   rename(Y2D_FROM_DATE = MIN_DATE) %>%
-  left_join(distinct(list_acc, NAME, ICAO_CODE), by = c("UNIT_CODE" = "ICAO_CODE")) %>%
+  left_join(
+    distinct(list_acc, NAME, ICAO_CODE),
+    by = c("UNIT_CODE" = "ICAO_CODE")
+  ) %>%
   arrange(desc(Y2D_AVG_DLY_ER), NAME) %>%
   mutate(
     DY_RANK = row_number(),
     Y2D_RANK = DY_RANK,
-    Y2D_ACC_DLY_PER_FLT = if_else(Y2D_AVG_FLIGHT ==0, 0, Y2D_AVG_DLY_ER / Y2D_AVG_FLIGHT) 
+    Y2D_ACC_DLY_PER_FLT = if_else(
+      Y2D_AVG_FLIGHT == 0,
+      0,
+      Y2D_AVG_DLY_ER / Y2D_AVG_FLIGHT
+    )
   ) %>%
   #remove 0 values from list
-  mutate(across(c(-DY_RANK, -ENTRY_DATE), ~ ifelse(Y2D_AVG_FLIGHT == 0, NA, .))) %>% 
-  select(DY_RANK,
-         Y2D_RANK,
-         Y2D_ACC_NAME = NAME,
-         Y2D_TO_DATE = ENTRY_DATE,
-         Y2D_ACC_DLY = Y2D_AVG_DLY_ER,
-         Y2D_ACC_DLY_PER_FLT
-  ) 
+  mutate(across(
+    c(-DY_RANK, -ENTRY_DATE),
+    ~ ifelse(Y2D_AVG_FLIGHT == 0, NA, .)
+  )) %>%
+  select(
+    DY_RANK,
+    Y2D_RANK,
+    Y2D_ACC_NAME = NAME,
+    Y2D_TO_DATE = ENTRY_DATE,
+    Y2D_ACC_DLY = Y2D_AVG_DLY_ER,
+    Y2D_ACC_DLY_PER_FLT
+  )
 
 nw_acc_delay_y2d <- nw_acc_delay_y2d_all %>%
   filter(DY_RANK <= 10)
 
 ### s2d ----
-nw_acc_delay_s2d_raw <- export_query(query_nw_acc_delay_y2d_raw(format(data_day_date, "%Y-%m%-%d"), initial_date = summer_start), schema = "PRU_READ") %>% 
+nw_acc_delay_s2d_raw <- export_query(
+  query_nw_acc_delay_y2d_raw(
+    format(data_day_date, "%Y-%m%-%d"),
+    initial_date = summer_start
+  ),
+  schema = "PRU_READ"
+) %>%
   rename_with(~ gsub("Y2D", "S2D", .x), .cols = contains("Y2D"))
 
 nw_acc_delay_s2d_all <- nw_acc_delay_s2d_raw %>%
   rename(S2D_FROM_DATE = MIN_DATE) %>%
-  left_join(distinct(list_acc, NAME, ICAO_CODE), by = c("UNIT_CODE" = "ICAO_CODE")) %>%
+  left_join(
+    distinct(list_acc, NAME, ICAO_CODE),
+    by = c("UNIT_CODE" = "ICAO_CODE")
+  ) %>%
   arrange(desc(S2D_AVG_DLY_ER), NAME) %>%
   mutate(
     DY_RANK = row_number(),
     S2D_RANK = DY_RANK,
-    S2D_ACC_DLY_PER_FLT = if_else(S2D_AVG_FLIGHT ==0, 0, S2D_AVG_DLY_ER / S2D_AVG_FLIGHT) 
+    S2D_ACC_DLY_PER_FLT = if_else(
+      S2D_AVG_FLIGHT == 0,
+      0,
+      S2D_AVG_DLY_ER / S2D_AVG_FLIGHT
+    )
   ) %>%
   #remove 0 values from list
-  mutate(across(c(-DY_RANK, -ENTRY_DATE), ~ ifelse(S2D_AVG_FLIGHT == 0, NA, .))) %>% 
-  select(DY_RANK,
-         S2D_RANK,
-         S2D_ACC_NAME = NAME,
-         S2D_TO_DATE = ENTRY_DATE,
-         S2D_ACC_DLY = S2D_AVG_DLY_ER,
-         S2D_ACC_DLY_PER_FLT
-  ) 
+  mutate(across(
+    c(-DY_RANK, -ENTRY_DATE),
+    ~ ifelse(S2D_AVG_FLIGHT == 0, NA, .)
+  )) %>%
+  select(
+    DY_RANK,
+    S2D_RANK,
+    S2D_ACC_NAME = NAME,
+    S2D_TO_DATE = ENTRY_DATE,
+    S2D_ACC_DLY = S2D_AVG_DLY_ER,
+    S2D_ACC_DLY_PER_FLT
+  )
 
 nw_acc_delay_s2d <- nw_acc_delay_s2d_all %>%
   filter(DY_RANK <= 10)
@@ -1978,9 +2339,11 @@ nw_acc_delay_s2d <- nw_acc_delay_s2d_all %>%
 ### main card ----
 nw_acc_main_delay <- nw_acc_delay_day %>%
   mutate(across(-DY_RANK, ~ ifelse(DY_RANK > 4, NA, .))) %>%
-  select(DY_RANK,
-         MAIN_DLY_ACC_NAME = DY_ACC_NAME,
-         MAIN_DLY_ACC_DLY = DY_ACC_DLY)
+  select(
+    DY_RANK,
+    MAIN_DLY_ACC_NAME = DY_ACC_NAME,
+    MAIN_DLY_ACC_DLY = DY_ACC_DLY
+  )
 
 nw_acc_main_delay_flt <- nw_acc_delay_day_all %>%
   arrange(desc(coalesce(DY_ACC_DLY_PER_FLT, 0)), DY_ACC_NAME) %>%
@@ -1988,20 +2351,43 @@ nw_acc_main_delay_flt <- nw_acc_delay_day_all %>%
     DY_RANK = row_number(),
     across(-DY_RANK, ~ ifelse(DY_RANK > 4, NA, .))
   ) %>%
-  select(DY_RANK,
-         MAIN_DLY_FLT_ACC_NAME = DY_ACC_NAME,
-         MAIN_DLY_FLT_ACC_DLY_FLT = DY_ACC_DLY_PER_FLT) %>%
+  select(
+    DY_RANK,
+    MAIN_DLY_FLT_ACC_NAME = DY_ACC_NAME,
+    MAIN_DLY_FLT_ACC_DLY_FLT = DY_ACC_DLY_PER_FLT
+  ) %>%
   filter(DY_RANK <= 10)
 
 ### merge and reorder tables ----
-nw_acc_delay_data <- merge(x = nw_acc_delay_day, y = nw_acc_delay_week, by = "DY_RANK")
-nw_acc_delay_data <- merge(x = nw_acc_delay_data, y = nw_acc_delay_y2d, by = "DY_RANK")
-nw_acc_delay_data <- merge(x = nw_acc_delay_data, y = nw_acc_main_delay, by = "DY_RANK")
-nw_acc_delay_data <- merge(x = nw_acc_delay_data, y = nw_acc_main_delay_flt, by = "DY_RANK")
-nw_acc_delay_data <- merge(x = nw_acc_delay_data, y = nw_acc_delay_s2d, by = "DY_RANK")
+nw_acc_delay_data <- merge(
+  x = nw_acc_delay_day,
+  y = nw_acc_delay_week,
+  by = "DY_RANK"
+)
+nw_acc_delay_data <- merge(
+  x = nw_acc_delay_data,
+  y = nw_acc_delay_y2d,
+  by = "DY_RANK"
+)
+nw_acc_delay_data <- merge(
+  x = nw_acc_delay_data,
+  y = nw_acc_main_delay,
+  by = "DY_RANK"
+)
+nw_acc_delay_data <- merge(
+  x = nw_acc_delay_data,
+  y = nw_acc_main_delay_flt,
+  by = "DY_RANK"
+)
+nw_acc_delay_data <- merge(
+  x = nw_acc_delay_data,
+  y = nw_acc_delay_s2d,
+  by = "DY_RANK",
+  all = TRUE
+)
 
 nw_acc_delay_data <- nw_acc_delay_data %>%
-  mutate(RANK = DY_RANK) %>% 
+  mutate(RANK = DY_RANK) %>%
   select(
     RANK,
     MAIN_DLY_ACC_NAME,
@@ -2033,16 +2419,23 @@ print(paste(format(now(), "%H:%M:%S"), "nw_acc_ranking_delay"))
 
 ## Country delay ----
 ### day ----
-nw_st_rank_delay_day_raw <- export_query(query_nw_st_delay_day_raw(format(data_day_date, "%Y-%m%-%d")))
+nw_st_rank_delay_day_raw <- export_query(query_nw_st_delay_day_raw(format(
+  data_day_date,
+  "%Y-%m%-%d"
+)))
 
 nw_st_rank_delay_day <- nw_st_rank_delay_day_raw %>%
-  left_join(distinct(list_iso_country, ISO_COUNTRY_CODE, COUNTRY_NAME),
-            by = c("DY_CTRY_DLY_NAME" = "COUNTRY_NAME")) %>%
-  mutate(DY_CTRY_DLY_CODE = case_when(
-    DY_CTRY_DLY_NAME == "Maastricht" ~ "MUAC",
-    DY_CTRY_DLY_NAME == "Serbia/Montenegro" ~ "RSME",
-    .default = ISO_COUNTRY_CODE
-  )) %>%
+  left_join(
+    distinct(list_iso_country, ISO_COUNTRY_CODE, COUNTRY_NAME),
+    by = c("DY_CTRY_DLY_NAME" = "COUNTRY_NAME")
+  ) %>%
+  mutate(
+    DY_CTRY_DLY_CODE = case_when(
+      DY_CTRY_DLY_NAME == "Maastricht" ~ "MUAC",
+      DY_CTRY_DLY_NAME == "Serbia/Montenegro" ~ "RSME",
+      .default = ISO_COUNTRY_CODE
+    )
+  ) %>%
   arrange(desc(DY_CTRY_DLY), DY_CTRY_DLY_NAME) %>%
   mutate(
     RANK = row_number(),
@@ -2050,8 +2443,10 @@ nw_st_rank_delay_day <- nw_st_rank_delay_day_raw %>%
   ) %>%
   filter(DY_RANK <= 10) %>%
   #remove 0 values from list
-  mutate(across(c(-DY_RANK, - DY_TO_DATE), ~ ifelse(DY_CTRY_DLY == 0, NA, .))
-         ) %>%
+  mutate(across(
+    c(-DY_RANK, -DY_TO_DATE),
+    ~ ifelse(DY_CTRY_DLY == 0, NA, .)
+  )) %>%
   select(
     RANK,
     DY_RANK,
@@ -2063,7 +2458,10 @@ nw_st_rank_delay_day <- nw_st_rank_delay_day_raw %>%
   )
 
 ### week ----
-nw_st_rank_delay_week_raw <- export_query(query_nw_st_delay_week_raw(format(data_day_date, "%Y-%m%-%d")))
+nw_st_rank_delay_week_raw <- export_query(query_nw_st_delay_week_raw(format(
+  data_day_date,
+  "%Y-%m%-%d"
+)))
 
 nw_st_rank_delay_week <- nw_st_rank_delay_week_raw %>%
   filter(PERIOD_TYPE == "1_ROL_WEEK") %>%
@@ -2072,12 +2470,14 @@ nw_st_rank_delay_week <- nw_st_rank_delay_week_raw %>%
     DY_RANK = row_number(),
     WK_RANK = DY_RANK,
     WK_FROM_DATE = TO_DATE + lubridate::days(-6),
-    WK_CTRY_DLY_PER_FLT = if_else(AVG_FLIGHT == 0, 0,AVG_DELAY/ AVG_FLIGHT)
+    WK_CTRY_DLY_PER_FLT = if_else(AVG_FLIGHT == 0, 0, AVG_DELAY / AVG_FLIGHT)
   ) %>%
   filter(DY_RANK <= 10) %>%
   #remove 0 values from list
-  mutate(across(c(-DY_RANK, - WK_FROM_DATE, -TO_DATE), ~ ifelse(AVG_DELAY == 0, NA, .))
-  ) %>%
+  mutate(across(
+    c(-DY_RANK, -WK_FROM_DATE, -TO_DATE),
+    ~ ifelse(AVG_DELAY == 0, NA, .)
+  )) %>%
   select(
     DY_RANK,
     WK_RANK,
@@ -2089,7 +2489,10 @@ nw_st_rank_delay_week <- nw_st_rank_delay_week_raw %>%
   )
 
 ### y2d ----
-nw_st_rank_delay_y2d_raw <- export_query(query_nw_st_delay_y2d_raw(format(data_day_date, "%Y-%m%-%d")))
+nw_st_rank_delay_y2d_raw <- export_query(query_nw_st_delay_y2d_raw(format(
+  data_day_date,
+  "%Y-%m%-%d"
+)))
 
 nw_st_rank_delay_y2d <- nw_st_rank_delay_y2d_raw %>%
   filter(YEAR == data_day_year) %>%
@@ -2097,12 +2500,11 @@ nw_st_rank_delay_y2d <- nw_st_rank_delay_y2d_raw %>%
   mutate(
     DY_RANK = row_number(),
     Y2D_RANK = DY_RANK,
-    Y2D_CTRY_DLY_PER_FLT = if_else(AVG_FLIGHT == 0, 0,AVG_DELAY/ AVG_FLIGHT)
+    Y2D_CTRY_DLY_PER_FLT = if_else(AVG_FLIGHT == 0, 0, AVG_DELAY / AVG_FLIGHT)
   ) %>%
   filter(DY_RANK <= 10) %>%
   #remove 0 values from list
-  mutate(across(c(-DY_RANK, -TO_DATE), ~ ifelse(AVG_DELAY == 0, NA, .))
-  ) %>%
+  mutate(across(c(-DY_RANK, -TO_DATE), ~ ifelse(AVG_DELAY == 0, NA, .))) %>%
   select(
     DY_RANK,
     Y2D_RANK,
@@ -2113,7 +2515,10 @@ nw_st_rank_delay_y2d <- nw_st_rank_delay_y2d_raw %>%
   )
 
 ### s2d ----
-nw_st_rank_delay_s2d_raw <- export_query(query_nw_st_delay_y2d_raw(format(data_day_date, "%Y-%m%-%d"), initial_date = summer_start))
+nw_st_rank_delay_s2d_raw <- export_query(query_nw_st_delay_y2d_raw(
+  format(data_day_date, "%Y-%m%-%d"),
+  initial_date = summer_start
+))
 
 nw_st_rank_delay_s2d <- nw_st_rank_delay_s2d_raw %>%
   filter(YEAR == data_day_year) %>%
@@ -2121,12 +2526,11 @@ nw_st_rank_delay_s2d <- nw_st_rank_delay_s2d_raw %>%
   mutate(
     DY_RANK = row_number(),
     S2D_RANK = DY_RANK,
-    S2D_CTRY_DLY_PER_FLT = if_else(AVG_FLIGHT == 0, 0,AVG_DELAY/ AVG_FLIGHT)
+    S2D_CTRY_DLY_PER_FLT = if_else(AVG_FLIGHT == 0, 0, AVG_DELAY / AVG_FLIGHT)
   ) %>%
   filter(DY_RANK <= 10) %>%
   #remove 0 values from list
-  mutate(across(c(-DY_RANK, -TO_DATE), ~ ifelse(AVG_DELAY == 0, NA, .))
-  ) %>%
+  mutate(across(c(-DY_RANK, -TO_DATE), ~ ifelse(AVG_DELAY == 0, NA, .))) %>%
   select(
     DY_RANK,
     S2D_RANK,
@@ -2140,26 +2544,53 @@ nw_st_rank_delay_s2d <- nw_st_rank_delay_s2d_raw %>%
 ### main card ----
 nw_st_main_delay <- nw_st_rank_delay_day %>%
   mutate(across(-DY_RANK, ~ ifelse(DY_RANK > 4, NA, .))) %>%
-  select(DY_RANK,
-         MAIN_DLY_CTRY_NAME = DY_CTRY_DLY_NAME,
-         MAIN_DLY_CTRY_DLY = DY_CTRY_DLY,
-         MAIN_DLY_CTRY_CODE = DY_CTRY_DLY_CODE)
+  select(
+    DY_RANK,
+    MAIN_DLY_CTRY_NAME = DY_CTRY_DLY_NAME,
+    MAIN_DLY_CTRY_DLY = DY_CTRY_DLY,
+    MAIN_DLY_CTRY_CODE = DY_CTRY_DLY_CODE
+  )
 
 nw_st_main_delay_flt <- nw_st_rank_delay_day %>%
   arrange(desc(DY_CTRY_DLY_PER_FLT), DY_CTRY_DLY_NAME) %>%
-  mutate(DY_RANK = row_number(),
-         across(-DY_RANK, ~ ifelse(DY_RANK > 4, NA, .))) %>%
-  select(DY_RANK,
-         MAIN_DLY_FLT_CTRY_NAME = DY_CTRY_DLY_NAME,
-         MAIN_DLY_FLT_CTRY_DLY_FLT = DY_CTRY_DLY_PER_FLT,
-         MAIN_DLY_FLT_CTRY_CODE = DY_CTRY_DLY_CODE)
+  mutate(
+    DY_RANK = row_number(),
+    across(-DY_RANK, ~ ifelse(DY_RANK > 4, NA, .))
+  ) %>%
+  select(
+    DY_RANK,
+    MAIN_DLY_FLT_CTRY_NAME = DY_CTRY_DLY_NAME,
+    MAIN_DLY_FLT_CTRY_DLY_FLT = DY_CTRY_DLY_PER_FLT,
+    MAIN_DLY_FLT_CTRY_CODE = DY_CTRY_DLY_CODE
+  )
 
 ### merge and reorder tables ----
-nw_st_rank_delay <- merge(x = nw_st_rank_delay_day, y = nw_st_rank_delay_week, by = "DY_RANK")
-nw_st_rank_delay <- merge(x = nw_st_rank_delay, y = nw_st_rank_delay_y2d, by = "DY_RANK")
-nw_st_rank_delay <- merge(x = nw_st_rank_delay, y = nw_st_main_delay, by = "DY_RANK")
-nw_st_rank_delay <- merge(x = nw_st_rank_delay, y = nw_st_main_delay_flt, by = "DY_RANK")
-nw_st_rank_delay <- merge(x = nw_st_rank_delay, y = nw_st_rank_delay_s2d, by = "DY_RANK")
+nw_st_rank_delay <- merge(
+  x = nw_st_rank_delay_day,
+  y = nw_st_rank_delay_week,
+  by = "DY_RANK"
+)
+nw_st_rank_delay <- merge(
+  x = nw_st_rank_delay,
+  y = nw_st_rank_delay_y2d,
+  by = "DY_RANK"
+)
+nw_st_rank_delay <- merge(
+  x = nw_st_rank_delay,
+  y = nw_st_main_delay,
+  by = "DY_RANK"
+)
+nw_st_rank_delay <- merge(
+  x = nw_st_rank_delay,
+  y = nw_st_main_delay_flt,
+  by = "DY_RANK"
+)
+nw_st_rank_delay <- merge(
+  x = nw_st_rank_delay,
+  y = nw_st_rank_delay_s2d,
+  by = "DY_RANK",
+  all = TRUE
+)
 
 nw_st_rank_delay <- nw_st_rank_delay %>%
   select(
@@ -2194,12 +2625,15 @@ save_json(nw_st_rank_delay_j, "nw_ctry_ranking_delay")
 print(paste(format(now(), "%H:%M:%S"), "nw_ctry_ranking_delay"))
 
 ## Airport punctuality ----
-if(exists("nw_apt_punct_raw") == FALSE) {
+if (exists("nw_apt_punct_raw") == FALSE) {
   nw_apt_punct_raw <- get_punct_data_apt()
 }
 
-last_punctuality_day <- min(max(nw_apt_punct_raw$DAY_DATE),
-                            data_day_date, na.rm = TRUE)
+last_punctuality_day <- min(
+  max(nw_apt_punct_raw$DAY_DATE),
+  data_day_date,
+  na.rm = TRUE
+)
 
 ### calc
 nw_apt_punct_calc <- nw_apt_punct_raw %>%
@@ -2212,9 +2646,19 @@ nw_apt_punct_calc <- nw_apt_punct_raw %>%
   arrange(ARP_NAME, DAY_DATE) %>%
   mutate(
     DY_RANK_DIF_PREV_WEEK = lag(RANK, 7) - RANK,
-    DY_PUNCT_DIF_PREV_WEEK_PERC = (ARR_PUNCTUALITY_PERCENTAGE - lag(ARR_PUNCTUALITY_PERCENTAGE, 7)) / 100,
-    DY_PUNCT_DIF_PREV_YEAR_PERC = (ARR_PUNCTUALITY_PERCENTAGE - lag(ARR_PUNCTUALITY_PERCENTAGE, 364)) / 100,
-    WK_APT_ARR_PUNCT = rollsum(ARR_PUNCTUAL_FLIGHTS, 7, fill = NA, align = "right") / rollsum(ARR_SCHEDULE_FLIGHT, 7, fill = NA, align = "right")
+    DY_PUNCT_DIF_PREV_WEEK_PERC = (ARR_PUNCTUALITY_PERCENTAGE -
+      lag(ARR_PUNCTUALITY_PERCENTAGE, 7)) /
+      100,
+    DY_PUNCT_DIF_PREV_YEAR_PERC = (ARR_PUNCTUALITY_PERCENTAGE -
+      lag(ARR_PUNCTUALITY_PERCENTAGE, 364)) /
+      100,
+    WK_APT_ARR_PUNCT = rollsum(
+      ARR_PUNCTUAL_FLIGHTS,
+      7,
+      fill = NA,
+      align = "right"
+    ) /
+      rollsum(ARR_SCHEDULE_FLIGHT, 7, fill = NA, align = "right")
   ) %>%
   ungroup()
 
@@ -2272,13 +2716,13 @@ nw_apt_punct_wk <- nw_apt_punct_calc %>%
   mutate(
     WK_RANK_DIF_PREV_WEEK = lag(RANK, 7) - RANK,
     WK_PUNCT_DIF_PREV_WEEK_PERC = (WK_APT_ARR_PUNCT - lag(WK_APT_ARR_PUNCT, 7)),
-    WK_PUNCT_DIF_PREV_YEAR_PERC = (WK_APT_ARR_PUNCT - lag(WK_APT_ARR_PUNCT, 364))
+    WK_PUNCT_DIF_PREV_YEAR_PERC = (WK_APT_ARR_PUNCT -
+      lag(WK_APT_ARR_PUNCT, 364))
   ) %>%
   ungroup()
 
 nw_apt_punct_wk_top <- nw_apt_punct_wk %>%
-  filter(DAY_DATE == last_punctuality_day,
-         RANK < 11) %>%
+  filter(DAY_DATE == last_punctuality_day, RANK < 11) %>%
   mutate(
     WK_APT_NAME = ARP_NAME,
     WK_FROM_DATE = round_date(DAY_DATE, "day") + lubridate::days(-6),
@@ -2320,10 +2764,16 @@ nw_apt_punct_wk_bottom <- nw_apt_punct_wk %>%
 ### y2d ----
 nw_apt_punct_y2d <- nw_apt_punct_calc %>%
   mutate(MONTH_DAY = as.numeric(format(DAY_DATE, format = "%m%d"))) %>%
-  filter(MONTH_DAY <= as.numeric(format(last_punctuality_day, format = "%m%d"))) %>%
+  filter(
+    MONTH_DAY <= as.numeric(format(last_punctuality_day, format = "%m%d"))
+  ) %>%
   # mutate(YEAR = as.numeric(format(DAY_DATE, format = "%Y"))) %>%
   group_by(ARP_NAME, ARP_CODE, YEAR) %>%
-  summarise(Y2D_APT_ARR_PUNCT = sum(ARR_PUNCTUAL_FLIGHTS, na.rm = TRUE) / sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE), .groups = "drop") %>%
+  summarise(
+    Y2D_APT_ARR_PUNCT = sum(ARR_PUNCTUAL_FLIGHTS, na.rm = TRUE) /
+      sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
   group_by(YEAR) %>%
   arrange(YEAR, desc(Y2D_APT_ARR_PUNCT), ARP_NAME) %>%
   mutate(
@@ -2335,8 +2785,10 @@ nw_apt_punct_y2d <- nw_apt_punct_calc %>%
   arrange(ARP_NAME, ARP_CODE, YEAR) %>%
   mutate(
     Y2D_RANK_DIF_PREV_YEAR = lag(RANK, 1) - RANK,
-    Y2D_PUNCT_DIF_PREV_YEAR_PERC = (Y2D_APT_ARR_PUNCT - lag(Y2D_APT_ARR_PUNCT, 1)),
-    Y2D_PUNCT_DIF_2019_PERC = (Y2D_APT_ARR_PUNCT - lag(Y2D_APT_ARR_PUNCT, last_year_punct - 2019))
+    Y2D_PUNCT_DIF_PREV_YEAR_PERC = (Y2D_APT_ARR_PUNCT -
+      lag(Y2D_APT_ARR_PUNCT, 1)),
+    Y2D_PUNCT_DIF_2019_PERC = (Y2D_APT_ARR_PUNCT -
+      lag(Y2D_APT_ARR_PUNCT, last_year_punct - 2019))
   ) %>%
   ungroup()
 
@@ -2376,7 +2828,11 @@ nw_apt_punct_s2d <- nw_apt_punct_calc %>%
     MONTH_DAY >= summer_start
   ) %>%
   group_by(ARP_NAME, ARP_CODE, YEAR) %>%
-  summarise(S2D_APT_ARR_PUNCT = sum(ARR_PUNCTUAL_FLIGHTS, na.rm = TRUE) / sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE), .groups = "drop") %>%
+  summarise(
+    S2D_APT_ARR_PUNCT = sum(ARR_PUNCTUAL_FLIGHTS, na.rm = TRUE) /
+      sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
   group_by(YEAR) %>%
   arrange(YEAR, desc(S2D_APT_ARR_PUNCT), ARP_NAME) %>%
   mutate(
@@ -2388,8 +2844,10 @@ nw_apt_punct_s2d <- nw_apt_punct_calc %>%
   arrange(ARP_NAME, ARP_CODE, YEAR) %>%
   mutate(
     S2D_RANK_DIF_PREV_YEAR = lag(RANK, 1) - RANK,
-    S2D_PUNCT_DIF_PREV_YEAR_PERC = (S2D_APT_ARR_PUNCT - lag(S2D_APT_ARR_PUNCT, 1)),
-    S2D_PUNCT_DIF_2019_PERC = (S2D_APT_ARR_PUNCT - lag(S2D_APT_ARR_PUNCT, last_year_punct - 2019))
+    S2D_PUNCT_DIF_PREV_YEAR_PERC = (S2D_APT_ARR_PUNCT -
+      lag(S2D_APT_ARR_PUNCT, 1)),
+    S2D_PUNCT_DIF_2019_PERC = (S2D_APT_ARR_PUNCT -
+      lag(S2D_APT_ARR_PUNCT, last_year_punct - 2019))
   ) %>%
   ungroup()
 
@@ -2424,9 +2882,11 @@ nw_apt_punct_s2d_bottom <- nw_apt_punct_s2d %>%
 ### main card ----
 nw_apt_main_punct_top <- nw_apt_punct_dy_top %>%
   mutate(across(-RANK, ~ ifelse(RANK > 4, NA, .))) %>%
-  select(RANK,
-         MAIN_PUNCT_APT_NAME = DY_APT_NAME,
-         MAIN_PUNCT_APT_ARR_PUNCT = DY_APT_ARR_PUNCT)
+  select(
+    RANK,
+    MAIN_PUNCT_APT_NAME = DY_APT_NAME,
+    MAIN_PUNCT_APT_ARR_PUNCT = DY_APT_ARR_PUNCT
+  )
 
 nw_apt_main_punct_bottom <- nw_apt_punct_calc %>%
   filter(DAY_DATE == last_punctuality_day) %>%
@@ -2436,24 +2896,46 @@ nw_apt_main_punct_bottom <- nw_apt_punct_calc %>%
     DY_APT_ARR_PUNCT = ARR_PUNCTUALITY_PERCENTAGE / 100
   ) %>%
   mutate(across(-RANK, ~ ifelse(RANK > 4, NA, .))) %>%
-  select(RANK,
-         MAIN_PUNCT_APT_NAME_BOTTOM = DY_APT_NAME,
-         MAIN_PUNCT_APT_ARR_PUNCT_BOTTOM = DY_APT_ARR_PUNCT) %>%
+  select(
+    RANK,
+    MAIN_PUNCT_APT_NAME_BOTTOM = DY_APT_NAME,
+    MAIN_PUNCT_APT_ARR_PUNCT_BOTTOM = DY_APT_ARR_PUNCT
+  ) %>%
   filter(RANK < 11) %>%
   arrange(RANK)
 
 ### merge and reorder tables ----
-nw_apt_punct_data <- merge(x = nw_apt_punct_dy_top, y = nw_apt_punct_wk_top, by = "RANK")
-nw_apt_punct_data <- merge(x = nw_apt_punct_data, y = nw_apt_punct_y2d_top, by = "RANK")
-nw_apt_punct_data <- merge(x = nw_apt_punct_data, y = nw_apt_main_punct_top, by = "RANK")
-nw_apt_punct_data <- merge(x = nw_apt_punct_data, y = nw_apt_main_punct_bottom, by = "RANK")
-nw_apt_punct_data <- merge(x = nw_apt_punct_data, y = nw_apt_punct_s2d_top, by = "RANK")
+nw_apt_punct_data <- merge(
+  x = nw_apt_punct_dy_top,
+  y = nw_apt_punct_wk_top,
+  by = "RANK"
+)
+nw_apt_punct_data <- merge(
+  x = nw_apt_punct_data,
+  y = nw_apt_punct_y2d_top,
+  by = "RANK"
+)
+nw_apt_punct_data <- merge(
+  x = nw_apt_punct_data,
+  y = nw_apt_main_punct_top,
+  by = "RANK"
+)
+nw_apt_punct_data <- merge(
+  x = nw_apt_punct_data,
+  y = nw_apt_main_punct_bottom,
+  by = "RANK"
+)
+nw_apt_punct_data <- merge(
+  x = nw_apt_punct_data,
+  y = nw_apt_punct_s2d_top,
+  by = "RANK"
+)
 
 nw_apt_punct_data <- nw_apt_punct_data %>%
   mutate(
     Y2D_TO_DATE = DY_TO_DATE,
     S2D_TO_DATE = ymd(paste0(data_day_year, "0", summer_start))
-    ) %>%
+  ) %>%
   select(
     RANK,
     MAIN_PUNCT_APT_NAME,
@@ -2485,20 +2967,34 @@ nw_apt_punct_data <- nw_apt_punct_data %>%
     S2D_APT_ARR_PUNCT,
     S2D_PUNCT_DIF_PREV_YEAR_PERC,
     S2D_PUNCT_DIF_2019_PERC
-    
   )
 
 ### add bottom ranking at the end of the df
-nw_apt_punct_data <- merge(x = nw_apt_punct_data, y = nw_apt_punct_dy_bottom, by = "RANK")
-nw_apt_punct_data <- merge(x = nw_apt_punct_data, y = nw_apt_punct_wk_bottom, by = "RANK")
-nw_apt_punct_data <- merge(x = nw_apt_punct_data, y = nw_apt_punct_y2d_bottom, by = "RANK")
-nw_apt_punct_data <- merge(x = nw_apt_punct_data, y = nw_apt_punct_s2d_bottom, by = "RANK")
+nw_apt_punct_data <- merge(
+  x = nw_apt_punct_data,
+  y = nw_apt_punct_dy_bottom,
+  by = "RANK"
+)
+nw_apt_punct_data <- merge(
+  x = nw_apt_punct_data,
+  y = nw_apt_punct_wk_bottom,
+  by = "RANK"
+)
+nw_apt_punct_data <- merge(
+  x = nw_apt_punct_data,
+  y = nw_apt_punct_y2d_bottom,
+  by = "RANK"
+)
+nw_apt_punct_data <- merge(
+  x = nw_apt_punct_data,
+  y = nw_apt_punct_s2d_bottom,
+  by = "RANK"
+)
 
 nw_apt_punct_data <- nw_apt_punct_data %>%
-  mutate(Y2D_TO_DATE_BOTTOM = Y2D_TO_DATE,
-         S2D_TO_DATE_BOTTOM = S2D_TO_DATE) %>%
-  relocate (Y2D_TO_DATE_BOTTOM, .before = Y2D_APT_ARR_PUNCT_BOTTOM) %>% 
-  relocate (S2D_TO_DATE_BOTTOM, .before = S2D_APT_ARR_PUNCT_BOTTOM)
+  mutate(Y2D_TO_DATE_BOTTOM = Y2D_TO_DATE, S2D_TO_DATE_BOTTOM = S2D_TO_DATE) %>%
+  relocate(Y2D_TO_DATE_BOTTOM, .before = Y2D_APT_ARR_PUNCT_BOTTOM) %>%
+  relocate(S2D_TO_DATE_BOTTOM, .before = S2D_APT_ARR_PUNCT_BOTTOM)
 
 
 ### covert to json and save in app data folder and archive ----
@@ -2507,7 +3003,7 @@ save_json(nw_apt_punct_data_j, "nw_apt_ranking_punctuality")
 print(paste(format(now(), "%H:%M:%S"), "nw_apt_ranking_punctuality"))
 
 ## Country punctuality ----
-if(exists("st_punct_raw") == FALSE) {
+if (exists("st_punct_raw") == FALSE) {
   st_punct_raw <- get_punct_data_state()
 }
 
@@ -2525,8 +3021,7 @@ st_punct_raw <- st_punct_raw %>%
   ) %>%
   mutate_at("EC_ISO_CT_NAME", ~ if_else(. == "Turkiye", "Türkiye", .))
 
-last_punctuality_day <- min(max(st_punct_raw$DATE),
-                            data_day_date, na.rm = TRUE)
+last_punctuality_day <- min(max(st_punct_raw$DATE), data_day_date, na.rm = TRUE)
 
 ### calc
 nw_st_punct_calc <- st_punct_raw %>%
@@ -2538,9 +3033,19 @@ nw_st_punct_calc <- st_punct_raw %>%
   arrange(DATE) %>%
   mutate(
     DY_RANK_DIF_PREV_WEEK = lag(RANK, 7) - RANK,
-    DY_PUNCT_DIF_PREV_WEEK_PERC = (ARR_PUNCTUALITY_PERCENTAGE - lag(ARR_PUNCTUALITY_PERCENTAGE, 7)) / 100,
-    DY_PUNCT_DIF_PREV_YEAR_PERC = (ARR_PUNCTUALITY_PERCENTAGE - lag(ARR_PUNCTUALITY_PERCENTAGE, 364)) / 100,
-    WK_CTRY_ARR_PUNCT = rollsum(ARR_PUNCTUAL_FLIGHTS, 7, fill = NA, align = "right") / rollsum(ARR_SCHEDULE_FLIGHT, 7, fill = NA, align = "right")
+    DY_PUNCT_DIF_PREV_WEEK_PERC = (ARR_PUNCTUALITY_PERCENTAGE -
+      lag(ARR_PUNCTUALITY_PERCENTAGE, 7)) /
+      100,
+    DY_PUNCT_DIF_PREV_YEAR_PERC = (ARR_PUNCTUALITY_PERCENTAGE -
+      lag(ARR_PUNCTUALITY_PERCENTAGE, 364)) /
+      100,
+    WK_CTRY_ARR_PUNCT = rollsum(
+      ARR_PUNCTUAL_FLIGHTS,
+      7,
+      fill = NA,
+      align = "right"
+    ) /
+      rollsum(ARR_SCHEDULE_FLIGHT, 7, fill = NA, align = "right")
   ) %>%
   ungroup()
 
@@ -2567,8 +3072,7 @@ nw_st_punct_dy_top <- nw_st_punct_dy_calc_top %>%
 
 ####bottom
 nw_st_punct_dy_calc_bottom <- nw_st_punct_calc %>%
-  filter(DATE == last_punctuality_day,
-         RANK > max(RANK) - 11) %>%
+  filter(DATE == last_punctuality_day, RANK > max(RANK) - 11) %>%
   arrange(DATE, ARR_PUNCTUALITY_PERCENTAGE) %>%
   mutate(
     RANK = max(RANK) + 1 - RANK,
@@ -2577,7 +3081,7 @@ nw_st_punct_dy_calc_bottom <- nw_st_punct_calc %>%
     DY_TO_DATE_BOTTOM = round_date(DATE, "day")
   )
 
-nw_st_punct_dy_bottom <-nw_st_punct_dy_calc_bottom %>%
+nw_st_punct_dy_bottom <- nw_st_punct_dy_calc_bottom %>%
   select(
     RANK,
     DY_RANK_DIF_PREV_WEEK_BOTTOM = DY_RANK_DIF_PREV_WEEK,
@@ -2601,8 +3105,10 @@ nw_st_punct_wk <- nw_st_punct_calc %>%
   arrange(EC_ISO_CT_NAME, DATE) %>%
   mutate(
     WK_RANK_DIF_PREV_WEEK = lag(RANK, 7) - RANK,
-    WK_PUNCT_DIF_PREV_WEEK_PERC = (WK_CTRY_ARR_PUNCT - lag(WK_CTRY_ARR_PUNCT, 7)),
-    WK_PUNCT_DIF_PREV_YEAR_PERC = (WK_CTRY_ARR_PUNCT - lag(WK_CTRY_ARR_PUNCT, 364))
+    WK_PUNCT_DIF_PREV_WEEK_PERC = (WK_CTRY_ARR_PUNCT -
+      lag(WK_CTRY_ARR_PUNCT, 7)),
+    WK_PUNCT_DIF_PREV_YEAR_PERC = (WK_CTRY_ARR_PUNCT -
+      lag(WK_CTRY_ARR_PUNCT, 364))
   ) %>%
   ungroup()
 
@@ -2627,8 +3133,7 @@ nw_st_punct_wk_top <- nw_st_punct_wk %>%
 
 #### bottom
 nw_st_punct_wk_bottom <- nw_st_punct_wk %>%
-  filter(DATE == last_punctuality_day,
-         RANK > max(RANK) - 11) %>%
+  filter(DATE == last_punctuality_day, RANK > max(RANK) - 11) %>%
   arrange(WK_CTRY_ARR_PUNCT, EC_ISO_CT_NAME) %>%
   mutate(
     RANK = max(RANK) + 1 - RANK,
@@ -2650,10 +3155,16 @@ nw_st_punct_wk_bottom <- nw_st_punct_wk %>%
 ### y2d ----
 nw_st_punct_y2d <- nw_st_punct_calc %>%
   mutate(MONTH_DAY = as.numeric(format(DATE, format = "%m%d"))) %>%
-  filter(MONTH_DAY <= as.numeric(format(last_punctuality_day, format = "%m%d"))) %>%
+  filter(
+    MONTH_DAY <= as.numeric(format(last_punctuality_day, format = "%m%d"))
+  ) %>%
   mutate(YEAR = as.numeric(format(DATE, format = "%Y"))) %>%
   group_by(EC_ISO_CT_NAME, YEAR) %>%
-  summarise(Y2D_CTRY_ARR_PUNCT = sum(ARR_PUNCTUAL_FLIGHTS, na.rm = TRUE) / sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE), .groups = "drop") %>%
+  summarise(
+    Y2D_CTRY_ARR_PUNCT = sum(ARR_PUNCTUAL_FLIGHTS, na.rm = TRUE) /
+      sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
   group_by(YEAR) %>%
   arrange(YEAR, desc(Y2D_CTRY_ARR_PUNCT), EC_ISO_CT_NAME) %>%
   mutate(
@@ -2665,8 +3176,10 @@ nw_st_punct_y2d <- nw_st_punct_calc %>%
   arrange(EC_ISO_CT_NAME, YEAR) %>%
   mutate(
     Y2D_RANK_DIF_PREV_YEAR = lag(RANK, 1) - RANK,
-    Y2D_PUNCT_DIF_PREV_YEAR_PERC = (Y2D_CTRY_ARR_PUNCT - lag(Y2D_CTRY_ARR_PUNCT, 1)),
-    Y2D_PUNCT_DIF_2019_PERC = (Y2D_CTRY_ARR_PUNCT - lag(Y2D_CTRY_ARR_PUNCT, last_year_punct - 2019))
+    Y2D_PUNCT_DIF_PREV_YEAR_PERC = (Y2D_CTRY_ARR_PUNCT -
+      lag(Y2D_CTRY_ARR_PUNCT, 1)),
+    Y2D_PUNCT_DIF_2019_PERC = (Y2D_CTRY_ARR_PUNCT -
+      lag(Y2D_CTRY_ARR_PUNCT, last_year_punct - 2019))
   ) %>%
   ungroup()
 
@@ -2685,8 +3198,7 @@ nw_st_punct_y2d_top <- nw_st_punct_y2d %>%
 
 #### bottom
 nw_st_punct_y2d_bottom <- nw_st_punct_y2d %>%
-  filter(YEAR == last_year_punct,
-         RANK > max(RANK) - 11) %>%
+  filter(YEAR == last_year_punct, RANK > max(RANK) - 11) %>%
   arrange(Y2D_CTRY_ARR_PUNCT, EC_ISO_CT_NAME) %>%
   mutate(
     RANK = max(RANK) + 1 - RANK,
@@ -2704,12 +3216,17 @@ nw_st_punct_y2d_bottom <- nw_st_punct_y2d %>%
 ### s2d ----
 nw_st_punct_s2d <- nw_st_punct_calc %>%
   mutate(MONTH_DAY = as.numeric(format(DATE, format = "%m%d"))) %>%
-  filter(MONTH_DAY <= as.numeric(format(last_punctuality_day, format = "%m%d")),
-         MONTH_DAY >= summer_start
-         ) %>%
+  filter(
+    MONTH_DAY <= as.numeric(format(last_punctuality_day, format = "%m%d")),
+    MONTH_DAY >= summer_start
+  ) %>%
   mutate(YEAR = as.numeric(format(DATE, format = "%Y"))) %>%
   group_by(EC_ISO_CT_NAME, YEAR) %>%
-  summarise(S2D_CTRY_ARR_PUNCT = sum(ARR_PUNCTUAL_FLIGHTS, na.rm = TRUE) / sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE), .groups = "drop") %>%
+  summarise(
+    S2D_CTRY_ARR_PUNCT = sum(ARR_PUNCTUAL_FLIGHTS, na.rm = TRUE) /
+      sum(ARR_SCHEDULE_FLIGHT, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
   group_by(YEAR) %>%
   arrange(YEAR, desc(S2D_CTRY_ARR_PUNCT), EC_ISO_CT_NAME) %>%
   mutate(
@@ -2721,8 +3238,10 @@ nw_st_punct_s2d <- nw_st_punct_calc %>%
   arrange(EC_ISO_CT_NAME, YEAR) %>%
   mutate(
     S2D_RANK_DIF_PREV_YEAR = lag(RANK, 1) - RANK,
-    S2D_PUNCT_DIF_PREV_YEAR_PERC = (S2D_CTRY_ARR_PUNCT - lag(S2D_CTRY_ARR_PUNCT, 1)),
-    S2D_PUNCT_DIF_2019_PERC = (S2D_CTRY_ARR_PUNCT - lag(S2D_CTRY_ARR_PUNCT, last_year_punct - 2019))
+    S2D_PUNCT_DIF_PREV_YEAR_PERC = (S2D_CTRY_ARR_PUNCT -
+      lag(S2D_CTRY_ARR_PUNCT, 1)),
+    S2D_PUNCT_DIF_2019_PERC = (S2D_CTRY_ARR_PUNCT -
+      lag(S2D_CTRY_ARR_PUNCT, last_year_punct - 2019))
   ) %>%
   ungroup()
 
@@ -2741,8 +3260,7 @@ nw_st_punct_s2d_top <- nw_st_punct_s2d %>%
 
 #### bottom
 nw_st_punct_s2d_bottom <- nw_st_punct_s2d %>%
-  filter(YEAR == last_year_punct,
-         RANK > max(RANK) - 11) %>%
+  filter(YEAR == last_year_punct, RANK > max(RANK) - 11) %>%
   arrange(S2D_CTRY_ARR_PUNCT, EC_ISO_CT_NAME) %>%
   mutate(
     RANK = max(RANK) + 1 - RANK,
@@ -2760,10 +3278,12 @@ nw_st_punct_s2d_bottom <- nw_st_punct_s2d %>%
 ### main card ----
 nw_st_main_punct_top <- nw_st_punct_dy_calc_top %>%
   mutate(across(-RANK, ~ ifelse(RANK > 4, NA, .))) %>%
-  select(RANK,
-         MAIN_PUNCT_CTRY_NAME = DY_CTRY_NAME,
-         MAIN_PUNCT_CTRY_ARR_PUNCT = DY_CTRY_ARR_PUNCT,
-         MAIN_PUNCT_CTRY_CODE = ISO_CT_CODE)
+  select(
+    RANK,
+    MAIN_PUNCT_CTRY_NAME = DY_CTRY_NAME,
+    MAIN_PUNCT_CTRY_ARR_PUNCT = DY_CTRY_ARR_PUNCT,
+    MAIN_PUNCT_CTRY_CODE = ISO_CT_CODE
+  )
 
 nw_st_main_punct_bottom <- nw_st_punct_calc %>%
   filter(DATE == last_punctuality_day) %>%
@@ -2773,23 +3293,46 @@ nw_st_main_punct_bottom <- nw_st_punct_calc %>%
     DY_CTRY_ARR_PUNCT = ARR_PUNCTUALITY_PERCENTAGE / 100
   ) %>%
   mutate(across(-RANK, ~ ifelse(RANK > 4, NA, .))) %>%
-  select(RANK,
-         MAIN_PUNCT_CTRY_NAME_BOTTOM = DY_CTRY_NAME,
-         MAIN_PUNCT_CTRY_ARR_PUNCT_BOTTOM = DY_CTRY_ARR_PUNCT,
-         MAIN_PUNCT_CTRY_CODE_BOTTOM = ISO_CT_CODE) %>%
+  select(
+    RANK,
+    MAIN_PUNCT_CTRY_NAME_BOTTOM = DY_CTRY_NAME,
+    MAIN_PUNCT_CTRY_ARR_PUNCT_BOTTOM = DY_CTRY_ARR_PUNCT,
+    MAIN_PUNCT_CTRY_CODE_BOTTOM = ISO_CT_CODE
+  ) %>%
   filter(RANK < 11) %>%
   arrange(RANK)
 
 ### merge and reorder tables ----
-nw_st_punct_data <- merge(x = nw_st_punct_dy_top, y = nw_st_punct_wk_top, by = "RANK")
-nw_st_punct_data <- merge(x = nw_st_punct_data, y = nw_st_punct_y2d_top, by = "RANK")
-nw_st_punct_data <- merge(x = nw_st_punct_data, y = nw_st_main_punct_top, by = "RANK")
-nw_st_punct_data <- merge(x = nw_st_punct_data, y = nw_st_main_punct_bottom, by = "RANK")
-nw_st_punct_data <- merge(x = nw_st_punct_data, y = nw_st_punct_s2d_top, by = "RANK")
+nw_st_punct_data <- merge(
+  x = nw_st_punct_dy_top,
+  y = nw_st_punct_wk_top,
+  by = "RANK"
+)
+nw_st_punct_data <- merge(
+  x = nw_st_punct_data,
+  y = nw_st_punct_y2d_top,
+  by = "RANK"
+)
+nw_st_punct_data <- merge(
+  x = nw_st_punct_data,
+  y = nw_st_main_punct_top,
+  by = "RANK"
+)
+nw_st_punct_data <- merge(
+  x = nw_st_punct_data,
+  y = nw_st_main_punct_bottom,
+  by = "RANK"
+)
+nw_st_punct_data <- merge(
+  x = nw_st_punct_data,
+  y = nw_st_punct_s2d_top,
+  by = "RANK"
+)
 
 nw_st_punct_data <- nw_st_punct_data %>%
-  mutate(Y2D_TO_DATE = DY_TO_DATE,
-         S2D_TO_DATE = ymd(paste0(data_day_year, "0", summer_start))
+  mutate(
+    Y2D_TO_DATE = DY_TO_DATE,
+    S2D_TO_DATE = ymd(paste0(data_day_year, "0", summer_start))
   ) %>%
   select(
     RANK,
@@ -2824,19 +3367,33 @@ nw_st_punct_data <- nw_st_punct_data %>%
     S2D_CTRY_ARR_PUNCT,
     S2D_PUNCT_DIF_PREV_YEAR_PERC,
     S2D_PUNCT_DIF_2019_PERC
-    
   )
 
 ### add bottom ranking at the end of the df
-nw_st_punct_data <- merge(x = nw_st_punct_data, y = nw_st_punct_dy_bottom, by = "RANK")
-nw_st_punct_data <- merge(x = nw_st_punct_data, y = nw_st_punct_wk_bottom, by = "RANK")
-nw_st_punct_data <- merge(x = nw_st_punct_data, y = nw_st_punct_y2d_bottom, by = "RANK")
-nw_st_punct_data <- merge(x = nw_st_punct_data, y = nw_st_punct_s2d_bottom, by = "RANK")
+nw_st_punct_data <- merge(
+  x = nw_st_punct_data,
+  y = nw_st_punct_dy_bottom,
+  by = "RANK"
+)
+nw_st_punct_data <- merge(
+  x = nw_st_punct_data,
+  y = nw_st_punct_wk_bottom,
+  by = "RANK"
+)
+nw_st_punct_data <- merge(
+  x = nw_st_punct_data,
+  y = nw_st_punct_y2d_bottom,
+  by = "RANK"
+)
+nw_st_punct_data <- merge(
+  x = nw_st_punct_data,
+  y = nw_st_punct_s2d_bottom,
+  by = "RANK"
+)
 
 nw_st_punct_data <- nw_st_punct_data %>%
-  mutate(Y2D_TO_DATE_BOTTOM = Y2D_TO_DATE,
-         S2D_TO_DATE_BOTTOM = S2D_TO_DATE) %>%
-  relocate (S2D_TO_DATE_BOTTOM, .before = S2D_CTRY_ARR_PUNCT_BOTTOM)
+  mutate(Y2D_TO_DATE_BOTTOM = Y2D_TO_DATE, S2D_TO_DATE_BOTTOM = S2D_TO_DATE) %>%
+  relocate(S2D_TO_DATE_BOTTOM, .before = S2D_CTRY_ARR_PUNCT_BOTTOM)
 
 ### covert to json and save in app data folder and archive ----
 nw_st_punct_data_j <- nw_st_punct_data %>% toJSON(., pretty = TRUE)
@@ -2847,92 +3404,111 @@ print(paste(format(now(), "%H:%M:%S"), "nw_ctry_ranking_punctuality"))
 # MAPS ----
 ## ACC delay ----
 ### day ----
-nw_acc_delay_map_dy <- nw_acc_delay_day_all %>% 
-  left_join(list_acc, by = c("DY_ACC_NAME" = "NAME")) %>% 
+nw_acc_delay_map_dy <- nw_acc_delay_day_all %>%
+  left_join(list_acc, by = c("DY_ACC_NAME" = "NAME")) %>%
   mutate(
-    DY_ACC_ICAO_CODE = if_else(DY_ACC_NAME == "London TMA",
-                            stringr::str_sub(ICAO_CODE,1,5),
-                            stringr::str_sub(ICAO_CODE,1,4)),
-    DY_ACC_ICAO_CODE = if_else(DY_ACC_NAME == "Marseille TMA",
-                                stringr::str_sub(ICAO_CODE,1,7),
-                                stringr::str_sub(ICAO_CODE,1,4))
-  ) %>% 
+    DY_ACC_ICAO_CODE = if_else(
+      DY_ACC_NAME == "London TMA",
+      stringr::str_sub(ICAO_CODE, 1, 5),
+      stringr::str_sub(ICAO_CODE, 1, 4)
+    ),
+    DY_ACC_ICAO_CODE = if_else(
+      DY_ACC_NAME == "Marseille TMA",
+      stringr::str_sub(ICAO_CODE, 1, 7),
+      stringr::str_sub(ICAO_CODE, 1, 4)
+    )
+  ) %>%
   select(
     DY_RANK,
     DY_ACC_ICAO_CODE,
     DY_ACC_NAME,
     DY_TO_DATE,
     DY_ACC_DLY_PER_FLT
-  ) %>% 
+  ) %>%
   unique()
 
 ### week ----
-nw_acc_delay_map_wk <- nw_acc_delay_week_all %>% 
-  left_join(list_acc, by = c("WK_ACC_NAME" = "NAME")) %>% 
+nw_acc_delay_map_wk <- nw_acc_delay_week_all %>%
+  left_join(list_acc, by = c("WK_ACC_NAME" = "NAME")) %>%
   mutate(
-    WK_ACC_ICAO_CODE = if_else(WK_ACC_NAME == "London TMA",
-                            stringr::str_sub(ICAO_CODE,1,5),
-                            stringr::str_sub(ICAO_CODE,1,4)),
-    WK_ACC_ICAO_CODE = if_else(WK_ACC_NAME == "Marseille TMA",
-                                stringr::str_sub(ICAO_CODE,1,7),
-                                stringr::str_sub(ICAO_CODE,1,4))
-  ) %>%  select(
+    WK_ACC_ICAO_CODE = if_else(
+      WK_ACC_NAME == "London TMA",
+      stringr::str_sub(ICAO_CODE, 1, 5),
+      stringr::str_sub(ICAO_CODE, 1, 4)
+    ),
+    WK_ACC_ICAO_CODE = if_else(
+      WK_ACC_NAME == "Marseille TMA",
+      stringr::str_sub(ICAO_CODE, 1, 7),
+      stringr::str_sub(ICAO_CODE, 1, 4)
+    )
+  ) %>%
+  select(
     DY_RANK,
     WK_ACC_ICAO_CODE,
     WK_ACC_NAME,
     WK_FROM_DATE,
     WK_TO_DATE,
     WK_ACC_DLY_PER_FLT
-  )%>% 
+  ) %>%
   unique()
 
 ### y2d ----
-nw_acc_delay_map_y2d <- nw_acc_delay_y2d_all %>% 
-  left_join(list_acc, by = c("Y2D_ACC_NAME" = "NAME")) %>% 
+nw_acc_delay_map_y2d <- nw_acc_delay_y2d_all %>%
+  left_join(list_acc, by = c("Y2D_ACC_NAME" = "NAME")) %>%
   mutate(
-    Y2D_ACC_ICAO_CODE = if_else(Y2D_ACC_NAME == "London TMA",
-                            stringr::str_sub(ICAO_CODE,1,5),
-                            stringr::str_sub(ICAO_CODE,1,4)),
-    Y2D_ACC_ICAO_CODE = if_else(Y2D_ACC_NAME == "Marseille TMA",
-                                stringr::str_sub(ICAO_CODE,1,7),
-                                stringr::str_sub(ICAO_CODE,1,4))
-  ) %>%  select(
+    Y2D_ACC_ICAO_CODE = if_else(
+      Y2D_ACC_NAME == "London TMA",
+      stringr::str_sub(ICAO_CODE, 1, 5),
+      stringr::str_sub(ICAO_CODE, 1, 4)
+    ),
+    Y2D_ACC_ICAO_CODE = if_else(
+      Y2D_ACC_NAME == "Marseille TMA",
+      stringr::str_sub(ICAO_CODE, 1, 7),
+      stringr::str_sub(ICAO_CODE, 1, 4)
+    )
+  ) %>%
+  select(
     DY_RANK,
     Y2D_ACC_ICAO_CODE,
     Y2D_ACC_NAME,
     Y2D_TO_DATE,
     Y2D_ACC_DLY_PER_FLT
-  )%>% 
+  ) %>%
   unique()
 
 ### s2d ----
-nw_acc_delay_map_s2d <- nw_acc_delay_s2d_all %>% 
-  mutate(S2D_ACC_NAME = as.character(S2D_ACC_NAME)) %>% 
-  left_join(list_acc, by = c("S2D_ACC_NAME" = "NAME")) %>% 
+nw_acc_delay_map_s2d <- nw_acc_delay_s2d_all %>%
+  mutate(S2D_ACC_NAME = as.character(S2D_ACC_NAME)) %>%
+  left_join(list_acc, by = c("S2D_ACC_NAME" = "NAME")) %>%
   mutate(
-    S2D_ACC_ICAO_CODE = if_else(S2D_ACC_NAME == "London TMA",
-                                stringr::str_sub(ICAO_CODE,1,5),
-                                stringr::str_sub(ICAO_CODE,1,4)),
-    S2D_ACC_ICAO_CODE = if_else(S2D_ACC_NAME == "Marseille TMA",
-                                stringr::str_sub(ICAO_CODE,1,7),
-                                stringr::str_sub(ICAO_CODE,1,4))
-  ) %>%  select(
+    S2D_ACC_ICAO_CODE = if_else(
+      S2D_ACC_NAME == "London TMA",
+      stringr::str_sub(ICAO_CODE, 1, 5),
+      stringr::str_sub(ICAO_CODE, 1, 4)
+    ),
+    S2D_ACC_ICAO_CODE = if_else(
+      S2D_ACC_NAME == "Marseille TMA",
+      stringr::str_sub(ICAO_CODE, 1, 7),
+      stringr::str_sub(ICAO_CODE, 1, 4)
+    )
+  ) %>%
+  select(
     DY_RANK,
     S2D_ACC_ICAO_CODE,
     S2D_ACC_NAME,
     S2D_TO_DATE,
     S2D_ACC_DLY_PER_FLT
-  )%>% 
+  ) %>%
   unique()
 
 ### merge and save ----
-nw_acc_delay_map <- nw_acc_delay_map_dy %>% 
-  left_join(nw_acc_delay_map_wk, by = "DY_RANK") %>% 
-  left_join(nw_acc_delay_map_y2d, by = "DY_RANK") %>% 
-  left_join(nw_acc_delay_map_s2d, by = "DY_RANK") %>% 
-  mutate(RANK = DY_RANK) %>% 
+nw_acc_delay_map <- nw_acc_delay_map_dy %>%
+  left_join(nw_acc_delay_map_wk, by = "DY_RANK") %>%
+  left_join(nw_acc_delay_map_y2d, by = "DY_RANK") %>%
+  left_join(nw_acc_delay_map_s2d, by = "DY_RANK") %>%
+  mutate(RANK = DY_RANK) %>%
   relocate(RANK, .before = everything())
- 
+
 ### create json
 nw_acc_delay_map_j <- nw_acc_delay_map %>% toJSON(., pretty = TRUE)
 
