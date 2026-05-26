@@ -2928,7 +2928,8 @@ nw_apt_punct_data <- merge(
 nw_apt_punct_data <- merge(
   x = nw_apt_punct_data,
   y = nw_apt_punct_s2d_top,
-  by = "RANK"
+  by = "RANK",
+  all = TRUE
 )
 
 nw_apt_punct_data <- nw_apt_punct_data %>%
@@ -3326,7 +3327,8 @@ nw_st_punct_data <- merge(
 nw_st_punct_data <- merge(
   x = nw_st_punct_data,
   y = nw_st_punct_s2d_top,
-  by = "RANK"
+  by = "RANK",
+  all = TRUE
 )
 
 nw_st_punct_data <- nw_st_punct_data %>%
