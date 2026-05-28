@@ -2679,7 +2679,8 @@ nw_apt_punct_dy_top <- nw_apt_punct_calc %>%
     DY_APT_ARR_PUNCT,
     DY_PUNCT_DIF_PREV_WEEK_PERC,
     DY_PUNCT_DIF_PREV_YEAR_PERC
-  )
+  ) %>%
+  arrange(RANK)
 
 #### bottom
 nw_apt_punct_dy_bottom <- nw_apt_punct_calc %>%
@@ -2700,7 +2701,8 @@ nw_apt_punct_dy_bottom <- nw_apt_punct_calc %>%
     DY_APT_ARR_PUNCT_BOTTOM,
     DY_PUNCT_DIF_PREV_WEEK_PERC_BOTTOM = DY_PUNCT_DIF_PREV_WEEK_PERC,
     DY_PUNCT_DIF_PREV_YEAR_PERC_BOTTOM = DY_PUNCT_DIF_PREV_YEAR_PERC
-  )
+  ) %>%
+  arrange(RANK)
 
 ### week ----
 nw_apt_punct_wk <- nw_apt_punct_calc %>%
@@ -2737,7 +2739,8 @@ nw_apt_punct_wk_top <- nw_apt_punct_wk %>%
     WK_APT_ARR_PUNCT,
     WK_PUNCT_DIF_PREV_WEEK_PERC,
     WK_PUNCT_DIF_PREV_YEAR_PERC
-  )
+  ) %>%
+  arrange(RANK)
 
 #### bottom
 nw_apt_punct_wk_bottom <- nw_apt_punct_wk %>%
@@ -2759,7 +2762,8 @@ nw_apt_punct_wk_bottom <- nw_apt_punct_wk %>%
     WK_APT_ARR_PUNCT_BOTTOM = WK_APT_ARR_PUNCT,
     WK_PUNCT_DIF_PREV_WEEK_PERC_BOTTOM = WK_PUNCT_DIF_PREV_WEEK_PERC,
     WK_PUNCT_DIF_PREV_YEAR_PERC_BOTTOM = WK_PUNCT_DIF_PREV_YEAR_PERC
-  )
+  ) %>%
+  arrange(RANK)
 
 ### y2d ----
 nw_apt_punct_y2d <- nw_apt_punct_calc %>%
@@ -2803,7 +2807,8 @@ nw_apt_punct_y2d_top <- nw_apt_punct_y2d %>%
     Y2D_APT_ARR_PUNCT,
     Y2D_PUNCT_DIF_PREV_YEAR_PERC,
     Y2D_PUNCT_DIF_2019_PERC
-  )
+  ) %>%
+  arrange(RANK)
 
 #### bottom
 nw_apt_punct_y2d_bottom <- nw_apt_punct_y2d %>%
@@ -2818,7 +2823,8 @@ nw_apt_punct_y2d_bottom <- nw_apt_punct_y2d %>%
     Y2D_APT_ARR_PUNCT_BOTTOM = Y2D_APT_ARR_PUNCT,
     Y2D_PUNCT_DIF_PREV_YEAR_PERC_BOTTOM = Y2D_PUNCT_DIF_PREV_YEAR_PERC,
     Y2D_PUNCT_DIF_2019_PERC_BOTTOM = Y2D_PUNCT_DIF_2019_PERC
-  )
+  ) %>%
+  arrange(RANK)
 
 ### s2d ----
 nw_apt_punct_s2d <- nw_apt_punct_calc %>%
@@ -2862,7 +2868,8 @@ nw_apt_punct_s2d_top <- nw_apt_punct_s2d %>%
     S2D_APT_ARR_PUNCT,
     S2D_PUNCT_DIF_PREV_YEAR_PERC,
     S2D_PUNCT_DIF_2019_PERC
-  )
+  ) %>%
+  arrange(RANK)
 
 #### bottom
 nw_apt_punct_s2d_bottom <- nw_apt_punct_s2d %>%
@@ -2877,7 +2884,8 @@ nw_apt_punct_s2d_bottom <- nw_apt_punct_s2d %>%
     S2D_APT_ARR_PUNCT_BOTTOM = S2D_APT_ARR_PUNCT,
     S2D_PUNCT_DIF_PREV_YEAR_PERC_BOTTOM = S2D_PUNCT_DIF_PREV_YEAR_PERC,
     S2D_PUNCT_DIF_2019_PERC_BOTTOM = S2D_PUNCT_DIF_2019_PERC
-  )
+  ) %>%
+  arrange(RANK)
 
 ### main card ----
 nw_apt_main_punct_top <- nw_apt_punct_dy_top %>%
@@ -2989,7 +2997,8 @@ nw_apt_punct_data <- merge(
 nw_apt_punct_data <- merge(
   x = nw_apt_punct_data,
   y = nw_apt_punct_s2d_bottom,
-  by = "RANK"
+  by = "RANK",
+  all = TRUE
 )
 
 nw_apt_punct_data <- nw_apt_punct_data %>%
@@ -3069,7 +3078,8 @@ nw_st_punct_dy_top <- nw_st_punct_dy_calc_top %>%
     DY_CTRY_ARR_PUNCT,
     DY_PUNCT_DIF_PREV_WEEK_PERC,
     DY_PUNCT_DIF_PREV_YEAR_PERC
-  )
+  ) %>%
+  arrange(RANK)
 
 ####bottom
 nw_st_punct_dy_calc_bottom <- nw_st_punct_calc %>%
@@ -3091,7 +3101,8 @@ nw_st_punct_dy_bottom <- nw_st_punct_dy_calc_bottom %>%
     DY_CTRY_ARR_PUNCT_BOTTOM,
     DY_PUNCT_DIF_PREV_WEEK_PERC_BOTTOM = DY_PUNCT_DIF_PREV_WEEK_PERC,
     DY_PUNCT_DIF_PREV_YEAR_PERC_BOTTOM = DY_PUNCT_DIF_PREV_YEAR_PERC
-  )
+  ) %>%
+  arrange(RANK)
 
 ### week ----
 nw_st_punct_wk <- nw_st_punct_calc %>%
@@ -3130,7 +3141,8 @@ nw_st_punct_wk_top <- nw_st_punct_wk %>%
     WK_CTRY_ARR_PUNCT,
     WK_PUNCT_DIF_PREV_WEEK_PERC,
     WK_PUNCT_DIF_PREV_YEAR_PERC
-  )
+  ) %>%
+  arrange(RANK)
 
 #### bottom
 nw_st_punct_wk_bottom <- nw_st_punct_wk %>%
@@ -3151,7 +3163,8 @@ nw_st_punct_wk_bottom <- nw_st_punct_wk %>%
     WK_CTRY_ARR_PUNCT_BOTTOM = WK_CTRY_ARR_PUNCT,
     WK_PUNCT_DIF_PREV_WEEK_PERC_BOTTOM = WK_PUNCT_DIF_PREV_WEEK_PERC,
     WK_PUNCT_DIF_PREV_YEAR_PERC_BOTTOM = WK_PUNCT_DIF_PREV_YEAR_PERC
-  )
+  ) %>%
+  arrange(RANK)
 
 ### y2d ----
 nw_st_punct_y2d <- nw_st_punct_calc %>%
@@ -3182,7 +3195,8 @@ nw_st_punct_y2d <- nw_st_punct_calc %>%
     Y2D_PUNCT_DIF_2019_PERC = (Y2D_CTRY_ARR_PUNCT -
       lag(Y2D_CTRY_ARR_PUNCT, last_year_punct - 2019))
   ) %>%
-  ungroup()
+  ungroup() %>%
+  arrange(RANK)
 
 #### top
 nw_st_punct_y2d_top <- nw_st_punct_y2d %>%
@@ -3195,7 +3209,8 @@ nw_st_punct_y2d_top <- nw_st_punct_y2d %>%
     Y2D_CTRY_ARR_PUNCT,
     Y2D_PUNCT_DIF_PREV_YEAR_PERC,
     Y2D_PUNCT_DIF_2019_PERC
-  )
+  ) %>%
+  arrange(RANK)
 
 #### bottom
 nw_st_punct_y2d_bottom <- nw_st_punct_y2d %>%
@@ -3212,7 +3227,8 @@ nw_st_punct_y2d_bottom <- nw_st_punct_y2d %>%
     Y2D_CTRY_ARR_PUNCT_BOTTOM = Y2D_CTRY_ARR_PUNCT,
     Y2D_PUNCT_DIF_PREV_YEAR_PERC_BOTTOM = Y2D_PUNCT_DIF_PREV_YEAR_PERC,
     Y2D_PUNCT_DIF_2019_PERC_BOTTOM = Y2D_PUNCT_DIF_2019_PERC
-  )
+  ) %>%
+  arrange(RANK)
 
 ### s2d ----
 nw_st_punct_s2d <- nw_st_punct_calc %>%
@@ -3257,7 +3273,8 @@ nw_st_punct_s2d_top <- nw_st_punct_s2d %>%
     S2D_CTRY_ARR_PUNCT,
     S2D_PUNCT_DIF_PREV_YEAR_PERC,
     S2D_PUNCT_DIF_2019_PERC
-  )
+  ) %>%
+  arrange(RANK)
 
 #### bottom
 nw_st_punct_s2d_bottom <- nw_st_punct_s2d %>%
@@ -3274,7 +3291,8 @@ nw_st_punct_s2d_bottom <- nw_st_punct_s2d %>%
     S2D_CTRY_ARR_PUNCT_BOTTOM = S2D_CTRY_ARR_PUNCT,
     S2D_PUNCT_DIF_PREV_YEAR_PERC_BOTTOM = S2D_PUNCT_DIF_PREV_YEAR_PERC,
     S2D_PUNCT_DIF_2019_PERC_BOTTOM = S2D_PUNCT_DIF_2019_PERC
-  )
+  ) %>%
+  arrange(RANK)
 
 ### main card ----
 nw_st_main_punct_top <- nw_st_punct_dy_calc_top %>%
@@ -3390,7 +3408,8 @@ nw_st_punct_data <- merge(
 nw_st_punct_data <- merge(
   x = nw_st_punct_data,
   y = nw_st_punct_s2d_bottom,
-  by = "RANK"
+  by = "RANK",
+  all = TRUE
 )
 
 nw_st_punct_data <- nw_st_punct_data %>%
