@@ -23,15 +23,18 @@ network_data_folder_prod <- here(destination_dir, "data", "v5")
 archive_mode <- FALSE
 
 if (archive_mode) {
-  wef <- "2026-02-23" #included in output
-  til <- "2026-02-23" #included in output
+  wef <- "2026-07-09" #included in output
+  til <- "2026-07-13" #included in output
   data_day_date <- seq(ymd(wef), ymd(til), by = "day")
 } else {
+  # wef <- "2026-07-09" #included in output
+  # til <- lubridate::today(tzone = "") + days(-1) #included in output
+  # data_day_date <- seq(ymd(wef), ymd(til), by = "day")
   data_day_date <- lubridate::today(tzone = "") + days(-1)
 }
 
 if (!archive_mode) {
-  # update basic tables
+  ## update basic tables
   e <- new.env(parent = .GlobalEnv)
   source(here("..", "mobile-app", "R", "update_base_tables.R"), local = e)
   rm(e)
@@ -47,11 +50,11 @@ stakeholders <- if (!archive_mode) {
   c("nw", "st", "ao", "ap", "sp", NULL) # don't touch this line
 } else {
   c(
-    # "nw",
-    # "st",
-    # "ao",
+    "nw",
+    "st",
+    "ao",
     "ap",
-    # "sp",
+    "sp",
     NULL
   )
 }
