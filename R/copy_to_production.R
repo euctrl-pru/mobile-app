@@ -20,11 +20,11 @@ network_data_folder_prod <- here(destination_dir, "data", "v5")
 # set the archive_mode to TRUE to run the scripts
 # for the sequence of dates set below.
 
-archive_mode <- FALSE
+archive_mode <- TRUE
 
 if (archive_mode) {
-  wef <- "2026-07-09" #included in output
-  til <- "2026-07-13" #included in output
+  wef <- "2026-06-05" #included in output
+  til <- "2026-06-06" #included in output
   data_day_date <- seq(ymd(wef), ymd(til), by = "day")
 } else {
   # wef <- "2026-07-09" #included in output
@@ -204,6 +204,17 @@ for (i in length(data_day_date_temp):1) {
   print(paste(format(now(), "%H:%M:%S"), data_day_date))
 }
 
+
+#adding data ready file
+data_day_text_dash <- data_day_date %>% format("%Y-%m-%d")
+network_data_folder_prod_date <- here(
+  network_data_folder_prod,
+  data_day_text_dash
+)
+writeLines("[]", paste0(network_data_folder_prod_date,"/DATA_READY.json"))
+print("DATA_READY file added to folder")
+
+
 # send email ----
 ## email parameters ----
 sbj = "All app datasets copied successfully to folder"
@@ -231,3 +242,4 @@ if (archive_mode == FALSE) {
     control = control
   )
 }
+
