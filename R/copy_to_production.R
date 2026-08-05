@@ -20,7 +20,7 @@ network_data_folder_prod <- here(destination_dir, "data", "v5")
 # set the archive_mode to TRUE to run the scripts
 # for the sequence of dates set below.
 
-archive_mode <- TRUE
+archive_mode <- FALSE
 
 if (archive_mode) {
   wef <- "2026-06-05" #included in output
@@ -237,7 +237,6 @@ if (archive_mode == FALSE) {
     from = from,
     to = to,
     # cc = cc,
-    subject = sbj,
     msg = msg,
     control = control
   )
