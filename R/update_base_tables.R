@@ -136,7 +136,7 @@ mydataframes <- c(
 )
 
 update_base_tables <- function(mydataframe) {
-  # mydataframe <-   "sp_traffic_delay_new"
+  # mydataframe <-   "nw_delay_cause"
   query_7d <- get(paste0(mydataframe, "_day_base_query"))
 
   # create backup
