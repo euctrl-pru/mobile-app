@@ -2409,7 +2409,12 @@ nw_acc_delay_data <- nw_acc_delay_data %>%
     Y2D_ACC_NAME,
     Y2D_TO_DATE,
     Y2D_ACC_DLY,
-    Y2D_ACC_DLY_PER_FLT
+    Y2D_ACC_DLY_PER_FLT,
+    S2D_RANK,
+    S2D_ACC_NAME,
+    S2D_TO_DATE,
+    S2D_ACC_DLY,
+    S2D_ACC_DLY_PER_FLT
   )
 
 ### covert to json and save in app data folder and archive ----
@@ -2616,7 +2621,12 @@ nw_st_rank_delay <- nw_st_rank_delay %>%
     Y2D_CTRY_DLY_NAME,
     Y2D_TO_DATE,
     Y2D_CTRY_DLY,
-    Y2D_CTRY_DLY_PER_FLT
+    Y2D_CTRY_DLY_PER_FLT,
+    S2D_RANK,
+    S2D_CTRY_DLY_NAME,
+    S2D_TO_DATE,
+    S2D_CTRY_DLY,
+    S2D_CTRY_DLY_PER_FLT
   )
 
 ### covert to json and save in app data folder and archive ----
