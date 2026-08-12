@@ -23,8 +23,8 @@ network_data_folder_prod <- here(destination_dir, "data", "v5")
 archive_mode <- FALSE
 
 if (archive_mode) {
-  wef <- "2026-07-23" #included in output
-  til <- "2026-07-26" #included in output
+  wef <- "2026-08-03" #included in output
+  til <- "2026-08-05" #included in output
   data_day_date <- seq(ymd(wef), ymd(til), by = "day")
 } else {
   # wef <- "2026-07-09" #included in output
@@ -182,6 +182,15 @@ copy_app_data <- function(data_day_date) {
     recursive = TRUE,
     overwrite = TRUE
   )
+  
+  #adding data ready file
+  data_day_text_dash <- data_day_date %>% format("%Y-%m-%d")
+  network_data_folder_prod_date <- here(
+    network_data_folder_prod,
+    data_day_text_dash
+  )
+  writeLines("[]", paste0(network_data_folder_prod_date,"/DATA_READY.json"))
+  print("DATA_READY file added to folder")
 }
 
 # Define a combined function
@@ -203,6 +212,9 @@ for (i in length(data_day_date_temp):1) {
   walk(data_day_date, .f = process_app_data)
   print(paste(format(now(), "%H:%M:%S"), data_day_date))
 }
+
+
+
 
 # send email ----
 ## email parameters ----
@@ -231,3 +243,4 @@ if (archive_mode == FALSE) {
     control = control
   )
 }
+

@@ -11,3 +11,4 @@ R/update_pockethost_data.log
 .Rproj.user/
 R/_old/
 .positai
+"*.RData" 
