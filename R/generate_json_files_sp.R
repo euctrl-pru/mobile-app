@@ -1060,6 +1060,7 @@ sp_acc_delay_data <- ansp_ranking %>%
   left_join(sp_acc_delay_day, by = "SP_RANK") %>%
   left_join(sp_acc_delay_week, by = "SP_RANK") %>%
   left_join(sp_acc_delay_y2d, by = "SP_RANK") %>%
+  left_join(sp_acc_delay_s2d, by = "SP_RANK") %>%
   left_join(sp_acc_delay_flight_day, by = "SP_RANK") %>%
   left_join(sp_acc_delay_flight_week, by = "SP_RANK") %>%
   left_join(sp_acc_delay_flight_y2d, by = "SP_RANK") %>%
