@@ -633,11 +633,16 @@ DIM_STATE as (
      AND t.day_date < trunc(sysdate)
   ),
 
+  TEMP as (
+  select * from LDW_VDM.VIEW_FAC_PUNCTUALITY_CT_DAY
+  where ISO_CT_NAME <> 'CZECHIA'
+  ),
+
   COUNTRY_DAY_DATA as (
   SELECT a.*, b.*
 
   FROM CTRY_DAY a
-  left join LDW_VDM.VIEW_FAC_PUNCTUALITY_CT_DAY b on a.ISO_2LETTER = b.ISO_CT_CODE and a.day_date = b.\"DATE\"
+  left join TEMP b on a.ISO_2LETTER = b.ISO_CT_CODE and a.day_date = b.\"DATE\"
   )
 
   SELECT
@@ -731,9 +736,10 @@ create_ranking <- function(dataframe, period_type, metric) {
     filter(PERIOD_TYPE == period_type) %>%
     collect()
   DBI::dbDisconnect(con, shutdown = TRUE)
-  
-  if(nrow(df) != 0) { #condition added for S2D case when out of summer
-  
+
+  if (nrow(df) != 0) {
+    #condition added for S2D case when out of summer
+
     if (period_type == "DAY") {
       df_prep <- df %>%
         mutate(
@@ -774,38 +780,42 @@ create_ranking <- function(dataframe, period_type, metric) {
           FROM_DATE = max(FROM_DATE, na.rm = TRUE),
         )
     }
-  
+
     # detect the agg stakeholder name and code columns so we can rename it later
     nm <- names(df_prep)
     hits_name <- grep("_NAME", nm, value = TRUE)
     hits_name <- setdiff(hits_name, "STK_NAME")
-  
-    if (length(hits_name) == 0)
+
+    if (length(hits_name) == 0) {
       stop('No column name contains "_NAME".', call. = FALSE)
-    if (length(hits_name) > 1)
+    }
+    if (length(hits_name) > 1) {
       stop(
         'More than one column contains "_NAME": ',
         paste(nm[hits_name], collapse = ", "),
         call. = FALSE
       )
-  
+    }
+
     hits_code <- grep("_CODE", nm, value = TRUE)
     hits_code <- setdiff(hits_code, "STK_CODE")
-  
-    if (length(hits_code) == 0)
+
+    if (length(hits_code) == 0) {
       stop('No column name contains "_CODE".', call. = FALSE)
-    if (length(hits_code) > 1)
+    }
+    if (length(hits_code) > 1) {
       stop(
         'More than one column contains "_CODE": ',
         paste(nm[hits_code], collapse = ", "),
         call. = FALSE
       )
-  
+    }
+
     #capture metric names to create averages and avoid issue when me is null
     m_q <- enquo(metric)
     avg_name <- paste0("AVG_", as_name(m_q))
     avg_m_sym <- sym(avg_name)
-    
+
     # df_ranking_int <- df_prep %>%
     #   rename("NAME" := all_of(hits_name)) %>%
     #   rename("CODE" := all_of(hits_code)) %>%
@@ -819,9 +829,7 @@ create_ranking <- function(dataframe, period_type, metric) {
     #   select(-YEAR, -NO_DAYS, -DEP_ARR) %>%
     #   # spread(key = FLAG_PERIOD, value = AVG_FLIGHT)
     #   spread(key = FLAG_PERIOD, value = AVG_DEP_ARR)
-      
-    
-  
+
     df_ranking_int <- df_prep %>%
       rename("NAME" := all_of(hits_name)) %>%
       rename("CODE" := all_of(hits_code)) %>%
@@ -853,7 +861,6 @@ create_ranking <- function(dataframe, period_type, metric) {
       ) %>%
       arrange(STK_CODE, R_RANK)
   } else {
-    
     df_ranking_int <- tibble(
       STK_NAME = NA_character_,
       STK_CODE = NA_character_,
@@ -864,12 +871,12 @@ create_ranking <- function(dataframe, period_type, metric) {
       CODE = NA_character_,
       R_RANK = 1:10,
       RANK = NA_integer_,
-      RANK_PREV_WEEK = NA_integer_, 
+      RANK_PREV_WEEK = NA_integer_,
       RANK_PREV_YEAR = NA_integer_,
       RANK_2019 = NA_integer_,
       DATA_DATE = NA,
       YEAR_DATA = NA_integer_,
-      RANK_PREV = NA_integer_,  
+      RANK_PREV = NA_integer_,
       CURRENT = NA_real_,
       DAY_2019 = NA_Date_,
       PREV1 = NA_real_,
@@ -879,7 +886,6 @@ create_ranking <- function(dataframe, period_type, metric) {
       DIF2_METRIC_PERC = NA_real_,
       DIF1_METRIC = NA_real_
     )
-    
   }
 
   return(df_ranking_int)
