@@ -580,7 +580,7 @@ ao_punct_s2d <- ao_punct_raw %>%
     DEP_PUNCTUAL_FLIGHTS = 0, ## while the figures are not showable
   ) %>%
   filter(
-    MONTH_DAY <= as.numeric(format(last_day_punct, format = "%m%d")),
+    MONTH_DAY <= summer_end,
     MONTH_DAY >= summer_start
   ) %>%
   group_by(AO_GRP_NAME, AO_GRP_CODE, YEAR) %>%

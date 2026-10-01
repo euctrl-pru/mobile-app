@@ -793,7 +793,7 @@ st_punct_s2d <- st_punct_data_joined %>%
   arrange(ISO_2LETTER, DAY_DATE) %>%
   mutate(MONTH_DAY = as.numeric(format(DAY_DATE, format="%m%d"))) %>%
   filter(
-    MONTH_DAY <= as.numeric(format(last_day_punct, format="%m%d")),
+    MONTH_DAY <= summer_end,
     MONTH_DAY >= summer_start
          ) %>%
   group_by(ISO_2LETTER, YEAR) %>%
@@ -1612,13 +1612,21 @@ acc_delay_y2d <- nw_acc_delay_y2d_raw %>%
   )
 
 #### s2d ----
+summer_end_day <- substr(summer_end, nchar(summer_end) - 1, nchar(summer_end))
+summer_end_month <- substr(summer_end, 1, nchar(summer_end) - 2)
+summer_end_year <- as.character(max(year(data_day_date)))
+summer_end_date <- as.Date(paste(summer_end_year,
+                                sprintf("%02d", as.integer(summer_end_month)),
+                                summer_end_day,
+                                sep = "-"))
+
 if(!exists("nw_acc_delay_s2d_raw")) {
-  nw_acc_delay_s2d_raw <- export_query(query_nw_acc_delay_y2d_raw(format(data_day_date, "%Y-%m%-%d"), initial_date = summer_start), schema = "PRU_READ") %>% 
+  nw_acc_delay_s2d_raw <- export_query(query_nw_acc_delay_y2d_raw(min(format(data_day_date, "%Y-%m%-%d"),summer_end_date), initial_date = summer_start), schema = "PRU_READ") %>% 
     rename_with(~ gsub("Y2D", "S2D", .x), .cols = contains("Y2D"))
 }
 
 if (max(nw_acc_delay_s2d_raw$ENTRY_DATE) != data_day_date) {
-  nw_acc_delay_s2d_raw <- export_query(query_nw_acc_delay_y2d_raw(format(data_day_date, "%Y-%m%-%d"), initial_date = summer_start), schema = "PRU_READ") %>% 
+  nw_acc_delay_s2d_raw <- export_query(query_nw_acc_delay_y2d_raw(min(format(data_day_date, "%Y-%m%-%d"),summer_end_date), initial_date = summer_start), schema = "PRU_READ") %>% 
     rename_with(~ gsub("Y2D", "S2D", .x), .cols = contains("Y2D"))
 }
 
@@ -2086,7 +2094,7 @@ st_apt_punct_y2d <- st_apt_punct_calc %>%
 st_apt_punct_s2d <- st_apt_punct_calc %>%
   mutate(MONTH_DAY = as.numeric(format(DAY_DATE, format = "%m%d"))) %>%
   filter(
-    MONTH_DAY <= as.numeric(format(last_day_punct, format = "%m%d")),
+    MONTH_DAY <= summer_end,
     MONTH_DAY >= summer_start
     ) %>%
   mutate(YEAR = as.numeric(format(DAY_DATE, format="%Y"))) %>%
@@ -2116,7 +2124,16 @@ st_apt_punct_s2d <- st_apt_punct_calc %>%
   arrange(state, S2D_RANK, S2D_APT_NAME) %>%
   mutate(
     NO_APTS = row_number(),
-    S2D_TO_DATE = lubridate::round_date(last_day_punct, unit = 'day')
+    summer_end_day = substr(summer_end, nchar(summer_end) - 1, nchar(summer_end)),
+    summer_end_month = substr(summer_end, 1, nchar(summer_end) - 2),
+    summer_end_year = as.character(max(year(st_apt_punct_calc$DAY_DATE))),
+    summer_end_date = as.Date(paste(
+      summer_end_year,
+      sprintf("%02d", as.integer(summer_end_month)),
+      summer_end_day,
+      sep = "-"
+    )),
+    S2D_TO_DATE = min(lubridate::round_date(last_day_punct, unit = 'day'),summer_end_date)
   ) %>%
   filter(NO_APTS < 11) %>%
   ungroup() %>%

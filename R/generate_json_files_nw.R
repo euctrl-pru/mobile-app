@@ -428,7 +428,7 @@ nw_punct_data_s2d <- nw_punct_data_raw %>%
   mutate(YEAR_FLIGHT = as.numeric(format(DATE, "%Y"))) %>%
   mutate(MONTH_DAY = as.numeric(format(DATE, format = "%m%d"))) %>%
   filter(
-    MONTH_DAY <= as.numeric(format(last_day_punct, format = "%m%d")),
+    MONTH_DAY <= summer_end,
     MONTH_DAY >= summer_start
   ) %>%
   mutate(YEAR = as.numeric(format(DATE, format = "%Y"))) %>%
@@ -2294,9 +2294,17 @@ nw_acc_delay_y2d <- nw_acc_delay_y2d_all %>%
   filter(DY_RANK <= 10)
 
 ### s2d ----
+summer_end_day <- substr(summer_end, nchar(summer_end) - 1, nchar(summer_end))
+summer_end_month <- substr(summer_end, 1, nchar(summer_end) - 2)
+summer_end_year <- as.character(max(year(data_day_date)))
+summer_end_date <- as.Date(paste(summer_end_year,
+                                sprintf("%02d", as.integer(summer_end_month)),
+                                summer_end_day,
+                                sep = "-"))
+
 nw_acc_delay_s2d_raw <- export_query(
   query_nw_acc_delay_y2d_raw(
-    format(data_day_date, "%Y-%m%-%d"),
+    min(format(data_day_date, "%Y-%m%-%d"),summer_end_date),
     initial_date = summer_start
   ),
   schema = "PRU_READ"
@@ -2521,7 +2529,7 @@ nw_st_rank_delay_y2d <- nw_st_rank_delay_y2d_raw %>%
 
 ### s2d ----
 nw_st_rank_delay_s2d_raw <- export_query(query_nw_st_delay_y2d_raw(
-  format(data_day_date, "%Y-%m%-%d"),
+  min(format(data_day_date, "%Y-%m%-%d"),summer_end_date),
   initial_date = summer_start
 ))
 
@@ -2840,7 +2848,7 @@ nw_apt_punct_y2d_bottom <- nw_apt_punct_y2d %>%
 nw_apt_punct_s2d <- nw_apt_punct_calc %>%
   mutate(MONTH_DAY = as.numeric(format(DAY_DATE, format = "%m%d"))) %>%
   filter(
-    MONTH_DAY <= as.numeric(format(last_punctuality_day, format = "%m%d")),
+    MONTH_DAY <= summer_end,
     MONTH_DAY >= summer_start
   ) %>%
   group_by(ARP_NAME, ARP_CODE, YEAR) %>%
@@ -3244,7 +3252,7 @@ nw_st_punct_y2d_bottom <- nw_st_punct_y2d %>%
 nw_st_punct_s2d <- nw_st_punct_calc %>%
   mutate(MONTH_DAY = as.numeric(format(DATE, format = "%m%d"))) %>%
   filter(
-    MONTH_DAY <= as.numeric(format(last_punctuality_day, format = "%m%d")),
+    MONTH_DAY <= summer_end,
     MONTH_DAY >= summer_start
   ) %>%
   mutate(YEAR = as.numeric(format(DATE, format = "%Y"))) %>%
