@@ -1621,12 +1621,12 @@ summer_end_date <- as.Date(paste(summer_end_year,
                                 sep = "-"))
 
 if(!exists("nw_acc_delay_s2d_raw")) {
-  nw_acc_delay_s2d_raw <- export_query(query_nw_acc_delay_y2d_raw(min(format(data_day_date, "%Y-%m%-%d"),summer_end_date), initial_date = summer_start), schema = "PRU_READ") %>% 
+  nw_acc_delay_s2d_raw <- export_query(query_nw_acc_delay_y2d_raw(min(format(data_day_date, "%Y-%m%-%d"),format(summer_end_date,"%Y-%m%-%d")), initial_date = summer_start), schema = "PRU_READ") %>% 
     rename_with(~ gsub("Y2D", "S2D", .x), .cols = contains("Y2D"))
 }
 
 if (max(nw_acc_delay_s2d_raw$ENTRY_DATE) != data_day_date) {
-  nw_acc_delay_s2d_raw <- export_query(query_nw_acc_delay_y2d_raw(min(format(data_day_date, "%Y-%m%-%d"),summer_end_date), initial_date = summer_start), schema = "PRU_READ") %>% 
+  nw_acc_delay_s2d_raw <- export_query(query_nw_acc_delay_y2d_raw(min(format(data_day_date, "%Y-%m%-%d"),format(summer_end_date,"%Y-%m%-%d")), initial_date = summer_start), schema = "PRU_READ") %>% 
     rename_with(~ gsub("Y2D", "S2D", .x), .cols = contains("Y2D"))
 }
 

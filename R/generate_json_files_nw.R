@@ -2304,7 +2304,7 @@ summer_end_date <- as.Date(paste(summer_end_year,
 
 nw_acc_delay_s2d_raw <- export_query(
   query_nw_acc_delay_y2d_raw(
-    min(format(data_day_date, "%Y-%m%-%d"),summer_end_date),
+    min(format(data_day_date, "%Y-%m%-%d"),format(summer_end_date,"%Y-%m%-%d")),
     initial_date = summer_start
   ),
   schema = "PRU_READ"
@@ -2529,7 +2529,7 @@ nw_st_rank_delay_y2d <- nw_st_rank_delay_y2d_raw %>%
 
 ### s2d ----
 nw_st_rank_delay_s2d_raw <- export_query(query_nw_st_delay_y2d_raw(
-  min(format(data_day_date, "%Y-%m%-%d"),summer_end_date),
+  min(format(data_day_date, "%Y-%m%-%d"),format(summer_end_date,"%Y-%m%-%d")),
   initial_date = summer_start
 ))
 
