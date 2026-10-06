@@ -1928,14 +1928,15 @@ stk_aggregate <- function(
     flag_prev_w <- NA
     flag_prev_y <- "PREV_YEAR"
     flag_2019 <- "2019"
-
+    
     my_dates <- seq.Date(ymd(paste0(2019, "01", "01")), mydate) %>%
       as_tibble() %>%
       filter(year(value) %in% c(2019, current_year - 1, current_year)) %>%
       filter(between(
         as.integer(format(value, "%m%d")),
         summer_start,
-        min(as.integer(format(mydate, "%m%d")), summer_end)
+        #making end date same as ytd end date
+        as.integer(format(mydate, "%m%d"))
       )) %>%
       pull()
   }
@@ -1944,7 +1945,10 @@ stk_aggregate <- function(
   m1_q <- enquo(metric1)
   avg_name <- paste0("AVG_", as_name(m1_q))
   avg_m1_sym <- sym(avg_name)
-
+  #summer end date converting to an actual date
+  summer_end_day <- substr(summer_end, nchar(summer_end) - 1, nchar(summer_end))
+  summer_end_month <- substr(summer_end, 1, nchar(summer_end) - 2)
+ 
   m2_q <- enquo(metric2)
 
   if (rlang::quo_is_null(m2_q)) {
@@ -1953,6 +1957,7 @@ stk_aggregate <- function(
     m2_sym <- ensym(m2_q)
   }
 
+  
   df <- df %>%
     # collect() %>%
     mutate(
@@ -1983,7 +1988,7 @@ stk_aggregate <- function(
       {{ metric2 }}
     ) %>%
     filter(DATE_FIELD %in% my_dates) %>%
-    mutate(
+   mutate(
       FLAG_PERIOD = case_when(
         !!(period_type %in% c("Y", "S")) ~ case_when(
           lubridate::year(DATE_FIELD) == !!current_year ~ "CURRENT_YEAR",
@@ -2022,23 +2027,98 @@ stk_aggregate <- function(
           TRUE ~ NA_character_
         ),
         TRUE ~ NA_character_
+      ),
+      summer_end_date = as.Date(paste0(
+        lubridate::year(DATE_FIELD),
+        as.integer(summer_end_month),
+        as.integer(summer_end_day), sep = "-")
       )
-    ) %>%
-    summarise(
-      METRIC1 = sum(METRIC1, na.rm = TRUE),
-      !!m2_sym := sum({{ metric2 }}, na.rm = TRUE),
-      TO_DATE = max(DATE_FIELD, na.rm = TRUE),
-      FROM_DATE = min(DATE_FIELD, na.rm = TRUE),
-      .by = c(FLAG_PERIOD, STK_ID, STK_CODE, STK_NAME, AGG_ID)
-    ) %>%
+   )
+  
+  print(df)  
+  
+  # Set METRIC1 and metric2 to zero after the summer season
+  if (rlang::quo_is_null(m2_q)) {
+    df <- df %>%
+      mutate(
+        METRIC1 = if_else(
+          period_type == "S" &
+            DATE_FIELD > summer_end_date,
+          0,
+          METRIC1
+        )
+      )
+  } else {
+    df <- df %>%
+      mutate(
+        METRIC1 = if_else(
+          period_type == "S" &
+            DATE_FIELD > summer_end_date,
+          0,
+          METRIC1
+        ),
+        
+        !!m2_sym := if_else(
+          period_type == "S" &
+            DATE_FIELD > summer_end_date,
+          0,
+          !!m2_sym
+        )
+      )
+  }
+  
+  #summarising the metric and dates
+  if (rlang::quo_is_null(m2_q)) {
+    df <- df %>%
+      summarise(
+        METRIC1 = sum(METRIC1, na.rm = TRUE),
+        TO_DATE_RAW = max(DATE_FIELD, na.rm = TRUE),
+        FROM_DATE = min(DATE_FIELD, na.rm = TRUE),
+        summer_end_date = max(summer_end_date, na.rm = TRUE),
+        .by = c(
+          FLAG_PERIOD,
+          STK_ID,
+          STK_CODE,
+          STK_NAME,
+          AGG_ID
+        )
+      )
+  } else {
+    df <- df %>%
+      summarise(
+        METRIC1 = sum(METRIC1, na.rm = TRUE),
+        !!m2_sym := sum(!!m2_sym, na.rm = TRUE),
+        #creating TO_DATE_RAW (max(DATE_FIELD)) so that we can refer to it later
+        TO_DATE_RAW = max(DATE_FIELD, na.rm = TRUE),
+        FROM_DATE = min(DATE_FIELD, na.rm = TRUE),
+        summer_end_date = max(summer_end_date, na.rm = TRUE),
+        .by = c(
+          FLAG_PERIOD,
+          STK_ID,
+          STK_CODE,
+          STK_NAME,
+          AGG_ID
+        )
+      )
+  }
+  
+   df <- df %>%
     ungroup() %>%
-    group_by(FLAG_PERIOD) %>%
+     group_by(FLAG_PERIOD) %>%
+     #getting the maximum date of the flag_period
+     mutate(
+       TO_DATE_RAW = max(TO_DATE_RAW, na.rm = TRUE),
+       FROM_DATE = min(FROM_DATE, na.rm = TRUE),
+       summer_end_date = max(summer_end_date, na.rm = TRUE),
+     ) %>%
+     ungroup() %>%
     mutate(
-      TO_DATE = max(TO_DATE, na.rm = TRUE),
-      FROM_DATE = min(FROM_DATE, na.rm = TRUE)
-    ) %>%
-    ungroup() %>%
-    mutate(
+      # Freeze S2D at the summer-end date
+      TO_DATE = if_else(
+        period_type == "S",
+        pmin(TO_DATE_RAW, summer_end_date),
+        TO_DATE_RAW
+      ),
       PERIOD_TYPE = case_when(
         period_type == 'D' ~ 'DAY',
         period_type == 'W' ~ 'WEEK',
@@ -2047,11 +2127,21 @@ stk_aggregate <- function(
       ),
       NO_DAYS = as.numeric(TO_DATE - FROM_DATE) + 1,
       AVG_METRIC1 = METRIC1 / NO_DAYS,
-      DATA_DATE = max(TO_DATE, na.rm = TRUE),
+      #Set DATA_DATE to the maximum DATE FIELD value
+      DATA_DATE = ifelse(period_type == 'S',max(TO_DATE_RAW,na.rm=TRUE),max(TO_DATE, na.rm = TRUE)),
       YEAR = year(TO_DATE)
     ) %>%
+    select(
+           -TO_DATE_RAW,
+           -summer_end_date) %>%
     collect()
+   
+   print(unique(df$DATA_DATE))
+   print(unique(df$TO_DATE))
+   print(df)
+  
 
+  
   if (agg_stk == 'iso_country') {
     df_joined <- df %>%
       left_join(dim_iso_country, by = join_by(AGG_ID == ISO_COUNTRY_CODE)) %>%
@@ -2153,7 +2243,7 @@ stk_aggregate <- function(
       left_join(list_marktet_segment_app, by = join_by(AGG_ID == MS_ID)) %>%
       mutate(AGG_CODE = AGG_ID, AGG_NAME = MS_NAME)
   }
-
+  
   df_period <- df_joined %>%
     group_by(STK_ID, FLAG_PERIOD) %>%
     arrange(STK_ID, FLAG_PERIOD, desc(METRIC1), AGG_NAME) %>%
@@ -2195,7 +2285,7 @@ stk_aggregate <- function(
     fill(RANK_2019, .direction = "up") %>%
     ungroup() %>%
     filter(R_RANK < 41)
-
+  
   df_out <- df_period %>%
     arrange(STK_CODE, FLAG_PERIOD, R_RANK, AGG_NAME) %>%
     mutate(
@@ -2211,7 +2301,7 @@ stk_aggregate <- function(
           .x
         )
       ),
-
+      
       across(
         c(RANK_PREV_YEAR),
         ~ if_else(
@@ -2222,7 +2312,7 @@ stk_aggregate <- function(
           .x
         )
       ),
-
+      
       across(
         c(RANK, RANK_PREV_WEEK),
         ~ if_else(
@@ -2233,7 +2323,7 @@ stk_aggregate <- function(
           .x
         )
       ),
-
+      
       across(
         c(METRIC1, AVG_METRIC1, {{ metric2 }}),
         ~ if_else(
@@ -2271,7 +2361,7 @@ stk_aggregate <- function(
       DATA_DATE,
       YEAR_DATA
     )
-
+  
   print(paste(format(now(), "%H:%M:%S")))
   return(df_out)
 }
@@ -2291,9 +2381,9 @@ run_for_date <- function(day_seq) {
   # day <- ymd(20251030)
   # ingest only partitions defined in myyears
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
-
+  
   years_needed <- unique(year(date_seq))
-
+  
   df_source <- tryCatch(
     {
       read_partitioned_parquet_duckdb(
@@ -2314,7 +2404,7 @@ run_for_date <- function(day_seq) {
       dplyr::tibble() # empty fallback
     }
   )
-
+  
   new_rows <- imap_dfr(
     date_seq,
     function(day, i) {
@@ -2327,7 +2417,7 @@ run_for_date <- function(day_seq) {
       )
     }
   )
-
+  
   # Combine once.
   out <- bind_rows(df_source, new_rows)
   out <- out %>% mutate(YEAR_DATA = as.integer(YEAR_DATA))
@@ -2615,9 +2705,9 @@ params_sp_day <- list(
 stk_day_save <- function(stk) {
   message(paste(format(now(), "%H:%M:%S")))
   params <- get(paste0("params_", stk, "_day"))
-
+  
   df_day <- do.call(stk_daily, params)
-
+  
   if (stk == "nw") {
     df_day <- df_day %>% select(-(contains("15")))
     mydatafile <- paste0("nw_traffic_delay_day.parquet")
@@ -2637,9 +2727,9 @@ stk_day_save <- function(stk) {
     df_day <- df_day %>% select(-(contains("_ERT")), -(contains("_ARP")))
     mydatafile <- paste0("sp_traffic_delay_day.parquet")
   }
-
+  
   stakeholder <- substr(stk, 1, 2)
-
+  
   df_day %>% write_parquet(here(app_tables_dir, stakeholder, mydatafile))
   print(paste0(mydatafile, " saved"))
   message(paste(format(now(), "%H:%M:%S")))
@@ -2676,7 +2766,7 @@ stk_agg_list <- c(
   NULL
 )
 
-# date_seq <- seq.Date(ymd(20260401), ymd(20260515))
+#date_seq <- seq.Date(ymd(20251231), ymd(20251231))
 date_seq <- seq.Date(current_day, current_day)
 
 stk_agg_save <- function(stk_stk) {
@@ -2685,22 +2775,22 @@ stk_agg_save <- function(stk_stk) {
   # expose globally, but guarantee removal when done
   assign("mydataframe", mydataframe, envir = .GlobalEnv)
   on.exit(rm("mydataframe", envir = .GlobalEnv), add = TRUE)
-
+  
   message(mydataframe)
   df_app <- import_dataframe(mydataframe)
-
+  
   # expose globally, but guarantee removal when done
   assign("df_app", df_app, envir = .GlobalEnv)
   on.exit(rm("df_app", envir = .GlobalEnv), add = TRUE)
-
+  
   params <- get(paste0("params_", stk_stk))
   assign("params", params, envir = .GlobalEnv)
   on.exit(rm("params", envir = .GlobalEnv), add = TRUE)
-
+  
   df_agg <- run_for_date(date_seq)
-
+  
   myyears <- distinct(df_agg, YEAR_DATA) %>% pull() %>% as.integer()
-
+  
   con = DBI::dbConnect(duckdb::duckdb())
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   save_partitions_single_copy(
