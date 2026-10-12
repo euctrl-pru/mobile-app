@@ -400,27 +400,30 @@ get_co2_data <- function() {
   })
 
   # # Check if an error occurred
-  # if (inherits(check_co2, "try-error")) {
-  #   co2_data_raw <- read_xlsx(
-  #     path = fs::path_abs(
-  #       str_glue("CO2_backup.xlsx"),
-  #       start = '//sky.corp.eurocontrol.int/DFSRoot/Groups/HQ/dgof-pru/Project/DDP/AIU app/data_archive'
-  #     ),
-  #     sheet = "All Data vs Y(-1)",
-  #     range = cell_limits(c(3, 1), c(NA, NA))
-  #   ) %>%
-  #     as_tibble() %>%
-  #     mutate(across(.cols = where(is.instant), ~ as.Date(.x))) %>%
-  #     filter(YEAR>=2019, STATE_NAME != 'LIECHTENSTEIN') %>%
-  #     arrange(2, 3, 4)
-  #
-  # } else {
-  #   co2_data_raw <- export_query(query) %>%
-  #     mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-  # }
+  if (inherits(check_co2, "try-error")) {
+    co2_archive_dir <- '//ihx-vdm05/LIVE_var_www_performance$/data/download/csv'
+    co2_archive_file_pattern <- 'co2_emmissions_by_state_*'
 
-  co2_data_raw <- export_query(query) %>%
-    mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+    co2_files <- list.files(
+      co2_archive_dir,
+      co2_archive_file_pattern,
+      full.names = TRUE
+    )
+
+    co2_data_raw <- map_df(co2_files, ~ read_csv(.x, show_col_types = FALSE))
+    co2_data_raw <- co2_data_raw |>
+      filter(YEAR >= 2019) |>
+      group_by(STATE_NAME, MONTH) |>
+      arrange(STATE_NAME, MONTH, YEAR) |>
+      mutate(
+        LY_CO2_QTY_TONNES = lag(CO2_QTY_TONNES, 1),
+        LY_TF = lag(TF, 1)
+      ) |>
+      ungroup()
+  } else {
+    co2_data_raw <- export_query(query) %>%
+      mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
+  }
 
   return(co2_data_raw)
 }

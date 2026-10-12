@@ -13,7 +13,8 @@ if (exists("nw_billed_per_cz") == FALSE) {
 }
 
 # co2 data ----
-if (exists("co2_data_raw") == FALSE) {
+
+if (!exists("co2_data_raw")) {
   co2_data_raw <- get_co2_data()
 }
 
@@ -60,4 +61,3 @@ order by a.day_date
 nw_punct_data_raw <- export_query(query) %>%
   as_tibble() %>%
   mutate(across(.cols = where(is.instant), ~ as.Date(.x)))
-
