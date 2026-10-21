@@ -6,11 +6,41 @@ ao_status <- "prod"
 ap_status <- "prod"
 sp_status <- "prod"
 
-nw_local_data_folder_prod <- here::here("..", "mobile-app", "data", "prod", "nw")
-st_local_data_folder_prod <- here::here("..", "mobile-app", "data", "prod", "st")
-ao_local_data_folder_prod <- here::here("..", "mobile-app", "data", "prod", "ao")
-ap_local_data_folder_prod <- here::here("..", "mobile-app", "data", "prod", "ap")
-sp_local_data_folder_prod <- here::here("..", "mobile-app", "data", "prod", "sp")
+nw_local_data_folder_prod <- here::here(
+  "..",
+  "mobile-app",
+  "data",
+  "prod",
+  "nw"
+)
+st_local_data_folder_prod <- here::here(
+  "..",
+  "mobile-app",
+  "data",
+  "prod",
+  "st"
+)
+ao_local_data_folder_prod <- here::here(
+  "..",
+  "mobile-app",
+  "data",
+  "prod",
+  "ao"
+)
+ap_local_data_folder_prod <- here::here(
+  "..",
+  "mobile-app",
+  "data",
+  "prod",
+  "ap"
+)
+sp_local_data_folder_prod <- here::here(
+  "..",
+  "mobile-app",
+  "data",
+  "prod",
+  "sp"
+)
 
 nw_local_data_folder_dev <- here::here("..", "mobile-app", "data", "dev", "nw")
 st_local_data_folder_dev <- here::here("..", "mobile-app", "data", "dev", "st")
@@ -38,7 +68,7 @@ pwd <- Sys.getenv("PRU_DEV_PWD")
 dbn <- Sys.getenv("PRU_DEV_DBNAME")
 
 # summer dates
-summer_start <- 0601 
+summer_start <- 0601
 summer_end <- 0930
 
 # STATFOR forecast params
@@ -51,6 +81,7 @@ forecast_list <- data.frame(
     3950,
     4041,
     4104,
+    4240,
     NULL
   ),
   name = c(
@@ -60,7 +91,9 @@ forecast_list <- data.frame(
     "February 2025 Forecast",
     "October 2025 Forecast",
     "March 2026 Forecast",
-    NULL),
+    "October 2026 Forecast",
+    NULL
+  ),
   publication_date = c(
     "2023-10-18",
     "2024-02-26",
@@ -68,6 +101,7 @@ forecast_list <- data.frame(
     "2025-02-28",
     "2025-10-17",
     "2026-03-26",
+    "2026-10-20",
     NULL
   ),
   name_date = c(
@@ -77,28 +111,31 @@ forecast_list <- data.frame(
     "2025-02-01",
     "2025-10-01",
     "2026-03-01",
+    "2026-10-20",
     NULL
   )
-) 
+)
 
 if (!exists("data_day_date")) {
-  data_day_date <- lubridate::today(tzone = "") +  days(-1)
+  data_day_date <- lubridate::today(tzone = "") + days(-1)
   # data_day_date <- ymd("2025-03-01")
 }
 
 # Filter and select the latest valid forecast
-valid_rows <- forecast_list[as.Date(forecast_list$publication_date) < data_day_date + days(2), ]
+valid_rows <- forecast_list[
+  as.Date(forecast_list$publication_date) < data_day_date + days(2),
+]
 latest_row <- valid_rows[which.max(as.Date(valid_rows$publication_date)), ]
 
 forecast_id <- latest_row$id
-forecast_name_value <-  latest_row$name
-forecast_name_date <-  latest_row$name_date
+forecast_name_value <- latest_row$name
+forecast_name_date <- latest_row$name_date
 
 forecast_file_name <- tolower(
   paste0(
-    stringr::str_replace_all(forecast_name_value," ", "_"),
-    ".csv")
+    stringr::str_replace_all(forecast_name_value, " ", "_"),
+    ".csv"
   )
+)
 
 forecast_min_year_graph <- 2019
-
