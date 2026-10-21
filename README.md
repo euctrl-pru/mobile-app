@@ -34,7 +34,29 @@ Generation of archive csvs:
   generate json files for past dates. Only needs to be run if further
   dates are needed.
 - `nw/ao/state_queries`: Contains SQL queries with the date as a
-  parameter used by the previous script to generate past csv viles.
+  parameter used by the previous script to generate past csv files.
+
+## Adding a new stakeholder
+**Step 1 : Update the database**
+- Open an SQL editor (e.g. Dbeaver, SQL Developer..)
+- Go to the PRUREAD schema and look for a view starting with V_AIU_APP_LIST_ followed by the stakeholder type.
+- Edit the view and add the stakeholder code to it.
+_Note: for V_AIU_APP_LIST_AIRPORT, if it is not a top 40 airport, add it to the second part of the code_
+- Save your changes and check that the stakeholder appears in the view.
+- Grant the PRUDEV schema access to the updated view:
+  ```
+  GRANT SELECT ON PRUREAD.[your_view] TO PRUDEV;
+  ```
+
+**Step 2: Run copy_to_production.R**
+- Go to the mobile-app repo and run the R/copy_to_production.R script for the current day.
+- If the script runs successfully, the stakeholder values should appear for the latest day.
+
+**Step 3: Add the Stakeholder to the app**
+- Go to the [web app](https://eurocontrol.ewasoft.rs/login) and add the stakeholder if it is not already there. You might need to add a logo (for an airport you can use a blank white logo but for aircraft operators, make sure that you have a logo).
+- Make it visible.
+- Finally, check that the stakeholder appears correctly in the app.
+<img width="145" height="337" alt="image" src="https://github.com/user-attachments/assets/f5a06461-17c8-4ebe-afe6-02c4a742f4bb" />
 
 <!-- ## PocketHost API (currently not used for the app) -->
 <!-- We have 2 applications hosted at [PocketHost][https:://pockethost.io] -->
