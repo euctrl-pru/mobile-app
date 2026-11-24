@@ -209,7 +209,7 @@ collection <- "network_situation"
 
 adm_main <- ph_authenticate_admin_username_password(
   app_main,
-  "/api/admins/auth-with-password",
+  "/api/collections/_superusers/auth-with-password",
   username,
   password
 )
